@@ -466,7 +466,9 @@ class WP_Customize_Widgets {
 		wp_enqueue_script(
 			'widget-customizer',
 			admin_url( 'js/customize-widgets.js' ),
-			array( 'jquery', 'wp-backbone', 'wp-util', 'customize-controls' )
+			array( 'jquery', 'wp-backbone', 'wp-util', 'customize-controls' ),
+			false, // version
+			true // in_footer
 		);
 
 		// Export available widgets with control_tpl removed from model
