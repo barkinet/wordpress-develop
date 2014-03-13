@@ -649,6 +649,7 @@ var WidgetCustomizer = ( function ($) {
 		_setupWideWidget: function () {
 			var control = this,
 				widget_inside,
+				widget_form,
 				customize_sidebar,
 				position_widget,
 				theme_controls_container;
@@ -658,6 +659,7 @@ var WidgetCustomizer = ( function ($) {
 			}
 
 			widget_inside = control.container.find( '.widget-inside' );
+			widget_form = widget_inside.find( '> .form' );
 			customize_sidebar = $( '.wp-full-overlay-sidebar-content:first' );
 			control.container.addClass( 'wide-widget-control' );
 
@@ -671,17 +673,23 @@ var WidgetCustomizer = ( function ($) {
 			 * element is at the same top position as the widget-top. When the
 			 * widget-top is scrolled out of view, keep the widget-top in view;
 			 * likewise, don't allow the widget to drop off the bottom of the window.
+			 * If a widget is too tall to fit in the window, don't let the height
+			 * exceed the window height so that the contents of the widget control
+			 * will become scrollable (overflow:auto).
 			 */
 			position_widget = function () {
 				var offset_top = control.container.offset().top,
-					height,
-					top,
-					max_top;
-
-				height = widget_inside.outerHeight();
-				top = Math.max( offset_top, 0 );
-				max_top = $( window ).height() - height;
-				top = Math.min( top, max_top );
+					window_height = $( window ).height(),
+					form_height = widget_form.outerHeight(),
+					top;
+				widget_inside.css( 'max-height', window_height );
+				top = Math.max(
+					0, // prevent top from going off screen
+					Math.min(
+						Math.max( offset_top, 0 ), // distance widget in panel is from top of screen
+						window_height - form_height // flush up against bottom of screen
+					)
+				);
 				widget_inside.css( 'top', top );
 			};
 
