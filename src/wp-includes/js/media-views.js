@@ -1139,16 +1139,11 @@
 			menu: false,
 			toolbar: 'edit-image',
 			title: l10n.editImage,
-			content: 'edit-image',
-			syncSelection: true
+			content: 'edit-image'
 		},
 
 		activate: function() {
-			if ( ! this.get('selection') ) {
-				this.set( 'selection', new media.model.Selection() );
-			}
 			this.listenTo( this.frame, 'toolbar:render:edit-image', this.toolbar );
-			this.syncSelection();
 		},
 
 		deactivate: function() {
@@ -1179,8 +1174,6 @@
 			}) );
 		}
 	});
-
-	_.extend( media.controller.EditImage.prototype, media.selectionSync );
 
 	/**
 	 * wp.media.controller.MediaLibrary
@@ -1980,7 +1973,7 @@
 				// Embed states.
 				new media.controller.Embed(),
 
-				new media.controller.EditImage( { selection: options.selection } ),
+				new media.controller.EditImage( { model: options.editImage } ),
 
 				// Gallery states.
 				new media.controller.CollectionEdit({
@@ -2251,8 +2244,8 @@
 		},
 
 		editImageContent: function() {
-			var selection = this.state().get('selection'),
-				view = new media.view.EditImage( { model: selection.single(), controller: this } ).render();
+			var image = this.state().get('image'),
+				view = new media.view.EditImage( { model: image, controller: this } ).render();
 
 			this.content.set( view );
 
@@ -2648,18 +2641,11 @@
 
 		editImageContent: function() {
 			var state = this.state(),
-				attachment = state.get('image').attachment,
-				model,
+				model = state.get('image'),
 				view;
 
-			if ( ! attachment ) {
-				return;
-			}
-
-			model = state.get('selection').single();
-
 			if ( ! model ) {
-				model = attachment;
+				return;
 			}
 
 			view = new media.view.EditImage( { model: model, controller: this } ).render();
@@ -5205,13 +5191,22 @@
 		},
 
 		scroll: function() {
+			var view = this,
+				toolbar;
+
 			// @todo: is this still necessary?
 			if ( ! this.$el.is(':visible') ) {
 				return;
 			}
 
 			if ( this.collection.hasMore() && this.el.scrollHeight < this.el.scrollTop + ( this.el.clientHeight * this.options.refreshThreshold ) ) {
-				this.collection.more().done( this.scroll );
+				toolbar = this.views.parent.toolbar;
+				toolbar.get('spinner').show();
+
+				this.collection.more().done(function() {
+					view.scroll();
+					toolbar.get('spinner').hide();
+				});
 			}
 		}
 	}, {
@@ -5289,7 +5284,7 @@
 			// Build `<option>` elements.
 			this.$el.html( _.chain( this.filters ).map( function( filter, value ) {
 				return {
-					el: $('<option></option>').val(value).text(filter.text)[0],
+					el: $( '<option></option>' ).val( value ).html( filter.text )[0],
 					priority: filter.priority || 50
 				};
 			}, this ).sortBy('priority').pluck('el').value() );
@@ -5451,16 +5446,6 @@
 
 			this.collection.on( 'add remove reset', this.updateContent, this );
 		},
-		toggleSpinner: function( state ) {
-			if ( state ) {
-				this.spinnerTimeout = _.delay(function( view ) {
-					view.toolbar.get( 'spinner' ).show();
-				}, 600, this );
-			} else {
-				this.toolbar.get( 'spinner' ).hide();
-				clearTimeout( this.spinnerTimeout );
-			}
-		},
 		/**
 		 * @returns {wp.media.view.AttachmentsBrowser} Returns itself to allow chaining
 		 */
@@ -5525,12 +5510,12 @@
 			}
 
 			if ( ! this.collection.length ) {
-				this.toggleSpinner( true );
+				this.toolbar.get( 'spinner' ).show();
 				this.collection.more().done(function() {
 					if ( ! view.collection.length ) {
 						view.createUploader();
 					}
-					view.toggleSpinner( false );
+					view.toolbar.get( 'spinner' ).hide();
 				});
 			}
 		},
@@ -6073,7 +6058,10 @@
 		 * @param {Object} event
 		 */
 		editAttachment: function( event ) {
+			var editState = this.controller.state( 'edit-image' );
 			event.preventDefault();
+
+			editState.set( 'image', this.model );
 			this.controller.setState( 'edit-image' );
 		},
 		/**
@@ -6420,7 +6408,10 @@
 		},
 
 		editAttachment: function( event ) {
+			var editState = this.controller.state( 'edit-image' );
 			event.preventDefault();
+
+			editState.set( 'image', this.model.attachment );
 			this.controller.setState( 'edit-image' );
 		}
 	});
@@ -6558,12 +6549,13 @@
 		 * @returns {HTMLElement}
 		 */
 		prepareSrc : function (media) {
-			var t = (new Date()).getTime();
+			var i = wp.media.view.MediaDetails.instances++;
 			_.each( $(media).find('source'), function (source) {
 				source.src = [
 					source.src,
 					source.src.indexOf('?') > -1 ? '&' : '?',
-					t
+					'_=',
+					i
 				].join('');
 			});
 
@@ -6682,6 +6674,8 @@
 		resetFocus: function() {
 			this.$( '.embed-media-settings' ).scrollTop( 0 );
 		}
+	}, {
+		instances : 0
 	});
 
 	/**
@@ -6764,14 +6758,23 @@
 	media.view.Spinner = media.View.extend({
 		tagName:   'span',
 		className: 'spinner',
+		spinnerTimeout: false,
+		delay: 400,
 
 		show: function() {
-			this.$el.show();
+			if ( ! this.spinnerTimeout ) {
+				this.spinnerTimeout = _.delay(function( $el ) {
+					$el.show();
+				}, this.delay, this.$el );
+			}
+
 			return this;
 		},
 
 		hide: function() {
 			this.$el.hide();
+			this.spinnerTimeout = clearTimeout( this.spinnerTimeout );
+
 			return this;
 		}
 	});
