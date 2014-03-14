@@ -941,10 +941,10 @@ class WP_Customize_Widgets {
 	static function call_widget_update( $widget_id ) {
 		global $wp_registered_widget_updates, $wp_registered_widget_controls;
 
-		$options_transaction = new Options_Transaction();
+		$option_capture = new Option_Update_Capture();
 
 		try {
-			$options_transaction->start();
+			$option_capture->start();
 			$parsed_id   = self::parse_widget_id( $widget_id );
 			$option_name = 'widget_' . $parsed_id['id_base'];
 
@@ -997,11 +997,11 @@ class WP_Customize_Widgets {
 			/**
 			 * Make sure the expected option was updated
 			 */
-			if ( 0 !== $options_transaction->count() ) {
-				if ( count( $options_transaction->options ) > 1 ) {
+			if ( 0 !== $option_capture->count() ) {
+				if ( count( $option_capture->options ) > 1 ) {
 					throw new Widget_Customizer_Exception( sprintf( 'Widget %1$s unexpectedly updated more than one option.', $widget_id ) );
 				}
-				$updated_option_name = key( $options_transaction->options );
+				$updated_option_name = key( $option_capture->options );
 				if ( $updated_option_name !== $option_name ) {
 					throw new Widget_Customizer_Exception( sprintf( 'Widget %1$s updated option "%2$s", but expected "%3$s".', $widget_id, $updated_option_name, $option_name ) );
 				}
@@ -1027,11 +1027,11 @@ class WP_Customize_Widgets {
 				$instance = $option;
 			}
 
-			$options_transaction->rollback();
+			$option_capture->stop();
 			return compact( 'instance', 'form' );
 		}
 		catch ( Exception $e ) {
-			$options_transaction->rollback();
+			$option_capture->stop();
 			throw $e;
 		}
 	}
@@ -1093,16 +1093,15 @@ class WP_Customize_Widgets {
 
 class Widget_Customizer_Exception extends Exception {}
 
-class Options_Transaction {
+class Option_Update_Capture {
 
 	/**
-	 * @var array $options values updated while transaction is open
+	 * @var array $options values updated while capturing is happening
 	 */
 	public $options = array();
 
 	protected $_ignore_transients = true;
 	protected $_is_current = false;
-	protected $_operations = array();
 
 	function __construct( $ignore_transients = true ) {
 		$this->_ignore_transients = $ignore_transients;
@@ -1125,109 +1124,71 @@ class Options_Transaction {
 	}
 
 	/**
-	 * Get the number of operations performed in the transaction
+	 * Get the number of options updated
 	 * @return bool
 	 */
 	function count() {
-		return count( $this->_operations );
+		return count( $this->options );
 	}
 
 	/**
 	 * Start keeping track of changes to options, and cache their new values
 	 */
 	function start() {
-		$this->_is_current = true;
-		add_action( 'added_option', array( $this, '_capture_added_option' ), 10, 2 );
-		add_action( 'updated_option', array( $this, '_capture_updated_option' ), 10, 3 );
-		add_action( 'delete_option', array( $this, '_capture_pre_deleted_option' ), 10, 1 );
-		add_action( 'deleted_option', array( $this, '_capture_deleted_option' ), 10, 1 );
-	}
-
-	/**
-	 * @action added_option
-	 * @param $option_name
-	 * @param $new_value
-	 */
-	function _capture_added_option( $option_name, $new_value ) {
-		if ( $this->is_option_ignored( $option_name ) ) {
+		if ( $this->_is_current ) {
 			return;
 		}
-		$this->options[$option_name] = $new_value;
-		$operation = 'add';
-		$this->_operations[] = compact( 'operation', 'option_name', 'new_value' );
+		$this->_is_current = true;
+		add_filter( 'pre_update_option', array( $this, 'pre_update_option' ), 10, 3 );
 	}
 
 	/**
-	 * @action updated_option
+	 * @param mixed $new_value
 	 * @param string $option_name
 	 * @param mixed $old_value
-	 * @param mixed $new_value
+	 * @return mixed
+	 * @filter pre_update_option
 	 */
-	function _capture_updated_option( $option_name, $old_value, $new_value ) {
+	function pre_update_option( $new_value, $option_name, $old_value ) {
 		if ( $this->is_option_ignored( $option_name ) ) {
 			return;
+		}
+		if ( ! isset( $this->options[$option_name] ) ) {
+			add_filter( "pre_option_{$option_name}", array( $this, 'pre_get_option' ) );
 		}
 		$this->options[$option_name] = $new_value;
-		$operation = 'update';
-		$this->_operations[] = compact( 'operation', 'option_name', 'old_value', 'new_value' );
-	}
-
-	protected $_pending_delete_option_autoload;
-	protected $_pending_delete_option_value;
-
-	/**
-	 * It's too bad the old_value and autoload aren't passed into the deleted_option action
-	 * @action delete_option
-	 * @param string $option_name
-	 */
-	function _capture_pre_deleted_option( $option_name ) {
-		if ( $this->is_option_ignored( $option_name ) ) {
-			return;
-		}
-		global $wpdb;
-		$autoload = $wpdb->get_var( $wpdb->prepare( "SELECT autoload FROM $wpdb->options WHERE option_name = %s", $option_name ) ); // db call ok; no-cache ok
-		$this->_pending_delete_option_autoload = $autoload;
-		$this->_pending_delete_option_value    = get_option( $option_name );
+		return $old_value;
 	}
 
 	/**
-	 * @action deleted_option
-	 * @param string $option_name
+	 * @param $value
+	 * @return mixed
 	 */
-	function _capture_deleted_option( $option_name ) {
-		if ( $this->is_option_ignored( $option_name ) ) {
-			return;
+	function pre_get_option( $value ) {
+		$option_name = preg_replace( '/^pre_option_/', '', current_filter() );
+		if ( isset( $this->options[$option_name] ) ) {
+			$value = $this->options[$option_name];
+			$value = apply_filters( 'option_' . $option_name, $value );
 		}
-		unset( $this->options[$option_name] );
-		$operation = 'delete';
-		$old_value = $this->_pending_delete_option_value;
-		$autoload  = $this->_pending_delete_option_autoload;
-		$this->_operations[] = compact( 'operation', 'option_name', 'old_value', 'autoload' );
+		return $value;
 	}
 
 	/**
 	 * Undo any changes to the options since start() was called
 	 */
-	function rollback() {
-		remove_action( 'updated_option', array( $this, '_capture_updated_option' ), 10, 3 );
-		remove_action( 'added_option', array( $this, '_capture_added_option' ), 10, 2 );
-		remove_action( 'delete_option', array( $this, '_capture_pre_deleted_option' ), 10, 1 );
-		remove_action( 'deleted_option', array( $this, '_capture_deleted_option' ), 10, 1 );
-		while ( 0 !== count( $this->_operations ) ) {
-			$option_operation = array_pop( $this->_operations );
-			if ( 'add' === $option_operation['operation'] ) {
-				delete_option( $option_operation['option_name'] );
-			}
-			else if ( 'delete' === $option_operation['operation'] ) {
-				add_option( $option_operation['option_name'], $option_operation['old_value'], null, $option_operation['autoload'] );
-			}
-			else if ( 'update' === $option_operation['operation'] ) {
-				update_option( $option_operation['option_name'], $option_operation['old_value'] );
-			}
-			else {
-				throw new Exception( 'Unexpected operation' );
-			}
+	function stop() {
+		if ( ! $this->_is_current ) {
+			return;
 		}
+		remove_filter( 'pre_update_option', array( $this, 'pre_update_option' ), 10, 3 );
+		foreach ( array_keys( $this->options ) as $option_name ) {
+			remove_filter( "pre_option_{$option_name}", array( $this, 'pre_get_option' ) );
+		}
+		$this->options     = array();
 		$this->_is_current = false;
+	}
+
+	function __destruct() {
+		$this->stop();
 	}
 }
