@@ -860,22 +860,25 @@ function dynamic_sidebar($index = 1) {
 
 	$sidebars_widgets = wp_get_sidebars_widgets();
 	if ( empty( $wp_registered_sidebars[ $index ] ) || empty( $sidebars_widgets[ $index ] ) || ! is_array( $sidebars_widgets[ $index ] ) ) {
-		/**
-		 * See other instances of these hooks below. These first instances are
-		 * only invoked if the sidebar is empty.
-		 */
+		/** This action is documented in wp-includes/widgets.php */
 		do_action( 'dynamic_sidebar_before', $index, false );
+		/** This action is documented in wp-includes/widgets.php */
 		do_action( 'dynamic_sidebar_after',  $index, false );
+		/** This filter is documented in wp-includes/widgets.php */
 		return apply_filters( 'dynamic_sidebar_has_widgets', false, $index );
 	}
 
 	/**
-	 * Invoke before dynamic_sidebar() renders any widgets
+	 * Fires before widgets are rendered in a dynamic sidebar.
+	 *
+	 * Note: The action also fires for empty sidebars, and on both the front-end
+	 * and back-end, including the Inactive Widgets sidebar on the Widgets screen.
 	 *
 	 * @since 3.9.0
 	 *
-	 * @param string $index sidebar ID
-	 * @param boolean whether the sidebar was populated with widgets
+	 * @param int|string $index       Index, name, or ID of the dynamic sidebar.
+	 * @param bool       $has_widgets Whether the sidebar is populated with widgets.
+	 *                                Default true.
 	 */
 	do_action( 'dynamic_sidebar_before', $index, true );
 	$sidebar = $wp_registered_sidebars[$index];
@@ -902,25 +905,34 @@ function dynamic_sidebar($index = 1) {
 		$params[0]['before_widget'] = sprintf($params[0]['before_widget'], $id, $classname_);
 
 		/**
-		 * Parameters to pass into the widget display_callback
+		 * Filter the parameters passed to a widget's display callback.
+		 *
+		 * Note: The filter is evaluated on both the front-end and back-end,
+		 * including for the Inactive Widgets sidebar on the Widgets screen.
 		 *
 		 * @since 2.5.0
 		 *
+		 * @see register_sidebar()
+		 *
 		 * @param array $params {
-		 *     @type array $args first param passed to widget display_callback {
-		 *         @type string $name for sidebar
-		 *         @type string $id for sidebar
-		 *         @type string $description for sidebar
-		 *         @type string $class for sidebar
-		 *         @type string $widget_id
-		 *         @type string $widget_name
-		 *         @type string $before_widget
-		 *         @type string $after_widget
-		 *         @type string $before_title
-		 *         @type string $after_title
+		 *     @type array $args  {
+		 *         An array of widget display arguments.
+		 *
+		 *         @type string $name          Name of the sidebar the widget is assigned to.
+		 *         @type string $id            ID of the sidebar the widget is assigned to.
+		 *         @type string $description   The sidebar description.
+		 *         @type string $class         CSS class applied to the sidebar container.
+		 *         @type string $before_widget HTML markup to prepend to each widget in the sidebar.
+		 *         @type string $after_widget  HTML markup to append to each widget in the sidebar.
+		 *         @type string $before_title  HTML markup to prepend to the widget title when displayed.
+		 *         @type string $after_title   HTML markup to append to the widget title when displayed.
+		 *         @type string $widget_id     ID of the widget.
+		 *         @type string $widget_name   Name of the widget.
 		 *     }
-		 *     @type array $widget_args second param passed to widget display_callback {
-		 *         @type int $number for multi widget
+		 *     @type array $widget_args {
+		 *         An array of multi-widget arguments.
+		 *
+		 *         @type int $number Number increment used for multiples of the same widget.
 		 *     }
 		 * }
 		 */
@@ -929,13 +941,31 @@ function dynamic_sidebar($index = 1) {
 		$callback = $wp_registered_widgets[$id]['callback'];
 
 		/**
-		 * Invoke before dynamic_sidebar() is about to render a widget
+		 * Fires before a widget's display callback is called.
+		 *
+		 * Note: The action fires on both the front-end and back-end, including
+		 * for widgets in the Inactive Widgets sidebar on the Widgets screen.
+		 *
+		 * The action is not fired for empty sidebars.
 		 *
 		 * @since 3.0.0
 		 *
-		 * @param array registered widget
+		 * @param array $widget_id {
+		 *     An associative array of widget arguments.
+		 *
+		 *     @type string $name                Name of the widget.
+		 *     @type string $id                  Widget ID.
+		 *     @type array|callback $callback    When the hook is fired on the front-end, $callback is an array
+		 *                                       containing the widget object. Fired on the back-end, $callback
+		 *                                       is 'wp_widget_control', see $_callback.
+		 *     @type array          $params      An associative array of multi-widget arguments.
+		 *     @type string         $classname   CSS class applied to the widget container.
+		 *     @type string         $description The widget description.
+		 *     @type array          $_callback   When the hook is fired on the back-end, $_callback is populated
+		 *                                       with an array containing the widget object, see $callback.
+		 * }
 		 */
-		do_action( 'dynamic_sidebar', $wp_registered_widgets[$id] );
+		do_action( 'dynamic_sidebar', $wp_registered_widgets[ $id ] );
 
 		if ( is_callable($callback) ) {
 			call_user_func_array($callback, $params);
@@ -944,24 +974,32 @@ function dynamic_sidebar($index = 1) {
 	}
 
 	/**
-	 * Invoke after dynamic_sidebar() renders any widgets
+	 * Fires after widgets are rendered in a dynamic sidebar.
+	 *
+	 * Note: The action also fires for empty sidebars, and on both the front-end
+	 * and back-end, including the Inactive Widgets sidebar on the Widgets screen.
 	 *
 	 * @since 3.9.0
 	 *
-	 * @param string $index sidebar ID
-	 * @param boolean whether the sidebar was populated with widgets
+	 * @param int|string $index       Index, name, or ID of the dynamic sidebar.
+	 * @param bool       $has_widgets Whether the sidebar is populated with widgets.
+	 *                                Default true.
 	 */
 	do_action( 'dynamic_sidebar_after', $index, true );
 
 	/**
-	 * Allow a plugin to override the return value for dynamic_sidebar(),
-	 * indicating whether or not widgets were rendered
+	 * Filter whether a sidebar has widgets.
+	 *
+	 * Note: The filter is also evaluated for empty sidebars, and on both the front-end
+	 * and back-end, including the Inactive Widgets sidebar on the Widgets screen.
 	 *
 	 * @since 3.9.0
 	 *
-	 * @param boolean $did_one whether a widget was rendered in the sidebar
-	 * @param string $index sidebar ID
+	 * @param bool       $did_one Whether at least one widget was rendered in the sidebar.
+	 *                            Default false.
+	 * @param int|string $index   Index, name, or ID of the dynamic sidebar.
 	 */
+
 	$did_one = apply_filters( 'dynamic_sidebar_has_widgets', $did_one, $index );
 
 	return $did_one;
@@ -1045,16 +1083,15 @@ function is_active_sidebar( $index ) {
 	$is_active_sidebar = ! empty( $sidebars_widgets[$index] );
 
 	/**
-	 * Return value for is_active_sidebar()
+	 * Filter whether a dynamic sidebar is considered "active".
 	 *
-	 * @since 3.9
+	 * @since 3.9.0
 	 *
-	 * @param boolean $is_active_sidebar whether or not the sidebar is populated with widgets
-	 * @param string $index sidebar ID
+	 * @param bool       $is_active_sidebar Whether or not the sidebar should be considered "active".
+	 *                                      In other words, whether the sidebar contains any widgets.
+	 * @param int|string $index             Index, name, or ID of the dynamic sidebar.
 	 */
-	$is_active_sidebar = apply_filters( 'is_active_sidebar', $is_active_sidebar, $index );
-
-	return $is_active_sidebar;
+	return apply_filters( 'is_active_sidebar', $is_active_sidebar, $index );
 }
 
 /* Internal Functions */
