@@ -254,6 +254,7 @@ function update_option( $option, $value ) {
 	 * @param mixed $old_value The old option value.
 	 */
 	$value = apply_filters( 'pre_update_option_' . $option, $value, $old_value );
+	$value = apply_filters( 'pre_update_option', $value, $option, $old_value );
 
 	// If the new and old values are the same, no need to update.
 	if ( $value === $old_value )
