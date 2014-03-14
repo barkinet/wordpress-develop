@@ -3475,7 +3475,13 @@
 		className: 'uploader-editor',
 		template:  media.template( 'uploader-editor' ),
 
+		localDrag: false,
+		overContainer: false,
+		overDropzone: false,
+
 		initialize: function() {
+			var self = this;
+
 			this.initialized = false;
 
 			// Bail if UA does not support drag'n'drop or File API.
@@ -3490,9 +3496,14 @@
 			this.$document.on( 'drop', '.uploader-editor', _.bind( this.drop, this ) );
 			this.$document.on( 'dragover', '.uploader-editor', _.bind( this.dropzoneDragover, this ) );
 			this.$document.on( 'dragleave', '.uploader-editor', _.bind( this.dropzoneDragleave, this ) );
+			this.$document.on( 'click', '.uploader-editor', _.bind( this.click, this ) );
 
 			this.$document.on( 'dragover', _.bind( this.containerDragover, this ) );
 			this.$document.on( 'dragleave', _.bind( this.containerDragleave, this ) );
+
+			this.$document.on( 'dragstart dragend drop', function( event ) {
+				self.localDrag = event.type === 'dragstart';
+			});
 
 			this.initialized = true;
 			return this;
@@ -3541,16 +3552,17 @@
 		drop: function( event ) {
 			var $wrap = null;
 
-			this.files = event.originalEvent.dataTransfer.files;
-			if ( this.files.length < 1 )
-				return;
-
 			this.containerDragleave( event );
 			this.dropzoneDragleave( event );
 
+			this.files = event.originalEvent.dataTransfer.files;
+			if ( this.files.length < 1 ) {
+				return;
+			}
+
 			// Set the active editor to the drop target.
 			$wrap = $( event.target ).parents( '.wp-editor-wrap' );
-			if ( $wrap.length > 0 ) {
+			if ( $wrap.length > 0 && $wrap[0].id ) {
 				window.wpActiveEditor = $wrap[0].id.slice( 3, -5 );
 			}
 
@@ -3580,6 +3592,10 @@
 		},
 
 		containerDragover: function() {
+			if ( this.localDrag ) {
+				return;
+			}
+
 			this.overContainer = true;
 			this.refresh();
 		},
@@ -3592,6 +3608,10 @@
 		},
 
 		dropzoneDragover: function( e ) {
+			if ( this.localDrag ) {
+				return;
+			}
+
 			this.overDropzone = true;
 			this.refresh( e );
 			return false;
@@ -3600,6 +3620,13 @@
 		dropzoneDragleave: function( e ) {
 			this.overDropzone = false;
 			_.delay( _.bind( this.refresh, this, e ), 50 );
+		},
+
+		click: function( e ) {
+			// In the rare case where the dropzone gets stuck, hide it on click.
+			this.containerDragleave( e );
+			this.dropzoneDragleave( e );
+			this.localDrag = false;
 		}
 	});
 
@@ -6520,11 +6547,11 @@
 	 */
 	media.view.MediaDetails = media.view.Settings.AttachmentDisplay.extend({
 		initialize: function() {
-			_.bindAll(this, 'success', 'unsetPlayer');
+			_.bindAll(this, 'success');
 
-			this.listenTo( this.controller, 'close', this.unsetPlayer );
+			this.listenTo( this.controller, 'close', media.mixin.unsetPlayer );
 			this.on( 'ready', this.setPlayer );
-			this.on( 'media:setting:remove', this.unsetPlayer );
+			this.on( 'media:setting:remove', media.mixin.unsetPlayer, this );
 			this.on( 'media:setting:remove', this.render );
 			this.on( 'media:setting:remove', this.setPlayer );
 			this.events = _.extend( this.events, {
@@ -6540,26 +6567,6 @@
 			return _.defaults({
 				model: this.model.toJSON()
 			}, this.options );
-		},
-
-		/**
-		 * When multiple players in the DOM contain the same src, things get weird.
-		 *
-		 * @param {HTMLElement} media
-		 * @returns {HTMLElement}
-		 */
-		prepareSrc : function (media) {
-			var i = wp.media.view.MediaDetails.instances++;
-			_.each( $(media).find('source'), function (source) {
-				source.src = [
-					source.src,
-					source.src.indexOf('?') > -1 ? '&' : '?',
-					'_=',
-					i
-				].join('');
-			});
-
-			return media;
 		},
 
 		removeSetting : function (e) {
@@ -6599,49 +6606,6 @@
 			return this;
 		},
 
-		/**
-		 * Override the MediaElement method for removing a player.
-		 *	MediaElement tries to pull the audio/video tag out of
-		 *	its container and re-add it to the DOM.
-		 */
-		removePlayer: function() {
-			var t = this.player, featureIndex, feature;
-
-			// invoke features cleanup
-			for ( featureIndex in t.options.features ) {
-				feature = t.options.features[featureIndex];
-				if ( t['clean' + feature] ) {
-					try {
-						t['clean' + feature](t);
-					} catch (e) {}
-				}
-			}
-
-			if ( ! t.isDynamic ) {
-				t.$node.remove();
-			}
-
-			if ( 'native' !== t.media.pluginType ) {
-				t.media.remove();
-			}
-
-			delete window.mejs.players[t.id];
-
-			t.container.remove();
-			t.globalUnbind();
-			delete t.node.player;
-		},
-
-		unsetPlayer : function() {
-			if ( this.player ) {
-				if ( _.isUndefined( this.mejs.pluginType ) ) {
-					this.mejs.pause();
-				}
-				this.removePlayer();
-				this.player = false;
-			}
-		},
-
 		success : function (mejs) {
 			var autoplay = mejs.attributes.autoplay && 'false' !== mejs.attributes.autoplay;
 
@@ -6675,7 +6639,27 @@
 			this.$( '.embed-media-settings' ).scrollTop( 0 );
 		}
 	}, {
-		instances : 0
+		instances : 0,
+
+		/**
+		 * When multiple players in the DOM contain the same src, things get weird.
+		 *
+		 * @param {HTMLElement} media
+		 * @returns {HTMLElement}
+		 */
+		prepareSrc : function (media) {
+			var i = wp.media.view.MediaDetails.instances++;
+			_.each( $(media).find('source'), function (source) {
+				source.src = [
+					source.src,
+					source.src.indexOf('?') > -1 ? '&' : '?',
+					'_=',
+					i
+				].join('');
+			});
+
+			return media;
+		}
 	});
 
 	/**
@@ -6700,7 +6684,7 @@
 				if ( audio.is(':hidden') ) {
 					audio.show();
 				}
-				this.media = this.prepareSrc( audio.get(0) );
+				this.media = media.view.MediaDetails.prepareSrc( audio.get(0) );
 			} else {
 				audio.hide();
 				this.media = false;
@@ -6734,7 +6718,7 @@
 				}
 
 				if ( ! video.hasClass('youtube-video') ) {
-					this.media = this.prepareSrc( video.get(0) );
+					this.media = media.view.MediaDetails.prepareSrc( video.get(0) );
 				} else {
 					this.media = video.get(0);
 				}

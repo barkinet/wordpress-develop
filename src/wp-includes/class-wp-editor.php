@@ -343,9 +343,16 @@ final class _WP_Editors {
 				$suffix = defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG ? '' : '.min';
 				$version = 'ver=' . $GLOBALS['wp_version'];
 				$dashicons = includes_url( "css/dashicons$suffix.css?$version" );
-
+				$mediaelement = includes_url( "js/mediaelement/mediaelementplayer.min.css?$version" );
+				$wpmediaelement = includes_url( "js/mediaelement/wp-mediaelement.css?$version" );
+				
 				// WordPress default stylesheet and dashicons
-				$mce_css = array( $dashicons, self::$baseurl . '/skins/wordpress/wp-content.css' );
+				$mce_css = array(
+					$dashicons,
+					$mediaelement,
+					$wpmediaelement,
+					self::$baseurl . '/skins/wordpress/wp-content.css'
+				);
 
 				// load editor_style.css if the current theme supports it
 				if ( ! empty( $GLOBALS['editor_styles'] ) && is_array( $GLOBALS['editor_styles'] ) ) {
@@ -1060,7 +1067,7 @@ final class _WP_Editors {
 					<label><span><?php _e( 'Title' ); ?></span><input id="link-title-field" type="text" name="linktitle" /></label>
 				</div>
 				<div class="link-target">
-					<label><input type="checkbox" id="link-target-checkbox" /> <?php _e( 'Open link in a new window/tab' ); ?></label>
+					<label><span>&nbsp;</span><input type="checkbox" id="link-target-checkbox" /> <?php _e( 'Open link in a new window/tab' ); ?></label>
 				</div>
 			</div>
 			<p class="howto" id="wp-link-search-toggle"><?php _e( 'Or link to existing content' ); ?></p>
@@ -1089,7 +1096,7 @@ final class _WP_Editors {
 		</div>
 		<div class="submitbox">
 			<div id="wp-link-update">
-				<input type="submit" value="<?php esc_attr_e( 'Add Link' ); ?>" class="button-primary" id="wp-link-submit" name="wp-link-submit">
+				<input type="submit" value="<?php esc_attr_e( 'Add Link' ); ?>" class="button button-primary" id="wp-link-submit" name="wp-link-submit">
 			</div>
 			<div id="wp-link-cancel">
 				<a class="submitdelete deletion" href="#"><?php _e( 'Cancel' ); ?></a>

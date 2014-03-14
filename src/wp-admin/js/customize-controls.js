@@ -954,7 +954,7 @@
 						nonce:  this.nonce.save
 					} ),
 					processing = api.state( 'processing' ),
-					submit_when_done_processing,
+					submitWhenDoneProcessing,
 					submit;
 
 				body.addClass( 'saving' );
@@ -992,13 +992,13 @@
 				if ( 0 === processing() ) {
 					submit();
 				} else {
-					submit_when_done_processing = function () {
+					submitWhenDoneProcessing = function () {
 						if ( 0 === processing() ) {
-							api.state.unbind( 'change', submit_when_done_processing );
+							api.state.unbind( 'change', submitWhenDoneProcessing );
 							submit();
 						}
 					};
-					api.state.bind( 'change', submit_when_done_processing );
+					api.state.bind( 'change', submitWhenDoneProcessing );
 				}
 
 			}
