@@ -531,6 +531,7 @@ class WP_Widget_Categories extends WP_Widget {
  * @since 2.8.0
  */
 class WP_Widget_Recent_Posts extends WP_Widget {
+	const DEFAULT_NUMBER = 5;
 
 	function __construct() {
 		$widget_ops = array('classname' => 'widget_recent_entries', 'description' => __( "Your site&#8217;s most recent Posts.") );
@@ -561,9 +562,10 @@ class WP_Widget_Recent_Posts extends WP_Widget {
 
 		$title = ( ! empty( $instance['title'] ) ) ? $instance['title'] : __( 'Recent Posts' );
 		$title = apply_filters( 'widget_title', $title, $instance, $this->id_base );
-		$number = ( ! empty( $instance['number'] ) ) ? absint( $instance['number'] ) : 5;
-		if ( ! $number )
- 			$number = 5;
+		$number = ( ! empty( $instance['number'] ) ) ? absint( $instance['number'] ) : self::DEFAULT_NUMBER;
+		if ( ! $number ) {
+			$number = self::DEFAULT_NUMBER;
+		}
 		$show_date = isset( $instance['show_date'] ) ? $instance['show_date'] : false;
 
 		$r = new WP_Query( apply_filters( 'widget_posts_args', array( 'posts_per_page' => $number, 'no_found_rows' => true, 'post_status' => 'publish', 'ignore_sticky_posts' => true ) ) );
@@ -612,7 +614,7 @@ class WP_Widget_Recent_Posts extends WP_Widget {
 
 	function form( $instance ) {
 		$title     = isset( $instance['title'] ) ? esc_attr( $instance['title'] ) : '';
-		$number    = isset( $instance['number'] ) ? absint( $instance['number'] ) : 5;
+		$number    = isset( $instance['number'] ) ? absint( $instance['number'] ) : self::DEFAULT_NUMBER;
 		$show_date = isset( $instance['show_date'] ) ? (bool) $instance['show_date'] : false;
 ?>
 		<p><label for="<?php echo $this->get_field_id( 'title' ); ?>"><?php _e( 'Title:' ); ?></label>
