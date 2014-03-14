@@ -860,16 +860,24 @@ function dynamic_sidebar($index = 1) {
 
 	$sidebars_widgets = wp_get_sidebars_widgets();
 	if ( empty( $wp_registered_sidebars[ $index ] ) || empty( $sidebars_widgets[ $index ] ) || ! is_array( $sidebars_widgets[ $index ] ) ) {
-		//temporary_hook #25368
-		do_action( 'temp_dynamic_sidebar_before', $index, false );
-		//temporary_hook #25368
-		do_action( 'temp_dynamic_sidebar_after',  $index, false );
-		//temporary_hook #25368
-		return apply_filters( 'temp_dynamic_sidebar_has_widgets', false, $index );
+		/**
+		 * See other instances of these hooks below. These first instances are
+		 * only invoked if the sidebar is empty.
+		 */
+		do_action( 'dynamic_sidebar_before', $index, false );
+		do_action( 'dynamic_sidebar_after',  $index, false );
+		return apply_filters( 'dynamic_sidebar_has_widgets', false, $index );
 	}
 
-	//temporary_hook #25368
-	do_action( 'temp_dynamic_sidebar_before', $index, true );
+	/**
+	 * Invoke before dynamic_sidebar() renders any widgets
+	 *
+	 * @since 3.9.0
+	 *
+	 * @param string $index sidebar ID
+	 * @param boolean whether the sidebar was populated with widgets
+	 */
+	do_action( 'dynamic_sidebar_before', $index, true );
 	$sidebar = $wp_registered_sidebars[$index];
 
 	$did_one = false;
@@ -893,10 +901,40 @@ function dynamic_sidebar($index = 1) {
 		$classname_ = ltrim($classname_, '_');
 		$params[0]['before_widget'] = sprintf($params[0]['before_widget'], $id, $classname_);
 
+		/**
+		 * Parameters to pass into the widget display_callback
+		 *
+		 * @since 2.5.0
+		 *
+		 * @param array $params {
+		 *     @type array $args first param passed to widget display_callback {
+		 *         @type string $name for sidebar
+		 *         @type string $id for sidebar
+		 *         @type string $description for sidebar
+		 *         @type string $class for sidebar
+		 *         @type string $widget_id
+		 *         @type string $widget_name
+		 *         @type string $before_widget
+		 *         @type string $after_widget
+		 *         @type string $before_title
+		 *         @type string $after_title
+		 *     }
+		 *     @type array $widget_args second param passed to widget display_callback {
+		 *         @type int $number for multi widget
+		 *     }
+		 * }
+		 */
 		$params = apply_filters( 'dynamic_sidebar_params', $params );
 
 		$callback = $wp_registered_widgets[$id]['callback'];
 
+		/**
+		 * Invoke before dynamic_sidebar() is about to render a widget
+		 *
+		 * @since 3.0.0
+		 *
+		 * @param array registered widget
+		 */
 		do_action( 'dynamic_sidebar', $wp_registered_widgets[$id] );
 
 		if ( is_callable($callback) ) {
@@ -905,10 +943,27 @@ function dynamic_sidebar($index = 1) {
 		}
 	}
 
-	//temporary_hook #25368
-	do_action( 'temp_dynamic_sidebar_after', $index, true );
-	//temporary_hook #25368
-	$did_one = apply_filters( 'temp_dynamic_sidebar_has_widgets', $did_one, $index );
+	/**
+	 * Invoke after dynamic_sidebar() renders any widgets
+	 *
+	 * @since 3.9.0
+	 *
+	 * @param string $index sidebar ID
+	 * @param boolean whether the sidebar was populated with widgets
+	 */
+	do_action( 'dynamic_sidebar_after', $index, true );
+
+	/**
+	 * Allow a plugin to override the return value for dynamic_sidebar(),
+	 * indicating whether or not widgets were rendered
+	 *
+	 * @since 3.9.0
+	 *
+	 * @param boolean $did_one whether a widget was rendered in the sidebar
+	 * @param string $index sidebar ID
+	 */
+	$did_one = apply_filters( 'dynamic_sidebar_has_widgets', $did_one, $index );
+
 	return $did_one;
 }
 
@@ -988,8 +1043,17 @@ function is_active_sidebar( $index ) {
 	$index = ( is_int($index) ) ? "sidebar-$index" : sanitize_title($index);
 	$sidebars_widgets = wp_get_sidebars_widgets();
 	$is_active_sidebar = ! empty( $sidebars_widgets[$index] );
-	//temporary_hook #25368
-	$is_active_sidebar = apply_filters( 'temp_is_active_sidebar', $is_active_sidebar, $index );
+
+	/**
+	 * Return value for is_active_sidebar()
+	 *
+	 * @since 3.9
+	 *
+	 * @param boolean $is_active_sidebar whether or not the sidebar is populated with widgets
+	 * @param string $index sidebar ID
+	 */
+	$is_active_sidebar = apply_filters( 'is_active_sidebar', $is_active_sidebar, $index );
+
 	return $is_active_sidebar;
 }
 
