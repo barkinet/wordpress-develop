@@ -756,12 +756,8 @@ class WP_Customize_Widgets {
 			array( 'jquery', 'wp-util', 'customize-preview' )
 		);
 
-		/*
-		wp_enqueue_style(
-			'widget-customizer-preview',
-			'widget-customizer-preview.css'
-		);
-		*/
+		// @todo Move this into external stylesheet which a theme can just override the src for?
+		add_action( 'wp_print_styles', array( __CLASS__, 'inject_preview_css' ), 1 );
 
 		// Why not wp_localize_script? Because we're not localizing, and it forces values into strings
 		global $wp_scripts;
@@ -781,6 +777,24 @@ class WP_Customize_Widgets {
 			'data',
 			sprintf( 'var WidgetCustomizerPreview_exports = %s;', json_encode( $exports ) )
 		);
+	}
+
+	/**
+	 * Insert default style for highlighted widget at early point so theme
+	 * stylesheet can override.
+	 *
+	 * @action wp_print_styles
+	 */
+	static function inject_preview_css() {
+		?>
+		<style>
+		.widget-customizer-highlighted-widget {
+			border-radius: 2px;
+			outline: none;
+			box-shadow: 0 0 3px #CE0000;
+		}
+		</style>
+		<?php
 	}
 
 	/**
