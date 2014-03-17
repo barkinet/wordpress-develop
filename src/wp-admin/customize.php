@@ -208,14 +208,14 @@ do_action( 'customize_controls_print_scripts' );
 			'active'     => $wp_customize->is_theme_active(),
 		),
 		'url'      => array(
-			'preview'       => esc_url( $url ? $url : home_url( '/' ) ),
-			'parent'        => esc_url( admin_url() ),
+			'preview'       => esc_url_raw( $url ? $url : home_url( '/' ) ),
+			'parent'        => esc_url_raw( admin_url() ),
 			'activated'     => admin_url( 'themes.php?activated=true&previewed' ),
-			'ajax'          => esc_url( admin_url( 'admin-ajax.php', 'relative' ) ),
+			'ajax'          => esc_url_raw( admin_url( 'admin-ajax.php', 'relative' ) ),
 			'allowed'       => array_map( 'esc_url', $allowed_urls ),
 			'isCrossDomain' => $cross_domain,
 			'fallback'      => $fallback_url,
-			'home'          => esc_url( home_url( '/' ) ),
+			'home'          => esc_url_raw( home_url( '/' ) ),
 			'login'         => $login_url,
 		),
 		'browser'  => array(
