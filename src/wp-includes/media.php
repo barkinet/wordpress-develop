@@ -1124,8 +1124,8 @@ function wp_get_playlist( $attr, $type ) {
 	}
 
 	$playlist_styles = array(
-		'light' => _x( 'Light', 'light playlist theme' ),
-		'dark'	=> _x( 'Dark', 'dark playlist theme' )
+		'light' => _x( 'Light', 'playlist theme' ),
+		'dark'	=> _x( 'Dark', 'playlist theme' )
 	);
 
 	/**
@@ -2400,6 +2400,7 @@ function wp_enqueue_media( $args = array() ) {
 			'id' => 0,
 		),
 		'defaultProps' => $props,
+		'attachmentCounts' => wp_count_attachments(),
 		'embedExts'    => $exts,
 		'embedMimes'   => $ext_mimes
 	);
@@ -2479,37 +2480,28 @@ function wp_enqueue_media( $args = array() ) {
 		'editImage'             => __( 'Edit Image' ),
 
 		// Crop Image
-		/* translators: title for Media Manager library view */
 		'chooseImage' => __( 'Choose Image' ),
-		/* translators: button to select an image from the MM library to crop */
 		'selectAndCrop' => __( 'Select and Crop' ),
-		/* translators: button to choose not to crop the selected image */
 		'skipCropping' => __( 'Skip Cropping' ),
-		/* translators: button to choose to crop the selected image */
 		'cropImage' => __( 'Crop Image' ),
 		'cropYourImage' => __( 'Crop your image' ),
-		/* translators: button label changes to this while the image is being cropped server-side */
-		'cropping' => __( 'Cropping...' ),
-		/* translators: suggested width of header image in pixels */
+		'cropping' => __( 'Cropping&hellip;' ),
 		'suggestedWidth' => __( 'Suggested width is %d pixels.' ),
-		/* translators: suggested height of header image in pixels */
 		'suggestedHeight' => __( 'Suggested height is %d pixels.' ),
+
+		'mediaHTML5Text'        => __( 'Add alternate sources for maximum HTML5 playback:' ),
 
 		// Edit Audio
 		'audioDetailsTitle'     => __( 'Audio Details' ),
 		'audioReplaceTitle'     => __( 'Replace Audio' ),
 		'audioAddSourceTitle'   => __( 'Add Audio Source' ),
 		'audioDetailsCancel'    => __( 'Cancel Edit' ),
-		'audioDetailsText'      => __( '"Replace Audio" will remove all associated source files when you update. ' .
-			'"Add Audio Source" allows you to specify alternate sources for maximum native HTML5 audio playback.' ),
 
 		// Edit Video
 		'videoDetailsTitle'     => __( 'Video Details' ),
 		'videoReplaceTitle'     => __( 'Replace Video' ),
 		'videoAddSourceTitle'   => __( 'Add Video Source' ),
 		'videoDetailsCancel'    => __( 'Cancel Edit' ),
-		'videoDetailsText'      => __( '"Replace Video" will remove all associated source files when you update. ' .
-			'"Add Video Source" allows you to specify alternate sources for maximum native HTML5 video playback.' ),
 		'videoSelectPosterImageTitle' => _( 'Select Poster Image' ),
 		'videoAddTrackTitle'	=> __( 'Add Subtitles' ),
 
@@ -2542,7 +2534,11 @@ function wp_enqueue_media( $args = array() ) {
 	wp_localize_script( 'media-views', '_wpMediaViewsL10n', $strings );
 
 	wp_enqueue_script( 'media-editor' );
+	wp_enqueue_script( 'media-audiovideo' );
 	wp_enqueue_style( 'media-views' );
+	if ( is_admin() ) {
+		wp_enqueue_script( 'image-edit' );
+	}
 	wp_enqueue_style( 'imgareaselect' );
 	wp_plupload_default_settings();
 

@@ -335,7 +335,7 @@ tinymce.PluginManager.add( 'wpeditimage', function( editor ) {
 	}
 
 	function addToolbar( node ) {
-		var position, toolbarHtml, toolbar,
+		var rectangle, toolbarHtml, toolbar, toolbarSize,
 			dom = editor.dom;
 
 		removeToolbar();
@@ -346,11 +346,10 @@ tinymce.PluginManager.add( 'wpeditimage', function( editor ) {
 		}
 
 		dom.setAttrib( node, 'data-wp-imgselect', 1 );
-		position = dom.getPos( node, editor.getBody() );
+		rectangle = dom.getRect( node );
 
-		toolbarHtml = '<div class="wrapper" data-mce-bogus="1">' +
-			'<div class="dashicons dashicons-format-image edit" data-mce-bogus="1"></div> ' +
-			'<div class="dashicons dashicons-no-alt remove" data-mce-bogus="1"></div></div>';
+		toolbarHtml = '<div class="dashicons dashicons-edit edit" data-mce-bogus="1"></div>' +
+			'<div class="dashicons dashicons-no-alt remove" data-mce-bogus="1"></div>';
 
 		toolbar = dom.create( 'div', {
 			'id': 'wp-image-toolbar',
@@ -359,11 +358,11 @@ tinymce.PluginManager.add( 'wpeditimage', function( editor ) {
 		}, toolbarHtml );
 
 		editor.getBody().appendChild( toolbar );
+		toolbarSize = dom.getSize( toolbar );
 
 		dom.setStyles( toolbar, {
-			top: position.y,
-			left: position.x,
-			width: node.width
+			top: rectangle.y,
+			left: rectangle.x + rectangle.w - toolbarSize.w
 		});
 	}
 

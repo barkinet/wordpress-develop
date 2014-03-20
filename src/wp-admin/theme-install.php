@@ -46,10 +46,10 @@ wp_localize_script( 'theme', '_wpThemeSettings', array(
 	'l10n' => array(
 		'addNew' => __( 'Add New Theme' ),
 		'search'  => __( 'Search Themes' ),
-		'searchPlaceholder' => __( 'Search themes...' ),
+		'searchPlaceholder' => __( 'Search themes...' ), // placeholder (no ellipsis)
 		'upload' => __( 'Upload Theme' ),
 		'back'   => __( 'Back' ),
-		'error'  => __( 'There was a problem trying to load the themes. Please, try again.' ),
+		'error'  => ( 'There was a problem trying to load the themes. Please, try again.' ), // @todo improve
 	),
 	'browse' => array(
 		'sections' => $sections,
@@ -104,7 +104,8 @@ include(ABSPATH . 'wp-admin/admin-header.php');
 <div class="wrap">
 	<h2>
 		<?php echo esc_html( $title ); ?>
-		<a class="upload button button-secondary"><?php esc_html_e( 'Upload Theme' ); ?></a>
+		<a class="upload add-new-h2"><?php esc_html_e( 'Upload Theme' ); ?></a>
+		<a class="browse-themes add-new-h2"><?php esc_html_e( 'Browse' ); ?></a>
 	</h2>
 
 	<div class="upload-theme">
@@ -113,16 +114,32 @@ include(ABSPATH . 'wp-admin/admin-header.php');
 
 	<div class="theme-navigation">
 		<span class="theme-count"></span>
-		<span class="theme-section current" data-sort="featured"><?php esc_html_e( 'Featured' ); ?></span>
-		<span class="theme-section" data-sort="popular"><?php esc_html_e( 'Popular' ); ?></span>
-		<span class="theme-section" data-sort="new"><?php esc_html_e( 'Latest' ); ?></span>
+		<span class="theme-section current" data-sort="featured"><?php _ex( 'Featured', 'themes' ); ?></span>
+		<span class="theme-section" data-sort="popular"><?php _ex( 'Popular', 'themes' ); ?></span>
+		<span class="theme-section" data-sort="new"><?php _ex( 'Latest', 'themes' ); ?></span>
 		<div class="theme-top-filters">
-			<span class="theme-filter" data-filter="photoblogging">Photography</span>
-			<span class="theme-filter" data-filter="responsive-layout">Responsive</span>
-			<span class="theme-filter more-filters">More</span>
+			<!--<span class="theme-filter" data-filter="photoblogging">Photography</span>
+			<span class="theme-filter" data-filter="responsive-layout">Responsive</span>-->
+			<span class="more-filters"><?php _e( 'Feature Filter' ); ?></span>
 		</div>
 		<div class="more-filters-container">
-			Display more filters.
+		<?php
+		$feature_list = get_theme_feature_list();
+		foreach ( $feature_list as $feature_name => $features ) {
+			echo '<div class="filters-group">';
+			$feature_name = esc_html( $feature_name );
+			echo '<h4 class="feature-name">' . $feature_name . '</h4>';
+			echo '<ol class="feature-group">';
+			foreach ( $features as $feature => $feature_name ) {
+				$feature = esc_attr( $feature );
+				echo '<li><input type="checkbox" id="feature-id-' . $feature . '" value="' . $feature . '" /> ';
+				echo '<label for="feature-id-' . $feature . '">' . $feature_name . '</label></li>';
+			}
+			echo '</ol>';
+			echo '</div>';
+		}
+		?>
+			<br class="clear" />
 		</div>
 	</div>
 	<div class="theme-browser"></div>
