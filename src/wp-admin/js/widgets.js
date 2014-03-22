@@ -332,7 +332,7 @@ wpWidgets = {
 
 	save : function( widget, del, animate, order ) {
 		var sidebarId = widget.closest('div.widgets-sortables').attr('id'),
-			data = widget.find('form').serialize(), a;
+			data = widget.find('form').serialize(), a, eventData;
 
 		widget = $(widget);
 		$('.spinner', widget).show();
@@ -374,8 +374,16 @@ wpWidgets = {
 			} else {
 				$('.spinner').hide();
 				if ( r && r.length > 2 ) {
-					$( 'div.widget-content', widget ).html(r);
+					$( 'div.widget-content', widget ).html( r );
 					wpWidgets.appendTitle( widget );
+					eventData = {
+						'widget_id': widget.find( 'input.widget-id' ).val(),
+						'widget_id_base': widget.find( 'input.id_base' ).val(),
+						'new_form': r,
+						'hard': true, // soft updates only in customizer
+						'customize_control': null
+					};
+					widget.trigger( 'widget-form-update', [ eventData ] );
 				}
 			}
 			if ( order ) {

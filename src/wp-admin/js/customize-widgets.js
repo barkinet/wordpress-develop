@@ -8,6 +8,7 @@ var WidgetCustomizer = ( function ($) {
 		Sidebar,
 		SidebarCollection,
 		OldPreviewer,
+		builtin_form_update_handlers,
 		customize = wp.customize, self = {
 		update_widget_ajax_action: null,
 		update_widget_nonce_value: null,
@@ -134,6 +135,35 @@ var WidgetCustomizer = ( function ($) {
 		model: Sidebar
 	} );
 	self.registered_sidebars = new SidebarCollection( self.registered_sidebars );
+
+	/**
+	 * Handlers for the widget-form-update event, organized by widget ID base.
+	 * Other widgets may provide their own update handlers by adding
+	 * listeners for the widget-form-update event.
+	 */
+	builtin_form_update_handlers = {
+
+		/**
+		 * @param {jQuery.Event} e
+		 * @param {String} args.widget_id
+		 * @param {String} args.widget_id_base
+		 * @param {String} args.new_form
+		 * @param {Boolean} args.hard
+		 * @param {wp.customize.controlConstructor.widget_form} args.customize_control
+		 */
+		rss: function ( e, args ) {
+			var old_widget_error = args.customize_control.container.find( '.widget-error:first' ),
+				new_widget_error = $( '<div>' + args.new_form + '</div>' ).find( '.widget-error:first' );
+
+			if ( old_widget_error.length && new_widget_error.length ) {
+				old_widget_error.replaceWith( new_widget_error );
+			} else if ( old_widget_error.length ) {
+				old_widget_error.remove();
+			} else if ( new_widget_error.length ) {
+				args.customize_control.container.find( '.widget-content:first' ).prepend( new_widget_error );
+			}
+		}
+	};
 
 	/**
 	 * On DOM ready, initialize some meta functionality independent of specific
@@ -629,47 +659,6 @@ var WidgetCustomizer = ( function ($) {
 			control._setupHighlightEffects();
 			control._setupUpdateUI();
 			control._setupRemoveUI();
-			control.hook( 'init' );
-		},
-
-		/**
-		 * Hooks for widgets to support living in the customizer control
-		 */
-		hooks: {
-			_default: {},
-			rss: {
-				formUpdated: function ( serialized_form ) {
-					var control = this,
-						old_widget_error = control.container.find( '.widget-error:first' ),
-						new_widget_error = serialized_form.find( '.widget-error:first' );
-
-					if ( old_widget_error.length && new_widget_error.length ) {
-						old_widget_error.replaceWith( new_widget_error );
-					} else if ( old_widget_error.length ) {
-						old_widget_error.remove();
-					} else if ( new_widget_error.length ) {
-						control.container.find( '.widget-content' ).prepend( new_widget_error );
-					}
-				}
-			}
-		},
-
-		/**
-		 * Trigger an 'action' which a specific widget type can handle
-		 *
-		 * @param name
-		 */
-		hook: function ( name ) {
-			var args = Array.prototype.slice.call( arguments, 1 ), handler;
-
-			if ( this.hooks[this.params.widget_id_base] && this.hooks[this.params.widget_id_base][name] ) {
-				handler = this.hooks[this.params.widget_id_base][name];
-			} else if ( this.hooks._default[name] ) {
-				handler = this.hooks._default[name];
-			}
-			if ( handler ) {
-				handler.apply( this, args );
-			}
 		},
 
 		/**
@@ -687,6 +676,7 @@ var WidgetCustomizer = ( function ($) {
 
 			control._update_count = 0;
 			control.is_widget_updating = false;
+			control.live_update_mode = true;
 
 			// Update widget whenever model changes
 			control.setting.bind( function( to, from ) {
@@ -967,7 +957,8 @@ var WidgetCustomizer = ( function ($) {
 			var control = this,
 				widget_content,
 				save_btn,
-				update_widget_debounced;
+				update_widget_debounced,
+				form_update_event_handler;
 
 			widget_content = control.container.find( '.widget-content' );
 
@@ -978,7 +969,7 @@ var WidgetCustomizer = ( function ($) {
 			save_btn.removeClass( 'button-primary' ).addClass( 'button-secondary' );
 			save_btn.on( 'click', function ( e ) {
 				e.preventDefault();
-				control.updateWidget();
+				control.updateWidget( { disable_form: true } );
 			} );
 
 			update_widget_debounced = _.debounce( function () {
@@ -996,10 +987,12 @@ var WidgetCustomizer = ( function ($) {
 
 			// Handle widgets that support live previews
 			widget_content.on( 'change input propertychange', ':input', function ( e ) {
-				if ( e.type === 'change' ) {
-					control.updateWidget();
-				} else if ( this.checkValidity && this.checkValidity() ) {
-					update_widget_debounced();
+				if ( control.live_update_mode ) {
+					if ( e.type === 'change' ) {
+						control.updateWidget();
+					} else if ( this.checkValidity && this.checkValidity() ) {
+						update_widget_debounced();
+					}
 				}
 			} );
 
@@ -1018,6 +1011,11 @@ var WidgetCustomizer = ( function ($) {
 				var is_rendered = !! rendered_widgets[control.params.widget_id];
 				control.container.toggleClass( 'widget-rendered', is_rendered );
 			} );
+
+			form_update_event_handler = builtin_form_update_handlers[ control.params.widget_id_base ];
+			if ( form_update_event_handler ) {
+				control.container.find( '.widget:first' ).on( 'widget-form-update', form_update_event_handler );
+			}
 		},
 
 		/**
@@ -1147,11 +1145,9 @@ var WidgetCustomizer = ( function ($) {
 			var control = this,
 				instance_override,
 				complete_callback,
+				widget_root,
 				update_number,
 				widget_content,
-				element_id_to_refocus = null,
-				active_input_selection_start = null,
-				active_input_selection_end = null,
 				params,
 				data,
 				inputs,
@@ -1170,23 +1166,17 @@ var WidgetCustomizer = ( function ($) {
 			control._update_count += 1;
 			update_number = control._update_count;
 
-			widget_content = control.container.find( '.widget-content' );
-
-			// @todo Support more selectors than IDs?
-			if ( $.contains( control.container[0], document.activeElement ) && $( document.activeElement ).is( '[id]' ) ) {
-				element_id_to_refocus = $( document.activeElement ).prop( 'id' );
-				// @todo IE8 support: http://stackoverflow.com/a/4207763/93579
-				try {
-					active_input_selection_start = document.activeElement.selectionStart;
-					active_input_selection_end = document.activeElement.selectionEnd;
-				}
-				catch( e ) {} // catch InvalidStateError in case of checkboxes
-			}
+			widget_root = control.container.find( '.widget:first' );
+			widget_content = control.container.find( '.widget-content:first' );
 
 			control.container.addClass( 'widget-form-loading' );
 			control.container.addClass( 'previewer-loading' );
 			processing = wp.customize.state( 'processing' );
 			processing( processing() + 1 );
+
+			if ( ! control.live_update_mode ) {
+				control.container.addClass( 'widget-form-disabled' );
+			}
 
 			params = {};
 			params.action = self.update_widget_ajax_action;
@@ -1217,55 +1207,67 @@ var WidgetCustomizer = ( function ($) {
 					sanitized_form,
 					sanitized_inputs,
 					has_same_inputs_in_response,
-					is_instance_identical;
+					no_setting_change,
+					is_live_update_aborted = false,
+					event_data;
 
 				if ( r.success ) {
 					sanitized_form = $( '<div>' + r.data.form + '</div>' );
-
-					control.hook( 'formUpdate', sanitized_form );
-
 					sanitized_inputs = sanitized_form.find( ':input, option' );
 					has_same_inputs_in_response = control._getInputsSignature( inputs ) === control._getInputsSignature( sanitized_inputs );
 
-					if ( has_same_inputs_in_response ) {
+					if ( has_same_inputs_in_response && control.live_update_mode ) {
 						inputs.each( function ( i ) {
 							var input = $( this ),
 								sanitized_input = $( sanitized_inputs[i] ),
 								property = control._getInputStatePropertyName( this ),
-								state,
+								submitted_state,
 								sanitized_state;
 
-							state = input.data( 'state' + update_number );
+							submitted_state = input.data( 'state' + update_number );
 							sanitized_state = sanitized_input.prop( property );
 							input.data( 'sanitized', sanitized_state );
+							event_data = {
+								'sanitized_state': sanitized_state,
+								'submitted_state': submitted_state,
+								'customize_control': control
+							};
 
-							if ( state !== sanitized_state ) {
+							if ( submitted_state !== sanitized_state ) {
 
 								// Only update now if not currently focused on it,
 								// so that we don't cause the cursor
 								// it will be updated upon the change event
 								if ( args.ignore_active_element || ! input.is( document.activeElement ) ) {
 									input.prop( property, sanitized_state );
+									input.trigger( 'widget-sanitary-field', [ event_data ] );
+								} else {
+									input.trigger( 'widget-unsanitary-field', [ event_data ] );
 								}
-								control.hook( 'unsanitaryField', input, sanitized_state, state );
 
 							} else {
-								control.hook( 'sanitaryField', input, state );
+								input.trigger( 'widget-sanitary-field', [ event_data ] );
 							}
 						} );
-						control.hook( 'formUpdated', sanitized_form );
+
+					} else if ( control.live_update_mode ) {
+						control.live_update_mode = false;
+						control.container.find( 'input[name="savewidget"]' ).show();
+						is_live_update_aborted = true;
 					} else {
-						widget_content.html( sanitized_form.html() );
-						if ( element_id_to_refocus ) {
-							// not using jQuery selector so we don't have to worry about escaping IDs with brackets and other characters
-							$( document.getElementById( element_id_to_refocus ) )
-								.prop( {
-									selectionStart: active_input_selection_start,
-									selectionEnd: active_input_selection_end
-								} )
-								.focus();
-						}
-						control.hook( 'formRefreshed' );
+						widget_content.html( r.data.form );
+						control.container.removeClass( 'widget-form-disabled' );
+					}
+
+					if ( ! is_live_update_aborted ) {
+						event_data = {
+							'widget_id': control.params.widget_id,
+							'widget_id_base': control.params.widget_id_base,
+							'new_form': r.data.form,
+							'hard': ! control.live_update_mode, // dynamic fields may need to be re-initialized (e.g. Chosen)
+							'customize_control': control
+						};
+						widget_root.trigger( 'widget-form-update', [ event_data ] ); // @todo THIS IS NOT GETTING LISTENED TO
 					}
 
 					/**
@@ -1273,8 +1275,8 @@ var WidgetCustomizer = ( function ($) {
 					 * needing to be rendered, and so we can preempt the event for the
 					 * preview finishing loading.
 					 */
-					is_instance_identical = _( control.setting() ).isEqual( r.data.instance );
-					if ( is_instance_identical ) {
+					no_setting_change = is_live_update_aborted || _( control.setting() ).isEqual( r.data.instance );
+					if ( no_setting_change ) {
 						control.container.removeClass( 'previewer-loading' );
 					} else {
 						control.is_widget_updating = true; // suppress triggering another updateWidget
@@ -1283,7 +1285,7 @@ var WidgetCustomizer = ( function ($) {
 					}
 
 					if ( complete_callback ) {
-						complete_callback.call( control, null, { no_change: is_instance_identical, ajax_finished: true } );
+						complete_callback.call( control, null, { no_change: no_setting_change, ajax_finished: true } );
 					}
 				} else {
 					window.console && window.console.log( r );
