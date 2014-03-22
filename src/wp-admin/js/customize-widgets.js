@@ -94,23 +94,23 @@ var WidgetCustomizer = ( function ($) {
 		// Performs a search within the collection
 		// @uses RegExp
 		search: function( term ) {
-			var pattern, results, haystack;
+			var match, results, haystack;
 
 			// Start with a full collection
 			this.reset( WidgetCustomizer_exports.available_widgets, { silent: true } );
 
 			// Escape the term string for RegExp meta characters
-			term = term.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+			term = term.replace( /[-\/\\^$*+?.()|[\]{}]/g, '\\$&' );
 
 			// Consider spaces as word delimiters and match the whole string
 			// so matching terms can be combined
 			term = term.replace( / /g, ')(?=.*' );
-			pattern = new RegExp( '^(?=.*' + term + ').+', 'i' );
+			match = new RegExp( '^(?=.*' + term + ').+', 'i' );
 
 			results = this.filter( function( data ) {
 				haystack = _.union( data.get( 'name' ), data.get( 'id' ), data.get( 'description' ) );
 
-				return pattern.test( haystack );
+				return match.test( haystack );
 			});
 
 			this.reset( results );
