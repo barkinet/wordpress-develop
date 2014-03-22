@@ -17,7 +17,8 @@ var WidgetCustomizer = ( function ($) {
 			save_btn_label: '',
 			save_btn_tooltip: '',
 			remove_btn_label: '',
-			remove_btn_tooltip: ''
+			remove_btn_tooltip: '',
+			error: '',
 		},
 		available_widgets: [], // available widgets for instantiating
 		registered_widgets: [], // all widgets registered
@@ -1169,6 +1170,9 @@ var WidgetCustomizer = ( function ($) {
 			widget_root = control.container.find( '.widget:first' );
 			widget_content = control.container.find( '.widget-content:first' );
 
+			// Remove a previous error message
+			widget_content.find( '.widget-error' ).remove();
+
 			control.container.addClass( 'widget-form-loading' );
 			control.container.addClass( 'previewer-loading' );
 			processing = wp.customize.state( 'processing' );
@@ -1210,6 +1214,22 @@ var WidgetCustomizer = ( function ($) {
 					no_setting_change,
 					is_live_update_aborted = false,
 					event_data;
+
+				// Check if the user is logged out.
+				if ( '0' === r ) {
+					self.previewer.preview.iframe.hide();
+					self.previewer.login().done( function() {
+						control.updateWidget( args );
+						self.previewer.preview.iframe.show();
+					} );
+					return;
+				}
+
+				// Check for cheaters.
+				if ( '-1' === r ) {
+					self.previewer.cheatin();
+					return;
+				}
 
 				if ( r.success ) {
 					sanitized_form = $( '<div>' + r.data.form + '</div>' );
@@ -1277,8 +1297,6 @@ var WidgetCustomizer = ( function ($) {
 					 */
 					no_setting_change = is_live_update_aborted || _( control.setting() ).isEqual( r.data.instance );
 					if ( no_setting_change ) {
-						control.container.removeClass( 'previewer-loading' );
-					} else {
 						control.is_widget_updating = true; // suppress triggering another updateWidget
 						control.setting( r.data.instance );
 						control.is_widget_updating = false;
@@ -1288,26 +1306,24 @@ var WidgetCustomizer = ( function ($) {
 						complete_callback.call( control, null, { no_change: no_setting_change, ajax_finished: true } );
 					}
 				} else {
-					window.console && window.console.log( r );
-					message = 'FAIL';
+					message = self.i18n.error;
 					if ( r.data && r.data.message ) {
 						message = r.data.message;
 					}
 					if ( complete_callback ) {
 						complete_callback.call( control, message );
 					} else {
-						throw new Error( message );
+						widget_content.prepend( '<p class="widget-error"><strong>' + message + '</strong></p>' );
 					}
 				}
 			} );
 			jqxhr.fail( function ( jqXHR, textStatus ) {
 				if ( complete_callback ) {
 					complete_callback.call( control, textStatus );
-				} else {
-					throw new Error( textStatus );
 				}
 			} );
 			jqxhr.always( function () {
+				control.container.removeClass( 'previewer-loading' );
 				control.container.removeClass( 'widget-form-loading' );
 				inputs.each( function () {
 					$( this ).removeData( 'state' + update_number );
@@ -1496,7 +1512,7 @@ var WidgetCustomizer = ( function ($) {
 		 */
 		getPreviewWidgetElement: function () {
 			var control = this,
-				widget_customizer_preview = self.getPreviewWindow().WidgetCustomizerPreview;
+				widget_customizer_preview = self.getPreviewWindow().wp.customize.WidgetCustomizerPreview;
 			return widget_customizer_preview.getWidgetElement( control.params.widget_id );
 		},
 
