@@ -253,8 +253,8 @@ var WidgetCustomizer = ( function ($) {
 
 				// Sort widget controls to their new positions
 				widget_form_controls.sort( function ( a, b ) {
-					var a_index = new_widget_ids.indexOf( a.params.widget_id ),
-						b_index = new_widget_ids.indexOf( b.params.widget_id );
+					var a_index = _.indexOf( new_widget_ids, a.params.widget_id ),
+						b_index = _.indexOf( new_widget_ids, b.params.widget_id );
 					if ( a_index === b_index ) {
 						return 0;
 					}
@@ -291,12 +291,12 @@ var WidgetCustomizer = ( function ($) {
 
 						// Check if the widget is in another sidebar
 						wp.customize.each( function ( other_setting ) {
-							if ( other_setting.id === control.setting.id || 0 !== other_setting.id.indexOf( 'sidebars_widgets[' ) || other_setting.id === 'sidebars_widgets[wp_inactive_widgets]' ) {
+							if ( other_setting.id === control.setting.id || 0 !== _.indexOf( other_setting.id, 'sidebars_widgets[' ) || other_setting.id === 'sidebars_widgets[wp_inactive_widgets]' ) {
 								return;
 							}
 							var other_sidebar_widgets = other_setting(), i;
 
-							i = other_sidebar_widgets.indexOf( removed_widget_id );
+							i = _.indexOf( other_sidebar_widgets, removed_widget_id );
 							if ( -1 !== i ) {
 								is_present_in_another_sidebar = true;
 							}
@@ -601,11 +601,11 @@ var WidgetCustomizer = ( function ($) {
 				if ( other_setting.id === control.setting.id ) {
 					return;
 				}
-				if ( 0 !== other_setting.id.indexOf( 'sidebars_widgets[' ) ) {
+				if ( 0 !== _.indexOf( other_setting.id, 'sidebars_widgets[' ) ) {
 					return;
 				}
 				var other_sidebar_widgets = other_setting().slice(), i;
-				i = other_sidebar_widgets.indexOf( widget_id );
+				i = _.indexOf( other_sidebar_widgets, widget_id );
 				if ( -1 !== i ) {
 					other_sidebar_widgets.splice( i );
 					other_setting( other_sidebar_widgets );
@@ -614,7 +614,7 @@ var WidgetCustomizer = ( function ($) {
 
 			// Add widget to this sidebar
 			sidebar_widgets = control.setting().slice();
-			if ( -1 === sidebar_widgets.indexOf( widget_id ) ) {
+			if ( -1 === _.indexOf( sidebar_widgets, widget_id ) ) {
 				sidebar_widgets.push( widget_id );
 				control.setting( sidebar_widgets );
 			}
@@ -744,7 +744,7 @@ var WidgetCustomizer = ( function ($) {
 
 			// Reposition whenever a sidebar's widgets are changed
 			wp.customize.each( function ( setting ) {
-				if ( 0 === setting.id.indexOf( 'sidebars_widgets[' ) ) {
+				if ( 0 === _.indexOf( setting.id, 'sidebars_widgets[' ) ) {
 					setting.bind( function () {
 						if ( control.container.hasClass( 'expanded' ) ) {
 							position_widget();
@@ -1052,7 +1052,7 @@ var WidgetCustomizer = ( function ($) {
 						throw new Error( 'Unable to find sidebars_widgets_control' );
 					}
 					sidebar_widget_ids = sidebars_widgets_control.setting().slice();
-					i = sidebar_widget_ids.indexOf( control.params.widget_id );
+					i = _.indexOf( sidebar_widget_ids, control.params.widget_id );
 					if ( -1 === i ) {
 						throw new Error( 'Widget is not in sidebar' );
 					}
@@ -1440,7 +1440,7 @@ var WidgetCustomizer = ( function ($) {
 				position;
 
 			sidebar_widget_ids = control.getSidebarWidgetsControl().setting();
-			position = sidebar_widget_ids.indexOf( control.params.widget_id );
+			position = _.indexOf( sidebar_widget_ids, control.params.widget_id );
 			if ( position === -1 ) {
 				throw new Error( 'Widget was unexpectedly not present in the sidebar.' );
 			}
@@ -1580,7 +1580,7 @@ var WidgetCustomizer = ( function ($) {
 		var found_control = null;
 		// @todo this can use widget_id_to_setting_id(), then pass into wp.customize.control( x ).getSidebarWidgetsControl()
 		wp.customize.control.each( function ( control ) {
-			if ( control.params.type === 'sidebar_widgets' && -1 !== control.setting().indexOf( widget_id ) ) {
+			if ( control.params.type === 'sidebar_widgets' && -1 !== _.indexOf( control.setting(), widget_id ) ) {
 				found_control = control;
 			}
 		} );
