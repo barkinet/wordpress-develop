@@ -48,14 +48,20 @@ function wp_underscore_audio_template() {
 function wp_underscore_video_template() {
 	$video_types = wp_get_video_extensions();
 ?>
-<#
-var isYouTube = ! _.isEmpty( data.model.src ) && data.model.src.match(/youtube|youtu\.be/);
-	w = ! data.model.width || data.model.width > 640 ? 640 : data.model.width,
-	h = ! data.model.height ? 360 : data.model.height;
+<#  var w, h, settings = wp.media.view.settings,
+		isYouTube = ! _.isEmpty( data.model.src ) && data.model.src.match(/youtube|youtu\.be/);
 
-if ( data.model.width && w !== data.model.width ) {
-	h = Math.ceil( ( h * w ) / data.model.width );
-}
+	if ( settings.contentWidth && data.model.width >= settings.contentWidth ) {
+		w = settings.contentWidth;
+	} else {
+		w = data.model.width;
+	}
+
+	if ( w !== data.model.width ) {
+		h = Math.ceil( ( h * w ) / data.model.width );
+	} else {
+		h = data.model.height;
+	}
 #>
 <div style="max-width: 100%; width: {{ w }}px">
 <video controls
@@ -85,13 +91,13 @@ if ( data.model.width && w !== data.model.width ) {
 		if ( isYouTube ) { #>
 		<source src="{{ data.model.src }}" type="video/youtube" />
 		<# } else { #>
-		<source src="{{ data.model.src }}" type="{{ wp.media.view.settings.embedMimes[ data.model.src.split('.').pop() ] }}" />
+		<source src="{{ data.model.src }}" type="{{ settings.embedMimes[ data.model.src.split('.').pop() ] }}" />
 		<# }
 	} #>
 
 	<?php foreach ( $video_types as $type ):
 	?><# if ( data.model.<?php echo $type ?> ) { #>
-	<source src="{{ data.model.<?php echo $type ?> }}" type="{{ wp.media.view.settings.embedMimes[ '<?php echo $type ?>' ] }}" />
+	<source src="{{ data.model.<?php echo $type ?> }}" type="{{ settings.embedMimes[ '<?php echo $type ?>' ] }}" />
 	<# } #>
 	<?php endforeach; ?>
 	{{{ data.model.content }}}
@@ -136,7 +142,7 @@ function wp_print_media_templates() {
 
 	<script type="text/html" id="tmpl-uploader-editor">
 		<div class="uploader-editor-content">
-			<h3><?php _e( 'Drop files to upload' ); ?></h3>
+			<div class="uploader-editor-title"><?php _e( 'Drop files to upload' ); ?></div>
 		</div>
 	</script>
 
@@ -512,8 +518,8 @@ function wp_print_media_templates() {
 
 		<?php
 		$playlist_styles = array(
-			'light' => _x( 'Light', 'light playlist theme' ),
-			'dark'	=> _x( 'Dark', 'dark playlist theme' )
+			'light' => _x( 'Light', 'playlist theme' ),
+			'dark'	=> _x( 'Dark', 'playlist theme' )
 		);
 
 		/** This filter is documented in wp-includes/media.php */
@@ -666,7 +672,7 @@ function wp_print_media_templates() {
 				<div class="thumbnail">
 					<img src="{{ data.model.url }}" draggable="false" />
 				</div>
-				<# if ( data.attachment ) { #>
+				<# if ( data.attachment && window.imageEdit ) { #>
 					<input type="button" class="edit-attachment button" value="<?php esc_attr_e( 'Edit Image' ); ?>" />
 				<# } #>
 
@@ -765,14 +771,22 @@ function wp_print_media_templates() {
 	</script>
 
 	<script type="text/html" id="tmpl-audio-details">
+		<# var ext, html5types = {
+			mp3: wp.media.view.settings.embedMimes.mp3,
+			ogg: wp.media.view.settings.embedMimes.ogg
+		}; #>
+
 		<?php $audio_types = wp_get_audio_extensions(); ?>
 		<div class="media-embed media-embed-details">
 			<div class="embed-media-settings embed-audio-settings">
-				<div class="instructions media-instructions">{{{ wp.media.view.l10n.audioDetailsText }}}</div>
-
 				<?php wp_underscore_audio_template() ?>
 
-				<# if ( ! _.isEmpty( data.model.src ) ) { #>
+				<# if ( ! _.isEmpty( data.model.src ) ) {
+					ext = data.model.src.split('.').pop();
+					if ( html5types[ ext ] ) {
+						delete html5types[ ext ];
+					}
+				#>
 				<label class="setting">
 					<span>SRC</span>
 					<input type="text" disabled="disabled" data-setting="src" value="{{ data.model.src }}" />
@@ -782,7 +796,11 @@ function wp_print_media_templates() {
 				<?php
 
 				foreach ( $audio_types as $type ):
-				?><# if ( ! _.isEmpty( data.model.<?php echo $type ?> ) ) { #>
+				?><# if ( ! _.isEmpty( data.model.<?php echo $type ?> ) ) {
+					if ( ! _.isUndefined( html5types.<?php echo $type ?> ) ) {
+						delete html5types.<?php echo $type ?>;
+					}
+				#>
 				<label class="setting">
 					<span><?php echo strtoupper( $type ) ?></span>
 					<input type="text" disabled="disabled" data-setting="<?php echo $type ?>" value="{{ data.model.<?php echo $type ?> }}" />
@@ -791,10 +809,21 @@ function wp_print_media_templates() {
 				<# } #>
 				<?php endforeach ?>
 
+				<# if ( ! _.isEmpty( html5types ) ) { #>
+				<div class="setting">
+					<span>{{{ wp.media.view.l10n.mediaHTML5Text }}}</span>
+					<div class="button-large">
+					<# _.each( html5types, function (mime, type) { #>
+					<button class="button add-media-source" data-mime="{{ mime }}">{{ type }}</button>
+					<# } ) #>
+					</div>
+				</div>
+				<# } #>
+
 				<div class="setting preload">
 					<span><?php _e( 'Preload' ); ?></span>
 					<div class="button-group button-large" data-setting="preload">
-						<button class="button" value="auto"><?php _e( 'Auto' ); ?></button>
+						<button class="button" value="auto"><?php _ex( 'Auto', 'auto preload' ); ?></button>
 						<button class="button" value="metadata"><?php _e( 'Metadata' ); ?></button>
 						<button class="button active" value="none"><?php _e( 'None' ); ?></button>
 					</div>
@@ -809,16 +838,27 @@ function wp_print_media_templates() {
 					<span><?php _e( 'Loop' ); ?></span>
 					<input type="checkbox" data-setting="loop" />
 				</label>
+
+				<label class="setting">
+					<span><?php _e( 'Caption' ); ?></span>
+					<input type="text" data-setting="caption" value="{{ data.model.caption }}" />
+				</label>
+
 				<div class="clear"></div>
 			</div>
 		</div>
 	</script>
 
 	<script type="text/html" id="tmpl-video-details">
+		<# var ext, html5types = {
+			mp4: wp.media.view.settings.embedMimes.mp4,
+			ogv: wp.media.view.settings.embedMimes.ogv,
+			webm: wp.media.view.settings.embedMimes.webm
+		}; #>
+
 		<?php $video_types = wp_get_video_extensions(); ?>
 		<div class="media-embed media-embed-details">
 			<div class="embed-media-settings embed-video-settings">
-				<div class="instructions media-instructions">{{{ wp.media.view.l10n.videoDetailsText }}}</div>
 				<div class="wp-video-holder">
 				<#
 				var isYouTube = ! _.isEmpty( data.model.src ) && data.model.src.match(/youtube|youtu\.be/);
@@ -832,7 +872,12 @@ function wp_print_media_templates() {
 
 				<?php wp_underscore_video_template() ?>
 
-				<# if ( ! _.isEmpty( data.model.src ) ) { #>
+				<# if ( ! _.isEmpty( data.model.src ) ) {
+					ext = data.model.src.split('.').pop();
+					if ( html5types[ ext ] ) {
+						delete html5types[ ext ];
+					}
+				#>
 				<label class="setting">
 					<span>SRC</span>
 					<input type="text" disabled="disabled" data-setting="src" value="{{ data.model.src }}" />
@@ -840,7 +885,11 @@ function wp_print_media_templates() {
 				</label>
 				<# } #>
 				<?php foreach ( $video_types as $type ):
-				?><# if ( ! _.isEmpty( data.model.<?php echo $type ?> ) ) { #>
+				?><# if ( ! _.isEmpty( data.model.<?php echo $type ?> ) ) {
+					if ( ! _.isUndefined( html5types.<?php echo $type ?> ) ) {
+						delete html5types.<?php echo $type ?>;
+					}
+				#>
 				<label class="setting">
 					<span><?php echo strtoupper( $type ) ?></span>
 					<input type="text" disabled="disabled" data-setting="<?php echo $type ?>" value="{{ data.model.<?php echo $type ?> }}" />
@@ -849,6 +898,18 @@ function wp_print_media_templates() {
 				<# } #>
 				<?php endforeach ?>
 				</div>
+
+				<# if ( ! _.isEmpty( html5types ) ) { #>
+				<div class="setting">
+					<span>{{{ wp.media.view.l10n.mediaHTML5Text }}}</span>
+					<div class="button-large">
+					<# _.each( html5types, function (mime, type) { #>
+					<button class="button add-media-source" data-mime="{{ mime }}">{{ type }}</button>
+					<# } ) #>
+					</div>
+				</div>
+				<# } #>
+
 				<# if ( ! _.isEmpty( data.model.poster ) ) { #>
 				<label class="setting">
 					<span><?php _e( 'Poster Image' ); ?></span>
@@ -859,7 +920,7 @@ function wp_print_media_templates() {
 				<div class="setting preload">
 					<span><?php _e( 'Preload' ); ?></span>
 					<div class="button-group button-large" data-setting="preload">
-						<button class="button" value="auto"><?php _e( 'Auto' ); ?></button>
+						<button class="button" value="auto"><?php _ex( 'Auto', 'auto preload' ); ?></button>
 						<button class="button" value="metadata"><?php _e( 'Metadata' ); ?></button>
 						<button class="button active" value="none"><?php _e( 'None' ); ?></button>
 					</div>
@@ -877,7 +938,7 @@ function wp_print_media_templates() {
 				<div class="clear"></div>
 
 				<label class="setting" data-setting="content">
-					<span><?php _e( 'Tracks (subtitles, captions, descriptions, chapters or metadata)' ); ?></span>
+					<span><?php _e( 'Tracks (subtitles, captions, descriptions, chapters, or metadata)' ); ?></span>
 					<#
 					var content = '';
 					if ( ! _.isEmpty( data.model.content ) ) {
@@ -894,32 +955,28 @@ function wp_print_media_templates() {
 					<# } #>
 					<textarea class="hidden content-setting">{{ content }}</textarea>
 				</label>
+
+				<label class="setting">
+					<span><?php _e( 'Caption' ); ?></span>
+					<input type="text" data-setting="caption" value="{{ data.model.caption }}" />
+				</label>
 			</div>
 		</div>
 	</script>
-	<?php
-
-		//TODO: do we want to deal with the fact that the elements used for gallery items are filterable and can be overriden via shortcode attributes
-		// do we want to deal with the difference between display and edit context at all? (e.g. wptexturize() being applied to the caption.
-	?>
-
 	<script type="text/html" id="tmpl-editor-gallery">
 		<div class="toolbar">
-			<div class="dashicons dashicons-format-gallery edit"></div>
-			<div class="dashicons dashicons-no-alt remove"></div>
+			<div class="dashicons dashicons-edit edit"></div><div class="dashicons dashicons-no-alt remove"></div>
 		</div>
 		<div class="gallery gallery-columns-{{{ data.columns }}}">
 			<# _.each( data.attachments, function( attachment, index ) { #>
 				<dl class="gallery-item">
 					<dt class="gallery-icon">
-						<?php // TODO: need to figure out the best way to make sure that we have thumbnails ?>
-						<img src="{{{ attachment.sizes.thumbnail.url }}}" />
+						<img src="{{{ attachment.thumbnail.url }}}" width="{{ attachment.thumbnail.width }}" height="{{ attachment.thumbnail.height }}" />
 					</dt>
 					<dd class="wp-caption-text gallery-caption">
 						{{ attachment.caption }}
 					</dd>
 				</dl>
-				<?php // this is kind silly, but copied from the gallery shortcode. Maybe it should be removed ?>
 				<# if ( index % data.columns === data.columns - 1 ) { #>
 					<br style="clear: both;">
 				<# } #>
@@ -927,6 +984,48 @@ function wp_print_media_templates() {
 			<# } ); #>
 		</div>
 	</script>
+
+	<script type="text/html" id="tmpl-editor-audio">
+		<div class="toolbar">
+			<div class="dashicons dashicons-edit edit"></div>
+			<div class="dashicons dashicons-no-alt remove"></div>
+		</div>
+		<# if ( ! _.isEmpty( data.model.caption ) ) { #>
+		<div class="track-details">{{{ data.model.caption }}}</div>
+		<# } #>
+		<?php wp_underscore_audio_template() ?>
+	</script>
+
+	<script type="text/html" id="tmpl-editor-video">
+		<div class="toolbar">
+			<div class="dashicons dashicons-edit edit"></div>
+			<div class="dashicons dashicons-no-alt remove"></div>
+		</div>
+		<# if ( ! _.isEmpty( data.model.caption ) ) { #>
+		<div class="track-details">{{{ data.model.caption }}}</div>
+		<# } #>
+		<?php wp_underscore_video_template() ?>
+	</script>
+
+	<?php wp_underscore_playlist_templates() ?>
+
+	<script type="text/html" id="tmpl-editor-playlist">
+		<div class="toolbar">
+			<div class="dashicons dashicons-edit edit"></div>
+			<div class="dashicons dashicons-no-alt remove"></div>
+		</div>
+		<div class="wp-playlist wp-{{ data.type }}-playlist wp-playlist-{{ data.style }}">
+			<# if ( 'audio' === data.type ){ #>
+			<div class="wp-playlist-current-item"></div>
+			<# } #>
+			<{{ data.type }} controls="controls" preload="none" <#
+				if ( data.width ) { #> width="{{ data.width }}"<# }
+				#><# if ( data.height ) { #> height="{{ data.height }}"<# } #>></{{ data.type }}>
+			<div class="wp-playlist-next"></div>
+			<div class="wp-playlist-prev"></div>
+		</div>
+	</script>
+
 	<?php
 
 	/**

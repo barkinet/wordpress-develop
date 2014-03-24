@@ -41,18 +41,6 @@ class WP_Customize_Widgets {
 		add_action( 'dynamic_sidebar', array( __CLASS__, 'tally_rendered_widgets' ) );
 		add_filter( 'is_active_sidebar', array( __CLASS__, 'tally_sidebars_via_is_active_sidebar_calls' ), 10, 2 );
 		add_filter( 'dynamic_sidebar_has_widgets', array( __CLASS__, 'tally_sidebars_via_dynamic_sidebar_calls' ), 10, 2 );
-
-		/**
-		 * Special filter for Settings Revisions plugin until it can handle
-		 * dynamically creating settings. Normally this should be handled by
-		 * a setting's sanitize_js_callback, but when restoring an old revision
-		 * it may include settings which do not currently exist, and so they
-		 * do not have the opportunity to be sanitized as needed. Furthermore,
-		 * we have to add this filter here because the customizer is not
-		 * initialized in WP Ajax, which is where Settings Revisions currently
-		 * needs to apply this filter at times.
-		 */
-		add_filter( 'temp_customize_sanitize_js', array( __CLASS__, 'temp_customize_sanitize_js' ), 10, 2 );
 	}
 
 	/**
@@ -308,6 +296,7 @@ class WP_Customize_Widgets {
 				$section_id = sprintf( 'sidebar-widgets-%s', $sidebar_id );
 				if ( $is_active_sidebar ) {
 					$section_args = array(
+						/* translators: %s: sidebar name */
 						'title' => sprintf( __( 'Widgets: %s' ), $GLOBALS['wp_registered_sidebars'][$sidebar_id]['name'] ),
 						'description' => $GLOBALS['wp_registered_sidebars'][$sidebar_id]['description'],
 						'priority' => 1000 + array_search( $sidebar_id, array_keys( $wp_registered_sidebars ) ),
@@ -435,17 +424,14 @@ class WP_Customize_Widgets {
 	/**
 	 * Convert a widget setting ID (option path) to its id_base and number components
 	 *
-	 * @throws Widget_Customizer_Exception
-	 * @throws Exception
-	 *
 	 * @param string $setting_id
-	 * @param array
-	 * @return array
+	 * @return WP_Error|array
 	 */
 	static function parse_widget_setting_id( $setting_id ) {
 		if ( ! preg_match( '/^(widget_(.+?))(?:\[(\d+)\])?$/', $setting_id, $matches ) ) {
-			throw new Widget_Customizer_Exception( sprintf( 'Invalid widget setting ID: %s', $setting_id ) );
+			return new WP_Error( 'invalid_setting_id', 'Invalid widget setting ID' );
 		}
+
 		$id_base = $matches[2];
 		$number  = isset( $matches[3] ) ? intval( $matches[3] ) : null;
 		return compact( 'id_base', 'number' );
@@ -469,20 +455,17 @@ class WP_Customize_Widgets {
 		}
 
 		$widget_reorder_nav_tpl = sprintf(
-			'<div class="widget-reorder-nav"><span class="move-widget" tabindex="0" title="%1$s">%2$s</span><span class="move-widget-down" tabindex="0" title="%3$s">%4$s</span><span class="move-widget-up" tabindex="0" title="%5$s">%6$s</span></div>',
-			esc_attr__( 'Move to another area...' ),
-			esc_html__( 'Move to another area...' ),
-			esc_attr__( 'Move down' ),
-			esc_html__( 'Move down' ),
-			esc_attr__( 'Move up' ),
-			esc_html__( 'Move up' )
+			'<div class="widget-reorder-nav"><span class="move-widget" tabindex="0">%1$s</span><span class="move-widget-down" tabindex="0">%2$s</span><span class="move-widget-up" tabindex="0">%3$s</span></div>',
+			__( 'Move to another area&hellip;' ),
+			__( 'Move down' ),
+			__( 'Move up' )
 		);
 
 		$move_widget_area_tpl = str_replace(
 			array( '{description}', '{btn}' ),
 			array(
-				esc_html__( 'Select an area to move this widget into:' ),
-				esc_html__( 'Move' ),
+				( 'Select an area to move this widget into:' ), // @todo translate
+				esc_html_x( 'Move', 'move widget' ),
 			),
 			'
 				<div class="move-widget-area">
@@ -509,10 +492,12 @@ class WP_Customize_Widgets {
 			'registered_widgets' => $GLOBALS['wp_registered_widgets'],
 			'available_widgets' => $available_widgets, // @todo Merge this with registered_widgets
 			'i18n' => array(
-				'save_btn_label' => _x( 'Apply', 'button to save changes to a widget' ),
-				'save_btn_tooltip' => _x( 'Save and preview changes before publishing them.', 'tooltip on the widget save button' ),
-				'remove_btn_label' => _x( 'Remove', 'link to move a widget to the inactive widgets sidebar' ),
-				'remove_btn_tooltip' => _x( 'Trash widget by moving it to the inactive widgets sidebar.', 'tooltip on btn a widget to move it to the inactive widgets sidebar' ),
+				'save_btn_label' => __( 'Apply' ),
+				// @todo translate? do we want these tooltips?
+				'save_btn_tooltip' => ( 'Save and preview changes before publishing them.' ),
+				'remove_btn_label' => __( 'Remove' ),
+				'remove_btn_tooltip' => ( 'Trash widget by moving it to the inactive widgets sidebar.' ),
+				'error' => __('An error has occurred. Please reload the page and try again.'),
 			),
 			'tpl' => array(
 				'widget_reorder_nav' => $widget_reorder_nav_tpl,
@@ -588,21 +573,6 @@ class WP_Customize_Widgets {
 			}
 		}
 		return $sanitized_widget_ids;
-	}
-
-	/**
-	 * Special filter for Settings Revisions plugin until it can handle
-	 * dynamically creating settings.
-	 *
-	 * @param mixed $value
-	 * @param stdClass|WP_Customize_Setting $setting
-	 * @return mixed
-	 */
-	static function temp_customize_sanitize_js( $value, $setting ) {
-		if ( preg_match( '/^widget_/', $setting->id ) && $setting->type === 'option' ) {
-			$value = self::sanitize_widget_js_instance( $value );
-		}
-		return $value;
 	}
 
 	/**
@@ -726,8 +696,9 @@ class WP_Customize_Widgets {
 	 */
 	static function customize_preview_init() {
 		add_filter( 'sidebars_widgets', array( __CLASS__, 'preview_sidebars_widgets' ), 1 );
-		add_action( 'wp_enqueue_scripts', array( __CLASS__, 'customize_preview_enqueue_deps' ) );
-		add_action( 'wp_footer', array( __CLASS__, 'export_preview_data' ), 9999 );
+		add_action( 'wp_enqueue_scripts', array( __CLASS__, 'customize_preview_enqueue' ) );
+		add_action( 'wp_print_styles', array( __CLASS__, 'inject_preview_css' ), 1 );
+		add_action( 'wp_footer', array( __CLASS__, 'export_preview_data' ), 20 );
 	}
 
 	/**
@@ -749,38 +720,26 @@ class WP_Customize_Widgets {
 	 *
 	 * @action wp_enqueue_scripts
 	 */
-	static function customize_preview_enqueue_deps() {
-		wp_enqueue_script(
-			'customize-preview-widgets',
-			includes_url( 'js/customize-preview-widgets.js' ),
-			array( 'jquery', 'wp-util', 'customize-preview' )
-		);
-
-		/*
-		wp_enqueue_style(
-			'widget-customizer-preview',
-			'widget-customizer-preview.css'
-		);
-		*/
-
-		// Why not wp_localize_script? Because we're not localizing, and it forces values into strings
-		global $wp_scripts;
-		$exports = array(
-			'registered_sidebars' => array_values( $GLOBALS['wp_registered_sidebars'] ),
-			'registered_widgets' => $GLOBALS['wp_registered_widgets'],
-			'i18n' => array(
-				'widget_tooltip' => __( 'Press shift and then click to edit widget in customizer...' ),
-			),
-			'request_uri' => wp_unslash( $_SERVER['REQUEST_URI'] ),
-		);
-		foreach ( $exports['registered_widgets'] as &$registered_widget ) {
-			unset( $registered_widget['callback'] ); // may not be JSON-serializeable
+	static function customize_preview_enqueue() {
+		wp_enqueue_script( 'customize-preview-widgets' );
 		}
-		$wp_scripts->add_data(
-			'customize-preview-widgets',
-			'data',
-			sprintf( 'var WidgetCustomizerPreview_exports = %s;', json_encode( $exports ) )
-		);
+
+	/**
+	 * Insert default style for highlighted widget at early point so theme
+	 * stylesheet can override.
+	 *
+	 * @action wp_print_styles
+	 */
+	static function inject_preview_css() {
+		?>
+		<style>
+		.widget-customizer-highlighted-widget {
+			border-radius: 2px;
+			outline: none;
+			box-shadow: 0 0 3px #ce0000;
+		}
+		</style>
+		<?php
 	}
 
 	/**
@@ -789,14 +748,23 @@ class WP_Customize_Widgets {
 	 * @action wp_footer
 	 */
 	static function export_preview_data() {
-		wp_print_scripts( array( 'customize-preview-widgets' ) );
+		// Prepare customizer settings to pass to Javascript.
+		$settings = array(
+			'renderedSidebars'   => array_fill_keys( array_unique( self::$rendered_sidebars ), true ),
+			'renderedWidgets'    => array_fill_keys( array_keys( self::$rendered_widgets ), true ),
+			'registeredSidebars' => array_values( $GLOBALS['wp_registered_sidebars'] ),
+			'registeredWidgets'  => $GLOBALS['wp_registered_widgets'],
+			'l10n'               => array(
+				'widgetTooltip' => ( 'Shift-click to edit this widget.' ),
+			),
+		);
+		foreach ( $settings['registeredWidgets'] as &$registered_widget ) {
+			unset( $registered_widget['callback'] ); // may not be JSON-serializeable
+		}
+
 		?>
-		<script>
-		(function () {
-			/*global WidgetCustomizerPreview */
-			WidgetCustomizerPreview.rendered_sidebars = <?php echo json_encode( array_fill_keys( array_unique( self::$rendered_sidebars ), true ) ) ?>;
-			WidgetCustomizerPreview.rendered_widgets = <?php echo json_encode( array_fill_keys( array_keys( self::$rendered_widgets ), true ) ); ?>;
-		}());
+		<script type="text/javascript">
+			var _wpWidgetCustomizerPreviewSettings = <?php echo json_encode( $settings ); ?>;
 		</script>
 		<?php
 	}
@@ -932,108 +900,106 @@ class WP_Customize_Widgets {
 	 * Find and invoke the widget update and control callbacks. Requires that
 	 * $_POST be populated with the instance data.
 	 *
-	 * @throws Widget_Customizer_Exception
-	 * @throws Exception
-	 *
-	 * @param string $widget_id
-	 * @return array
+	 * @param  string $widget_id
+	 * @return WP_Error|array
 	 */
 	static function call_widget_update( $widget_id ) {
 		global $wp_registered_widget_updates, $wp_registered_widget_controls;
 
 		$option_capture = new Option_Update_Capture();
 
-		try {
-			$option_capture->start();
-			$parsed_id   = self::parse_widget_id( $widget_id );
-			$option_name = 'widget_' . $parsed_id['id_base'];
+		$option_capture->start();
+		$parsed_id   = self::parse_widget_id( $widget_id );
+		$option_name = 'widget_' . $parsed_id['id_base'];
 
-			/**
-			 * If a previously-sanitized instance is provided, populate the input vars
-			 * with its values so that the widget update callback will read this instance
-			 */
-			$added_input_vars = array();
-			if ( ! empty( $_POST['sanitized_widget_setting'] ) ) {
-				$sanitized_widget_setting = json_decode( self::get_post_value( 'sanitized_widget_setting' ), true );
-				if ( empty( $sanitized_widget_setting ) ) {
-					throw new Widget_Customizer_Exception( 'Malformed sanitized_widget_setting' );
-				}
-				$instance = self::sanitize_widget_instance( $sanitized_widget_setting );
-				if ( is_null( $instance ) ) {
-					throw new Widget_Customizer_Exception( 'Unsanitary sanitized_widget_setting' );
-				}
-				if ( ! is_null( $parsed_id['number'] ) ) {
-					$value = array();
-					$value[$parsed_id['number']] = $instance;
-					$key = 'widget-' . $parsed_id['id_base'];
+		/**
+		 * If a previously-sanitized instance is provided, populate the input vars
+		 * with its values so that the widget update callback will read this instance
+		 */
+		$added_input_vars = array();
+		if ( ! empty( $_POST['sanitized_widget_setting'] ) ) {
+			$sanitized_widget_setting = json_decode( self::get_post_value( 'sanitized_widget_setting' ), true );
+			if ( empty( $sanitized_widget_setting ) ) {
+				$option_capture->rollback();
+				return new WP_Error( 'malformed_data', 'Malformed sanitized_widget_setting' );
+			}
+
+			$instance = self::sanitize_widget_instance( $sanitized_widget_setting );
+			if ( is_null( $instance ) ) {
+				$option_capture->rollback();
+				return new WP_Error( 'unsanitary_data', 'Unsanitary sanitized_widget_setting' );
+			}
+
+			if ( ! is_null( $parsed_id['number'] ) ) {
+				$value = array();
+				$value[$parsed_id['number']] = $instance;
+				$key = 'widget-' . $parsed_id['id_base'];
+				$_REQUEST[$key] = $_POST[$key] = wp_slash( $value );
+				$added_input_vars[] = $key;
+			} else {
+				foreach ( $instance as $key => $value ) {
 					$_REQUEST[$key] = $_POST[$key] = wp_slash( $value );
 					$added_input_vars[] = $key;
-				} else {
-					foreach ( $instance as $key => $value ) {
-						$_REQUEST[$key] = $_POST[$key] = wp_slash( $value );
-						$added_input_vars[] = $key;
-					}
 				}
 			}
-
-			/**
-			 * Invoke the widget update callback
-			 */
-			foreach ( (array) $wp_registered_widget_updates as $name => $control ) {
-				if ( $name === $parsed_id['id_base'] && is_callable( $control['callback'] ) ) {
-					ob_start();
-					call_user_func_array( $control['callback'], $control['params'] );
-					ob_end_clean();
-					break;
-				}
-			}
-
-			// Clean up any input vars that were manually added
-			foreach ( $added_input_vars as $key ) {
-				unset( $_POST[$key] );
-				unset( $_REQUEST[$key] );
-			}
-
-			/**
-			 * Make sure the expected option was updated
-			 */
-			if ( 0 !== $option_capture->count() ) {
-				if ( count( $option_capture->options ) > 1 ) {
-					throw new Widget_Customizer_Exception( sprintf( 'Widget %1$s unexpectedly updated more than one option.', $widget_id ) );
-				}
-				$updated_option_name = key( $option_capture->options );
-				if ( $updated_option_name !== $option_name ) {
-					throw new Widget_Customizer_Exception( sprintf( 'Widget %1$s updated option "%2$s", but expected "%3$s".', $widget_id, $updated_option_name, $option_name ) );
-				}
-			}
-
-			/**
-			 * Obtain the widget control with the updated instance in place
-			 */
-			ob_start();
-			$form = $wp_registered_widget_controls[$widget_id];
-			if ( $form ) {
-				call_user_func_array( $form['callback'], $form['params'] );
-			}
-			$form = ob_get_clean();
-
-			/**
-			 * Obtain the widget instance
-			 */
-			$option = get_option( $option_name );
-			if ( null !== $parsed_id['number'] ) {
-				$instance = $option[$parsed_id['number']];
-			} else {
-				$instance = $option;
-			}
-
-			$option_capture->stop();
-			return compact( 'instance', 'form' );
 		}
-		catch ( Exception $e ) {
-			$option_capture->stop();
-			throw $e;
+
+		/**
+		 * Invoke the widget update callback
+		 */
+		foreach ( (array) $wp_registered_widget_updates as $name => $control ) {
+			if ( $name === $parsed_id['id_base'] && is_callable( $control['callback'] ) ) {
+				ob_start();
+				call_user_func_array( $control['callback'], $control['params'] );
+				ob_end_clean();
+				break;
+			}
 		}
+
+		// Clean up any input vars that were manually added
+		foreach ( $added_input_vars as $key ) {
+			unset( $_POST[$key] );
+			unset( $_REQUEST[$key] );
+		}
+
+		/**
+		 * Make sure the expected option was updated
+		 */
+		if ( 0 !== $option_capture->count() ) {
+			if ( count( $option_capture->options ) > 1 ) {
+				$option_capture->rollback();
+				return new WP_Error( 'unexpected_update', 'Widget unexpectedly updated more than one option.' );
+			}
+
+			$updated_option_name = key( $option_capture->options );
+			if ( $updated_option_name !== $option_name ) {
+				$option_capture->rollback();
+				return new WP_Error( 'wrong_option', sprintf( 'Widget updated option "%1$s", but expected "%2$s".', $updated_option_name, $option_name ) );
+			}
+		}
+
+		/**
+		 * Obtain the widget control with the updated instance in place
+		 */
+		ob_start();
+		$form = $wp_registered_widget_controls[$widget_id];
+		if ( $form ) {
+			call_user_func_array( $form['callback'], $form['params'] );
+		}
+		$form = ob_get_clean();
+
+		/**
+		 * Obtain the widget instance
+		 */
+		$option = get_option( $option_name );
+		if ( null !== $parsed_id['number'] ) {
+			$instance = $option[$parsed_id['number']];
+		} else {
+			$instance = $option;
+		}
+
+		$option_capture->stop();
+		return compact( 'instance', 'form' );
 	}
 
 	/**
@@ -1046,52 +1012,46 @@ class WP_Customize_Widgets {
 	 * @action wp_ajax_update_widget
 	 */
 	static function wp_ajax_update_widget() {
-		$generic_error = __( 'An error has occurred. Please reload the page and try again.' );
 
-		try {
-			if ( ! check_ajax_referer( self::UPDATE_WIDGET_AJAX_ACTION, self::UPDATE_WIDGET_NONCE_POST_KEY, false ) ) {
-				throw new Widget_Customizer_Exception( __( 'Nonce check failed. Reload and try again?' ) );
-			}
-			if ( ! current_user_can( 'edit_theme_options' ) ) {
-				throw new Widget_Customizer_Exception( __( 'Current user cannot!' ) );
-			}
-			if ( ! isset( $_POST['widget-id'] ) ) {
-				throw new Widget_Customizer_Exception( __( 'Incomplete request' ) );
-			}
-
-			unset( $_POST[self::UPDATE_WIDGET_NONCE_POST_KEY], $_POST['action'] );
-
-			do_action( 'load-widgets.php' );
-			do_action( 'widgets.php' );
-			do_action( 'sidebar_admin_setup' );
-
-			$widget_id = self::get_post_value( 'widget-id' );
-			$parsed_id = self::parse_widget_id( $widget_id );
-			$id_base   = $parsed_id['id_base'];
-
-			if ( isset( $_POST['widget-' . $id_base] ) && is_array( $_POST['widget-' . $id_base] ) && preg_match( '/__i__|%i%/', key( $_POST['widget-' . $id_base] ) ) ) {
-				throw new Widget_Customizer_Exception( 'Cannot pass widget templates to create new instances; apply template vars in JS' );
-			}
-
-			$updated_widget = self::call_widget_update( $widget_id ); // => {instance,form}
-			$form = $updated_widget['form'];
-			$instance = self::sanitize_widget_js_instance( $updated_widget['instance'] );
-
-			wp_send_json_success( compact( 'form', 'instance' ) );
+		if ( ! is_user_logged_in() ) {
+			wp_die( 0 );
 		}
-		catch( Exception $e ) {
-			if ( $e instanceof Widget_Customizer_Exception ) {
-				$message = $e->getMessage();
-			} else {
-				error_log( sprintf( '%s in %s: %s', get_class( $e ), __FUNCTION__, $e->getMessage() ) );
-				$message = $generic_error;
-			}
-			wp_send_json_error( compact( 'message' ) );
+
+		check_ajax_referer( self::UPDATE_WIDGET_AJAX_ACTION, self::UPDATE_WIDGET_NONCE_POST_KEY );
+
+		if ( ! current_user_can( 'edit_theme_options' ) ) {
+			wp_die( -1 );
 		}
+
+		if ( ! isset( $_POST['widget-id'] ) ) {
+			wp_send_json_error();
+		}
+
+		unset( $_POST[self::UPDATE_WIDGET_NONCE_POST_KEY], $_POST['action'] );
+
+		do_action( 'load-widgets.php' );
+		do_action( 'widgets.php' );
+		do_action( 'sidebar_admin_setup' );
+
+		$widget_id = self::get_post_value( 'widget-id' );
+		$parsed_id = self::parse_widget_id( $widget_id );
+		$id_base   = $parsed_id['id_base'];
+
+		if ( isset( $_POST['widget-' . $id_base] ) && is_array( $_POST['widget-' . $id_base] ) && preg_match( '/__i__|%i%/', key( $_POST['widget-' . $id_base] ) ) ) {
+			wp_send_json_error();
+		}
+
+		$updated_widget = self::call_widget_update( $widget_id ); // => {instance,form}
+		if ( is_wp_error( $updated_widget ) ) {
+			wp_send_json_error();
+		}
+
+		$form = $updated_widget['form'];
+		$instance = self::sanitize_widget_js_instance( $updated_widget['instance'] );
+
+		wp_send_json_success( compact( 'form', 'instance' ) );
 	}
 }
-
-class Widget_Customizer_Exception extends Exception {}
 
 class Option_Update_Capture {
 
@@ -1108,7 +1068,7 @@ class Option_Update_Capture {
 	}
 
 	/**
-	 * Determine whether or not the transaction is open
+	 * Determine whether or not capturing is active
 	 * @return bool
 	 */
 	function is_current() {
