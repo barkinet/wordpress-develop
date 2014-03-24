@@ -752,7 +752,6 @@ var WidgetCustomizer = ( function ($) {
 				customize_sidebar.on( 'scroll', position_widget );
 				$( window ).on( 'resize', position_widget );
 				theme_controls_container.on( 'expanded collapsed', position_widget );
-				position_widget();
 			} );
 			control.container.on( 'collapsed', function () {
 				customize_sidebar.off( 'scroll', position_widget );
