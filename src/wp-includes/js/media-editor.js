@@ -11,6 +11,26 @@
 	var workflows = {};
 
 	/**
+	 * A helper mixin function to avoid truthy and falsey values being
+	 *   passed as an input that expects booleans. If key is undefined in the map,
+	 *   but has a default value, set it.
+	 *
+	 * @param {object} attrs Map of props from a shortcode or settings.
+	 * @param {string} key The key within the passed map to check for a value.
+	 * @returns {mixed|undefined} The original or coerced value of key within attrs
+	 */
+	wp.media.coerce = function ( attrs, key ) {
+		if ( _.isUndefined( attrs[ key ] ) && ! _.isUndefined( this.defaults[ key ] ) ) {
+			attrs[ key ] = this.defaults[ key ];
+		} else if ( 'true' === attrs[ key ] ) {
+			attrs[ key ] = true;
+		} else if ( 'false' === attrs[ key ] ) {
+			attrs[ key ] = false;
+		}
+		return attrs[ key ];
+	};
+
+	/**
 	 * wp.media.string
 	 * @namespace
 	 */
@@ -169,6 +189,10 @@
 			shortcode = {};
 
 			if ( 'video' === type ) {
+				if ( attachment.image ) {
+					shortcode.poster = attachment.image.src;
+				}
+
 				if ( attachment.width ) {
 					shortcode.width = attachment.width;
 				}
@@ -176,6 +200,23 @@
 				if ( attachment.height ) {
 					shortcode.height = attachment.height;
 				}
+			}
+
+			if ( ! _.isEmpty( attachment.caption ) ) {
+				shortcode.caption = attachment.caption;
+			} else if ( attachment.meta && attachment.meta.title ) {
+				shortcode.caption = '&#8220;' + attachment.meta.title + '&#8221;';
+				if ( attachment.meta.album ) {
+					shortcode.caption += ' from ' + attachment.meta.album;
+				}
+
+				if ( attachment.meta.artist ) {
+					shortcode.caption += ' by ' + attachment.meta.artist;
+				}
+			} else if ( ! _.isEmpty( attachment.description ) ) {
+				shortcode.caption = attachment.description;
+			} else {
+				shortcode.caption = attachment.title;
 			}
 
 			extension = attachment.filename.split('.').pop();
@@ -274,35 +315,11 @@
 		}
 	};
 
-	/**
-	 * @mixin
-	 */
-	wp.media.mixin = {
-		/**
-		 * A helper function to avoid truthy and falsey values being
-		 *   passed as an input that expects booleans. If key is undefined in the map,
-		 *   but has a default value, set it.
-		 *
-		 * @param {object} attrs Map of props from a shortcode or settings.
-		 * @param {string} key The key within the passed map to check for a value.
-		 * @returns {mixed|undefined} The original or coerced value of key within attrs
-		 */
-		coerce: function ( attrs, key ) {
-			if ( _.isUndefined( attrs[ key ] ) && ! _.isUndefined( this.defaults[ key ] ) ) {
-				attrs[ key ] = this.defaults[ key ];
-			} else if ( 'true' === attrs[ key ] ) {
-				attrs[ key ] = true;
-			} else if ( 'false' === attrs[ key ] ) {
-				attrs[ key ] = false;
-			}
-			return attrs[ key ];
-		}
-	};
-
 	wp.media.collection = function(attributes) {
 		var collections = {};
 
-		return _.extend( attributes, wp.media.mixin, {
+		return _.extend( attributes, {
+			coerce : wp.media.coerce,
 			/**
 			 * Retrieve attachments based on the properties of the passed shortcode
 			 *
@@ -391,6 +408,7 @@
 				if ( attachments[this.tag] ) {
 					_.extend( attrs, attachments[this.tag].toJSON() );
 				}
+
 				// Convert all gallery shortcodes to use the `ids` property.
 				// Ignore `post__in` and `post__not_in`; the attachments in
 				// the collection will already reflect those properties.
@@ -527,129 +545,6 @@
 			orderby : 'menu_order ID'
 		}
 	});
-
-	wp.media.playlist = new wp.media.collection({
-		tag: 'playlist',
-		type : 'audio',
-		editTitle : wp.media.view.l10n.editPlaylistTitle,
-		defaults : {
-			id: wp.media.view.settings.post.id,
-			style: 'light',
-			tracklist: true,
-			tracknumbers: true,
-			images: true,
-			artists: true
-		}
-	});
-
-	wp.media['video-playlist'] = new wp.media.collection({
-		tag: 'video-playlist',
-		type : 'video',
-		editTitle : wp.media.view.l10n.editVideoPlaylistTitle,
-		defaults : {
-			id: wp.media.view.settings.post.id,
-			style: 'light',
-			tracklist: false,
-			tracknumbers: false,
-			images: true
-		}
-	});
-
-	/**
-	 * @namespace
-	 */
-	wp.media.audio = _.extend({
-		defaults : {
-			id : wp.media.view.settings.post.id,
-			src      : '',
-			loop     : false,
-			autoplay : false,
-			preload  : 'none'
-		},
-
-		edit : function (data) {
-			var frame, shortcode = wp.shortcode.next( 'audio', data ).shortcode;
-			frame = wp.media({
-				frame: 'audio',
-				state: 'audio-details',
-				metadata: _.defaults(
-					shortcode.attrs.named,
-					wp.media.audio.defaults
-				)
-			});
-
-			return frame;
-		},
-
-		shortcode : function (shortcode) {
-			var self = this;
-
-			_.each( wp.media.audio.defaults, function( value, key ) {
-				shortcode[ key ] = self.coerce( shortcode, key );
-
-				if ( value === shortcode[ key ] ) {
-					delete shortcode[ key ];
-				}
-			});
-
-			return wp.shortcode.string({
-				tag:     'audio',
-				attrs:   shortcode
-			});
-		}
-	}, wp.media.mixin);
-
-	/**
-	 * @namespace
-	 */
-	wp.media.video = _.extend({
-		defaults : {
-			id : wp.media.view.settings.post.id,
-			src : '',
-			poster : '',
-			loop : false,
-			autoplay : false,
-			preload : 'metadata',
-			content : ''
-		},
-
-		edit : function (data) {
-			var frame,
-				defaults = this.defaults,
-				shortcode = wp.shortcode.next( 'video', data ).shortcode,
-				attrs;
-
-			attrs = shortcode.attrs.named;
-			attrs.content = shortcode.content;
-
-			frame = wp.media({
-				frame: 'video',
-				state: 'video-details',
-				metadata: _.defaults( attrs, defaults )
-			});
-
-			return frame;
-		},
-
-		shortcode : function (shortcode) {
-			var self = this, content = shortcode.content;
-			delete shortcode.content;
-
-			_.each( this.defaults, function( value, key ) {
-				shortcode[ key ] = self.coerce( shortcode, key );
-
-				if ( value === shortcode[ key ] ) {
-					delete shortcode[ key ];
-				}
-			});
-
-			return wp.shortcode.string({
-				tag:     'video',
-				attrs:   shortcode,
-				content: content
-			});
-		}
-	}, wp.media.mixin);
 
 	/**
 	 * wp.media.featuredImage
@@ -1111,38 +1006,33 @@
 		 * @global wp.media.view.l10n
 		 */
 		init: function() {
-			$(document.body).on( 'click', '.insert-media', function( event ) {
-				var elem = $( event.currentTarget ),
-					editor = elem.data('editor'),
-					options = {
-						frame:    'post',
-						state:    'insert',
-						title:    wp.media.view.l10n.addMedia,
-						multiple: true
-					};
+			$(document.body)
+				.on( 'click', '.insert-media', function( event ) {
+					var elem = $( event.currentTarget ),
+						editor = elem.data('editor'),
+						options = {
+							frame:    'post',
+							state:    'insert',
+							title:    wp.media.view.l10n.addMedia,
+							multiple: true
+						};
 
-				event.preventDefault();
+					event.preventDefault();
 
-				// Remove focus from the `.insert-media` button.
-				// Prevents Opera from showing the outline of the button
-				// above the modal.
-				//
-				// See: http://core.trac.wordpress.org/ticket/22445
-				elem.blur();
+					// Remove focus from the `.insert-media` button.
+					// Prevents Opera from showing the outline of the button
+					// above the modal.
+					//
+					// See: http://core.trac.wordpress.org/ticket/22445
+					elem.blur();
 
-				if ( elem.hasClass( 'gallery' ) ) {
-					options.state = 'gallery';
-					options.title = wp.media.view.l10n.createGalleryTitle;
-				} else if ( elem.hasClass( 'playlist' ) ) {
-					options.state = 'playlist';
-					options.title = wp.media.view.l10n.createPlaylistTitle;
-				} else if ( elem.hasClass( 'video-playlist' ) ) {
-					options.state = 'video-playlist';
-					options.title = wp.media.view.l10n.createVideoPlaylistTitle;
-				}
+					if ( elem.hasClass( 'gallery' ) ) {
+						options.state = 'gallery';
+						options.title = wp.media.view.l10n.createGalleryTitle;
+					}
 
-				wp.media.editor.open( editor, options );
-			});
+					wp.media.editor.open( editor, options );
+				});
 
 			// Initialize and render the Editor drag-and-drop uploader.
 			new wp.media.view.EditorUploader().render();

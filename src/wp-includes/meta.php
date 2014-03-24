@@ -323,7 +323,7 @@ function metadata_exists( $meta_type, $object_id, $meta_key ) {
 
 	$check = apply_filters( "get_{$meta_type}_metadata", null, $object_id, $meta_key, true );
 	if ( null !== $check )
-		return true;
+		return (bool) $check;
 
 	$meta_cache = wp_cache_get( $object_id, $meta_type . '_meta' );
 
@@ -753,7 +753,7 @@ class WP_Meta_Query {
 		// Split out the meta_key only queries (we can only do this for OR)
 		if ( 'OR' == $this->relation ) {
 			foreach ( $this->queries as $k => $q ) {
-				if ( ! array_key_exists( 'value', $q ) && ! empty( $q['key'] ) )
+				if ( ( empty( $q['compare'] ) || 'NOT EXISTS' != $q['compare'] ) && ! array_key_exists( 'value', $q ) && ! empty( $q['key'] ) )
 					$key_only_queries[$k] = $q;
 				else
 					$queries[$k] = $q;

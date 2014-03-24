@@ -40,6 +40,8 @@ window.wp = window.wp || {};
 
 		delete attributes.frame;
 
+		media.frame = frame;
+
 		return frame;
 	};
 
@@ -446,42 +448,14 @@ window.wp = window.wp || {};
 			}
 
 			size = this.attachment.get( 'sizes' )[ this.get( 'size' ) ];
+
+			if ( ! size ) {
+				return;
+			}
+
 			this.set( 'url', size.url );
 			this.set( 'width', size.width );
 			this.set( 'height', size.height );
-		}
-	});
-
-	/**
-	 * wp.media.model.PostMedia
-	 *
-	 * @constructor
-	 * @augments Backbone.Model
-	 **/
-	media.model.PostMedia = Backbone.Model.extend({
-		initialize: function() {
-			this.attachment = false;
-		},
-
-		setSource: function ( attachment ) {
-			this.attachment = attachment;
-			this.extension = attachment.get('filename' ).split('.').pop();
-
-			if ( _.contains( wp.media.view.settings.embedExts, this.extension ) ) {
-				this.set( this.extension, this.attachment.get( 'url' ) );
-			} else {
-				this.unset( this.extension );
-			}
-		},
-
-		changeAttachment: function( attachment ) {
-			var self = this;
-
-			this.setSource( attachment );
-
-			_.each( _.without( wp.media.view.settings.embedExts, this.extension ), function (ext) {
-				self.unset( ext );
-			} );
 		}
 	});
 

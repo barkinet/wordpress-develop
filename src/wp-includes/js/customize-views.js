@@ -1,4 +1,3 @@
-/* globals _wpCustomizeHeader */
 (function( $, wp, _ ) {
 
 	if ( ! wp || ! wp.customize ) { return; }
@@ -135,13 +134,9 @@
 		},
 
 		extendedModel: function() {
-			var c = this.model.get('collection'),
-				t = _wpCustomizeHeader.l10n[c.type] || '';
-
+			var c = this.model.get('collection');
 			return _.extend(this.model.toJSON(), {
-				// -1 to exclude the randomize button
-				nImages: c.size() - 1,
-				type: t
+				type: c.type
 			});
 		},
 

@@ -385,20 +385,18 @@ function wp_list_authors($args = '') {
 				$link .= '(';
 			}
 
-			$link .= '<a href="' . get_author_feed_link( $author->ID ) . '"';
+			$link .= '<a href="' . get_author_feed_link( $author->ID, $feed_type ) . '"';
 
-			$alt = $title = '';
+			$alt = '';
 			if ( !empty( $feed ) ) {
-				$title = ' title="' . esc_attr( $feed ) . '"';
 				$alt = ' alt="' . esc_attr( $feed ) . '"';
 				$name = $feed;
-				$link .= $title;
 			}
 
 			$link .= '>';
 
 			if ( !empty( $feed_image ) )
-				$link .= '<img src="' . esc_url( $feed_image ) . '" style="border: none;"' . $alt . $title . ' />';
+				$link .= '<img src="' . esc_url( $feed_image ) . '" style="border: none;"' . $alt . ' />';
 			else
 				$link .= $name;
 

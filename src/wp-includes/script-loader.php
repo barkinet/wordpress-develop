@@ -378,6 +378,9 @@ function wp_default_scripts( &$scripts ) {
 		'allowedFiles' => __( 'Allowed Files' ),
 	) );
 
+	$scripts->add( 'customize-widgets', "/wp-admin/js/customize-widgets$suffix.js", array( 'jquery', 'jquery-ui-sortable', 'jquery-ui-droppable', 'wp-backbone', 'customize-controls' ), false, 1 );
+	$scripts->add( 'customize-preview-widgets', "/wp-includes/js/customize-preview-widgets$suffix.js", array( 'jquery', 'wp-util', 'customize-preview' ), false, 1 );
+
 	$scripts->add( 'accordion', "/wp-admin/js/accordion$suffix.js", array( 'jquery' ), false, 1 );
 
 	$scripts->add( 'shortcode', "/wp-includes/js/shortcode$suffix.js", array( 'underscore' ), false, 1 );
@@ -391,8 +394,9 @@ function wp_default_scripts( &$scripts ) {
 
 	// To enqueue media-views or media-editor, call wp_enqueue_media().
 	// Both rely on numerous settings, styles, and templates to operate correctly.
-	$scripts->add( 'media-views',  "/wp-includes/js/media-views$suffix.js",  array( 'utils', 'media-models', 'wp-plupload', 'jquery-ui-sortable', 'wp-mediaelement', 'image-edit' ), false, 1 );
+	$scripts->add( 'media-views',  "/wp-includes/js/media-views$suffix.js",  array( 'utils', 'media-models', 'wp-plupload', 'jquery-ui-sortable', 'wp-mediaelement' ), false, 1 );
 	$scripts->add( 'media-editor', "/wp-includes/js/media-editor$suffix.js", array( 'shortcode', 'media-views' ), false, 1 );
+	$scripts->add( 'media-audiovideo', "/wp-includes/js/media-audiovideo$suffix.js", array( 'media-editor', 'mce-view', 'wp-playlist' ), false, 1 );
 	$scripts->add( 'mce-view', "/wp-includes/js/mce-view$suffix.js", array( 'shortcode', 'media-models' ), false, 1 );
 
 	if ( is_admin() ) {
@@ -493,7 +497,7 @@ function wp_default_scripts( &$scripts ) {
 
 		$scripts->add( 'media', "/wp-admin/js/media$suffix.js", array( 'jquery' ), false, 1 );
 		did_action( 'init' ) && $scripts->localize( 'media', 'attachMediaBoxL10n', array(
-			'error' => __( 'An error has occured. Please reload the page and try again.' )
+			'error' => __( 'An error has occurred. Please reload the page and try again.' ),
 		));
 
 		$scripts->add( 'image-edit', "/wp-admin/js/image-edit$suffix.js", array('jquery', 'json2', 'imgareaselect'), false, 1 );
@@ -581,15 +585,7 @@ function wp_default_styles( &$styles ) {
 	}
 
 	// Register a stylesheet for the selected admin color scheme.
-	$colors_url = false;
-	if ( ! empty( $GLOBALS['_wp_admin_css_colors'] ) ) {
-		$color = get_user_option( 'admin_color' );
-		if ( ! $color || ! isset( $GLOBALS['_wp_admin_css_colors'][ $color ] ) ) {
-			$color = 'fresh';
-		}
-		$colors_url = $GLOBALS['_wp_admin_css_colors'][ $color ]->url;
-	}
-	$styles->add( 'colors', $colors_url, array( 'wp-admin', 'buttons', 'open-sans', 'dashicons' ) );
+	$styles->add( 'colors', true, array( 'wp-admin', 'buttons', 'open-sans', 'dashicons' ) );
 
 	$suffix = SCRIPT_DEBUG ? '' : '.min';
 
@@ -599,6 +595,7 @@ function wp_default_styles( &$styles ) {
 	$styles->add( 'install',            "/wp-admin/css/install$suffix.css", array( 'buttons', 'open-sans' ) );
 	$styles->add( 'wp-color-picker',    "/wp-admin/css/color-picker$suffix.css" );
 	$styles->add( 'customize-controls', "/wp-admin/css/customize-controls$suffix.css", array( 'wp-admin', 'colors', 'ie', 'imgareaselect' ) );
+	$styles->add( 'customize-widgets',  "/wp-admin/css/customize-widgets$suffix.css", array( 'wp-admin', 'colors' ) );
 	$styles->add( 'ie',                 "/wp-admin/css/ie$suffix.css" );
 
 	$styles->add_data( 'ie', 'conditional', 'lte IE 7' );
@@ -631,7 +628,7 @@ function wp_default_styles( &$styles ) {
 	// RTL CSS
 	$rtl_styles = array(
 		// wp-admin
-		'wp-admin', 'install', 'wp-color-picker', 'customize-controls', 'ie',
+		'wp-admin', 'install', 'wp-color-picker', 'customize-controls', 'customize-widgets', 'ie',
 		// wp-includes
 		'buttons', 'admin-bar', 'wp-auth-check', 'editor-buttons', 'media-views', 'wp-pointer',
 		'wp-jquery-ui-dialog',
@@ -686,6 +683,57 @@ function wp_just_in_time_script_localization() {
 		'blog_id' => get_current_blog_id(),
 	) );
 
+}
+
+/**
+ * Administration Screen CSS for changing the styles.
+ *
+ * If installing the 'wp-admin/' directory will be replaced with './'.
+ *
+ * The $_wp_admin_css_colors global manages the Administration Screens CSS
+ * stylesheet that is loaded. The option that is set is 'admin_color' and is the
+ * color and key for the array. The value for the color key is an object with
+ * a 'url' parameter that has the URL path to the CSS file.
+ *
+ * The query from $src parameter will be appended to the URL that is given from
+ * the $_wp_admin_css_colors array value URL.
+ *
+ * @since 2.6.0
+ * @uses $_wp_admin_css_colors
+ *
+ * @param string $src Source URL.
+ * @param string $handle Either 'colors' or 'colors-rtl'.
+ * @return string URL path to CSS stylesheet for Administration Screens.
+ */
+function wp_style_loader_src( $src, $handle ) {
+	global $_wp_admin_css_colors;
+
+	if ( defined('WP_INSTALLING') )
+		return preg_replace( '#^wp-admin/#', './', $src );
+
+	if ( 'colors' == $handle ) {
+		$color = get_user_option('admin_color');
+
+		if ( empty($color) || !isset($_wp_admin_css_colors[$color]) )
+			$color = 'fresh';
+
+		$color = $_wp_admin_css_colors[$color];
+		$parsed = parse_url( $src );
+		$url = $color->url;
+
+		if ( ! $url ) {
+			return false;
+		}
+
+		if ( isset($parsed['query']) && $parsed['query'] ) {
+			wp_parse_str( $parsed['query'], $qv );
+			$url = add_query_arg( $qv, $url );
+		}
+
+		return $url;
+	}
+
+	return $src;
 }
 
 /**
@@ -934,3 +982,4 @@ add_filter( 'wp_print_scripts', 'wp_just_in_time_script_localization' );
 add_filter( 'print_scripts_array', 'wp_prototype_before_jquery' );
 
 add_action( 'wp_default_styles', 'wp_default_styles' );
+add_filter( 'style_loader_src', 'wp_style_loader_src', 10, 2 );

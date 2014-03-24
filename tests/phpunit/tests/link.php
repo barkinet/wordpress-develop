@@ -175,22 +175,35 @@ class Tests_Link extends WP_UnitTestCase {
 		// Need some sample posts to test adjacency
 		$post_one = $this->factory->post->create_and_get( array(
 			'post_title' => 'First',
-			'post_date' => '2012-01-01 12:00:00'
+			'post_date'  => '2012-01-01 12:00:00',
 		) );
 
 		$post_two = $this->factory->post->create_and_get( array(
 			'post_title' => 'Second',
-			'post_date' => '2012-02-01 12:00:00'
+			'post_date'  => '2012-02-01 12:00:00',
 		) );
 
 		$post_three = $this->factory->post->create_and_get( array(
 			'post_title' => 'Third',
-			'post_date' => '2012-03-01 12:00:00'
+			'post_date'  => '2012-03-01 12:00:00',
 		) );
 
 		$post_four = $this->factory->post->create_and_get( array(
 			'post_title' => 'Fourth',
-			'post_date' => '2012-04-01 12:00:00'
+			'post_date'  => '2012-04-01 12:00:00',
+		) );
+
+		// Use pages to test post-type adjacency
+		$page_one = $this->factory->post->create_and_get( array(
+			'post_title' => 'First Page',
+			'post_date'  => '2013-01-01 12:00:00',
+			'post_type'  => 'page',
+		) );
+
+		$page_two = $this->factory->post->create_and_get( array(
+			'post_title' => 'Second Page',
+			'post_date'  => '2013-02-01 12:00:00',
+			'post_type'  => 'page',
 		) );
 
 		// Add some meta so we can join the postmeta table and query
@@ -207,6 +220,12 @@ class Tests_Link extends WP_UnitTestCase {
 		$this->go_to( get_permalink( $post_two->ID ) );
 		$this->assertEquals( $post_four, get_adjacent_post( false, null, false ) );
 		remove_filter( 'get_next_post_where', array( $this, 'filter_next_post_where' ) );
+
+		// Test "where" filter that writes its own query
+		add_filter( 'get_previous_post_where', array( $this, 'override_previous_post_where_clause' ) );
+		$this->go_to( get_permalink( $post_four->ID ) );
+		$this->assertEquals( $post_two, get_adjacent_post( false, null, true ) );
+		remove_filter( 'get_previous_post_where', array( $this, 'override_previous_post_where_clause' ) );
 
 		// Test "join" filter by joining the postmeta table and restricting by meta key
 		add_filter( 'get_next_post_join', array( $this, 'filter_next_post_join' ) );
@@ -227,6 +246,13 @@ class Tests_Link extends WP_UnitTestCase {
 		$this->go_to( get_permalink( $post_one->ID ) );
 		$this->assertEquals( $post_three, get_adjacent_post( false, null, false ) );
 		remove_filter( 'get_next_post_sort', array( $this, 'filter_next_post_sort_limit' ) );
+
+		// Test post-type specificity
+		$this->go_to( get_permalink( $page_one ) );
+		$this->assertEquals( $page_two, get_adjacent_post( false, null, false ) );
+
+		$this->go_to( get_permalink( $page_two ) );
+		$this->assertEquals( $page_one, get_adjacent_post( false, null, true ) );
 	}
 
 	/**
@@ -248,10 +274,18 @@ class Tests_Link extends WP_UnitTestCase {
 	/**
 	 * Filter callback for `test_legacy_get_adjacent_post_filters()`
 	 */
+	function override_previous_post_where_clause( $where ) {
+		$where = "WHERE p.post_date < '2012-02-28'";
+		return $where;
+	}
+
+	/**
+	 * Filter callback for `test_legacy_get_adjacent_post_filters()`
+	 */
 	function filter_next_post_join( $join ) {
 		global $wpdb;
 
-		$join .= " INNER JOIN {$wpdb->postmeta} ON {$wpdb->posts}.ID = {$wpdb->postmeta}.post_id";
+		$join .= " INNER JOIN {$wpdb->postmeta} ON p.ID = {$wpdb->postmeta}.post_id";
 		return $join;
 	}
 
@@ -269,10 +303,7 @@ class Tests_Link extends WP_UnitTestCase {
 	 * Filter callback for `test_legacy_get_adjacent_post_filters()`
 	 */
 	function filter_next_post_sort( $sort ) {
-		global $wpdb;
-
-		$sort = str_replace( $wpdb->posts . '.post_date', $wpdb->posts . '.post_title', $sort );
-		return $sort;
+		return str_replace( 'p.post_date', 'p.post_title', $sort );
 	}
 
 	/**

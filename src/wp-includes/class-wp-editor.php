@@ -223,13 +223,7 @@ final class _WP_Editors {
 					 */
 					$mce_external_plugins = apply_filters( 'mce_external_plugins', array() );
 
-					/**
-					 * TinyMCE default plugins filter
-					 *
-					 * Specifies which of the default plugins that are included in WordPress should be added to
-					 * the TinyMCE instance.
-					 */
-					$plugins = array_unique( apply_filters( 'tiny_mce_plugins', array(
+					$plugins = array(
 						'charmap',
 						'hr',
 						'media',
@@ -243,7 +237,19 @@ final class _WP_Editors {
 						'wplink',
 						'wpdialogs',
 						'wpview',
-					) ) );
+					);
+
+					if ( ! self::$has_medialib ) {
+						$plugins[] = 'image';
+					}
+
+					/**
+					 * TinyMCE default plugins filter
+					 *
+					 * Specifies which of the default plugins that are included in WordPress should be added to
+					 * the TinyMCE instance.
+					 */
+					$plugins = array_unique( apply_filters( 'tiny_mce_plugins', $plugins ) );
 
 					if ( ( $key = array_search( 'spellchecker', $plugins ) ) !== false ) {
 						// Remove 'spellchecker' from the internal plugins if added with 'tiny_mce_plugins' filter to prevent errors.
@@ -333,6 +339,7 @@ final class _WP_Editors {
 					'preview_styles' => 'font-family font-size font-weight font-style text-decoration text-transform',
 
 					'wpeditimage_disable_captions' => $no_captions,
+					'wpeditimage_html5_captions' => current_theme_supports( 'html5', 'caption' ),
 					'plugins' => implode( ',', $plugins ),
 				);
 
@@ -343,9 +350,16 @@ final class _WP_Editors {
 				$suffix = defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG ? '' : '.min';
 				$version = 'ver=' . $GLOBALS['wp_version'];
 				$dashicons = includes_url( "css/dashicons$suffix.css?$version" );
+				$mediaelement = includes_url( "js/mediaelement/mediaelementplayer.min.css?$version" );
+				$wpmediaelement = includes_url( "js/mediaelement/wp-mediaelement.css?$version" );
 
 				// WordPress default stylesheet and dashicons
-				$mce_css = array( $dashicons, self::$baseurl . '/skins/wordpress/wp-content.css' );
+				$mce_css = array(
+					$dashicons,
+					$mediaelement,
+					$wpmediaelement,
+					self::$baseurl . '/skins/wordpress/wp-content.css?' . $version
+				);
 
 				// load editor_style.css if the current theme supports it
 				if ( ! empty( $GLOBALS['editor_styles'] ) && is_array( $GLOBALS['editor_styles'] ) ) {
@@ -500,9 +514,6 @@ final class _WP_Editors {
 		if ( self::$has_medialib ) {
 			add_thickbox();
 			wp_enqueue_script('media-upload');
-
-			if ( self::$has_tinymce )
-				wp_enqueue_script('mce-view');
 		}
 	}
 
@@ -510,195 +521,227 @@ final class _WP_Editors {
 
 		$mce_translation = array(
 			// Default TinyMCE strings
-			'Cut' => __('Cut'),
-			'Header 2' => __('Header 2'),
-			'Your browser doesn\'t support direct access to the clipboard. Please use the Ctrl+X/C/V keyboard shortcuts instead.' => __('Your browser does not support direct access to the clipboard. Please use the Ctrl+X/C/V keyboard shortcuts instead.'),
-			'Div' => __('Div'),
-			'Paste' => __('Paste'),
-			'Close' => __('Close'),
-			'Pre' => __('Pre'),
-			'Align right' => __('Align right'),
-			'New document' => __('New document'),
-			'Blockquote' => __('Blockquote'),
-			'Numbered list' => __('Numbered list'),
-			'Increase indent' => __('Increase indent'),
-			'Formats' => __('Formats'),
-			'Headers' => __('Headers'),
-			'Select all' => __('Select all'),
-			'Header 3' => __('Header 3'),
-			'Blocks' => __('Blocks'),
-			'Undo' => __('Undo'),
-			'Strikethrough' => __('Strikethrough'),
-			'Bullet list' => __('Bullet list'),
-			'Header 1' => __('Header 1'),
-			'Superscript' => __('Superscript'),
-			'Clear formatting' => __('Clear formatting'),
-			'Subscript' => __('Subscript'),
-			'Header 6' => __('Header 6'),
-			'Redo' => __('Redo'),
-			'Paragraph' => __('Paragraph'),
-			'Ok' => __('Ok'),
-			'Bold' => __('Bold'),
-			'Code' => __('Code'),
-			'Italic' => __('Italic'),
-			'Align center' => __('Align center'),
-			'Header 5' => __('Header 5'),
-			'Decrease indent' => __('Decrease indent'),
-			'Header 4' => __('Header 4'),
-			'Paste is now in plain text mode. Contents will now be pasted as plain text until you toggle this option off.' => __('Paste is now in plain text mode. Contents will now be pasted as plain text until you toggle this option off.'),
-			'Underline' => __('Underline'),
-			'Cancel' => __('Cancel'),
-			'Justify' => __('Justify'),
-			'Inline' => __('Inline'),
-			'Copy' => __('Copy'),
-			'Align left' => __('Align left'),
-			'Visual aids' => __('Visual aids'),
-			'Lower Greek' => __('Lower Greek'),
-			'Square' => __('Square'),
-			'Default' => __('Default'),
-			'Lower Alpha' => __('Lower Alpha'),
-			'Circle' => __('Circle'),
-			'Disc' => __('Disc'),
-			'Upper Alpha' => __('Upper Alpha'),
-			'Upper Roman' => __('Upper Roman'),
-			'Lower Roman' => __('Lower Roman'),
-			'Name' => __('Name'),
-			'Anchor' => __('Anchor'),
-			'You have unsaved changes are you sure you want to navigate away?' => __('You have unsaved changes are you sure you want to navigate away?'),
-			'Restore last draft' => __('Restore last draft'),
-			'Special character' => __('Special character'),
-			'Source code' => __('Source code'),
-			'Right to left' => __('Right to left'),
-			'Left to right' => __('Left to right'),
-			'Emoticons' => __('Emoticons'),
-			'Robots' => __('Robots'),
-			'Document properties' => __('Document properties'),
-			'Title' => __('Title'),
-			'Keywords' => __('Keywords'),
-			'Encoding' => __('Encoding'),
-			'Description' => __('Description'),
-			'Author' => __('Author'),
-			'Fullscreen' => __('Fullscreen'),
-			'Horizontal line' => __('Horizontal line'),
-			'Horizontal space' => __('Horizontal space'),
-			'Insert/edit image' => __('Insert/edit image'),
-			'General' => __('General'),
-			'Advanced' => __('Advanced'),
-			'Source' => __('Source'),
-			'Border' => __('Border'),
-			'Constrain proportions' => __('Constrain proportions'),
-			'Vertical space' => __('Vertical space'),
-			'Image description' => __('Image description'),
-			'Style' => __('Style'),
-			'Dimensions' => __('Dimensions'),
-			'Insert image' => __('Insert image'),
-			'Insert date/time' => __('Insert date/time'),
-			'Remove link' => __('Remove link'),
-			'Url' => __('Url'),
-			'Text to display' => __('Text to display'),
-			'Anchors' => __('Anchors'),
-			'Insert link' => __('Insert link'),
-			'New window' => __('New window'),
-			'None' => __('None'),
-			'Target' => __('Target'),
-			'Insert/edit link' => __('Insert/edit link'),
-			'Insert/edit video' => __('Insert/edit video'),
-			'Poster' => __('Poster'),
-			'Alternative source' => __('Alternative source'),
-			'Paste your embed code below:' => __('Paste your embed code below:'),
-			'Insert video' => __('Insert video'),
-			'Embed' => __('Embed'),
-			'Nonbreaking space' => __('Nonbreaking space'),
-			'Page break' => __('Page break'),
-			'Paste as text' => __('Paste as text'),
-			'Preview' => __('Preview'),
-			'Print' => __('Print'),
-			'Save' => __('Save'),
-			'Could not find the specified string.' => __('Could not find the specified string.'),
-			'Replace' => __('Replace'),
-			'Next' => __('Next'),
-			'Whole words' => __('Whole words'),
-			'Find and replace' => __('Find and replace'),
-			'Replace with' => __('Replace with'),
-			'Find' => __('Find'),
-			'Replace all' => __('Replace all'),
-			'Match case' => __('Match case'),
-			'Prev' => __('Prev'),
-			'Spellcheck' => __('Spellcheck'),
-			'Finish' => __('Finish'),
-			'Ignore all' => __('Ignore all'),
-			'Ignore' => __('Ignore'),
-			'Insert row before' => __('Insert row before'),
-			'Rows' => __('Rows'),
-			'Height' => __('Height'),
-			'Paste row after' => __('Paste row after'),
-			'Alignment' => __('Alignment'),
-			'Column group' => __('Column group'),
-			'Row' => __('Row'),
-			'Insert column before' => __('Insert column before'),
-			'Split cell' => __('Split cell'),
-			'Cell padding' => __('Cell padding'),
-			'Cell spacing' => __('Cell spacing'),
-			'Row type' => __('Row type'),
-			'Insert table' => __('Insert table'),
-			'Body' => __('Body'),
-			'Caption' => __('Caption'),
-			'Footer' => __('Footer'),
-			'Delete row' => __('Delete row'),
-			'Paste row before' => __('Paste row before'),
-			'Scope' => __('Scope'),
-			'Delete table' => __('Delete table'),
-			'Header cell' => __('Header cell'),
-			'Column' => __('Column'),
-			'Cell' => __('Cell'),
-			'Header' => __('Header'),
-			'Cell type' => __('Cell type'),
-			'Copy row' => __('Copy row'),
-			'Row properties' => __('Row properties'),
-			'Table properties' => __('Table properties'),
-			'Row group' => __('Row group'),
-			'Right' => __('Right'),
-			'Insert column after' => __('Insert column after'),
-			'Cols' => __('Cols'),
-			'Insert row after' => __('Insert row after'),
-			'Width' => __('Width'),
-			'Cell properties' => __('Cell properties'),
-			'Left' => __('Left'),
-			'Cut row' => __('Cut row'),
-			'Delete column' => __('Delete column'),
-			'Center' => __('Center'),
-			'Merge cells' => __('Merge cells'),
-			'Insert template' => __('Insert template'),
-			'Templates' => __('Templates'),
-			'Background color' => __('Background color'),
-			'Text color' => __('Text color'),
-			'Show blocks' => __('Show blocks'),
-			'Show invisible characters' => __('Show invisible characters'),
-			'Words: {0}' => __('Words: {0}'),
-			'Insert' => __('Insert'),
-			'File' => __('File'),
-			'Edit' => __('Edit'),
-			'Rich Text Area. Press ALT-F9 for menu. Press ALT-F10 for toolbar. Press ALT-0 for help' => __('Rich Text Area. Press ALT-F9 for menu. Press ALT-F10 for toolbar. Press ALT-0 for help'),
-			'Tools' => __('Tools'),
-			'View' => __('View'),
-			'Table' => __('Table'),
-			'Format' => __('Format'),
+			'New document' => __( 'New document' ),
+			'Formats' => _x( 'Formats', 'TinyMCE' ),
+			'Headers' => _x( 'Headers', 'TinyMCE' ),
+			'Header 1' => __( 'Heading 1' ),
+			'Header 2' => __( 'Heading 2' ),
+			'Header 3' => __( 'Heading 3' ),
+			'Header 4' => __( 'Heading 4' ),
+			'Header 5' => __( 'Heading 5' ),
+			'Header 6' => __( 'Heading 6' ),
+
+			/* translators: block tags */
+			'Blocks' => _x( 'Blocks', 'TinyMCE' ),
+			'Paragraph' => __( 'Paragraph' ),
+			'Blockquote' => __( 'Blockquote' ),
+			'Div' => _x( 'Div', 'HTML tag' ),
+			'Pre' => _x( 'Pre', 'HTML tag' ),
+
+			'Inline' => _x( 'Inline', 'HTML elements' ),
+			'Underline' => __( 'Underline' ),
+			'Strikethrough' => __( 'Strikethrough' ),
+			'Subscript' => __( 'Subscript' ),
+			'Superscript' => __( 'Superscript' ),
+			'Clear formatting' => __( 'Clear formatting' ),
+			'Bold' => __( 'Bold' ),
+			'Italic' => __( 'Italic' ),
+			'Code' => _x( 'Code', 'editor button' ),
+			'Source code' => __( 'Source code' ),
+
+			'Align center' => __( 'Align center' ),
+			'Align right' => __( 'Align right' ),
+			'Align left' => __( 'Align left' ),
+			'Justify' => __( 'Justify' ),
+			'Increase indent' => __( 'Increase indent' ),
+			'Decrease indent' => __( 'Decrease indent' ),
+
+			'Cut' => __( 'Cut' ),
+			'Copy' => __( 'Copy' ),
+			'Paste' => __( 'Paste' ),
+			'Select all' => __( 'Select all' ),
+			'Undo' => __( 'Undo' ),
+			'Redo' => __( 'Redo' ),
+
+			'Ok' => __( 'OK' ),
+			'Cancel' => __( 'Cancel' ),
+			'Close' => __( 'Close' ),
+			'Visual aids' => __( 'Visual aids' ),
+
+			'Bullet list' => __( 'Bulleted list' ),
+			'Numbered list' => __( 'Numbered list' ),
+			'Square' => _x( 'Square', 'list style' ),
+			'Default' => _x( 'Default', 'list style' ),
+			'Circle' => _x( 'Circle', 'list style' ),
+			'Disc' => _x('Disc', 'list style' ),
+			'Lower Greek' => _x( 'Lower Greek', 'list style' ),
+			'Lower Alpha' => _x( 'Lower Alpha', 'list style' ),
+			'Upper Alpha' => _x( 'Upper Alpha', 'list style' ),
+			'Upper Roman' => _x( 'Upper Roman', 'list style' ),
+			'Lower Roman' => _x( 'Lower Roman', 'list style' ),
+
+			// Anchor plugin
+			'Name' => _x( 'Name', 'Name of link anchor (TinyMCE)' ),
+			'Anchor' => _x( 'Anchor', 'Link anchor (TinyMCE)' ),
+			'Anchors' => _x( 'Anchors', 'Link anchors (TinyMCE)' ),
+
+			// Fullpage plugin
+			'Document properties' => __( 'Document properties' ),
+			'Robots' => __( 'Robots' ),
+			'Title' => __( 'Title' ),
+			'Keywords' => __( 'Keywords' ),
+			'Encoding' => __( 'Encoding' ),
+			'Description' => __( 'Description' ),
+			'Author' => __( 'Author' ),
+
+			// Media, image plugins
+			'Insert/edit image' => __( 'Insert/edit image' ),
+			'General' => __( 'General' ),
+			'Advanced' => __( 'Advanced' ),
+			'Source' => __( 'Source' ),
+			'Border' => __( 'Border' ),
+			'Constrain proportions' => __( 'Constrain proportions' ),
+			'Vertical space' => __( 'Vertical space' ),
+			'Image description' => __( 'Image description' ),
+			'Style' => __( 'Style' ),
+			'Dimensions' => __( 'Dimensions' ),
+			'Insert image' => __( 'Insert image' ),
+			'Insert date/time' => __( 'Insert date/time' ),
+			'Insert/edit video' => __( 'Insert/edit video' ),
+			'Poster' => __( 'Poster' ),
+			'Alternative source' => __( 'Alternative source' ),
+			'Paste your embed code below:' => __( 'Paste your embed code below:' ),
+			'Insert video' => __( 'Insert video' ),
+			'Embed' => __( 'Embed' ),
+
+			// Each of these have a corresponding plugin
+			'Special character' => __( 'Special character' ),
+			'Right to left' => _x( 'Right to left', 'editor button' ),
+			'Left to right' => _x( 'Left to right', 'editor button' ),
+			'Emoticons' => __( 'Emoticons' ),
+			'Nonbreaking space' => __( 'Nonbreaking space' ),
+			'Page break' => __( 'Page break' ),
+			'Paste as text' => __( 'Paste as text' ),
+			'Preview' => __( 'Preview' ),
+			'Print' => __( 'Print' ),
+			'Save' => __( 'Save' ),
+			'Fullscreen' => __( 'Fullscreen' ),
+			'Horizontal line' => __( 'Horizontal line' ),
+			'Horizontal space' => __( 'Horizontal space' ),
+			'Restore last draft' => __( 'Restore last draft' ),
+			'Insert/edit link' => __( 'Insert/edit link' ),
+
+			// Spelling, search/replace plugins
+			'Could not find the specified string.' => __( 'Could not find the specified string.' ),
+			'Replace' => _x( 'Replace', 'find/replace' ),
+			'Next' => _x( 'Next', 'find/replace' ),
+			/* translators: previous */
+			'Prev' => _x( 'Prev', 'find/replace' ),
+			'Whole words' => _x( 'Whole words', 'find/replace' ),
+			'Find and replace' => __( 'Find and replace' ),
+			'Replace with' => _x('Replace with', 'find/replace' ),
+			'Find' => _x( 'Find', 'find/replace' ),
+			'Replace all' => _x( 'Replace all', 'find/replace' ),
+			'Match case' => __( 'Match case' ),
+			'Spellcheck' => __( 'Check Spelling' ),
+			'Finish' => _x( 'Finish', 'spellcheck' ),
+			'Ignore all' => _x( 'Ignore all', 'spellcheck' ),
+			'Ignore' => _x( 'Ignore', 'spellcheck' ),
+
+			// TinyMCE tables
+			'Insert table' => __( 'Insert table' ),
+			'Delete table' => __( 'Delete table' ),
+			'Table properties' => __( 'Table properties' ),
+			'Row properties' => __( 'Table row properties' ),
+			'Cell properties' => __( 'Table cell properties' ),
+
+			'Row' => __( 'Row' ),
+			'Rows' => __( 'Rows' ),
+			'Column' => _x( 'Column', 'table column' ),
+			'Cols' => _x( 'Cols', 'table columns' ),
+			'Cell' => _x( 'Cell', 'table cell' ),
+			'Header cell' => __( 'Header cell' ),
+			'Header' => _x( 'Header', 'table header' ),
+			'Body' => _x( 'Body', 'table body' ),
+			'Footer' => _x( 'Footer', 'table footer' ),
+
+			'Insert row before' => __( 'Insert row before' ),
+			'Insert row after' => __( 'Insert row after' ),
+			'Insert column before' => __( 'Insert column before' ),
+			'Insert column after' => __( 'Insert column after' ),
+			'Paste row before' => __( 'Paste table row before' ),
+			'Paste row after' => __( 'Paste table row after' ),
+			'Delete row' => __( 'Delete row' ),
+			'Delete column' => __( 'Delete column' ),
+			'Cut row' => __( 'Cut table row' ),
+			'Copy row' => __( 'Copy table row' ),
+			'Merge cells' => __( 'Merge table cells' ),
+			'Split cell' => __( 'Split table cell' ),
+
+			'Height' => __( 'Height' ),
+			'Width' => __( 'Width' ),
+			'Caption' => __( 'Caption' ),
+			'Alignment' => __( 'Alignment' ),
+			'Left' => __( 'Left' ),
+			'Center' => __( 'Center' ),
+			'Right' => __( 'Right' ),
+
+			'Row group' => __( 'Row group' ),
+			'Column group' => __( 'Column group' ),
+			'Row type' => __( 'Row type' ),
+			'Cell type' => __( 'Cell type' ),
+			'Cell padding' => __( 'Cell padding' ),
+			'Cell spacing' => __( 'Cell spacing' ),
+			'Scope' => _x( 'Scope', 'table cell scope attribute' ),
+
+			'Insert template' => _x( 'Insert template', 'TinyMCE' ),
+			'Templates' => _x( 'Templates', 'TinyMCE' ),
+
+			'Background color' => __( 'Background color' ),
+			'Text color' => __( 'Text color' ),
+			'Show blocks' => _x( 'Show blocks', 'editor button' ),
+			'Show invisible characters' => __( 'Show invisible characters' ),
+
+			/* translators: word count */
+			'Words: {0}' => sprintf( __( 'Words: %s' ), '{0}' ),
+			'Paste is now in plain text mode. Contents will now be pasted as plain text until you toggle this option off.' => __( 'Paste is now in plain text mode. Contents will now be pasted as plain text until you toggle this option off.' ),
+			'Rich Text Area. Press ALT-F9 for menu. Press ALT-F10 for toolbar. Press ALT-0 for help' => __( 'Rich Text Area. Press ALT-F9 for menu. Press ALT-F10 for toolbar. Press ALT-0 for help' ),
+			'You have unsaved changes are you sure you want to navigate away?' => __( 'The changes you made will be lost if you navigate away from this page.' ),
+			'Your browser doesn\'t support direct access to the clipboard. Please use the Ctrl+X/C/V keyboard shortcuts instead.' => __( 'Your browser does not support direct access to the clipboard. Please use the Ctrl+X/C/V keyboard shortcuts instead.' ),
+
+			// TinyMCE menus
+			'Insert' => _x( 'Insert', 'TinyMCE menu' ),
+			'File' => _x( 'File', 'TinyMCE menu' ),
+			'Edit' => _x( 'Edit', 'TinyMCE menu' ),
+			'Tools' => _x( 'Tools', 'TinyMCE menu' ),
+			'View' => _x( 'View', 'TinyMCE menu' ),
+			'Table' => _x( 'Table', 'TinyMCE menu' ),
+			'Format' => _x( 'Format', 'TinyMCE menu' ),
 
 			// WordPress strings
-			'Help' => __('Help'),
-			'Toolbar Toggle' => __('Toolbar Toggle'),
-			'Insert Read More tag' => __('Insert Read More tag'),
-			'Distraction Free Writing' => __('Distraction Free Writing'),
+			'Help' => __( 'Help' ),
+			'Toolbar Toggle' => __( 'Toolbar Toggle' ),
+			'Insert Read More tag' => __( 'Insert Read More tag' ),
+			'Distraction Free Writing' => __( 'Distraction Free Writing' ),
 		);
 
 		$baseurl = self::$baseurl;
 		$mce_locale = self::$mce_locale;
 
+		/**
+		 * Filter translated strings prepared for TinyMCE.
+		 *
+		 * @since 3.9.0
+		 *
+		 * @param array  $mce_translation Key/value pairs of strings.
+		 * @param string $mce_locale      Locale.
+		 */
 		$mce_translation = apply_filters( 'wp_mce_translation', $mce_translation, $mce_locale );
 
 		foreach ( $mce_translation as $key => $value ) {
-			if ( strpos( $value, '&' ) !== false )
+			if ( false !== strpos( $value, '&' ) ) {
 				$mce_translation[$key] = html_entity_decode( $value, ENT_QUOTES, 'UTF-8' );
+			}
 		}
 
 		return "tinymce.addI18n( '$mce_locale', " . json_encode( $mce_translation ) . ");\n" .
@@ -1060,7 +1103,7 @@ final class _WP_Editors {
 					<label><span><?php _e( 'Title' ); ?></span><input id="link-title-field" type="text" name="linktitle" /></label>
 				</div>
 				<div class="link-target">
-					<label><input type="checkbox" id="link-target-checkbox" /> <?php _e( 'Open link in a new window/tab' ); ?></label>
+					<label><span>&nbsp;</span><input type="checkbox" id="link-target-checkbox" /> <?php _e( 'Open link in a new window/tab' ); ?></label>
 				</div>
 			</div>
 			<p class="howto" id="wp-link-search-toggle"><?php _e( 'Or link to existing content' ); ?></p>
@@ -1089,7 +1132,7 @@ final class _WP_Editors {
 		</div>
 		<div class="submitbox">
 			<div id="wp-link-update">
-				<input type="submit" value="<?php esc_attr_e( 'Add Link' ); ?>" class="button-primary" id="wp-link-submit" name="wp-link-submit">
+				<input type="submit" value="<?php esc_attr_e( 'Add Link' ); ?>" class="button button-primary" id="wp-link-submit" name="wp-link-submit">
 			</div>
 			<div id="wp-link-cancel">
 				<a class="submitdelete deletion" href="#"><?php _e( 'Cancel' ); ?></a>

@@ -765,6 +765,13 @@ function img_caption_shortcode( $attr, $content = null ) {
 	if ( ! empty( $atts['id'] ) )
 		$atts['id'] = 'id="' . esc_attr( $atts['id'] ) . '" ';
 
+	$class = trim( 'wp-caption ' . $atts['align'] . ' ' . $atts['class'] );
+
+	if ( current_theme_supports( 'html5', 'caption' ) ) {
+		return '<figure ' . $atts['id'] . 'style="width: ' . (int) $atts['width'] . 'px;" class="' . esc_attr( $class ) . '">'
+		. do_shortcode( $content ) . '<figcaption class="wp-caption-text">' . $atts['caption'] . '</figcaption></figure>';
+	}
+
 	$caption_width = 10 + $atts['width'];
 
 	/**
@@ -787,8 +794,6 @@ function img_caption_shortcode( $attr, $content = null ) {
 	$style = '';
 	if ( $caption_width )
 		$style = 'style="width: ' . (int) $caption_width . 'px" ';
-
-	$class = trim( 'wp-caption ' . $atts['align'] . ' ' . $atts['class'] );
 
 	return '<div ' . $atts['id'] . $style . 'class="' . esc_attr( $class ) . '">'
 	. do_shortcode( $content ) . '<p class="wp-caption-text">' . $atts['caption'] . '</p></div>';
@@ -999,17 +1004,12 @@ function gallery_shortcode( $attr ) {
 }
 
 /**
- * Output and enqueue default scripts and styles for playlists.
+ * Output the templates used by playlists
  *
  * @since 3.9.0
- *
- * @param string $type Type of playlist: "audio" or "video."
  */
-function wp_playlist_scripts( $type ) {
-	wp_enqueue_style( 'wp-mediaelement' );
-	wp_enqueue_script( 'wp-playlist' );
+function wp_underscore_playlist_templates() {
 ?>
-<!--[if lt IE 9]><script>document.createElement('<?php echo esc_js( $type ) ?>');</script><![endif]-->
 <script type="text/html" id="tmpl-wp-playlist-current-item">
 	<# if ( data.image ) { #>
 	<img src="{{{ data.thumb.src }}}"/>
@@ -1044,6 +1044,22 @@ function wp_playlist_scripts( $type ) {
 	</div>
 </script>
 <?php
+}
+
+/**
+ * Output and enqueue default scripts and styles for playlists.
+ *
+ * @since 3.9.0
+ *
+ * @param string $type Type of playlist: "audio" or "video."
+ */
+function wp_playlist_scripts( $type ) {
+	wp_enqueue_style( 'wp-mediaelement' );
+	wp_enqueue_script( 'wp-playlist' );
+?>
+<!--[if lt IE 9]><script>document.createElement('<?php echo esc_js( $type ) ?>');</script><![endif]-->
+<?php
+	wp_underscore_playlist_templates();
 }
 add_action( 'wp_playlist_scripts', 'wp_playlist_scripts' );
 
@@ -1124,8 +1140,8 @@ function wp_get_playlist( $attr, $type ) {
 	}
 
 	$playlist_styles = array(
-		'light' => _x( 'Light', 'light playlist theme' ),
-		'dark'	=> _x( 'Dark', 'dark playlist theme' )
+		'light' => _x( 'Light', 'playlist theme' ),
+		'dark'	=> _x( 'Dark', 'playlist theme' )
 	);
 
 	/**
@@ -1186,8 +1202,8 @@ function wp_get_playlist( $attr, $type ) {
 	$default_width = 640;
 	$default_height = 360;
 
-	$theme_width = $content_width - $outer;
-	$theme_height = round( ( $default_height * $theme_width ) / $default_width );
+	$theme_width = empty( $content_width ) ? $default_width : ( $content_width - $outer );
+	$theme_height = empty( $content_width ) ? $default_height : round( ( $default_height * $theme_width ) / $default_width );
 
 	$data = compact( 'type', 'style' );
 
@@ -1390,6 +1406,7 @@ function wp_audio_shortcode( $attr, $content = '' ) {
 
 	$default_types = wp_get_audio_extensions();
 	$defaults_atts = array(
+		'caption'  => '',
 		'src'      => '',
 		'loop'     => '',
 		'autoplay' => '',
@@ -1469,7 +1486,8 @@ function wp_audio_shortcode( $attr, $content = '' ) {
 			if ( empty( $fileurl ) )
 				$fileurl = $$fallback;
 			$type = wp_check_filetype( $$fallback, wp_get_mime_types() );
-			$html .= sprintf( $source, $type['type'], esc_url( $$fallback ) );
+			$url = add_query_arg( '_', $instances, $$fallback );
+			$html .= sprintf( $source, $type['type'], esc_url( $url ) );
 		}
 	}
 
@@ -1548,6 +1566,7 @@ function wp_video_shortcode( $attr, $content = '' ) {
 
 	$default_types = wp_get_video_extensions();
 	$defaults_atts = array(
+		'caption'  => '',
 		'src'      => '',
 		'poster'   => '',
 		'loop'     => '',
@@ -1571,7 +1590,7 @@ function wp_video_shortcode( $attr, $content = '' ) {
 		}
 	} else {
 		// if the video is bigger than the theme
-		if ( $width > $content_width ) {
+		if ( ! empty( $content_width ) && $width > $content_width ) {
 			$height = round( ( $height * $content_width ) / $width );
 			$width = $content_width;
 		}
@@ -1657,7 +1676,8 @@ function wp_video_shortcode( $attr, $content = '' ) {
 			} else {
 				$type = wp_check_filetype( $$fallback, wp_get_mime_types() );
 			}
-			$html .= sprintf( $source, $type['type'], esc_url( $$fallback ) );
+			$url = add_query_arg( '_', $instances, $$fallback );
+			$html .= sprintf( $source, $type['type'], esc_url( $url ) );
 		}
 	}
 
@@ -2161,7 +2181,7 @@ function wp_plupload_default_settings() {
 	$max_upload_size = wp_max_upload_size();
 
 	$defaults = array(
-		'runtimes'            => 'html5,silverlight,flash,html4',
+		'runtimes'            => 'html5,flash,silverlight,html4',
 		'file_data_name'      => 'async-upload', // key passed to $_FILE.
 		'url'                 => admin_url( 'async-upload.php', 'relative' ),
 		'flash_swf_url'       => includes_url( 'js/plupload/Moxie.swf' ),
@@ -2330,6 +2350,22 @@ function wp_prepare_attachment_for_js( $attachment ) {
 	if ( $meta && ( 'audio' === $type || 'video' === $type ) ) {
 		if ( isset( $meta['length_formatted'] ) )
 			$response['fileLength'] = $meta['length_formatted'];
+
+		$response['meta'] = array();
+		$keys = array( 'title', 'artist', 'band', 'album', 'genre', 'year', 'length', 'length_formatted' );
+		foreach ( $keys as $key ) {
+			if ( ! empty( $meta[ $key ] ) ) {
+				$response['meta'][ $key ] = $meta[ $key ];
+			}
+		}
+
+		$id = get_post_thumbnail_id( $attachment->ID );
+		if ( ! empty( $id ) ) {
+			list( $src, $width, $height ) = wp_get_attachment_image_src( $id, 'full' );
+			$response['image'] = compact( 'src', 'width', 'height' );
+			list( $src, $width, $height ) = wp_get_attachment_image_src( $id, 'thumbnail' );
+			$response['thumb'] = compact( 'src', 'width', 'height' );
+		}
 	}
 
 	if ( function_exists('get_compat_media_markup') )
@@ -2349,6 +2385,8 @@ function wp_enqueue_media( $args = array() ) {
 	// Enqueue me just once per page, please.
 	if ( did_action( 'wp_enqueue_media' ) )
 		return;
+
+	global $content_width;
 
 	$defaults = array(
 		'post' => null,
@@ -2398,8 +2436,10 @@ function wp_enqueue_media( $args = array() ) {
 			'id' => 0,
 		),
 		'defaultProps' => $props,
+		'attachmentCounts' => wp_count_attachments(),
 		'embedExts'    => $exts,
-		'embedMimes'   => $ext_mimes
+		'embedMimes'   => $ext_mimes,
+		'contentWidth' => $content_width,
 	);
 
 	$post = null;
@@ -2410,7 +2450,7 @@ function wp_enqueue_media( $args = array() ) {
 			'nonce' => wp_create_nonce( 'update-post_' . $post->ID ),
 		);
 
-		if ( theme_supports_thumbnails( $post ) && post_supports_thumbnails( $post ) ) {
+		if ( theme_supports_thumbnails( $post ) || post_supports_thumbnails( $post ) ) {
 			$featured_image_id = get_post_meta( $post->ID, '_thumbnail_id', true );
 			$settings['post']['featuredImageId'] = $featured_image_id ? $featured_image_id : -1;
 		}
@@ -2477,37 +2517,28 @@ function wp_enqueue_media( $args = array() ) {
 		'editImage'             => __( 'Edit Image' ),
 
 		// Crop Image
-		/* translators: title for Media Manager library view */
 		'chooseImage' => __( 'Choose Image' ),
-		/* translators: button to select an image from the MM library to crop */
 		'selectAndCrop' => __( 'Select and Crop' ),
-		/* translators: button to choose not to crop the selected image */
 		'skipCropping' => __( 'Skip Cropping' ),
-		/* translators: button to choose to crop the selected image */
 		'cropImage' => __( 'Crop Image' ),
 		'cropYourImage' => __( 'Crop your image' ),
-		/* translators: button label changes to this while the image is being cropped server-side */
-		'cropping' => __( 'Cropping...' ),
-		/* translators: suggested width of header image in pixels */
+		'cropping' => __( 'Cropping&hellip;' ),
 		'suggestedWidth' => __( 'Suggested width is %d pixels.' ),
-		/* translators: suggested height of header image in pixels */
 		'suggestedHeight' => __( 'Suggested height is %d pixels.' ),
+
+		'mediaHTML5Text'        => __( 'Add alternate sources for maximum HTML5 playback:' ),
 
 		// Edit Audio
 		'audioDetailsTitle'     => __( 'Audio Details' ),
 		'audioReplaceTitle'     => __( 'Replace Audio' ),
 		'audioAddSourceTitle'   => __( 'Add Audio Source' ),
 		'audioDetailsCancel'    => __( 'Cancel Edit' ),
-		'audioDetailsText'      => __( '"Replace Audio" will remove all associated source files when you update. ' .
-			'"Add Audio Source" allows you to specify alternate sources for maximum native HTML5 audio playback.' ),
 
 		// Edit Video
 		'videoDetailsTitle'     => __( 'Video Details' ),
 		'videoReplaceTitle'     => __( 'Replace Video' ),
 		'videoAddSourceTitle'   => __( 'Add Video Source' ),
 		'videoDetailsCancel'    => __( 'Cancel Edit' ),
-		'videoDetailsText'      => __( '"Replace Video" will remove all associated source files when you update. ' .
-			'"Add Video Source" allows you to specify alternate sources for maximum native HTML5 video playback.' ),
 		'videoSelectPosterImageTitle' => _( 'Select Poster Image' ),
 		'videoAddTrackTitle'	=> __( 'Add Subtitles' ),
 
@@ -2540,7 +2571,11 @@ function wp_enqueue_media( $args = array() ) {
 	wp_localize_script( 'media-views', '_wpMediaViewsL10n', $strings );
 
 	wp_enqueue_script( 'media-editor' );
+	wp_enqueue_script( 'media-audiovideo' );
 	wp_enqueue_style( 'media-views' );
+	if ( is_admin() ) {
+		wp_enqueue_script( 'image-edit' );
+	}
 	wp_enqueue_style( 'imgareaselect' );
 	wp_plupload_default_settings();
 
