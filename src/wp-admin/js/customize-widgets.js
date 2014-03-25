@@ -1383,7 +1383,6 @@ var WidgetCustomizer = ( function ($) {
 				return;
 			}
 
-			complete;
 			if ( do_expand ) {
 				// Close all other widget controls before expanding this one
 				wp.customize.control.each( function ( other_control ) {
