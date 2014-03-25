@@ -1392,8 +1392,6 @@ var WidgetCustomizer = ( function ($) {
 					}
 				} );
 
-				control.container.trigger( 'expand' );
-				control.container.addClass( 'expanding' );
 				complete = function () {
 					control.container.removeClass( 'expanding' );
 					control.container.addClass( 'expanded' );
@@ -1404,6 +1402,8 @@ var WidgetCustomizer = ( function ($) {
 				} else {
 					inside.slideDown( 'fast', complete );
 				}
+				control.container.trigger( 'expand' );
+				control.container.addClass( 'expanding' );
 			} else {
 				control.container.trigger( 'collapse' );
 				control.container.addClass( 'collapsing' );
