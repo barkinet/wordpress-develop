@@ -908,9 +908,7 @@ class WP_Customize_Widgets {
 	static function call_widget_update( $widget_id ) {
 		global $wp_registered_widget_updates, $wp_registered_widget_controls;
 
-		$option_capture = new Option_Update_Capture();
-
-		$option_capture->start();
+		self::start_capturing_option_updates();
 		$parsed_id   = self::parse_widget_id( $widget_id );
 		$option_name = 'widget_' . $parsed_id['id_base'];
 
@@ -922,13 +920,13 @@ class WP_Customize_Widgets {
 		if ( ! empty( $_POST['sanitized_widget_setting'] ) ) {
 			$sanitized_widget_setting = json_decode( self::get_post_value( 'sanitized_widget_setting' ), true );
 			if ( empty( $sanitized_widget_setting ) ) {
-				$option_capture->stop();
+				self::stop_capturing_option_updates();
 				return new WP_Error( 'malformed_data', 'Malformed sanitized_widget_setting' );
 			}
 
 			$instance = self::sanitize_widget_instance( $sanitized_widget_setting );
 			if ( is_null( $instance ) ) {
-				$option_capture->stop();
+				self::stop_capturing_option_updates();
 				return new WP_Error( 'unsanitary_data', 'Unsanitary sanitized_widget_setting' );
 			}
 
@@ -967,15 +965,15 @@ class WP_Customize_Widgets {
 		/**
 		 * Make sure the expected option was updated
 		 */
-		if ( 0 !== $option_capture->count() ) {
-			if ( count( $option_capture->options ) > 1 ) {
-				$option_capture->stop();
+		if ( 0 !== self::count_captured_options() ) {
+			if ( self::count_captured_options() > 1 ) {
+				self::stop_capturing_option_updates();
 				return new WP_Error( 'unexpected_update', 'Widget unexpectedly updated more than one option.' );
 			}
 
-			$updated_option_name = key( $option_capture->options );
+			$updated_option_name = key( self::get_captured_options() );
 			if ( $updated_option_name !== $option_name ) {
-				$option_capture->stop();
+				self::stop_capturing_option_updates();
 				return new WP_Error( 'wrong_option', sprintf( 'Widget updated option "%1$s", but expected "%2$s".', $updated_option_name, $option_name ) );
 			}
 		}
@@ -1000,7 +998,7 @@ class WP_Customize_Widgets {
 			$instance = $option;
 		}
 
-		$option_capture->stop();
+		self::stop_capturing_option_updates();
 		return compact( 'instance', 'form' );
 	}
 
@@ -1053,88 +1051,87 @@ class WP_Customize_Widgets {
 
 		wp_send_json_success( compact( 'form', 'instance' ) );
 	}
-}
 
-class Option_Update_Capture {
-
-	/**
-	 * @var array $options values updated while capturing is happening
-	 */
-	public $options = array();
-
-	protected $_ignore_transients = true;
-	protected $_is_current = false;
-
-	function __construct( $ignore_transients = true ) {
-		$this->_ignore_transients = $ignore_transients;
-	}
+	/***************************************************************************
+	 * Option Update Capturing
+	 ***************************************************************************/
 
 	/**
-	 * Determine whether or not the transaction is open
-	 * @return bool
+	 * @var array $_captured_options values updated while capturing is happening
 	 */
-	function is_current() {
-		return $this->_is_current;
-	}
+	protected static $_captured_options = array();
+
+	/**
+	 * @var bool $_is_current whether capturing is currently happening or not
+	 */
+	protected static $_is_capturing_option_updates = false;
 
 	/**
 	 * @param $option_name
 	 * @return boolean
 	 */
-	function is_option_ignored( $option_name ) {
-		return ( $this->_ignore_transients && 0 === strpos( $option_name, '_transient_' ) );
+	protected static function is_option_capture_ignored( $option_name ) {
+		return ( 0 === strpos( $option_name, '_transient_' ) );
+	}
+
+	/**
+	 * Get options updated
+	 * @return array
+	 */
+	protected static function get_captured_options() {
+		return self::$_captured_options;
 	}
 
 	/**
 	 * Get the number of options updated
 	 * @return bool
 	 */
-	function count() {
-		return count( $this->options );
+	protected static function count_captured_options() {
+		return count( self::$_captured_options );
 	}
 
 	/**
 	 * Start keeping track of changes to options, and cache their new values
 	 */
-	function start() {
-		if ( $this->_is_current ) {
+	protected static function start_capturing_option_updates() {
+		if ( self::$_is_capturing_option_updates ) {
 			return;
 		}
 
-		$this->_is_current = true;
-		add_filter( 'pre_update_option', array( $this, 'pre_update_option' ), 10, 3 );
+		self::$_is_capturing_option_updates = true;
+		add_filter( 'pre_update_option', array( __CLASS__, '_capture_filter_pre_update_option' ), 10, 3 );
 	}
 
 	/**
-	 *
-	 * @param  mixed  $new_value
+	 * @access private
+	 * @param mixed $new_value
 	 * @param string $option_name
 	 * @param mixed $old_value
 	 * @return mixed
 	 */
-	function pre_update_option( $new_value, $option_name, $old_value ) {
-		if ( $this->is_option_ignored( $option_name ) ) {
+	static function _capture_filter_pre_update_option( $new_value, $option_name, $old_value ) {
+		if ( self::is_option_capture_ignored( $option_name ) ) {
 			return;
 		}
 
-		if ( ! isset( $this->options[$option_name] ) ) {
-			add_filter( "pre_option_{$option_name}", array( $this, 'pre_get_option' ) );
+		if ( ! isset( self::$_captured_options[$option_name] ) ) {
+			add_filter( "pre_option_{$option_name}", array( __CLASS__, '_capture_filter_pre_get_option' ) );
 		}
 
-		$this->options[$option_name] = $new_value;
+		self::$_captured_options[$option_name] = $new_value;
 
 		return $old_value;
 	}
 
 	/**
-	 *
+	 * @access private
 	 * @param mixed $value
 	 * @return mixed
 	 */
-	function pre_get_option( $value ) {
+	static function _capture_filter_pre_get_option( $value ) {
 		$option_name = preg_replace( '/^pre_option_/', '', current_filter() );
-		if ( isset( $this->options[$option_name] ) ) {
-			$value = $this->options[$option_name];
+		if ( isset( self::$_captured_options[$option_name] ) ) {
+			$value = self::$_captured_options[$option_name];
 			$value = apply_filters( 'option_' . $option_name, $value );
 		}
 
@@ -1144,21 +1141,17 @@ class Option_Update_Capture {
 	/**
 	 * Undo any changes to the options since start() was called
 	 */
-	function stop() {
-		if ( ! $this->_is_current ) {
+	protected static function stop_capturing_option_updates() {
+		if ( ! self::$_is_capturing_option_updates ) {
 			return;
 		}
 
-		remove_filter( 'pre_update_option', array( $this, 'pre_update_option' ), 10, 3 );
-		foreach ( array_keys( $this->options ) as $option_name ) {
-			remove_filter( "pre_option_{$option_name}", array( $this, 'pre_get_option' ) );
+		remove_filter( '_capture_filter_pre_update_option', array( __CLASS__, '_capture_filter_pre_update_option' ), 10, 3 );
+		foreach ( array_keys( self::$_captured_options ) as $option_name ) {
+			remove_filter( "pre_option_{$option_name}", array( __CLASS__, '_capture_filter_pre_get_option' ) );
 		}
 
-		$this->options     = array();
-		$this->_is_current = false;
-	}
-
-	function __destruct() {
-		$this->stop();
+		self::$_captured_options = array();
+		self::$_is_capturing_option_updates = false;
 	}
 }
