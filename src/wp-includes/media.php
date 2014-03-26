@@ -602,7 +602,7 @@ function wp_get_attachment_image_src($attachment_id, $size='thumbnail', $icon = 
 	$src = false;
 
 	if ( $icon && $src = wp_mime_type_icon($attachment_id) ) {
-		$icon_dir = apply_filters( 'icon_dir', ABSPATH . WPINC . '/images/crystal' );
+		$icon_dir = apply_filters( 'icon_dir', ABSPATH . WPINC . '/images/media' );
 		$src_file = $icon_dir . '/' . wp_basename($src);
 		@list($width, $height) = getimagesize($src_file);
 	}
@@ -1194,9 +1194,6 @@ function wp_get_playlist( $attr, $type ) {
 		return $output;
 	}
 
-	$supports_thumbs = ( current_theme_supports( 'post-thumbnails', "attachment:$type" ) && post_type_supports( "attachment:$type", 'thumbnail' ) )
-		|| $images;
-
 	$outer = 22; // default padding and border of wrapper
 
 	$default_width = 640;
@@ -1255,12 +1252,18 @@ function wp_get_playlist( $attr, $type ) {
 			}
 		}
 
-		if ( $supports_thumbs ) {
+		if ( $images ) {
 			$id = get_post_thumbnail_id( $attachment->ID );
 			if ( ! empty( $id ) ) {
 				list( $src, $width, $height ) = wp_get_attachment_image_src( $id, 'full' );
 				$track['image'] = compact( 'src', 'width', 'height' );
 				list( $src, $width, $height ) = wp_get_attachment_image_src( $id, 'thumbnail' );
+				$track['thumb'] = compact( 'src', 'width', 'height' );
+			} else {
+				$src = wp_mime_type_icon( $attachment->ID );
+				$width = 48;
+				$height = 64;
+				$track['image'] = compact( 'src', 'width', 'height' );
 				$track['thumb'] = compact( 'src', 'width', 'height' );
 			}
 		}
@@ -2574,6 +2577,7 @@ function wp_enqueue_media( $args = array() ) {
 	wp_enqueue_script( 'media-audiovideo' );
 	wp_enqueue_style( 'media-views' );
 	if ( is_admin() ) {
+		wp_enqueue_script( 'mce-view' );
 		wp_enqueue_script( 'image-edit' );
 	}
 	wp_enqueue_style( 'imgareaselect' );

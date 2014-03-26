@@ -17,7 +17,7 @@ var WidgetCustomizer = ( function ($) {
 			save_btn_tooltip: '',
 			remove_btn_label: '',
 			remove_btn_tooltip: '',
-			error: '',
+			error: ''
 		},
 		available_widgets: [], // available widgets for instantiating
 		registered_widgets: [], // all widgets registered
@@ -1423,7 +1423,7 @@ var WidgetCustomizer = ( function ($) {
 			var control = this;
 			control.expandControlSection();
 			control.expandForm();
-			control.container.find( ':focusable:first' ).focus().trigger( 'click' );
+			control.container.find( '.widget-content :focusable:first' ).focus();
 		},
 
 		/**

@@ -18,6 +18,7 @@ function wp_underscore_audio_template() {
 ?>
 <audio controls
 	class="wp-audio-shortcode"
+	width="{{ _.isUndefined( data.model.width ) ? 400 : data.model.width }}"
 	preload="{{ _.isUndefined( data.model.preload ) ? 'none' : data.model.preload }}"
 	<#
 	<?php foreach ( array( 'autoplay', 'loop' ) as $attr ):
@@ -1029,7 +1030,7 @@ function wp_print_media_templates() {
 	<?php
 
 	/**
-	 * Prints the media manager custom media templates.
+	 * Fires when the custom Backbone media templates are printed.
 	 *
 	 * @since 3.5.0
 	 */
