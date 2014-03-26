@@ -1099,17 +1099,17 @@ class Option_Update_Capture {
 	function start() {
 		if ( $this->_is_current ) {
 			return;
-	}
+		}
 
 		$this->_is_current = true;
 		add_filter( 'pre_update_option', array( $this, 'pre_update_option' ), 10, 3 );
-		}
+	}
 
 	/**
 	 *
 	 * @param  mixed  $new_value
 	 * @param string $option_name
-	 * @param mixed $new_value
+	 * @param mixed $old_value
 	 * @return mixed
 	 */
 	function pre_update_option( $new_value, $option_name, $old_value ) {
@@ -1119,16 +1119,17 @@ class Option_Update_Capture {
 
 		if ( ! isset( $this->options[$option_name] ) ) {
 			add_filter( "pre_option_{$option_name}", array( $this, 'pre_get_option' ) );
-	}
+		}
 
 		$this->options[$option_name] = $new_value;
 
 		return $old_value;
-		}
+	}
 
 	/**
 	 *
 	 * @param mixed $value
+	 * @return mixed
 	 */
 	function pre_get_option( $value ) {
 		$option_name = preg_replace( '/^pre_option_/', '', current_filter() );
@@ -1146,18 +1147,18 @@ class Option_Update_Capture {
 	function stop() {
 		if ( ! $this->_is_current ) {
 			return;
-			}
+		}
 
 		remove_filter( 'pre_update_option', array( $this, 'pre_update_option' ), 10, 3 );
 		foreach ( array_keys( $this->options ) as $option_name ) {
 			remove_filter( "pre_option_{$option_name}", array( $this, 'pre_get_option' ) );
-			}
+		}
 
 		$this->options     = array();
 		$this->_is_current = false;
-			}
+	}
 
 	function __destruct() {
 		$this->stop();
-		}
 	}
+}
