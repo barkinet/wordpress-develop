@@ -922,13 +922,13 @@ class WP_Customize_Widgets {
 		if ( ! empty( $_POST['sanitized_widget_setting'] ) ) {
 			$sanitized_widget_setting = json_decode( self::get_post_value( 'sanitized_widget_setting' ), true );
 			if ( empty( $sanitized_widget_setting ) ) {
-				$option_capture->rollback();
+				$option_capture->stop();
 				return new WP_Error( 'malformed_data', 'Malformed sanitized_widget_setting' );
 			}
 
 			$instance = self::sanitize_widget_instance( $sanitized_widget_setting );
 			if ( is_null( $instance ) ) {
-				$option_capture->rollback();
+				$option_capture->stop();
 				return new WP_Error( 'unsanitary_data', 'Unsanitary sanitized_widget_setting' );
 			}
 
@@ -969,13 +969,13 @@ class WP_Customize_Widgets {
 		 */
 		if ( 0 !== $option_capture->count() ) {
 			if ( count( $option_capture->options ) > 1 ) {
-				$option_capture->rollback();
+				$option_capture->stop();
 				return new WP_Error( 'unexpected_update', 'Widget unexpectedly updated more than one option.' );
 			}
 
 			$updated_option_name = key( $option_capture->options );
 			if ( $updated_option_name !== $option_name ) {
-				$option_capture->rollback();
+				$option_capture->stop();
 				return new WP_Error( 'wrong_option', sprintf( 'Widget updated option "%1$s", but expected "%2$s".', $updated_option_name, $option_name ) );
 			}
 		}
@@ -1070,7 +1070,7 @@ class Option_Update_Capture {
 	}
 
 	/**
-	 * Determine whether or not capturing is active
+	 * Determine whether or not the transaction is open
 	 * @return bool
 	 */
 	function is_current() {
@@ -1099,32 +1099,36 @@ class Option_Update_Capture {
 	function start() {
 		if ( $this->_is_current ) {
 			return;
-		}
-		$this->_is_current = true;
-		add_filter( 'pre_update_option', array( $this, 'pre_update_option' ), 10, 3 );
 	}
 
+		$this->_is_current = true;
+		add_filter( 'pre_update_option', array( $this, 'pre_update_option' ), 10, 3 );
+		}
+
 	/**
-	 * @param mixed $new_value
+	 *
+	 * @param  mixed  $new_value
 	 * @param string $option_name
-	 * @param mixed $old_value
+	 * @param mixed $new_value
 	 * @return mixed
-	 * @filter pre_update_option
 	 */
 	function pre_update_option( $new_value, $option_name, $old_value ) {
 		if ( $this->is_option_ignored( $option_name ) ) {
 			return;
 		}
+
 		if ( ! isset( $this->options[$option_name] ) ) {
 			add_filter( "pre_option_{$option_name}", array( $this, 'pre_get_option' ) );
-		}
-		$this->options[$option_name] = $new_value;
-		return $old_value;
 	}
 
+		$this->options[$option_name] = $new_value;
+
+		return $old_value;
+		}
+
 	/**
-	 * @param $value
-	 * @return mixed
+	 *
+	 * @param mixed $value
 	 */
 	function pre_get_option( $value ) {
 		$option_name = preg_replace( '/^pre_option_/', '', current_filter() );
@@ -1132,6 +1136,7 @@ class Option_Update_Capture {
 			$value = $this->options[$option_name];
 			$value = apply_filters( 'option_' . $option_name, $value );
 		}
+
 		return $value;
 	}
 
@@ -1141,16 +1146,18 @@ class Option_Update_Capture {
 	function stop() {
 		if ( ! $this->_is_current ) {
 			return;
-		}
+			}
+
 		remove_filter( 'pre_update_option', array( $this, 'pre_update_option' ), 10, 3 );
 		foreach ( array_keys( $this->options ) as $option_name ) {
 			remove_filter( "pre_option_{$option_name}", array( $this, 'pre_get_option' ) );
-		}
+			}
+
 		$this->options     = array();
 		$this->_is_current = false;
-	}
+			}
 
 	function __destruct() {
 		$this->stop();
+		}
 	}
-}
