@@ -660,13 +660,21 @@ class WP_Widget_Recent_Posts extends WP_Widget {
 	}
 
 	function widget($args, $instance) {
-		$cache = wp_cache_get('widget_recent_posts', 'widget');
+		global $wp_customize;
+		$is_customize_preview = ( isset( $wp_customize ) && $wp_customize->is_preview() ) ;
 
-		if ( !is_array($cache) )
+		$cache = array();
+		if ( ! $is_customize_preview ) {
+			$cache = wp_cache_get( 'widget_recent_posts', 'widget' );
+		}
+
+		if ( ! is_array( $cache ) ) {
 			$cache = array();
+		}
 
-		if ( ! isset( $args['widget_id'] ) )
+		if ( ! isset( $args['widget_id'] ) ) {
 			$args['widget_id'] = $this->id;
+		}
 
 		if ( isset( $cache[ $args['widget_id'] ] ) ) {
 			echo $cache[ $args['widget_id'] ];
@@ -723,8 +731,12 @@ class WP_Widget_Recent_Posts extends WP_Widget {
 
 		endif;
 
-		$cache[$args['widget_id']] = ob_get_flush();
-		wp_cache_set('widget_recent_posts', $cache, 'widget');
+		if ( ! $is_customize_preview ) {
+			$cache[ $args['widget_id'] ] = ob_get_flush();
+			wp_cache_set( 'widget_recent_posts', $cache, 'widget' );
+		} else {
+			ob_flush();
+		}
 	}
 
 	function update( $new_instance, $old_instance ) {
@@ -805,12 +817,16 @@ class WP_Widget_Recent_Comments extends WP_Widget {
 	}
 
 	function widget( $args, $instance ) {
-		global $comments, $comment;
+		global $comments, $comment, $wp_customize;
+		$is_customize_preview = ( isset( $wp_customize ) && $wp_customize->is_preview() );
 
-		$cache = wp_cache_get('widget_recent_comments', 'widget');
-
-		if ( ! is_array( $cache ) )
+		$cache = array();
+		if ( ! $is_customize_preview ) {
+			$cache = wp_cache_get('widget_recent_comments', 'widget');
+		}
+		if ( ! is_array( $cache ) ) {
 			$cache = array();
+		}
 
 		if ( ! isset( $args['widget_id'] ) )
 			$args['widget_id'] = $this->id;
@@ -865,8 +881,11 @@ class WP_Widget_Recent_Comments extends WP_Widget {
 		$output .= $after_widget;
 
 		echo $output;
-		$cache[$args['widget_id']] = $output;
-		wp_cache_set('widget_recent_comments', $cache, 'widget');
+
+		if ( ! $is_customize_preview ) {
+			$cache[ $args['widget_id'] ] = $output;
+			wp_cache_set( 'widget_recent_comments', $cache, 'widget' );
+		}
 	}
 
 	function update( $new_instance, $old_instance ) {
