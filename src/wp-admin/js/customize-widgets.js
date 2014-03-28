@@ -1159,7 +1159,8 @@ var WidgetCustomizer = ( function ($) {
 				data,
 				inputs,
 				processing,
-				jqxhr;
+				jqxhr,
+				is_changed;
 
 			args = $.extend( {
 				instance: null,
@@ -1300,14 +1301,15 @@ var WidgetCustomizer = ( function ($) {
 					 * needing to be rendered, and so we can preempt the event for the
 					 * preview finishing loading.
 					 */
-					if ( ! is_live_update_aborted && ! _( control.setting() ).isEqual( r.data.instance ) ) {
+					is_changed = ! is_live_update_aborted && ! _( control.setting() ).isEqual( r.data.instance );
+					if ( is_changed ) {
 						control.is_widget_updating = true; // suppress triggering another updateWidget
 						control.setting( r.data.instance );
 						control.is_widget_updating = false;
 					}
 
 					if ( complete_callback ) {
-						complete_callback.call( control, null, { no_change: no_setting_change, ajax_finished: true } );
+						complete_callback.call( control, null, { no_change: ! is_changed, ajax_finished: true } );
 					}
 				} else {
 					message = self.i18n.error;
