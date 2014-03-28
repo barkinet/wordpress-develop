@@ -1219,7 +1219,6 @@ var WidgetCustomizer = ( function ($) {
 					sanitized_form,
 					sanitized_inputs,
 					has_same_inputs_in_response,
-					no_setting_change,
 					is_live_update_aborted = false,
 					event_data;
 
@@ -1295,7 +1294,7 @@ var WidgetCustomizer = ( function ($) {
 							'hard': ! control.live_update_mode, // dynamic fields may need to be re-initialized (e.g. Chosen)
 							'customize_control': control
 						};
-						widget_root.trigger( 'widget-form-update', [ event_data ] ); // @todo THIS IS NOT GETTING LISTENED TO
+						widget_root.trigger( 'widget-form-update', [ event_data ] );
 					}
 
 					/**
@@ -1303,8 +1302,7 @@ var WidgetCustomizer = ( function ($) {
 					 * needing to be rendered, and so we can preempt the event for the
 					 * preview finishing loading.
 					 */
-					no_setting_change = is_live_update_aborted || _( control.setting() ).isEqual( r.data.instance );
-					if ( no_setting_change ) {
+					if ( ! is_live_update_aborted && ! _( control.setting() ).isEqual( r.data.instance ) ) {
 						control.is_widget_updating = true; // suppress triggering another updateWidget
 						control.setting( r.data.instance );
 						control.is_widget_updating = false;
