@@ -82,7 +82,13 @@ function get_the_category( $id = false ) {
 		_make_cat_compat( $categories[$key] );
 	}
 
-	// Filter name is plural because we return alot of categories (possibly more than #13237) not just one
+	/**
+	 * Filter the array of categories to return for a post.
+	 *
+	 * @since 3.1.0
+	 *
+	 * @param array $categories An array of categories to return for the post.
+	 */
 	return apply_filters( 'get_the_categories', $categories );
 }
 
@@ -155,12 +161,16 @@ function get_the_category_by_ID( $cat_ID ) {
  */
 function get_the_category_list( $separator = '', $parents='', $post_id = false ) {
 	global $wp_rewrite;
-	if ( ! is_object_in_taxonomy( get_post_type( $post_id ), 'category' ) )
+	if ( ! is_object_in_taxonomy( get_post_type( $post_id ), 'category' ) ) {
+		/** This filter is documented in wp-includes/category-template.php */
 		return apply_filters( 'the_category', '', $separator, $parents );
+	}
 
 	$categories = get_the_category( $post_id );
-	if ( empty( $categories ) )
+	if ( empty( $categories ) ) {
+		/** This filter is documented in wp-includes/category-template.php */
 		return apply_filters( 'the_category', __( 'Uncategorized' ), $separator, $parents );
+	}
 
 	$rel = ( is_object( $wp_rewrite ) && $wp_rewrite->using_permalinks() ) ? 'rel="category tag"' : 'rel="category"';
 
@@ -211,6 +221,17 @@ function get_the_category_list( $separator = '', $parents='', $post_id = false )
 			++$i;
 		}
 	}
+
+	/**
+	 * Filter the category or list of categories.
+	 *
+	 * @since 1.2.0
+	 *
+	 * @param array  $thelist   List of categories for the current post.
+	 * @param string $separator Separator used between the categories.
+	 * @param string $parents   How to display the category parents. Accepts 'multiple',
+	 *                          'single', or empty.
+	 */
 	return apply_filters( 'the_category', $thelist, $separator, $parents );
 }
 
@@ -344,6 +365,21 @@ function wp_dropdown_categories( $args = '' ) {
 		$output = '';
 
 	if ( empty($categories) && ! $r['hide_if_empty'] && !empty($show_option_none) ) {
+
+		/**
+		 * Filter a taxonomy drop-down display element.
+		 *
+		 * A variety of taxonomy drop-down display elements can be modified
+		 * just prior to display via this filter. Filterable arguments include
+		 * 'show_option_none', 'show_option_all', and various forms of the
+		 * term name.
+		 *
+		 * @since 1.2.0
+		 *
+		 * @see wp_dropdown_categories()
+		 *
+		 * @param string $element Taxonomy element to list.
+		 */
 		$show_option_none = apply_filters( 'list_cats', $show_option_none );
 		$output .= "\t<option value='-1' selected='selected'>$show_option_none</option>\n";
 	}
@@ -351,12 +387,16 @@ function wp_dropdown_categories( $args = '' ) {
 	if ( ! empty( $categories ) ) {
 
 		if ( $show_option_all ) {
+
+			/** This filter is documented in wp-includes/category-template.php */
 			$show_option_all = apply_filters( 'list_cats', $show_option_all );
 			$selected = ( '0' === strval($r['selected']) ) ? " selected='selected'" : '';
 			$output .= "\t<option value='0'$selected>$show_option_all</option>\n";
 		}
 
 		if ( $show_option_none ) {
+
+			/** This filter is documented in wp-includes/category-template.php */
 			$show_option_none = apply_filters( 'list_cats', $show_option_none );
 			$selected = ( '-1' === strval($r['selected']) ) ? " selected='selected'" : '';
 			$output .= "\t<option value='-1'$selected>$show_option_none</option>\n";
@@ -374,12 +414,12 @@ function wp_dropdown_categories( $args = '' ) {
 		$output .= "</select>\n";
 
 	/**
-	 * Filter the result of wp_dropdown_categories().
+	 * Filter the taxonomy drop-down output.
 	 *
 	 * @since 2.1.0
 	 *
-	 * @param $output HTML content.
-	 * @param $r      Arguments used to build the dropdown.
+	 * @param string $output HTML output.
+	 * @param array  $r      Arguments used to build the drop-down.
 	 */
 	$output = apply_filters( 'wp_dropdown_cats', $output, $r );
 
@@ -493,6 +533,14 @@ function wp_list_categories( $args = '' ) {
 	if ( $title_li && 'list' == $style )
 		$output .= '</ul></li>';
 
+	/**
+	 * Filter the HTML output of a taxonomy list.
+	 *
+	 * @since 2.1.0
+	 *
+	 * @param string $output HTML output.
+	 * @param array  $args   An array of taxonomy-listing arguments.
+	 */
 	$output = apply_filters( 'wp_list_categories', $output, $args );
 
 	if ( $echo )
@@ -523,6 +571,9 @@ function wp_list_categories( $args = '' ) {
  * The 'topic_count_text_callback' argument is a function, which given the count
  * of the posts with that tag returns a text for the tooltip of the tag link.
  *
+ * The 'post_type' argument is used only when 'link' is set to 'edit'. It determines the post_type
+ * passed to edit.php for the popular tags edit links.
+ *
  * The 'exclude' and 'include' arguments are used for the {@link get_tags()}
  * function. Only one should be used, because only one will be used and the
  * other ignored, if they are both set.
@@ -536,7 +587,7 @@ function wp_tag_cloud( $args = '' ) {
 	$defaults = array(
 		'smallest' => 8, 'largest' => 22, 'unit' => 'pt', 'number' => 45,
 		'format' => 'flat', 'separator' => "\n", 'orderby' => 'name', 'order' => 'ASC',
-		'exclude' => '', 'include' => '', 'link' => 'view', 'taxonomy' => 'post_tag', 'echo' => true
+		'exclude' => '', 'include' => '', 'link' => 'view', 'taxonomy' => 'post_tag', 'post_type' => '', 'echo' => true
 	);
 	$args = wp_parse_args( $args, $defaults );
 
@@ -547,7 +598,7 @@ function wp_tag_cloud( $args = '' ) {
 
 	foreach ( $tags as $key => $tag ) {
 		if ( 'edit' == $args['link'] )
-			$link = get_edit_tag_link( $tag->term_id, $tag->taxonomy );
+			$link = get_edit_term_link( $tag->term_id, $tag->taxonomy, $args['post_type'] );
 		else
 			$link = get_term_link( intval($tag->term_id), $tag->taxonomy );
 		if ( is_wp_error( $link ) )
@@ -559,6 +610,14 @@ function wp_tag_cloud( $args = '' ) {
 
 	$return = wp_generate_tag_cloud( $tags, $args ); // Here's where those top tags get sorted according to $args
 
+	/**
+	 * Filter the tag cloud output.
+	 *
+	 * @since 2.3.0
+	 *
+	 * @param string $return HTML output of the tag cloud.
+	 * @param array  $args   An array of tag cloud arguments.
+	 */
 	$return = apply_filters( 'wp_tag_cloud', $return, $args );
 
 	if ( 'array' == $args['format'] || empty($args['echo']) )
@@ -609,7 +668,7 @@ function default_topic_count_scale( $count ) {
  *
  * @param array $tags List of tags.
  * @param string|array $args Optional, override default arguments.
- * @return string
+ * @return string|array Tag cloud as a string or an array, depending on 'format' argument.
  */
 function wp_generate_tag_cloud( $tags, $args = '' ) {
 	$defaults = array(
@@ -622,8 +681,11 @@ function wp_generate_tag_cloud( $tags, $args = '' ) {
 	$args = wp_parse_args( $args, $defaults );
 	extract( $args, EXTR_SKIP );
 
-	if ( empty( $tags ) )
-		return;
+	$return = ( 'array' === $format ) ? array() : '';
+
+	if ( empty( $tags ) ) {
+		return $return;
+	}
 
 	// Juggle topic count tooltips:
 	if ( isset( $args['topic_count_text'] ) ) {
@@ -644,22 +706,36 @@ function wp_generate_tag_cloud( $tags, $args = '' ) {
 		$translate_nooped_plural = _n_noop( '%s topic', '%s topics' );
 	}
 
+	/**
+	 * Filter how the items in a tag cloud are sorted.
+	 *
+	 * @since 2.8.0
+	 *
+	 * @param array $tags Ordered array of terms.
+	 * @param array $args An array of tag cloud arguments.
+	 */
 	$tags_sorted = apply_filters( 'tag_cloud_sort', $tags, $args );
-	if ( $tags_sorted != $tags  ) { // the tags have been sorted by a plugin
+	if ( empty( $tags_sorted ) ) {
+		return $return;
+	}
+
+	if ( $tags_sorted !== $tags ) {
 		$tags = $tags_sorted;
-		unset($tags_sorted);
+		unset( $tags_sorted );
 	} else {
-		if ( 'RAND' == $order ) {
-			shuffle($tags);
+		if ( 'RAND' === $order ) {
+			shuffle( $tags );
 		} else {
 			// SQL cannot save you; this is a second (potentially different) sort on a subset of data.
-			if ( 'name' == $orderby )
+			if ( 'name' === $orderby ) {
 				uasort( $tags, '_wp_object_name_sort_cb' );
-			else
+			} else {
 				uasort( $tags, '_wp_object_count_sort_cb' );
+			}
 
-			if ( 'DESC' == $order )
+			if ( 'DESC' === $order ) {
 				$tags = array_reverse( $tags, true );
+			}
 		}
 	}
 
@@ -716,8 +792,26 @@ function wp_generate_tag_cloud( $tags, $args = '' ) {
 		break;
 	endswitch;
 
-	if ( $filter )
+	if ( $filter ) {
+		/**
+		 * Filter the generated output of a tag cloud.
+		 *
+		 * The filter is only evaluated if a true value is passed
+		 * to the $filter argument in wp_generate_tag_cloud().
+		 *
+		 * @since 2.3.0
+		 *
+		 * @see wp_generate_tag_cloud()
+		 *
+		 * @param array|string $return String containing the generated HTML tag cloud output
+		 *                             or an array of tag links if the 'format' argument
+		 *                             equals 'array'.
+		 * @param array        $tags   An array of terms used in the tag cloud.
+		 * @param array        $args   An array of wp_generate_tag_cloud() arguments.
+		 */
 		return apply_filters( 'wp_generate_tag_cloud', $return, $tags, $args );
+	}
+
 	else
 		return $return;
 }
@@ -866,12 +960,25 @@ class Walker_Category extends Walker {
 		extract($args);
 
 		$cat_name = esc_attr( $category->name );
+
+		/** This filter is documented in wp-includes/category-template.php */
 		$cat_name = apply_filters( 'list_cats', $cat_name, $category );
+
 		$link = '<a href="' . esc_url( get_term_link($category) ) . '" ';
-		if ( $use_desc_for_title == 0 || empty($category->description) )
+		if ( $use_desc_for_title == 0 || empty($category->description) ) {
 			$link .= 'title="' . esc_attr( sprintf(__( 'View all posts filed under %s' ), $cat_name) ) . '"';
-		else
+		} else {
+			/**
+			 * Filter the category description for display.
+			 *
+			 * @since 1.2.0
+			 *
+			 * @param string $description Category description.
+			 * @param object $category    Category object.
+			 */
 			$link .= 'title="' . esc_attr( strip_tags( apply_filters( 'category_description', $category->description, $category ) ) ) . '"';
+		}
+
 		$link .= '>';
 		$link .= $cat_name . '</a>';
 
@@ -983,7 +1090,9 @@ class Walker_CategoryDropdown extends Walker {
 	function start_el( &$output, $category, $depth = 0, $args = array(), $id = 0 ) {
 		$pad = str_repeat('&nbsp;', $depth * 3);
 
-		$cat_name = apply_filters('list_cats', $category->name, $category);
+		/** This filter is documented in wp-includes/category-template.php */
+		$cat_name = apply_filters( 'list_cats', $category->name, $category );
+
 		$output .= "\t<option class=\"level-$depth\" value=\"".$category->term_id."\"";
 		if ( $category->term_id == $args['selected'] )
 			$output .= ' selected="selected"';
@@ -1024,12 +1133,21 @@ function get_tag_link( $tag ) {
  * Retrieve the tags for a post.
  *
  * @since 2.3.0
- * @uses apply_filters() Calls 'get_the_tags' filter on the list of post tags.
  *
  * @param int $id Post ID.
  * @return array|bool Array of tag objects on success, false on failure.
  */
 function get_the_tags( $id = 0 ) {
+
+	/**
+	 * Filter the array of tags for the given post.
+	 *
+	 * @since 2.3.0
+	 *
+	 * @see get_the_terms()
+	 *
+	 * @param array $terms An array of tags for the given post.
+	 */
 	return apply_filters( 'get_the_tags', get_the_terms( $id, 'post_tag' ) );
 }
 
@@ -1037,7 +1155,6 @@ function get_the_tags( $id = 0 ) {
  * Retrieve the tags for a post formatted as a string.
  *
  * @since 2.3.0
- * @uses apply_filters() Calls 'the_tags' filter on string list of tags.
  *
  * @param string $before Optional. Before tags.
  * @param string $sep Optional. Between tags.
@@ -1046,6 +1163,18 @@ function get_the_tags( $id = 0 ) {
  * @return string|bool|WP_Error A list of tags on success, false or WP_Error on failure.
  */
 function get_the_tag_list( $before = '', $sep = '', $after = '', $id = 0 ) {
+
+	/**
+	 * Filter the tags list for a given post.
+	 *
+	 * @since 2.3.0
+	 *
+	 * @param string $tag_list List of tags.
+	 * @param string $before   String to use before tags.
+	 * @param string $sep      String to use between the tags.
+	 * @param string $after    String to use after tags.
+	 * @param int    $id       Post ID.
+	 */
 	return apply_filters( 'the_tags', get_the_term_list( $id, 'post_tag', $before, $sep, $after ), $before, $sep, $after, $id );
 }
 
@@ -1116,6 +1245,15 @@ function get_the_terms( $post, $taxonomy ) {
 		wp_cache_add($post->ID, $terms, $taxonomy . '_relationships');
 	}
 
+	/**
+	 * Filter the list of terms attached to the given post.
+	 *
+	 * @since 3.1.0
+	 *
+	 * @param array  $terms    List of attached terms.
+	 * @param int    $post_id  Post ID.
+	 * @param string $taxonomy Name of the taxonomy.
+	 */
 	$terms = apply_filters( 'get_the_terms', $terms, $post->ID, $taxonomy );
 
 	if ( empty( $terms ) )
@@ -1152,6 +1290,16 @@ function get_the_term_list( $id, $taxonomy, $before = '', $sep = '', $after = ''
 		$term_links[] = '<a href="' . esc_url( $link ) . '" rel="tag">' . $term->name . '</a>';
 	}
 
+	/**
+	 * Filter the term links for a given taxonomy.
+	 *
+	 * The dynamic portion of the filter name, $taxonomy, refers
+	 * to the taxonomy slug.
+	 *
+	 * @since 2.5.0
+	 *
+	 * @param array $term_links An array of term links.
+	 */
 	$term_links = apply_filters( "term_links-$taxonomy", $term_links );
 
 	return $before . join( $sep, $term_links ) . $after;
@@ -1175,7 +1323,18 @@ function the_terms( $id, $taxonomy, $before = '', $sep = ', ', $after = '' ) {
 	if ( is_wp_error( $term_list ) )
 		return false;
 
-	echo apply_filters('the_terms', $term_list, $taxonomy, $before, $sep, $after);
+	/**
+	 * Filter the list of terms to display.
+	 *
+	 * @since 2.9.0
+	 *
+	 * @param array  $term_list List of terms to display.
+	 * @param string $taxonomy  The taxonomy name.
+	 * @param string $before    String to use before the terms.
+	 * @param string $sep       String to use between the terms.
+	 * @param string $after     String to use after the terms.
+	 */
+	echo apply_filters( 'the_terms', $term_list, $taxonomy, $before, $sep, $after );
 }
 
 /**

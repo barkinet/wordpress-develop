@@ -27,21 +27,52 @@ final class _WP_Editors {
 
 	private function __construct() {}
 
-	public static function parse_settings($editor_id, $settings) {
+	/**
+	 * Parse default arguments for the editor instance.
+	 *
+	 * @param string $editor_id ID for the current editor instance.
+	 * @param array  $settings {
+	 *     Array of editor arguments.
+	 *
+	 *     @type bool       $wpautop           Whether to use wpautop(). Default true.
+	 *     @type bool       $media_buttons     Whether to show the Add Media/other media buttons.
+	 *     @type string     $default_editor    When both TinyMCE and Quicktags are used, set which
+	 *                                         editor is shown on page load. Default empty.
+	 *     @type string     $textarea_name     Give the textarea a unique name here. Square brackets
+	 *                                         can be used here. Default $editor_id.
+	 *     @type int        $textarea_rows     Number rows in the editor textarea. Default 20.
+	 *     @type string|int $tabindex          Tabindex value to use. Default empty.
+	 *     @type string     $tabfocus_elements The previous and next element ID to move the focus to
+	 *                                         when pressing the Tab key in TinyMCE. Defualt ':prev,:next'.
+	 *     @type string     $editor_css        Intended for extra styles for both Visual and Text editors.
+	 *                                         Should include <style> tags, and can use "scoped". Default empty.
+	 *     @type string     $editor_class      Extra classes to add to the editor textarea elemen. Default empty.
+	 *     @type bool       $teeny             Whether to output the minimal editor config. Examples include
+	 *                                         Press This and the Comment editor. Default false.
+	 *     @type bool       $dfw               Whether to replace the default fullscreen with "Distraction Free
+	 *                                         Writing". DFW requires specific DOM elements and css). Default false.
+	 *     @type bool|array $tinymce           Whether to load TinyMCE. Can be used to pass settings directly to
+	 *                                         TinyMCE using an array. Default true.
+	 *     @type bool|array $quicktags         Whether to load Quicktags. Can be used to pass settings directly to
+	 *                                         Quicktags using an array. Default true.
+	 * }
+	 * @return array Parsed arguments array.
+	 */
+	public static function parse_settings( $editor_id, $settings ) {
 		$set = wp_parse_args( $settings,  array(
-			'wpautop' => true, // use wpautop?
-			'media_buttons' => true, // show insert/upload button(s)
-			'default_editor' => '', // When both TinyMCE and Quicktags are used, set which editor is shown on loading the page
-			'textarea_name' => $editor_id, // set the textarea name to something different, square brackets [] can be used here
-			'textarea_rows' => 20,
-			'tabindex' => '',
-			'tabfocus_elements' => ':prev,:next', // the previous and next element ID to move the focus to when pressing the Tab key in TinyMCE
-			'editor_css' => '', // intended for extra styles for both visual and Text editors buttons, needs to include the <style> tags, can use "scoped".
-			'editor_class' => '', // add extra class(es) to the editor textarea
-			'teeny' => false, // output the minimal editor config used in Press This
-			'dfw' => false, // replace the default fullscreen with DFW (needs specific DOM elements and css)
-			'tinymce' => true, // load TinyMCE, can be used to pass settings directly to TinyMCE using an array()
-			'quicktags' => true // load Quicktags, can be used to pass settings directly to Quicktags using an array()
+			'wpautop'           => true,
+			'media_buttons'     => true,
+			'default_editor'    => '',
+			'textarea_name'     => $editor_id,
+			'textarea_rows'     => 20,
+			'tabindex'          => '',
+			'tabfocus_elements' => ':prev,:next',
+			'editor_css'        => '',
+			'editor_class'      => '',
+			'teeny'             => false,
+			'dfw'               => false,
+			'tinymce'           => true,
+			'quicktags'         => true
 		) );
 
 		self::$this_tinymce = ( $set['tinymce'] && user_can_richedit() );
@@ -223,13 +254,7 @@ final class _WP_Editors {
 					 */
 					$mce_external_plugins = apply_filters( 'mce_external_plugins', array() );
 
-					/**
-					 * TinyMCE default plugins filter
-					 *
-					 * Specifies which of the default plugins that are included in WordPress should be added to
-					 * the TinyMCE instance.
-					 */
-					$plugins = array_unique( apply_filters( 'tiny_mce_plugins', array(
+					$plugins = array(
 						'charmap',
 						'hr',
 						'media',
@@ -243,7 +268,19 @@ final class _WP_Editors {
 						'wplink',
 						'wpdialogs',
 						'wpview',
-					) ) );
+					);
+
+					if ( ! self::$has_medialib ) {
+						$plugins[] = 'image';
+					}
+
+					/**
+					 * TinyMCE default plugins filter
+					 *
+					 * Specifies which of the default plugins that are included in WordPress should be added to
+					 * the TinyMCE instance.
+					 */
+					$plugins = array_unique( apply_filters( 'tiny_mce_plugins', $plugins ) );
 
 					if ( ( $key = array_search( 'spellchecker', $plugins ) ) !== false ) {
 						// Remove 'spellchecker' from the internal plugins if added with 'tiny_mce_plugins' filter to prevent errors.
@@ -333,6 +370,7 @@ final class _WP_Editors {
 					'preview_styles' => 'font-family font-size font-weight font-style text-decoration text-transform',
 
 					'wpeditimage_disable_captions' => $no_captions,
+					'wpeditimage_html5_captions' => current_theme_supports( 'html5', 'caption' ),
 					'plugins' => implode( ',', $plugins ),
 				);
 
@@ -507,9 +545,6 @@ final class _WP_Editors {
 		if ( self::$has_medialib ) {
 			add_thickbox();
 			wp_enqueue_script('media-upload');
-
-			if ( self::$has_tinymce )
-				wp_enqueue_script('mce-view');
 		}
 	}
 
@@ -540,17 +575,17 @@ final class _WP_Editors {
 			'Subscript' => __( 'Subscript' ),
 			'Superscript' => __( 'Superscript' ),
 			'Clear formatting' => __( 'Clear formatting' ),
-			'Bold' => __('Bold'),
-			'Italic' => __('Italic'),
+			'Bold' => __( 'Bold' ),
+			'Italic' => __( 'Italic' ),
 			'Code' => _x( 'Code', 'editor button' ),
 			'Source code' => __( 'Source code' ),
 
-			'Align center' => __('Align center'),
-			'Align right' => __('Align right'),
+			'Align center' => __( 'Align center' ),
+			'Align right' => __( 'Align right' ),
 			'Align left' => __( 'Align left' ),
-			'Justify' => __('Justify'),
-			'Increase indent' => __('Increase indent'),
-			'Decrease indent' => __('Decrease indent'),
+			'Justify' => __( 'Justify' ),
+			'Increase indent' => __( 'Increase indent' ),
+			'Decrease indent' => __( 'Decrease indent' ),
 
 			'Cut' => __( 'Cut' ),
 			'Copy' => __( 'Copy' ),
@@ -565,7 +600,7 @@ final class _WP_Editors {
 			'Visual aids' => __( 'Visual aids' ),
 
 			'Bullet list' => __( 'Bulleted list' ),
-			'Numbered list' => __('Numbered list'),
+			'Numbered list' => __( 'Numbered list' ),
 			'Square' => _x( 'Square', 'list style' ),
 			'Default' => _x( 'Default', 'list style' ),
 			'Circle' => _x( 'Circle', 'list style' ),
@@ -591,24 +626,24 @@ final class _WP_Editors {
 			'Author' => __( 'Author' ),
 
 			// Media, image plugins
-			'Insert/edit image' => __('Insert/edit image'),
-			'General' => __('General'),
-			'Advanced' => __('Advanced'),
-			'Source' => __('Source'),
-			'Border' => __('Border'),
-			'Constrain proportions' => __('Constrain proportions'),
-			'Vertical space' => __('Vertical space'),
-			'Image description' => __('Image description'),
-			'Style' => __('Style'),
-			'Dimensions' => __('Dimensions'),
-			'Insert image' => __('Insert image'),
-			'Insert date/time' => __('Insert date/time'),
-			'Insert/edit video' => __('Insert/edit video'),
-			'Poster' => __('Poster'),
-			'Alternative source' => __('Alternative source'),
-			'Paste your embed code below:' => __('Paste your embed code below:'),
-			'Insert video' => __('Insert video'),
-			'Embed' => __('Embed'),
+			'Insert/edit image' => __( 'Insert/edit image' ),
+			'General' => __( 'General' ),
+			'Advanced' => __( 'Advanced' ),
+			'Source' => __( 'Source' ),
+			'Border' => __( 'Border' ),
+			'Constrain proportions' => __( 'Constrain proportions' ),
+			'Vertical space' => __( 'Vertical space' ),
+			'Image description' => __( 'Image description' ),
+			'Style' => __( 'Style' ),
+			'Dimensions' => __( 'Dimensions' ),
+			'Insert image' => __( 'Insert image' ),
+			'Insert date/time' => __( 'Insert date/time' ),
+			'Insert/edit video' => __( 'Insert/edit video' ),
+			'Poster' => __( 'Poster' ),
+			'Alternative source' => __( 'Alternative source' ),
+			'Paste your embed code below:' => __( 'Paste your embed code below:' ),
+			'Insert video' => __( 'Insert video' ),
+			'Embed' => __( 'Embed' ),
 
 			// Each of these have a corresponding plugin
 			'Special character' => __( 'Special character' ),
@@ -625,6 +660,7 @@ final class _WP_Editors {
 			'Horizontal line' => __( 'Horizontal line' ),
 			'Horizontal space' => __( 'Horizontal space' ),
 			'Restore last draft' => __( 'Restore last draft' ),
+			'Insert/edit link' => __( 'Insert/edit link' ),
 
 			// Spelling, search/replace plugins
 			'Could not find the specified string.' => __( 'Could not find the specified string.' ),
@@ -633,11 +669,11 @@ final class _WP_Editors {
 			/* translators: previous */
 			'Prev' => _x( 'Prev', 'find/replace' ),
 			'Whole words' => _x( 'Whole words', 'find/replace' ),
-			'Find and replace' => __('Find and replace' ),
+			'Find and replace' => __( 'Find and replace' ),
 			'Replace with' => _x('Replace with', 'find/replace' ),
 			'Find' => _x( 'Find', 'find/replace' ),
 			'Replace all' => _x( 'Replace all', 'find/replace' ),
-			'Match case' => __('Match case'),
+			'Match case' => __( 'Match case' ),
 			'Spellcheck' => __( 'Check Spelling' ),
 			'Finish' => _x( 'Finish', 'spellcheck' ),
 			'Ignore all' => _x( 'Ignore all', 'spellcheck' ),
@@ -661,20 +697,20 @@ final class _WP_Editors {
 			'Footer' => _x( 'Footer', 'table footer' ),
 
 			'Insert row before' => __( 'Insert row before' ),
-			'Insert row after' => __('Insert row after'),
+			'Insert row after' => __( 'Insert row after' ),
 			'Insert column before' => __( 'Insert column before' ),
 			'Insert column after' => __( 'Insert column after' ),
 			'Paste row before' => __( 'Paste table row before' ),
 			'Paste row after' => __( 'Paste table row after' ),
 			'Delete row' => __( 'Delete row' ),
-			'Delete column' => __('Delete column'),
-			'Cut row' => __('Cut table row' ),
+			'Delete column' => __( 'Delete column' ),
+			'Cut row' => __( 'Cut table row' ),
 			'Copy row' => __( 'Copy table row' ),
 			'Merge cells' => __( 'Merge table cells' ),
-			'Split cell' => __( 'Split merged table cells' ),
+			'Split cell' => __( 'Split table cell' ),
 
 			'Height' => __( 'Height' ),
-			'Width' => __('Width'),
+			'Width' => __( 'Width' ),
 			'Caption' => __( 'Caption' ),
 			'Alignment' => __( 'Alignment' ),
 			'Left' => __( 'Left' ),
@@ -699,10 +735,10 @@ final class _WP_Editors {
 
 			/* translators: word count */
 			'Words: {0}' => sprintf( __( 'Words: %s' ), '{0}' ),
-			'Paste is now in plain text mode. Contents will now be pasted as plain text until you toggle this option off.' => __('Paste is now in plain text mode. Contents will now be pasted as plain text until you toggle this option off.'),
-			'Rich Text Area. Press ALT-F9 for menu. Press ALT-F10 for toolbar. Press ALT-0 for help' => __('Rich Text Area. Press ALT-F9 for menu. Press ALT-F10 for toolbar. Press ALT-0 for help'),
+			'Paste is now in plain text mode. Contents will now be pasted as plain text until you toggle this option off.' => __( 'Paste is now in plain text mode. Contents will now be pasted as plain text until you toggle this option off.' ),
+			'Rich Text Area. Press ALT-F9 for menu. Press ALT-F10 for toolbar. Press ALT-0 for help' => __( 'Rich Text Area. Press ALT-F9 for menu. Press ALT-F10 for toolbar. Press ALT-0 for help' ),
 			'You have unsaved changes are you sure you want to navigate away?' => __( 'The changes you made will be lost if you navigate away from this page.' ),
-			'Your browser doesn\'t support direct access to the clipboard. Please use the Ctrl+X/C/V keyboard shortcuts instead.' => __('Your browser does not support direct access to the clipboard. Please use the Ctrl+X/C/V keyboard shortcuts instead.'),
+			'Your browser doesn\'t support direct access to the clipboard. Please use the Ctrl+X/C/V keyboard shortcuts instead.' => __( 'Your browser does not support direct access to the clipboard. Please use the Ctrl+X/C/V keyboard shortcuts instead.' ),
 
 			// TinyMCE menus
 			'Insert' => _x( 'Insert', 'TinyMCE menu' ),
@@ -714,10 +750,10 @@ final class _WP_Editors {
 			'Format' => _x( 'Format', 'TinyMCE menu' ),
 
 			// WordPress strings
-			'Help' => __('Help'),
-			'Toolbar Toggle' => __('Toolbar Toggle'),
-			'Insert Read More tag' => __('Insert Read More tag'),
-			'Distraction Free Writing' => __('Distraction Free Writing'),
+			'Help' => __( 'Help' ),
+			'Toolbar Toggle' => __( 'Toolbar Toggle' ),
+			'Insert Read More tag' => __( 'Insert Read More tag' ),
+			'Distraction Free Writing' => __( 'Distraction Free Writing' ),
 		);
 
 		$baseurl = self::$baseurl;
@@ -950,10 +986,11 @@ final class _WP_Editors {
 			}
 
 			$onclick = ! empty( $args['onclick'] ) ? ' onclick="' . $args['onclick'] . '"' : '';
+			$title = esc_attr( $args['title'] );
 			?>
 
 			<div class="mce-widget mce-btn<?php if ( $args['both'] ) { ?> wp-fullscreen-both<?php } ?>">
-			<button type="button" role="presentation" title="<?php echo $args['title']; ?>"<?php echo $onclick; ?> id="wp_fs_<?php echo $button; ?>">
+			<button type="button" aria-label="<?php echo $title; ?>" title="<?php echo $title; ?>"<?php echo $onclick; ?> id="wp_fs_<?php echo $button; ?>">
 				<i class="mce-ico mce-i-<?php echo $button; ?>"></i>
 			</button>
 			</div>

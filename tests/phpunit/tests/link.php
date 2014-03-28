@@ -97,6 +97,27 @@ class Tests_Link extends WP_UnitTestCase {
 	}
 
 	/**
+	 * @ticket 26871
+	 */
+	function test_wp_get_shortlink_with_home_page() {
+		$post_id = $this->factory->post->create( array( 'post_type' => 'page' ) );
+		update_option( 'show_on_front', 'page' );
+		update_option( 'page_on_front', $post_id );
+
+		$this->assertEquals( home_url( '/' ), wp_get_shortlink( $post_id, 'post' ) );
+
+		global $wp_rewrite;
+		$wp_rewrite->permalink_structure = '';
+		$wp_rewrite->set_permalink_structure( '/%year%/%monthnum%/%day%/%postname%/' );
+		$wp_rewrite->flush_rules();
+
+		$this->assertEquals( home_url( '/' ), wp_get_shortlink( $post_id, 'post' ) );
+
+		$wp_rewrite->set_permalink_structure( '' );
+		$wp_rewrite->flush_rules();
+	}
+
+	/**
 	 * @ticket 17807
 	 */
 	function test_get_adjacent_post() {
@@ -175,22 +196,35 @@ class Tests_Link extends WP_UnitTestCase {
 		// Need some sample posts to test adjacency
 		$post_one = $this->factory->post->create_and_get( array(
 			'post_title' => 'First',
-			'post_date' => '2012-01-01 12:00:00'
+			'post_date'  => '2012-01-01 12:00:00',
 		) );
 
 		$post_two = $this->factory->post->create_and_get( array(
 			'post_title' => 'Second',
-			'post_date' => '2012-02-01 12:00:00'
+			'post_date'  => '2012-02-01 12:00:00',
 		) );
 
 		$post_three = $this->factory->post->create_and_get( array(
 			'post_title' => 'Third',
-			'post_date' => '2012-03-01 12:00:00'
+			'post_date'  => '2012-03-01 12:00:00',
 		) );
 
 		$post_four = $this->factory->post->create_and_get( array(
 			'post_title' => 'Fourth',
-			'post_date' => '2012-04-01 12:00:00'
+			'post_date'  => '2012-04-01 12:00:00',
+		) );
+
+		// Use pages to test post-type adjacency
+		$page_one = $this->factory->post->create_and_get( array(
+			'post_title' => 'First Page',
+			'post_date'  => '2013-01-01 12:00:00',
+			'post_type'  => 'page',
+		) );
+
+		$page_two = $this->factory->post->create_and_get( array(
+			'post_title' => 'Second Page',
+			'post_date'  => '2013-02-01 12:00:00',
+			'post_type'  => 'page',
 		) );
 
 		// Add some meta so we can join the postmeta table and query
@@ -233,6 +267,13 @@ class Tests_Link extends WP_UnitTestCase {
 		$this->go_to( get_permalink( $post_one->ID ) );
 		$this->assertEquals( $post_three, get_adjacent_post( false, null, false ) );
 		remove_filter( 'get_next_post_sort', array( $this, 'filter_next_post_sort_limit' ) );
+
+		// Test post-type specificity
+		$this->go_to( get_permalink( $page_one ) );
+		$this->assertEquals( $page_two, get_adjacent_post( false, null, false ) );
+
+		$this->go_to( get_permalink( $page_two ) );
+		$this->assertEquals( $page_one, get_adjacent_post( false, null, true ) );
 	}
 
 	/**

@@ -90,14 +90,7 @@ class WP_Posts_List_Table extends WP_List_Table {
 		$post_type = $this->screen->post_type;
 		$per_page = $this->get_items_per_page( 'edit_' . $post_type . '_per_page' );
 
-		/**
-		 * Filter the number of posts displayed per page on the Posts list table.
-		 *
-		 * @since 2.8.0
-		 *
-		 * @param int    $per_page  Number of posts to be displayed. Default 20.
-		 * @param string $post_type The post type.
-		 */
+		/** This filter is documented in wp-admin/includes/post.php */
  		$per_page = apply_filters( 'edit_posts_per_page', $per_page, $post_type );
 
 		if ( $this->hierarchical_display )
@@ -1204,19 +1197,20 @@ class WP_Posts_List_Table extends WP_List_Table {
 
 	<?php
 
-	if ( $bulk && post_type_supports( $screen->post_type, 'post-formats' ) ) {
-		$all_post_formats = get_post_format_strings();
+	if ( $bulk && current_theme_supports( 'post-formats' ) && post_type_supports( $screen->post_type, 'post-formats' ) ) {
+		$post_formats = get_theme_support( 'post-formats' );
 
 		?>
 		<label class="alignleft" for="post_format">
 		<span class="title"><?php _ex( 'Format', 'post format' ); ?></span>
 		<select name="post_format">
 			<option value="-1"><?php _e( '&mdash; No Change &mdash;' ); ?></option>
+			<option value="0"><?php echo get_post_format_string( 'standard' ); ?></option>
 			<?php
 
-			foreach ( $all_post_formats as $slug => $format ) {
+			foreach ( $post_formats[0] as $format ) {
 				?>
-				<option value="<?php echo esc_attr( $slug ); ?>"><?php echo esc_html( $format ); ?></option>
+				<option value="<?php echo esc_attr( $format ); ?>"><?php echo esc_html( get_post_format_string( $format ) ); ?></option>
 				<?php
 			}
 

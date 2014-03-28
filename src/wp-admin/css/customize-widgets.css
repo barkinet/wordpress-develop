@@ -58,16 +58,16 @@
 	left: auto !important;
 	max-width: 100%;
 }
+
 .customize-control-widget_form.wide-widget-control .widget-inside {
 	position: fixed;
 	left: 299px;
 	top: 25%;
-	padding: 20px;
 	border: 1px solid rgb(229, 229, 229);
-	z-index: -1;
+	overflow: auto;
 }
-.customize-control-widget_form.wide-widget-control.collapsing .widget-inside {
-	z-index: -2;
+.customize-control-widget_form.wide-widget-control .widget-inside > .form {
+	padding: 20px;
 }
 
 .customize-control-widget_form.wide-widget-control .widget-top {
@@ -109,12 +109,13 @@
 	cursor: move;
 }
 
-/* @todo What does this do? */
 .control-section.accordion-section.widget-customizer-highlighted > .accordion-section-title,
 .customize-control-widget_form.widget-customizer-highlighted {
 	outline: none;
 	-webkit-box-shadow: 0 0 3px #ce0000;
 	box-shadow: 0 0 3px #ce0000;
+	position: relative;
+	z-index: 1;
 }
 
 #widget-customizer-control-templates {
@@ -321,7 +322,6 @@
 	-moz-user-select: none;
 	-ms-user-select: none;
 	user-select: none;
-	-moz-outline: none;
 	outline: none;
 }
 

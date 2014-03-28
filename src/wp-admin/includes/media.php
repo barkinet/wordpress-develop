@@ -442,7 +442,7 @@ isRtl = <?php echo (int) is_rtl(); ?>;
 	do_action( 'admin_enqueue_scripts', 'media-upload-popup' );
 
 	/**
-	 * Print admin styles enqueued for the legacy (pre-3.5.0) media upload popup.
+	 * Fires when admin styles enqueued for the legacy (pre-3.5.0) media upload popup are printed.
 	 *
 	 * @since 2.9.0
 	 */
@@ -452,7 +452,7 @@ isRtl = <?php echo (int) is_rtl(); ?>;
 	do_action( 'admin_print_styles' );
 
 	/**
-	 * Print admin scripts enqueued for the legacy (pre-3.5.0) media upload popup.
+	 * Fires when admin scripts enqueued for the legacy (pre-3.5.0) media upload popup are printed.
 	 *
 	 * @since 2.9.0
 	 */
@@ -462,8 +462,8 @@ isRtl = <?php echo (int) is_rtl(); ?>;
 	do_action( 'admin_print_scripts' );
 
 	/**
-	 * Print scripts enqueued for the admin header for the legacy (pre-3.5.0)
-	 * media upload popup.
+	 * Fires when scripts enqueued for the admin header for the legacy (pre-3.5.0)
+	 * media upload popup are printed.
 	 *
 	 * @since 2.9.0
 	 */
@@ -1760,7 +1760,7 @@ $post_params = array(
 $post_params = apply_filters( 'upload_post_params', $post_params );
 
 $plupload_init = array(
-	'runtimes'            => 'html5,silverlight,flash,html4',
+	'runtimes'            => 'html5,flash,silverlight,html4',
 	'browse_button'       => 'plupload-browse-button',
 	'container'           => 'plupload-upload-ui',
 	'drop_element'        => 'drag-drop-area',
@@ -2338,7 +2338,7 @@ $page_links = paginate_links( array(
 	'prev_text' => __('&laquo;'),
 	'next_text' => __('&raquo;'),
 	'total' => ceil($wp_query->found_posts / 10),
-	'current' => $_GET['paged']
+	'current' => $q['paged'],
 ));
 
 if ( $page_links )

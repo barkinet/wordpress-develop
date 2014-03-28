@@ -469,6 +469,7 @@ body {
 
 #customize-control-header_image .current .container {
 	overflow: hidden;
+	-webkit-border-radius: 2px;
 	border-radius: 2px;
 }
 
@@ -526,6 +527,7 @@ body {
 
 #customize-control-header_image .random.placeholder {
 	cursor: pointer;
+	-webkit-border-radius: 2px;
 	border-radius: 2px;
 	height: 40px;
 }
@@ -534,26 +536,13 @@ body {
 	display: block;
 }
 
-#customize-control-header_image .dice {
-	font-size: 16px;
-	vertical-align: -1px;
-}
-
 #customize-control-header_image .placeholder:hover .dice {
 	-webkit-animation: dice-color-change 3s infinite;
-	-moz-animation: dice-color-change 3s infinite;
 	-ms-animation: dice-color-change 3s infinite;
 	animation: dice-color-change 3s infinite;
 }
 
 @-webkit-keyframes dice-color-change {
-	0% { color: #d4b146; }
-	50% { color: #ef54b0; }
-	75% { color: #7190d3; }
-	100% { color: #d4b146; }
-}
-
-@-moz-keyframes dice-color-change {
 	0% { color: #d4b146; }
 	50% { color: #ef54b0; }
 	75% { color: #7190d3; }
@@ -603,6 +592,7 @@ body {
 
 #customize-control-header_image img {
 	width: 100%;
+	-webkit-border-radius: 2px;
 	border-radius: 2px;
 }
 

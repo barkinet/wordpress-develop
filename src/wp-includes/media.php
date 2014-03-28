@@ -602,7 +602,7 @@ function wp_get_attachment_image_src($attachment_id, $size='thumbnail', $icon = 
 	$src = false;
 
 	if ( $icon && $src = wp_mime_type_icon($attachment_id) ) {
-		$icon_dir = apply_filters( 'icon_dir', ABSPATH . WPINC . '/images/crystal' );
+		$icon_dir = apply_filters( 'icon_dir', ABSPATH . WPINC . '/images/media' );
 		$src_file = $icon_dir . '/' . wp_basename($src);
 		@list($width, $height) = getimagesize($src_file);
 	}
@@ -765,6 +765,13 @@ function img_caption_shortcode( $attr, $content = null ) {
 	if ( ! empty( $atts['id'] ) )
 		$atts['id'] = 'id="' . esc_attr( $atts['id'] ) . '" ';
 
+	$class = trim( 'wp-caption ' . $atts['align'] . ' ' . $atts['class'] );
+
+	if ( current_theme_supports( 'html5', 'caption' ) ) {
+		return '<figure ' . $atts['id'] . 'style="width: ' . (int) $atts['width'] . 'px;" class="' . esc_attr( $class ) . '">'
+		. do_shortcode( $content ) . '<figcaption class="wp-caption-text">' . $atts['caption'] . '</figcaption></figure>';
+	}
+
 	$caption_width = 10 + $atts['width'];
 
 	/**
@@ -787,8 +794,6 @@ function img_caption_shortcode( $attr, $content = null ) {
 	$style = '';
 	if ( $caption_width )
 		$style = 'style="width: ' . (int) $caption_width . 'px" ';
-
-	$class = trim( 'wp-caption ' . $atts['align'] . ' ' . $atts['class'] );
 
 	return '<div ' . $atts['id'] . $style . 'class="' . esc_attr( $class ) . '">'
 	. do_shortcode( $content ) . '<p class="wp-caption-text">' . $atts['caption'] . '</p></div>';
@@ -991,8 +996,12 @@ function gallery_shortcode( $attr ) {
 			$output .= '<br style="clear: both" />';
 	}
 
+	if ( $columns > 0 && $i % $columns !== 0 ) {
+		$output .= "
+			<br style='clear: both' />";
+	}
+
 	$output .= "
-			<br style='clear: both;' />
 		</div>\n";
 
 	return $output;
@@ -1067,16 +1076,11 @@ add_action( 'wp_playlist_scripts', 'wp_playlist_scripts' );
  * @since 3.9.0
  *
  * @param array  $attr Attributes of the shortcode.
- * @param string $type Type of playlist. Accepts 'audio' and 'video'.
  * @return string Playlist output. Empty string if the passed type is unsupported.
  */
-function wp_get_playlist( $attr, $type ) {
+function wp_playlist_shortcode( $attr ) {
 	global $content_width;
 	$post = get_post();
-
-	if ( ! in_array( $type, array( 'audio', 'video' ) ) ) {
-		return '';
-	}
 
 	static $instance = 0;
 	$instance++;
@@ -1101,7 +1105,7 @@ function wp_get_playlist( $attr, $type ) {
 	 * @param array  $attr   Array of shortcode attributes.
 	 * @param string $type   Type of playlist to generate output for.
 	 */
-	$output = apply_filters( 'post_playlist', '', $attr, $type );
+	$output = apply_filters( 'post_playlist', '', $attr );
 	if ( $output != '' ) {
 		return $output;
 	}
@@ -1117,14 +1121,15 @@ function wp_get_playlist( $attr, $type ) {
 	}
 
 	extract( shortcode_atts( array(
+		'type'		=> 'audio',
 		'order'		=> 'ASC',
 		'orderby'	=> 'menu_order ID',
 		'id'		=> $post ? $post->ID : 0,
 		'include'	=> '',
 		'exclude'   => '',
 		'style'		=> 'light',
-		'tracklist' => 'audio' === $type,
-		'tracknumbers' => 'audio' === $type,
+		'tracklist' => true,
+		'tracknumbers' => true,
 		'images'	=> true,
 		'artists'	=> true
 	), $attr, 'playlist' ) );
@@ -1132,24 +1137,6 @@ function wp_get_playlist( $attr, $type ) {
 	$id = intval( $id );
 	if ( 'RAND' == $order ) {
 		$orderby = 'none';
-	}
-
-	$playlist_styles = array(
-		'light' => _x( 'Light', 'playlist theme' ),
-		'dark'	=> _x( 'Dark', 'playlist theme' )
-	);
-
-	/**
-	 * Filter the available playlist styles.
-	 *
-	 * @since 3.9.0
-	 *
-	 * @param array $playlist_styles Array of playlist styles. Defaults are 'light' and 'dark'.
-	 */
-	$styles = apply_filters( 'playlist_styles', $playlist_styles );
-
-	if ( ! in_array( $style, array_keys( $styles ), true ) ) {
-		$style = 'light';
 	}
 
 	$args = array(
@@ -1189,18 +1176,15 @@ function wp_get_playlist( $attr, $type ) {
 		return $output;
 	}
 
-	$supports_thumbs = ( current_theme_supports( 'post-thumbnails', "attachment:$type" ) && post_type_supports( "attachment:$type", 'thumbnail' ) )
-		|| $images;
-
 	$outer = 22; // default padding and border of wrapper
 
 	$default_width = 640;
 	$default_height = 360;
 
-	$theme_width = $content_width - $outer;
-	$theme_height = round( ( $default_height * $theme_width ) / $default_width );
+	$theme_width = empty( $content_width ) ? $default_width : ( $content_width - $outer );
+	$theme_height = empty( $content_width ) ? $default_height : round( ( $default_height * $theme_width ) / $default_width );
 
-	$data = compact( 'type', 'style' );
+	$data = compact( 'type' );
 
 	// don't pass strings to JSON, will be truthy in JS
 	foreach ( array( 'tracklist', 'tracknumbers', 'images', 'artists' ) as $key ) {
@@ -1250,12 +1234,18 @@ function wp_get_playlist( $attr, $type ) {
 			}
 		}
 
-		if ( $supports_thumbs ) {
+		if ( $images ) {
 			$id = get_post_thumbnail_id( $attachment->ID );
 			if ( ! empty( $id ) ) {
 				list( $src, $width, $height ) = wp_get_attachment_image_src( $id, 'full' );
 				$track['image'] = compact( 'src', 'width', 'height' );
 				list( $src, $width, $height ) = wp_get_attachment_image_src( $id, 'thumbnail' );
+				$track['thumb'] = compact( 'src', 'width', 'height' );
+			} else {
+				$src = wp_mime_type_icon( $attachment->ID );
+				$width = 48;
+				$height = 64;
+				$track['image'] = compact( 'src', 'width', 'height' );
 				$track['thumb'] = compact( 'src', 'width', 'height' );
 			}
 		}
@@ -1303,32 +1293,7 @@ function wp_get_playlist( $attr, $type ) {
 	<?php
 	return ob_get_clean();
 }
-
-/**
- * Playlist shortcode handler
- *
- * @since 3.9.0
- *
- * @param array $attr Parsed shortcode attributes.
- * @return string The resolved playlist shortcode markup.
- */
-function wp_playlist_shortcode( $attr ) {
-	return wp_get_playlist( $attr, 'audio' );
-}
 add_shortcode( 'playlist', 'wp_playlist_shortcode' );
-
-/**
- * Video playlist shortcode handler
- *
- * @since 3.9.0
- *
- * @param array $attr Parsed shortcode attributes.
- * @return string The resolved video playlist shortcode markup.
- */
-function wp_video_playlist_shortcode( $attr ) {
-	return wp_get_playlist( $attr, 'video' );
-}
-add_shortcode( 'video-playlist', 'wp_video_playlist_shortcode' );
 
 /**
  * Provide a No-JS Flash fallback as a last resort for audio / video
@@ -1585,7 +1550,7 @@ function wp_video_shortcode( $attr, $content = '' ) {
 		}
 	} else {
 		// if the video is bigger than the theme
-		if ( $width > $content_width ) {
+		if ( ! empty( $content_width ) && $width > $content_width ) {
 			$height = round( ( $height * $content_width ) / $width );
 			$width = $content_width;
 		}
@@ -2176,7 +2141,7 @@ function wp_plupload_default_settings() {
 	$max_upload_size = wp_max_upload_size();
 
 	$defaults = array(
-		'runtimes'            => 'html5,silverlight,flash,html4',
+		'runtimes'            => 'html5,flash,silverlight,html4',
 		'file_data_name'      => 'async-upload', // key passed to $_FILE.
 		'url'                 => admin_url( 'async-upload.php', 'relative' ),
 		'flash_swf_url'       => includes_url( 'js/plupload/Moxie.swf' ),
@@ -2381,6 +2346,8 @@ function wp_enqueue_media( $args = array() ) {
 	if ( did_action( 'wp_enqueue_media' ) )
 		return;
 
+	global $content_width;
+
 	$defaults = array(
 		'post' => null,
 	);
@@ -2417,6 +2384,16 @@ function wp_enqueue_media( $args = array() ) {
 		}
 	}
 
+	$audio = $video = 0;
+	$counts = wp_count_attachments();
+	foreach ( $counts as $mime => $total ) {
+		if ( 0 === strpos( $mime, 'audio/' ) ) {
+			$audio += (int) $total;
+		} elseif ( 0 === strpos( $mime, 'video/' ) ) {
+			$video += (int) $total;
+		}
+	}
+
 	$settings = array(
 		'tabs'      => $tabs,
 		'tabUrl'    => add_query_arg( array( 'chromeless' => true ), admin_url('media-upload.php') ),
@@ -2429,9 +2406,13 @@ function wp_enqueue_media( $args = array() ) {
 			'id' => 0,
 		),
 		'defaultProps' => $props,
-		'attachmentCounts' => wp_count_attachments(),
+		'attachmentCounts' => array(
+			'audio' => $audio,
+			'video' => $video
+		),
 		'embedExts'    => $exts,
-		'embedMimes'   => $ext_mimes
+		'embedMimes'   => $ext_mimes,
+		'contentWidth' => $content_width,
 	);
 
 	$post = null;
@@ -2442,7 +2423,7 @@ function wp_enqueue_media( $args = array() ) {
 			'nonce' => wp_create_nonce( 'update-post_' . $post->ID ),
 		);
 
-		if ( theme_supports_thumbnails( $post ) && post_supports_thumbnails( $post ) ) {
+		if ( theme_supports_thumbnails( $post ) || post_supports_thumbnails( $post ) ) {
 			$featured_image_id = get_post_meta( $post->ID, '_thumbnail_id', true );
 			$settings['post']['featuredImageId'] = $featured_image_id ? $featured_image_id : -1;
 		}
@@ -2537,12 +2518,12 @@ function wp_enqueue_media( $args = array() ) {
  		// Playlist
  		'playlistDragInfo'    => __( 'Drag and drop to reorder tracks.' ),
  		'createPlaylistTitle' => __( 'Create Audio Playlist' ),
- 		'editPlaylistTitle'   => __( 'Edit Playlist' ),
- 		'cancelPlaylistTitle' => __( '&#8592; Cancel Playlist' ),
- 		'insertPlaylist'      => __( 'Insert playlist' ),
- 		'updatePlaylist'      => __( 'Update playlist' ),
- 		'addToPlaylist'       => __( 'Add to playlist' ),
- 		'addToPlaylistTitle'  => __( 'Add to Playlist' ),
+ 		'editPlaylistTitle'   => __( 'Edit Audio Playlist' ),
+ 		'cancelPlaylistTitle' => __( '&#8592; Cancel Audio Playlist' ),
+ 		'insertPlaylist'      => __( 'Insert audio playlist' ),
+ 		'updatePlaylist'      => __( 'Update audio playlist' ),
+ 		'addToPlaylist'       => __( 'Add to audio playlist' ),
+ 		'addToPlaylistTitle'  => __( 'Add to Audio Playlist' ),
 
  		// Video Playlist
  		'videoPlaylistDragInfo'    => __( 'Drag and drop to reorder videos.' ),
@@ -2566,6 +2547,7 @@ function wp_enqueue_media( $args = array() ) {
 	wp_enqueue_script( 'media-audiovideo' );
 	wp_enqueue_style( 'media-views' );
 	if ( is_admin() ) {
+		wp_enqueue_script( 'mce-view' );
 		wp_enqueue_script( 'image-edit' );
 	}
 	wp_enqueue_style( 'imgareaselect' );

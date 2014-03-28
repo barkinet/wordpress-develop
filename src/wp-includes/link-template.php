@@ -1293,7 +1293,7 @@ class WP_Adjacent_Post {
 		$query_args = array(
 			'posts_per_page'      => 1,
 			'post_status'         => 'publish',
-			'post_type'           => 'post',
+			'post_type'           => $this->current_post->post_type,
 			'orderby'             => 'date',
 			'order'               => 'previous' === $this->adjacent ? 'DESC' : 'ASC',
 			'ignore_sticky_posts' => true,
@@ -1604,8 +1604,8 @@ function get_adjacent_post_rel_link( $title = '%title', $in_same_term = false, $
  * @param string       $taxonomy       Optional. Taxonomy, if $in_same_term is true. Default 'category'.
  */
 function adjacent_posts_rel_link( $title = '%title', $in_same_term = false, $excluded_terms = '', $taxonomy = 'category' ) {
-	echo get_adjacent_post_rel_link( $title, $in_same_term, $excluded_terms = '', true, $taxonomy );
-	echo get_adjacent_post_rel_link( $title, $in_same_term, $excluded_terms = '', false, $taxonomy );
+	echo get_adjacent_post_rel_link( $title, $in_same_term, $excluded_terms, true, $taxonomy );
+	echo get_adjacent_post_rel_link( $title, $in_same_term, $excluded_terms, false, $taxonomy );
 }
 
 /**
@@ -1632,7 +1632,7 @@ function adjacent_posts_rel_link_wp_head() {
  * @param string       $taxonomy       Optional. Taxonomy, if $in_same_term is true. Default 'category'.
  */
 function next_post_rel_link( $title = '%title', $in_same_term = false, $excluded_terms = '', $taxonomy = 'category' ) {
-	echo get_adjacent_post_rel_link( $title, $in_same_term, $excluded_terms = '', false, $taxonomy );
+	echo get_adjacent_post_rel_link( $title, $in_same_term, $excluded_terms, false, $taxonomy );
 }
 
 /**
@@ -1646,7 +1646,7 @@ function next_post_rel_link( $title = '%title', $in_same_term = false, $excluded
  * @param string       $taxonomy       Optional. Taxonomy, if $in_same_term is true. Default 'category'.
  */
 function prev_post_rel_link( $title = '%title', $in_same_term = false, $excluded_terms = '', $taxonomy = 'category' ) {
-	echo get_adjacent_post_rel_link( $title, $in_same_term, $excluded_terms = '', true, $taxonomy );
+	echo get_adjacent_post_rel_link( $title, $in_same_term, $excluded_terms, true, $taxonomy );
 }
 
 /**
@@ -2788,8 +2788,12 @@ function wp_get_shortlink($id = 0, $context = 'post', $allow_slugs = true) {
 	// Return p= link for all public post types.
 	if ( ! empty( $post_id ) ) {
 		$post_type = get_post_type_object( $post->post_type );
-		if ( $post_type->public )
-			$shortlink = home_url('?p=' . $post_id);
+
+		if ( 'page' === $post->post_type && $post->ID == get_option( 'page_on_front' ) && 'page' == get_option( 'show_on_front' ) ) {
+			$shortlink = home_url( '/' );
+		} elseif ( $post_type->public ) {
+			$shortlink = home_url( '?p=' . $post_id );
+		}
 	}
 
 	return apply_filters('get_shortlink', $shortlink, $id, $context, $allow_slugs);
