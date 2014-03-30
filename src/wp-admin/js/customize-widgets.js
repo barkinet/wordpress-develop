@@ -8,7 +8,7 @@ var WidgetCustomizer = ( function ($) {
 		Sidebar,
 		SidebarCollection,
 		OldPreviewer,
-		builtin_form_update_handlers,
+		builtin_form_sync_handlers,
 		customize = wp.customize, self = {
 		nonce: null,
 		i18n: {
@@ -136,30 +136,27 @@ var WidgetCustomizer = ( function ($) {
 	self.registered_sidebars = new SidebarCollection( self.registered_sidebars );
 
 	/**
-	 * Handlers for the widget-form-update event, organized by widget ID base.
+	 * Handlers for the widget-synced event, organized by widget ID base.
 	 * Other widgets may provide their own update handlers by adding
-	 * listeners for the widget-form-update event.
+	 * listeners for the widget-synced event.
 	 */
-	builtin_form_update_handlers = {
+	builtin_form_sync_handlers = {
 
 		/**
 		 * @param {jQuery.Event} e
-		 * @param {String} args.widget_id
-		 * @param {String} args.widget_id_base
-		 * @param {String} args.new_form
-		 * @param {Boolean} args.hard
-		 * @param {wp.customize.controlConstructor.widget_form} args.customize_control
+		 * @param {jQuery} widget_el
+		 * @param {String} new_form
 		 */
-		rss: function ( e, args ) {
-			var old_widget_error = args.customize_control.container.find( '.widget-error:first' ),
-				new_widget_error = $( '<div>' + args.new_form + '</div>' ).find( '.widget-error:first' );
+		rss: function ( e, widget_el, new_form ) {
+			var old_widget_error = widget_el.find( '.widget-error:first' ),
+				new_widget_error = $( '<div>' + new_form + '</div>' ).find( '.widget-error:first' );
 
 			if ( old_widget_error.length && new_widget_error.length ) {
 				old_widget_error.replaceWith( new_widget_error );
 			} else if ( old_widget_error.length ) {
 				old_widget_error.remove();
 			} else if ( new_widget_error.length ) {
-				args.customize_control.container.find( '.widget-content:first' ).prepend( new_widget_error );
+				widget_el.find( '.widget-content:first' ).prepend( new_widget_error );
 			}
 		}
 	};
@@ -966,12 +963,14 @@ var WidgetCustomizer = ( function ($) {
 		 */
 		_setupUpdateUI: function () {
 			var control = this,
+				widget_root,
 				widget_content,
 				save_btn,
 				update_widget_debounced,
 				form_update_event_handler;
 
-			widget_content = control.container.find( '.widget-content' );
+			widget_root = control.container.find( '.widget:first' );
+			widget_content = widget_root.find( '.widget-content:first' );
 
 			// Configure update button
 			save_btn = control.container.find( '.widget-control-save' );
@@ -1023,9 +1022,13 @@ var WidgetCustomizer = ( function ($) {
 				control.container.toggleClass( 'widget-rendered', is_rendered );
 			} );
 
-			form_update_event_handler = builtin_form_update_handlers[ control.params.widget_id_base ];
+			form_update_event_handler = builtin_form_sync_handlers[ control.params.widget_id_base ];
 			if ( form_update_event_handler ) {
-				control.container.find( '.widget:first' ).on( 'widget-form-update', form_update_event_handler );
+				$( document ).on( 'widget-synced', function ( e, widget_el ) {
+					if ( widget_root.is( widget_el ) ) {
+						form_update_event_handler.apply( document, arguments );
+					}
+				} );
 			}
 		},
 
@@ -1222,8 +1225,7 @@ var WidgetCustomizer = ( function ($) {
 					sanitized_form,
 					sanitized_inputs,
 					has_same_inputs_in_response,
-					is_live_update_aborted = false,
-					event_data;
+					is_live_update_aborted = false;
 
 				// Check if the user is logged out.
 				if ( '0' === r ) {
@@ -1252,33 +1254,22 @@ var WidgetCustomizer = ( function ($) {
 								sanitized_input = $( sanitized_inputs[i] ),
 								property = control._getInputStatePropertyName( this ),
 								submitted_state,
-								sanitized_state;
+								sanitized_state,
+								can_update_state;
 
 							submitted_state = input.data( 'state' + update_number );
 							sanitized_state = sanitized_input.prop( property );
 							input.data( 'sanitized', sanitized_state );
-							event_data = {
-								'sanitized_state': sanitized_state,
-								'submitted_state': submitted_state,
-								'customize_control': control
-							};
 
-							if ( submitted_state !== sanitized_state ) {
-
-								// Only update now if not currently focused on it,
-								// so that we don't cause the cursor
-								// it will be updated upon the change event
-								if ( args.ignore_active_element || ! input.is( document.activeElement ) ) {
-									input.prop( property, sanitized_state );
-									input.trigger( 'widget-sanitary-field', [ event_data ] );
-								} else {
-									input.trigger( 'widget-unsanitary-field', [ event_data ] );
-								}
-
-							} else {
-								input.trigger( 'widget-sanitary-field', [ event_data ] );
+							can_update_state = (
+								submitted_state !== sanitized_state &&
+								( args.ignore_active_element || ! input.is( document.activeElement ) )
+							);
+							if ( can_update_state ) {
+								input.prop( property, sanitized_state );
 							}
 						} );
+						$( document ).trigger( 'widget-synced', [ widget_root, r.data.form ] );
 
 					} else if ( control.live_update_mode ) {
 						control.live_update_mode = false;
