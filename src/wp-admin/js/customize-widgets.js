@@ -510,6 +510,7 @@ var WidgetCustomizer = ( function ($) {
 		addWidget: function ( widget_id ) {
 			var control = this,
 				control_html,
+				widget_el,
 				customize_control_type = 'widget_form',
 				customize_control,
 				parsed_widget_id = parse_widget_id( widget_id ),
@@ -544,11 +545,12 @@ var WidgetCustomizer = ( function ($) {
 			} else {
 				widget.set( 'is_disabled', true ); // Prevent single widget from being added again now
 			}
+			widget_el = $( control_html );
 
 			customize_control = $( '<li></li>' );
 			customize_control.addClass( 'customize-control' );
 			customize_control.addClass( 'customize-control-' + customize_control_type );
-			customize_control.append( $( control_html ) );
+			customize_control.append( widget_el );
 			customize_control.find( '> .widget-icon' ).remove();
 			if ( widget.get( 'is_multi' ) ) {
 				customize_control.find( 'input[name="widget_number"]' ).val( widget_number );
@@ -633,6 +635,8 @@ var WidgetCustomizer = ( function ($) {
 					widget_form_control.focus();
 				}
 			} );
+
+			$( document ).trigger( 'widget-added', [ widget_el ] );
 
 			return widget_form_control;
 		}
@@ -1283,17 +1287,7 @@ var WidgetCustomizer = ( function ($) {
 					} else {
 						widget_content.html( r.data.form );
 						control.container.removeClass( 'widget-form-disabled' );
-					}
-
-					if ( ! is_live_update_aborted ) {
-						event_data = {
-							'widget_id': control.params.widget_id,
-							'widget_id_base': control.params.widget_id_base,
-							'new_form': r.data.form,
-							'hard': ! control.live_update_mode, // dynamic fields may need to be re-initialized (e.g. Chosen)
-							'customize_control': control
-						};
-						widget_root.trigger( 'widget-form-update', [ event_data ] );
+						$( document ).trigger( 'widget-updated', [ widget_root ] );
 					}
 
 					/**

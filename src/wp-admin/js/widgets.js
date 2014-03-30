@@ -170,6 +170,7 @@ wpWidgets = {
 
 					wpWidgets.save( $widget, 0, 0, 1 );
 					$widget.find('input.add_new').val('');
+					$( document ).trigger( 'widget-added', [ $widget ] );
 				}
 
 				$sidebar = $widget.parent();
@@ -332,7 +333,7 @@ wpWidgets = {
 
 	save : function( widget, del, animate, order ) {
 		var sidebarId = widget.closest('div.widgets-sortables').attr('id'),
-			data = widget.find('form').serialize(), a, eventData;
+			data = widget.find('form').serialize(), a;
 
 		widget = $(widget);
 		$('.spinner', widget).show();
@@ -376,14 +377,7 @@ wpWidgets = {
 				if ( r && r.length > 2 ) {
 					$( 'div.widget-content', widget ).html( r );
 					wpWidgets.appendTitle( widget );
-					eventData = {
-						'widget_id': widget.find( 'input.widget-id' ).val(),
-						'widget_id_base': widget.find( 'input.id_base' ).val(),
-						'new_form': r,
-						'hard': true, // soft updates only in customizer
-						'customize_control': null
-					};
-					widget.trigger( 'widget-form-update', [ eventData ] );
+					$( document ).trigger( 'widget-updated', [ widget ] );
 				}
 			}
 			if ( order ) {
@@ -447,6 +441,8 @@ wpWidgets = {
 		wpWidgets.save( widget, 0, 0, 1 );
 		// No longer "new" widget
 		widget.find( 'input.add_new' ).val('');
+
+		$( document ).trigger( 'widget-added', [ widget ] );
 
 		/*
 		 * Check if any part of the sidebar is visible in the viewport. If it is, don't scroll.
