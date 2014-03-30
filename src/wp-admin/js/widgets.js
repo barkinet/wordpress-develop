@@ -135,7 +135,7 @@ wpWidgets = {
 			},
 
 			stop: function( event, ui ) {
-				var addNew, widgetNumber, $sidebar, $children, child, item, $widgetInside,
+				var addNew, widgetNumber, $sidebar, $children, child, item,
 					$widget = ui.item,
 					id = the_id;
 
@@ -145,10 +145,6 @@ wpWidgets = {
 					return;
 				}
 
-				// Deep-clone widget-inside template so that DOM events and data are intact
-				$widgetInside = $( '#' + the_id ).find( '.widget-inside:first' ).clone( true );
-				$widget.find( '.widget-inside:first' ).replaceWith( $widgetInside );
-
 				addNew = $widget.find('input.add_new').val();
 				widgetNumber = $widget.find('input.multi_number').val();
 
@@ -157,17 +153,12 @@ wpWidgets = {
 
 				if ( addNew ) {
 					if ( 'multi' === addNew ) {
-						// Replace __i__ placeholder with multi-widget number, leaving event handlers and data in place
-						$widget.find( '*' ).each( function ( i, el ) {
-							var replaced_attributes = {};
-							$.each( el.attributes, function ( i, attr ) {
-								var replaced_value = attr.value.replace( /__i__|%i%/g, widgetNumber );
-								if ( attr.value !== replaced_value ) {
-									replaced_attributes[ attr.name ] = replaced_value;
-								}
-							} );
-							$( el ).attr( replaced_attributes );
-						} );
+						$widget.html(
+							$widget.html().replace( /<[^<>]+>/g, function( tag ) {
+								return tag.replace( /__i__|%i%/g, widgetNumber );
+							})
+						);
+
 						$widget.attr( 'id', id.replace( '__i__', widgetNumber ) );
 						widgetNumber++;
 
@@ -270,7 +261,7 @@ wpWidgets = {
 			li.data( 'sidebarId', id );
 		});
 
-		$( '#available-widgets' ).on( 'click.widgets-chooser', '.widget .widget-title', function() {
+		$( '#available-widgets .widget .widget-title' ).on( 'click.widgets-chooser', function() {
 			var $widget = $(this).closest( '.widget' );
 
 			if ( $widget.hasClass( 'widget-in-question' ) || $( '#widgets-left' ).hasClass( 'chooser' ) ) {
@@ -422,13 +413,9 @@ wpWidgets = {
 	addWidget: function( chooser ) {
 		var widget, widgetId, add, n, viewportTop, viewportBottom, sidebarBounds,
 			sidebarId = chooser.find( '.widgets-chooser-selected' ).data('sidebarId'),
-			sidebar = $( '#' + sidebarId ),
-			widgetInQuestion = $( '#available-widgets' ).find( '.widget-in-question' ),
-			widgetInside;
+			sidebar = $( '#' + sidebarId );
 
-		widget = widgetInQuestion.clone();
-		widgetInside = widgetInQuestion.find( '.widget-inside:first' ).clone( true );
-		widget.find( '.widget-inside:first' ).replaceWith( widgetInside );
+		widget = $('#available-widgets').find('.widget-in-question').clone();
 		widgetId = widget.attr('id');
 		add = widget.find( 'input.add_new' ).val();
 		n = widget.find( 'input.multi_number' ).val();
@@ -437,17 +424,12 @@ wpWidgets = {
 		widget.find('.widgets-chooser').remove();
 
 		if ( 'multi' === add ) {
-			// Replace __i__ placeholder with multi-widget number, leaving event handlers and data in place
-			widget.find( '*' ).each( function ( i, el ) {
-				var replaced_attributes = {};
-				$.each( el.attributes, function ( i, attr ) {
-					var replaced_value = attr.value.replace( /__i__|%i%/g, n );
-					if ( attr.value !== replaced_value ) {
-						replaced_attributes[ attr.name ] = replaced_value;
-					}
-				} );
-				$( el ).attr( replaced_attributes );
-			} );
+			widget.html(
+				widget.html().replace( /<[^<>]+>/g, function(m) {
+					return m.replace( /__i__|%i%/g, n );
+				})
+			);
+
 			widget.attr( 'id', widgetId.replace( '__i__', n ) );
 			n++;
 			$( '#' + widgetId ).find('input.multi_number').val(n);

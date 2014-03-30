@@ -509,11 +509,11 @@ var WidgetCustomizer = ( function ($) {
 		 */
 		addWidget: function ( widget_id ) {
 			var control = this,
+				control_html,
 				customize_control_type = 'widget_form',
 				customize_control,
 				parsed_widget_id = parse_widget_id( widget_id ),
 				widget_number = parsed_widget_id.number,
-				widget_tpl,
 				widget_id_base = parsed_widget_id.id_base,
 				widget = self.available_widgets.findWhere( {id_base: widget_id_base} ),
 				setting_id,
@@ -536,18 +536,10 @@ var WidgetCustomizer = ( function ($) {
 				widget_number = widget.get( 'multi_number' );
 			}
 
-			widget_tpl = $( '#widget-tpl-' + widget.get( 'id' ) ).clone( true );
+			control_html = $( '#widget-tpl-' + widget.get( 'id' ) ).html();
 			if ( widget.get( 'is_multi' ) ) {
-				// Replace __i__ placeholder with multi-widget number, leaving event handlers and data in place
-				widget_tpl.find( '*' ).each( function ( i, el ) {
-					var replaced_attributes = {};
-					$.each( el.attributes, function ( i, attr ) {
-						var replaced_value = attr.value.replace( /__i__|%i%/g, widget_number );
-						if ( attr.value !== replaced_value ) {
-							replaced_attributes[ attr.name ] = replaced_value;
-						}
-					} );
-					$( el ).attr( replaced_attributes );
+				control_html = control_html.replace( /<[^<>]+>/g, function ( m ) {
+					return m.replace( /__i__|%i%/g, widget_number );
 				} );
 			} else {
 				widget.set( 'is_disabled', true ); // Prevent single widget from being added again now
@@ -556,7 +548,7 @@ var WidgetCustomizer = ( function ($) {
 			customize_control = $( '<li></li>' );
 			customize_control.addClass( 'customize-control' );
 			customize_control.addClass( 'customize-control-' + customize_control_type );
-			customize_control.append( widget_tpl.children() );
+			customize_control.append( $( control_html ) );
 			customize_control.find( '> .widget-icon' ).remove();
 			if ( widget.get( 'is_multi' ) ) {
 				customize_control.find( 'input[name="widget_number"]' ).val( widget_number );
