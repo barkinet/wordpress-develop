@@ -1087,6 +1087,21 @@ var WidgetCustomizer = ( function ($) {
 		},
 
 		/**
+		 * Find all inputs in a widget container that should be considered when
+		 * comparing the loaded form with the sanitized form, whose fields will
+		 * be aligned to copy the sanitized over. The elements returned by this
+		 * are passed into this._getInputsSignature(), and they are iterated
+		 * over when copying sanitized values over to the the form loaded.
+		 *
+		 * @param {jQuery} container element in which to look for inputs
+		 * @returns {jQuery} inputs
+		 * @private
+		 */
+		_getInputs: function ( container ) {
+			return $( container ).find( ':input' );
+		},
+
+		/**
 		 * Iterate over supplied inputs and create a signature string for all of them together.
 		 * This string can be used to compare whether or not the form has all of the same fields.
 		 *
@@ -1098,9 +1113,7 @@ var WidgetCustomizer = ( function ($) {
 			var inputs_signatures = _( inputs ).map( function ( input ) {
 				input = $( input );
 				var signature_parts;
-				if ( input.is( 'option' ) ) {
-					signature_parts = [ input.prop( 'nodeName' ), input.prop( 'value' ) ];
-				} else if ( input.is( ':checkbox, :radio' ) ) {
+				if ( input.is( ':checkbox, :radio' ) ) {
 					signature_parts = [ input.prop( 'type' ), input.attr( 'id' ), input.attr( 'name' ), input.prop( 'value' ) ];
 				} else {
 					signature_parts = [ input.prop( 'nodeName' ), input.attr( 'id' ), input.attr( 'name' ), input.attr( 'type' ) ];
@@ -1121,8 +1134,6 @@ var WidgetCustomizer = ( function ($) {
 			input = $( input );
 			if ( input.is( ':radio, :checkbox' ) ) {
 				return 'checked';
-			} else if ( input.is( 'option' ) ) {
-				return 'selected';
 			} else {
 				return 'value';
 			}
@@ -1182,7 +1193,7 @@ var WidgetCustomizer = ( function ($) {
 			update_number = control._update_count;
 
 			widget_root = control.container.find( '.widget:first' );
-			widget_content = control.container.find( '.widget-content:first' );
+			widget_content = widget_root.find( '.widget-content:first' );
 
 			// Remove a previous error message
 			widget_content.find( '.widget-error' ).remove();
@@ -1202,7 +1213,7 @@ var WidgetCustomizer = ( function ($) {
 			params.nonce = self.nonce;
 
 			data = $.param( params );
-			inputs = widget_content.find( ':input, option' );
+			inputs = control._getInputs( widget_content );
 
 			// Store the value we're submitting in data so that when the response comes back,
 			// we know if it got sanitized; if there is no difference in the sanitized value,
@@ -1245,7 +1256,7 @@ var WidgetCustomizer = ( function ($) {
 
 				if ( r.success ) {
 					sanitized_form = $( '<div>' + r.data.form + '</div>' );
-					sanitized_inputs = sanitized_form.find( ':input, option' );
+					sanitized_inputs = control._getInputs( sanitized_form );
 					has_same_inputs_in_response = control._getInputsSignature( inputs ) === control._getInputsSignature( sanitized_inputs );
 
 					if ( has_same_inputs_in_response && control.live_update_mode ) {
