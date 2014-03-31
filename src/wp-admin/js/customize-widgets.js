@@ -1114,9 +1114,9 @@ var WidgetCustomizer = ( function ($) {
 				input = $( input );
 				var signature_parts;
 				if ( input.is( ':checkbox, :radio' ) ) {
-					signature_parts = [ input.prop( 'type' ), input.attr( 'id' ), input.attr( 'name' ), input.prop( 'value' ) ];
+					signature_parts = [ input.attr( 'id' ), input.attr( 'name' ), input.prop( 'value' ) ];
 				} else {
-					signature_parts = [ input.prop( 'nodeName' ), input.attr( 'id' ), input.attr( 'name' ), input.attr( 'type' ) ];
+					signature_parts = [ input.attr( 'id' ), input.attr( 'name' ) ];
 				}
 				return signature_parts.join( ',' );
 			} );
