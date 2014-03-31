@@ -1098,7 +1098,7 @@ var WidgetCustomizer = ( function ($) {
 		 * @private
 		 */
 		_getInputs: function ( container ) {
-			return $( container ).find( ':input' );
+			return $( container ).find( ':input[name]' );
 		},
 
 		/**
