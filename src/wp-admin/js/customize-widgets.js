@@ -1259,6 +1259,14 @@ var WidgetCustomizer = ( function ($) {
 					sanitized_inputs = control._getInputs( sanitized_form );
 					has_same_inputs_in_response = control._getInputsSignature( inputs ) === control._getInputsSignature( sanitized_inputs );
 
+					// Restore live update mode if sanitized fields are now aligned with the existing fields
+					if ( has_same_inputs_in_response && ! control.live_update_mode ) {
+						control.live_update_mode = true;
+						control.container.removeClass( 'widget-form-disabled' );
+						control.container.find( 'input[name="savewidget"]' ).hide();
+					}
+
+					// Sync sanitized field states to existing fields if they are aligned
 					if ( has_same_inputs_in_response && control.live_update_mode ) {
 						inputs.each( function ( i ) {
 							var input = $( this ),
@@ -1282,10 +1290,12 @@ var WidgetCustomizer = ( function ($) {
 						} );
 						$( document ).trigger( 'widget-synced', [ widget_root, r.data.form ] );
 
+					// Otherwise, if sanitized fields are not aligned with existing fields, disable live update mode if enabled
 					} else if ( control.live_update_mode ) {
 						control.live_update_mode = false;
 						control.container.find( 'input[name="savewidget"]' ).show();
 						is_live_update_aborted = true;
+					// Otherwise, replace existing form with the sanitized form
 					} else {
 						widget_content.html( r.data.form );
 						control.container.removeClass( 'widget-form-disabled' );
