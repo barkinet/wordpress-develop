@@ -560,6 +560,9 @@ final class WP_Customize_Widgets {
 		wp_enqueue_style( 'customize-widgets' );
 		wp_enqueue_script( 'customize-widgets' );
 
+		/** This action is documented in wp-admin/admin-header.php */
+		do_action( 'admin_enqueue_scripts', 'widgets.php' );
+
 		// Export available widgets with control_tpl removed from model
 		// since plugins need templates to be in the DOM
 		$available_widgets = array();

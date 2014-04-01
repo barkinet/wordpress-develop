@@ -36,10 +36,6 @@ var WidgetCustomizer = ( function ($) {
 		window.ajaxurl = wp.ajax.settings.url;
 	}
 
-	// Unfortunately many widgets try to look for instances under div#widgets-right,
-	// so we have to add that ID to a container div in the customizer for compat
-	$( '#customize-theme-controls' ).closest( 'div:not([id])' ).attr( 'id', 'widgets-right' );
-
 	/**
 	 * Set up model
 	 */
@@ -166,39 +162,17 @@ var WidgetCustomizer = ( function ($) {
 	 * customizer controls.
 	 */
 	self.init = function () {
-		this.showFirstSidebarIfRequested();
 		this.availableWidgetsPanel.setup();
+
+		// Highlight widget control
+		this.previewer.bind( 'highlight-widget-control', self.highlightWidgetFormControl );
+
+		// Open and focus widget control
+		this.previewer.bind( 'focus-widget-control', self.focusWidgetFormControl );
 	};
 	wp.customize.bind( 'ready', function () {
 		self.init();
 	} );
-
-	/**
-	 * Listen for updates to which sidebars are rendered in the preview and toggle
-	 * the customizer sections accordingly.
-	 */
-	self.showFirstSidebarIfRequested = function () {
-		if ( ! /widget-customizer=open/.test( location.search ) ) {
-			return;
-		}
-
-		var show_first_visible_sidebar = function () {
-			self.registered_sidebars.off( 'change:is_rendered', show_first_visible_sidebar );
-			var section, first_rendered_sidebar = self.registered_sidebars.find( function ( sidebar ) {
-				return sidebar.get( 'is_rendered' );
-			} );
-			if ( ! first_rendered_sidebar ) {
-				return;
-			}
-			section = $( '#accordion-section-sidebar-widgets-' + first_rendered_sidebar.get( 'id' ) );
-			if ( ! section.hasClass( 'open' ) ) {
-				section.find( '.accordion-section-title' ).trigger( 'click' );
-			}
-			section[0].scrollIntoView();
-		};
-		show_first_visible_sidebar = _.debounce( show_first_visible_sidebar, 100 ); // so only fires when all updated at end
-		self.registered_sidebars.on( 'change:is_rendered', show_first_visible_sidebar );
-	};
 
 	/**
 	 * Sidebar Widgets control
@@ -943,13 +917,12 @@ var WidgetCustomizer = ( function ($) {
 
 			// Highlight whenever hovering or clicking over the form
 			control.container.on( 'mouseenter click', function () {
-				control.highlightPreviewWidget();
+				control.setting.previewer.send( 'highlight-widget', control.params.widget_id );
 			} );
 
 			// Highlight when the setting is updated
 			control.setting.bind( function () {
-				control.scrollPreviewWidgetIntoView();
-				control.highlightPreviewWidget();
+				control.setting.previewer.send( 'highlight-widget', control.params.widget_id );
 			} );
 
 			// Highlight when the widget form is expanded
@@ -1508,16 +1481,6 @@ var WidgetCustomizer = ( function ($) {
 		},
 
 		/**
-		 * Inverse of WidgetCustomizer.getControlInstanceForWidget
-		 * @return {jQuery}
-		 */
-		getPreviewWidgetElement: function () {
-			var control = this,
-				widget_customizer_preview = self.getPreviewWindow().wp.customize.WidgetCustomizerPreview;
-			return widget_customizer_preview.getWidgetElement( control.params.widget_id );
-		},
-
-		/**
 		 * Inside of the customizer preview, scroll the widget into view
 		 */
 		scrollPreviewWidgetIntoView: function () {
@@ -1541,21 +1504,6 @@ var WidgetCustomizer = ( function ($) {
 			setTimeout( function () {
 				target_element.removeClass( 'widget-customizer-highlighted' );
 			}, 500 );
-		},
-
-		/**
-		 * Add the widget-customizer-highlighted-widget class to the widget for 500ms
-		 */
-		highlightPreviewWidget: function () {
-			var control = this, widget_el, root_el;
-
-			widget_el = control.getPreviewWidgetElement();
-			root_el = widget_el.closest( 'html' );
-			root_el.find( '.widget-customizer-highlighted-widget' ).removeClass( 'widget-customizer-highlighted-widget' );
-			widget_el.addClass( 'widget-customizer-highlighted-widget' );
-			setTimeout( function () {
-				widget_el.removeClass( 'widget-customizer-highlighted-widget' );
-			}, 500 );
 		}
 
 	} );
@@ -1571,6 +1519,32 @@ var WidgetCustomizer = ( function ($) {
 			this.bind( 'refresh', this.refresh );
 		}
 	} );
+
+	/**
+	 * Highlight a widget control.
+	 *
+	 * @param {string} widgetId
+	 */
+	self.highlightWidgetFormControl = function( widgetId ) {
+		var control = self.getWidgetFormControlForWidget( widgetId );
+
+		if ( control ) {
+			control.highlightSectionAndControl();
+		}
+	},
+
+	/**
+	 * Focus a widget control.
+	 *
+	 * @param {string} widgetId
+	 */
+	self.focusWidgetFormControl = function( widgetId ) {
+		var control = self.getWidgetFormControlForWidget( widgetId );
+
+		if ( control ) {
+			control.focus();
+		}
+	},
 
 	/**
 	 * Given a widget control, find the sidebar widgets control that contains it.
