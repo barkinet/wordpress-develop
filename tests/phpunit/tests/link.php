@@ -97,6 +97,27 @@ class Tests_Link extends WP_UnitTestCase {
 	}
 
 	/**
+	 * @ticket 26871
+	 */
+	function test_wp_get_shortlink_with_home_page() {
+		$post_id = $this->factory->post->create( array( 'post_type' => 'page' ) );
+		update_option( 'show_on_front', 'page' );
+		update_option( 'page_on_front', $post_id );
+
+		$this->assertEquals( home_url( '/' ), wp_get_shortlink( $post_id, 'post' ) );
+
+		global $wp_rewrite;
+		$wp_rewrite->permalink_structure = '';
+		$wp_rewrite->set_permalink_structure( '/%year%/%monthnum%/%day%/%postname%/' );
+		$wp_rewrite->flush_rules();
+
+		$this->assertEquals( home_url( '/' ), wp_get_shortlink( $post_id, 'post' ) );
+
+		$wp_rewrite->set_permalink_structure( '' );
+		$wp_rewrite->flush_rules();
+	}
+
+	/**
 	 * @ticket 17807
 	 */
 	function test_get_adjacent_post() {
@@ -166,131 +187,5 @@ class Tests_Link extends WP_UnitTestCase {
 
 		$this->assertEquals( array( $post_two ), get_boundary_post( true, '', true, 'post_tag' ) );
 		$this->assertEquals( array( $post_four ), get_boundary_post( true, '', false, 'post_tag' ) );
-	}
-
-	/**
-	 * @ticket 26937
-	 */
-	function test_legacy_get_adjacent_post_filters() {
-		// Need some sample posts to test adjacency
-		$post_one = $this->factory->post->create_and_get( array(
-			'post_title' => 'First',
-			'post_date' => '2012-01-01 12:00:00'
-		) );
-
-		$post_two = $this->factory->post->create_and_get( array(
-			'post_title' => 'Second',
-			'post_date' => '2012-02-01 12:00:00'
-		) );
-
-		$post_three = $this->factory->post->create_and_get( array(
-			'post_title' => 'Third',
-			'post_date' => '2012-03-01 12:00:00'
-		) );
-
-		$post_four = $this->factory->post->create_and_get( array(
-			'post_title' => 'Fourth',
-			'post_date' => '2012-04-01 12:00:00'
-		) );
-
-		// Add some meta so we can join the postmeta table and query
-		add_post_meta( $post_three->ID, 'unit_test_meta', 'waffle' );
-
-		// Test "where" filter for a previous post
-		add_filter( 'get_previous_post_where', array( $this, 'filter_previous_post_where' ) );
-		$this->go_to( get_permalink( $post_three->ID ) );
-		$this->assertEquals( $post_one, get_adjacent_post( false, null, true ) );
-		remove_filter( 'get_previous_post_where', array( $this, 'filter_previous_post_where' ) );
-
-		// Test "where" filter for a next post
-		add_filter( 'get_next_post_where', array( $this, 'filter_next_post_where' ) );
-		$this->go_to( get_permalink( $post_two->ID ) );
-		$this->assertEquals( $post_four, get_adjacent_post( false, null, false ) );
-		remove_filter( 'get_next_post_where', array( $this, 'filter_next_post_where' ) );
-
-		// Test "where" filter that writes its own query
-		add_filter( 'get_previous_post_where', array( $this, 'override_previous_post_where_clause' ) );
-		$this->go_to( get_permalink( $post_four->ID ) );
-		$this->assertEquals( $post_two, get_adjacent_post( false, null, true ) );
-		remove_filter( 'get_previous_post_where', array( $this, 'override_previous_post_where_clause' ) );
-
-		// Test "join" filter by joining the postmeta table and restricting by meta key
-		add_filter( 'get_next_post_join', array( $this, 'filter_next_post_join' ) );
-		add_filter( 'get_next_post_where', array( $this, 'filter_next_post_where_with_join' ) );
-		$this->go_to( get_permalink( $post_one->ID ) );
-		$this->assertEquals( $post_three, get_adjacent_post( false, null, false ) );
-		remove_filter( 'get_next_post_join', array( $this, 'filter_next_post_join' ) );
-		remove_filter( 'get_next_post_where', array( $this, 'filter_next_post_where_with_join' ) );
-
-		// Test "sort" filter when modifying ORDER BY clause
-		add_filter( 'get_next_post_sort', array( $this, 'filter_next_post_sort' ) );
-		$this->go_to( get_permalink( $post_one->ID ) );
-		$this->assertEquals( $post_four, get_adjacent_post( false, null, false ) );
-		remove_filter( 'get_next_post_sort', array( $this, 'filter_next_post_sort' ) );
-
-		// Test "sort" filter when modifying LIMIT clause
-		add_filter( 'get_next_post_sort', array( $this, 'filter_next_post_sort_limit' ) );
-		$this->go_to( get_permalink( $post_one->ID ) );
-		$this->assertEquals( $post_three, get_adjacent_post( false, null, false ) );
-		remove_filter( 'get_next_post_sort', array( $this, 'filter_next_post_sort_limit' ) );
-	}
-
-	/**
-	 * Filter callback for `test_legacy_get_adjacent_post_filters()`
-	 */
-	function filter_previous_post_where( $where ) {
-		$where .= " AND post_title !='Second'";
-		return $where;
-	}
-
-	/**
-	 * Filter callback for `test_legacy_get_adjacent_post_filters()`
-	 */
-	function filter_next_post_where( $where ) {
-		$where .= " AND post_title !='Third'";
-		return $where;
-	}
-
-	/**
-	 * Filter callback for `test_legacy_get_adjacent_post_filters()`
-	 */
-	function override_previous_post_where_clause( $where ) {
-		$where = "WHERE p.post_date < '2012-02-28'";
-		return $where;
-	}
-
-	/**
-	 * Filter callback for `test_legacy_get_adjacent_post_filters()`
-	 */
-	function filter_next_post_join( $join ) {
-		global $wpdb;
-
-		$join .= " INNER JOIN {$wpdb->postmeta} ON p.ID = {$wpdb->postmeta}.post_id";
-		return $join;
-	}
-
-	/**
-	 * Filter callback for `test_legacy_get_adjacent_post_filters()`
-	 */
-	function filter_next_post_where_with_join( $where ) {
-		global $wpdb;
-
-		$where .= " AND {$wpdb->postmeta}.meta_key = 'unit_test_meta'";
-		return $where;
-	}
-
-	/**
-	 * Filter callback for `test_legacy_get_adjacent_post_filters()`
-	 */
-	function filter_next_post_sort( $sort ) {
-		return str_replace( 'p.post_date', 'p.post_title', $sort );
-	}
-
-	/**
-	 * Filter callback for `test_legacy_get_adjacent_post_filters()`
-	 */
-	function filter_next_post_sort_limit( $sort ) {
-		$sort = str_replace( 'LIMIT 0, 1', 'LIMIT 1, 2', $sort );
-		return $sort;
 	}
 }

@@ -24,13 +24,9 @@ $post_ID = isset($post_ID) ? (int) $post_ID : 0;
 $user_ID = isset($user_ID) ? (int) $user_ID : 0;
 $action = isset($action) ? $action : '';
 
-$media_type = false;
-if ( 'attachment' === $post_type && $post_ID ) {
-	$post = get_post( $post_ID );
-	$media_type = post_supports_thumbnails( $post );
-}
+$media_support = theme_supports_thumbnails( $post ) || post_supports_thumbnails( $post );
 
-if ( post_type_supports( $post_type, 'editor' ) || post_type_supports( $post_type, 'thumbnail' ) || $media_type ) {
+if ( post_type_supports( $post_type, 'editor' ) || post_type_supports( $post_type, 'thumbnail' ) || $media_support ) {
 	add_thickbox();
 	wp_enqueue_media( array( 'post' => $post_ID ) );
 }
@@ -143,6 +139,10 @@ if ( 'attachment' == $post_type ) {
 	wp_enqueue_style( 'imgareaselect' );
 	add_meta_box( 'submitdiv', __('Save'), 'attachment_submit_meta_box', null, 'side', 'core' );
 	add_action( 'edit_form_after_title', 'edit_form_image_editor' );
+
+	if ( 0 === strpos( $post->post_mime_type, 'audio/' ) ) {
+		add_meta_box( 'attachment-id3', __( 'Metadata' ), 'attachment_id3_data_meta_box', null, 'normal', 'core' );
+	}
 } else {
 	add_meta_box( 'submitdiv', __( 'Publish' ), 'post_submit_meta_box', null, 'side', 'core', $publish_callback_args );
 }
@@ -169,14 +169,7 @@ foreach ( get_object_taxonomies( $post ) as $tax_name ) {
 if ( post_type_supports($post_type, 'page-attributes') )
 	add_meta_box('pageparentdiv', 'page' == $post_type ? __('Page Attributes') : __('Attributes'), 'page_attributes_meta_box', null, 'side', 'core');
 
-$audio_post_support = $video_post_support = false;
-$theme_support = current_theme_supports( 'post-thumbnails', $post_type ) && post_type_supports( $post_type, 'thumbnail' );
-if ( 'attachment' === $post_type && ! empty( $post->post_mime_type ) ) {
-	$audio_post_support = 0 === strpos( $post->post_mime_type, 'audio/' ) && current_theme_supports( 'post-thumbnails', 'attachment:audio' ) && post_type_supports( 'attachment:audio', 'thumbnail' );
-	$video_post_support = 0 === strpos( $post->post_mime_type, 'video/' ) && current_theme_supports( 'post-thumbnails', 'attachment:video' ) && post_type_supports( 'attachment:video', 'thumbnail' );
-}
-
-if ( $theme_support || $audio_post_support || $video_post_support )
+if ( current_theme_supports( 'post-thumbnails', $post_type ) || post_supports_thumbnails( $post ) )
 	add_meta_box('postimagediv', __('Featured Image'), 'post_thumbnail_meta_box', null, 'side', 'low');
 
 if ( post_type_supports($post_type, 'excerpt') )

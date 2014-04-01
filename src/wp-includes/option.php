@@ -255,6 +255,17 @@ function update_option( $option, $value ) {
 	 */
 	$value = apply_filters( 'pre_update_option_' . $option, $value, $old_value );
 
+	/**
+	 * Filter an option before its value is (maybe) serialized and updated.
+	 *
+	 * @since 3.9.0
+	 *
+	 * @param mixed  $value     The new, unserialized option value.
+	 * @param string $option    Name of the option.
+	 * @param mixed  $old_value The old option value.
+	 */
+	$value = apply_filters( 'pre_update_option', $value, $option, $old_value );
+
 	// If the new and old values are the same, no need to update.
 	if ( $value === $old_value )
 		return false;
@@ -642,9 +653,22 @@ function set_transient( $transient, $value, $expiration = 0 ) {
 			}
 			$result = add_option( $transient, $value, '', $autoload );
 		} else {
-			if ( $expiration )
-				update_option( $transient_timeout, time() + $expiration );
-			$result = update_option( $transient, $value );
+			// If expiration is requested, but the transient has no timeout option,
+			// delete, then re-create transient rather than update.
+			$update = true;
+			if ( $expiration ) {
+				if ( false === get_option( $transient_timeout ) ) {
+					delete_option( $transient );
+					add_option( $transient_timeout, time() + $expiration, '', 'no' );
+					$result = add_option( $transient, $value, '', 'no' );
+					$update = false;
+				} else {
+					update_option( $transient_timeout, time() + $expiration );
+				}
+			}
+			if ( $update ) {
+				$result = update_option( $transient, $value );
+			}
 		}
 	}
 

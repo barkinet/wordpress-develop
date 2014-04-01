@@ -74,6 +74,8 @@ function create_initial_post_types() {
 		'delete_with_user' => true,
 		'supports' => array( 'title', 'author', 'comments' ),
 	) );
+	add_post_type_support( 'attachment:audio', 'thumbnail' );
+	add_post_type_support( 'attachment:video', 'thumbnail' );
 
 	register_post_type( 'revision', array(
 		'labels' => array(
@@ -2159,7 +2161,7 @@ function wp_count_posts( $type = 'post', $perm = '' ) {
  * @since 2.5.0
  *
  * @param string|array $mime_type Optional. Array or comma-separated list of MIME patterns.
- * @return array Number of posts for each mime type.
+ * @return object An object containing the attachment counts by mime type.
  */
 function wp_count_attachments( $mime_type = '' ) {
 	global $wpdb;
@@ -3740,7 +3742,7 @@ function get_pages( $args = array() ) {
 		'sort_column' => 'post_title', 'hierarchical' => 1,
 		'exclude' => array(), 'include' => array(),
 		'meta_key' => '', 'meta_value' => '',
-		'authors' => '', 'parent' => -1, 'exclude_tree' => '',
+		'authors' => '', 'parent' => -1, 'exclude_tree' => array(),
 		'number' => '', 'offset' => 0,
 		'post_type' => 'page', 'post_status' => 'publish',
 	);
@@ -3922,17 +3924,20 @@ function get_pages( $args = array() ) {
 	if ( $child_of || $hierarchical )
 		$pages = get_page_children($child_of, $pages);
 
-	if ( !empty($exclude_tree) ) {
-		$exclude = (int) $exclude_tree;
-		$children = get_page_children($exclude, $pages);
-		$excludes = array();
-		foreach ( $children as $child )
-			$excludes[] = $child->ID;
-		$excludes[] = $exclude;
-		$num_pages = count($pages);
+	if ( ! empty( $exclude_tree ) ) {
+		$exclude = wp_parse_id_list( $exclude_tree );
+		foreach( $exclude as $id ) {
+			$children = get_page_children( $id, $pages );
+			foreach ( $children as $child ) {
+				$exclude[] = $child->ID;
+			}
+		}
+
+		$num_pages = count( $pages );
 		for ( $i = 0; $i < $num_pages; $i++ ) {
-			if ( in_array($pages[$i]->ID, $excludes) )
-				unset($pages[$i]);
+			if ( in_array( $pages[$i]->ID, $exclude ) ) {
+				unset( $pages[$i] );
+			}
 		}
 	}
 
@@ -4477,8 +4482,8 @@ function wp_mime_type_icon( $mime = 0 ) {
 		$icon_files = wp_cache_get('icon_files');
 
 		if ( !is_array($icon_files) ) {
-			$icon_dir = apply_filters( 'icon_dir', ABSPATH . WPINC . '/images/crystal' );
-			$icon_dir_uri = apply_filters( 'icon_dir_uri', includes_url('images/crystal') );
+			$icon_dir = apply_filters( 'icon_dir', ABSPATH . WPINC . '/images/media' );
+			$icon_dir_uri = apply_filters( 'icon_dir_uri', includes_url('images/media') );
 			$dirs = apply_filters( 'icon_dirs', array($icon_dir => $icon_dir_uri) );
 			$icon_files = array();
 			while ( $dirs ) {

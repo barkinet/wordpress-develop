@@ -10,14 +10,13 @@ var WidgetCustomizer = ( function ($) {
 		OldPreviewer,
 		builtin_form_update_handlers,
 		customize = wp.customize, self = {
-		update_widget_ajax_action: null,
-		update_widget_nonce_value: null,
-		update_widget_nonce_post_key: null,
+		nonce: null,
 		i18n: {
 			save_btn_label: '',
 			save_btn_tooltip: '',
 			remove_btn_label: '',
-			remove_btn_tooltip: ''
+			remove_btn_tooltip: '',
+			error: ''
 		},
 		available_widgets: [], // available widgets for instantiating
 		registered_widgets: [], // all widgets registered
@@ -252,8 +251,8 @@ var WidgetCustomizer = ( function ($) {
 
 				// Sort widget controls to their new positions
 				widget_form_controls.sort( function ( a, b ) {
-					var a_index = new_widget_ids.indexOf( a.params.widget_id ),
-						b_index = new_widget_ids.indexOf( b.params.widget_id );
+					var a_index = _.indexOf( new_widget_ids, a.params.widget_id ),
+						b_index = _.indexOf( new_widget_ids, b.params.widget_id );
 					if ( a_index === b_index ) {
 						return 0;
 					}
@@ -290,12 +289,12 @@ var WidgetCustomizer = ( function ($) {
 
 						// Check if the widget is in another sidebar
 						wp.customize.each( function ( other_setting ) {
-							if ( other_setting.id === control.setting.id || 0 !== other_setting.id.indexOf( 'sidebars_widgets[' ) || other_setting.id === 'sidebars_widgets[wp_inactive_widgets]' ) {
+							if ( other_setting.id === control.setting.id || 0 !== _.indexOf( other_setting.id, 'sidebars_widgets[' ) || other_setting.id === 'sidebars_widgets[wp_inactive_widgets]' ) {
 								return;
 							}
 							var other_sidebar_widgets = other_setting(), i;
 
-							i = other_sidebar_widgets.indexOf( removed_widget_id );
+							i = _.indexOf( other_sidebar_widgets, removed_widget_id );
 							if ( -1 !== i ) {
 								is_present_in_another_sidebar = true;
 							}
@@ -600,11 +599,11 @@ var WidgetCustomizer = ( function ($) {
 				if ( other_setting.id === control.setting.id ) {
 					return;
 				}
-				if ( 0 !== other_setting.id.indexOf( 'sidebars_widgets[' ) ) {
+				if ( 0 !== _.indexOf( other_setting.id, 'sidebars_widgets[' ) ) {
 					return;
 				}
 				var other_sidebar_widgets = other_setting().slice(), i;
-				i = other_sidebar_widgets.indexOf( widget_id );
+				i = _.indexOf( other_sidebar_widgets, widget_id );
 				if ( -1 !== i ) {
 					other_sidebar_widgets.splice( i );
 					other_setting( other_sidebar_widgets );
@@ -613,7 +612,7 @@ var WidgetCustomizer = ( function ($) {
 
 			// Add widget to this sidebar
 			sidebar_widgets = control.setting().slice();
-			if ( -1 === sidebar_widgets.indexOf( widget_id ) ) {
+			if ( -1 === _.indexOf( sidebar_widgets, widget_id ) ) {
 				sidebar_widgets.push( widget_id );
 				control.setting( sidebar_widgets );
 			}
@@ -707,7 +706,7 @@ var WidgetCustomizer = ( function ($) {
 			control.container.addClass( 'wide-widget-control' );
 
 			control.container.find( '.widget-content:first' ).css( {
-				'min-width': control.params.width,
+				'max-width': control.params.width,
 				'min-height': control.params.height
 			} );
 
@@ -738,20 +737,20 @@ var WidgetCustomizer = ( function ($) {
 
 			theme_controls_container = $( '#customize-theme-controls' );
 			control.container.on( 'expand', function () {
+				position_widget();
 				customize_sidebar.on( 'scroll', position_widget );
 				$( window ).on( 'resize', position_widget );
 				theme_controls_container.on( 'expanded collapsed', position_widget );
-				position_widget();
 			} );
 			control.container.on( 'collapsed', function () {
 				customize_sidebar.off( 'scroll', position_widget );
-				theme_controls_container.off( 'expanded collapsed', position_widget );
 				$( window ).off( 'resize', position_widget );
+				theme_controls_container.off( 'expanded collapsed', position_widget );
 			} );
 
 			// Reposition whenever a sidebar's widgets are changed
 			wp.customize.each( function ( setting ) {
-				if ( 0 === setting.id.indexOf( 'sidebars_widgets[' ) ) {
+				if ( 0 === _.indexOf( setting.id, 'sidebars_widgets[' ) ) {
 					setting.bind( function () {
 						if ( control.container.hasClass( 'expanded' ) ) {
 							position_widget();
@@ -1059,7 +1058,7 @@ var WidgetCustomizer = ( function ($) {
 						throw new Error( 'Unable to find sidebars_widgets_control' );
 					}
 					sidebar_widget_ids = sidebars_widgets_control.setting().slice();
-					i = sidebar_widget_ids.indexOf( control.params.widget_id );
+					i = _.indexOf( sidebar_widget_ids, control.params.widget_id );
 					if ( -1 === i ) {
 						throw new Error( 'Widget is not in sidebar' );
 					}
@@ -1177,6 +1176,9 @@ var WidgetCustomizer = ( function ($) {
 			widget_root = control.container.find( '.widget:first' );
 			widget_content = control.container.find( '.widget-content:first' );
 
+			// Remove a previous error message
+			widget_content.find( '.widget-error' ).remove();
+
 			control.container.addClass( 'widget-form-loading' );
 			control.container.addClass( 'previewer-loading' );
 			processing = wp.customize.state( 'processing' );
@@ -1187,9 +1189,9 @@ var WidgetCustomizer = ( function ($) {
 			}
 
 			params = {};
-			params.action = self.update_widget_ajax_action;
+			params.action = 'update-widget';
 			params.wp_customize = 'on';
-			params[self.update_widget_nonce_post_key] = self.update_widget_nonce_value;
+			params.nonce = self.nonce;
 
 			data = $.param( params );
 			inputs = widget_content.find( ':input, option' );
@@ -1218,6 +1220,22 @@ var WidgetCustomizer = ( function ($) {
 					no_setting_change,
 					is_live_update_aborted = false,
 					event_data;
+
+				// Check if the user is logged out.
+				if ( '0' === r ) {
+					self.previewer.preview.iframe.hide();
+					self.previewer.login().done( function() {
+						control.updateWidget( args );
+						self.previewer.preview.iframe.show();
+					} );
+					return;
+				}
+
+				// Check for cheaters.
+				if ( '-1' === r ) {
+					self.previewer.cheatin();
+					return;
+				}
 
 				if ( r.success ) {
 					sanitized_form = $( '<div>' + r.data.form + '</div>' );
@@ -1284,9 +1302,7 @@ var WidgetCustomizer = ( function ($) {
 					 * preview finishing loading.
 					 */
 					no_setting_change = is_live_update_aborted || _( control.setting() ).isEqual( r.data.instance );
-					if ( no_setting_change ) {
-						control.container.removeClass( 'previewer-loading' );
-					} else {
+					if ( ! no_setting_change ) {
 						control.is_widget_updating = true; // suppress triggering another updateWidget
 						control.setting( r.data.instance );
 						control.is_widget_updating = false;
@@ -1296,26 +1312,24 @@ var WidgetCustomizer = ( function ($) {
 						complete_callback.call( control, null, { no_change: no_setting_change, ajax_finished: true } );
 					}
 				} else {
-					window.console && window.console.log( r );
-					message = 'FAIL';
+					message = self.i18n.error;
 					if ( r.data && r.data.message ) {
 						message = r.data.message;
 					}
 					if ( complete_callback ) {
 						complete_callback.call( control, message );
 					} else {
-						throw new Error( message );
+						widget_content.prepend( '<p class="widget-error"><strong>' + message + '</strong></p>' );
 					}
 				}
 			} );
 			jqxhr.fail( function ( jqXHR, textStatus ) {
 				if ( complete_callback ) {
 					complete_callback.call( control, textStatus );
-				} else {
-					throw new Error( textStatus );
 				}
 			} );
 			jqxhr.always( function () {
+				control.container.removeClass( 'previewer-loading' );
 				control.container.removeClass( 'widget-form-loading' );
 				inputs.each( function () {
 					$( this ).removeData( 'state' + update_number );
@@ -1369,7 +1383,6 @@ var WidgetCustomizer = ( function ($) {
 				return;
 			}
 
-			complete;
 			if ( do_expand ) {
 				// Close all other widget controls before expanding this one
 				wp.customize.control.each( function ( other_control ) {
@@ -1378,18 +1391,18 @@ var WidgetCustomizer = ( function ($) {
 					}
 				} );
 
-				control.container.trigger( 'expand' );
-				control.container.addClass( 'expanding' );
 				complete = function () {
 					control.container.removeClass( 'expanding' );
 					control.container.addClass( 'expanded' );
 					control.container.trigger( 'expanded' );
 				};
 				if ( control.params.is_wide ) {
-					inside.animate( { width: 'show' }, 'fast', complete );
+					inside.fadeIn( 'fast', complete );
 				} else {
 					inside.slideDown( 'fast', complete );
 				}
+				control.container.trigger( 'expand' );
+				control.container.addClass( 'expanding' );
 			} else {
 				control.container.trigger( 'collapse' );
 				control.container.addClass( 'collapsing' );
@@ -1399,7 +1412,7 @@ var WidgetCustomizer = ( function ($) {
 					control.container.trigger( 'collapsed' );
 				};
 				if ( control.params.is_wide ) {
-					inside.animate( { width: 'hide' }, 'fast', complete );
+					inside.fadeOut( 'fast', complete );
 				} else {
 					inside.slideUp( 'fast', function() {
 						widget.css( { width:'', margin:'' } );
@@ -1417,7 +1430,7 @@ var WidgetCustomizer = ( function ($) {
 			var control = this;
 			control.expandControlSection();
 			control.expandForm();
-			control.container.find( ':focusable:first' ).focus().trigger( 'click' );
+			control.container.find( '.widget-content :focusable:first' ).focus();
 		},
 
 		/**
@@ -1432,7 +1445,7 @@ var WidgetCustomizer = ( function ($) {
 				position;
 
 			sidebar_widget_ids = control.getSidebarWidgetsControl().setting();
-			position = sidebar_widget_ids.indexOf( control.params.widget_id );
+			position = _.indexOf( sidebar_widget_ids, control.params.widget_id );
 			if ( position === -1 ) {
 				throw new Error( 'Widget was unexpectedly not present in the sidebar.' );
 			}
@@ -1504,7 +1517,7 @@ var WidgetCustomizer = ( function ($) {
 		 */
 		getPreviewWidgetElement: function () {
 			var control = this,
-				widget_customizer_preview = self.getPreviewWindow().WidgetCustomizerPreview;
+				widget_customizer_preview = self.getPreviewWindow().wp.customize.WidgetCustomizerPreview;
 			return widget_customizer_preview.getWidgetElement( control.params.widget_id );
 		},
 
@@ -1572,7 +1585,7 @@ var WidgetCustomizer = ( function ($) {
 		var found_control = null;
 		// @todo this can use widget_id_to_setting_id(), then pass into wp.customize.control( x ).getSidebarWidgetsControl()
 		wp.customize.control.each( function ( control ) {
-			if ( control.params.type === 'sidebar_widgets' && -1 !== control.setting().indexOf( widget_id ) ) {
+			if ( control.params.type === 'sidebar_widgets' && -1 !== _.indexOf( control.setting(), widget_id ) ) {
 				found_control = control;
 			}
 		} );
