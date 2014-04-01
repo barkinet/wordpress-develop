@@ -286,7 +286,7 @@ var WidgetCustomizer = ( function ($) {
 
 						// Check if the widget is in another sidebar
 						wp.customize.each( function ( other_setting ) {
-							if ( other_setting.id === control.setting.id || 0 !== _.indexOf( other_setting.id, 'sidebars_widgets[' ) || other_setting.id === 'sidebars_widgets[wp_inactive_widgets]' ) {
+							if ( other_setting.id === control.setting.id || 0 !== other_setting.id.indexOf( 'sidebars_widgets[' ) || other_setting.id === 'sidebars_widgets[wp_inactive_widgets]' ) {
 								return;
 							}
 							var other_sidebar_widgets = other_setting(), i;
@@ -598,7 +598,7 @@ var WidgetCustomizer = ( function ($) {
 				if ( other_setting.id === control.setting.id ) {
 					return;
 				}
-				if ( 0 !== _.indexOf( other_setting.id, 'sidebars_widgets[' ) ) {
+				if ( 0 !== other_setting.id.indexOf( 'sidebars_widgets[' ) ) {
 					return;
 				}
 				var other_sidebar_widgets = other_setting().slice(), i;
@@ -751,7 +751,7 @@ var WidgetCustomizer = ( function ($) {
 
 			// Reposition whenever a sidebar's widgets are changed
 			wp.customize.each( function ( setting ) {
-				if ( 0 === _.indexOf( setting.id, 'sidebars_widgets[' ) ) {
+				if ( 0 === setting.id.indexOf( 'sidebars_widgets[' ) ) {
 					setting.bind( function () {
 						if ( control.container.hasClass( 'expanded' ) ) {
 							position_widget();
