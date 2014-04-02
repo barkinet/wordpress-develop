@@ -536,7 +536,8 @@ final class WP_Customize_Widgets {
 	}
 
 	/**
-	 * Call admin_print_styles-widgets.php and admin_print_styles hooks.
+	 * Call admin_print_styles-widgets.php and admin_print_styles hooks to
+	 * allow custom styles from plugins.
 	 *
 	 * @since 3.9.0
 	 * @access public
@@ -550,7 +551,8 @@ final class WP_Customize_Widgets {
 	}
 
 	/**
-	 * Call admin_print_scripts-widgets.php and admin_print_scripts hooks.
+	 * Call admin_print_scripts-widgets.php and admin_print_scripts hooks to
+	 * allow custom scripts from plugins.
 	 *
 	 * @since 3.9.0
 	 * @access public
@@ -564,7 +566,7 @@ final class WP_Customize_Widgets {
 	}
 
 	/**
-	 * Enqueue scripts and styles for customizer panel and export data to JS.
+	 * Enqueue scripts and styles for customizer panel and export data to JavaScript.
 	 *
 	 * @since 3.9.0
 	 * @access public
@@ -652,20 +654,6 @@ final class WP_Customize_Widgets {
 	}
 
 	/**
-	 * Call admin_print_footer_scripts and admin_print_scripts hooks.
-	 *
-	 * @since 3.9.0
-	 * @access public
-	 */
-	public function print_footer_scripts() {
-		/** This action is documented in wp-admin/admin-footer.php */
-		do_action( 'admin_print_footer_scripts' );
-
-		/** This action is documented in wp-admin/admin-footer.php */
-		do_action( 'admin_footer-widgets.php' );
-	}
-
-	/**
 	 * Render the widget form control templates into the DOM.
 	 *
 	 * @since 3.9.0
@@ -687,6 +675,21 @@ final class WP_Customize_Widgets {
 		</div><!-- #available-widgets -->
 		</div><!-- #widgets-left -->
 		<?php
+	}
+
+	/**
+	 * Call admin_print_footer_scripts and admin_print_scripts hooks to
+	 * allow custom scripts from plugins.
+	 *
+	 * @since 3.9.0
+	 * @access public
+	 */
+	public function print_footer_scripts() {
+		/** This action is documented in wp-admin/admin-footer.php */
+		do_action( 'admin_print_footer_scripts' );
+
+		/** This action is documented in wp-admin/admin-footer.php */
+		do_action( 'admin_footer-widgets.php' );
 	}
 
 	/**
