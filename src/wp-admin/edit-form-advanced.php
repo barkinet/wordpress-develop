@@ -139,6 +139,10 @@ if ( 'attachment' == $post_type ) {
 	wp_enqueue_style( 'imgareaselect' );
 	add_meta_box( 'submitdiv', __('Save'), 'attachment_submit_meta_box', null, 'side', 'core' );
 	add_action( 'edit_form_after_title', 'edit_form_image_editor' );
+
+	if ( 0 === strpos( $post->post_mime_type, 'audio/' ) ) {
+		add_meta_box( 'attachment-id3', __( 'Metadata' ), 'attachment_id3_data_meta_box', null, 'normal', 'core' );
+	}
 } else {
 	add_meta_box( 'submitdiv', __( 'Publish' ), 'post_submit_meta_box', null, 'side', 'core', $publish_callback_args );
 }
@@ -475,6 +479,7 @@ if ( post_type_supports($post_type, 'editor') ) {
 
 <?php wp_editor( $post->post_content, 'content', array(
 	'dfw' => true,
+	'drag_drop_upload' => true,
 	'tabfocus_elements' => 'insert-media-button,save-post',
 	'editor_height' => 360,
 	'tinymce' => array(
