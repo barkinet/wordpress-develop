@@ -163,6 +163,19 @@ class WP_Widget {
 		return array($this, 'form_callback');
 	}
 
+	/**
+	 * Determine if we're in the Customizer; if true, then the object cache gets
+	 * suspended and widgets should check this to decide whether they should
+	 * store anything persistently to the object cache, to transients, or
+	 * anywhere else.
+	 *
+	 * @return bool
+	 */
+	function is_preview() {
+		global $wp_customize;
+		return ( isset( $wp_customize ) && $wp_customize->is_preview() ) ;
+	}
+
 	/** Generate the actual widget content.
 	 *	Just finds the instance and calls widget().
 	 *	Do NOT over-ride this function. */
@@ -189,8 +202,18 @@ class WP_Widget {
 			 * @param array     $args     An array of default widget arguments.
 			 */
 			$instance = apply_filters( 'widget_display_callback', $instance, $this, $args );
-			if ( false !== $instance )
-				$this->widget($args, $instance);
+			if ( false !== $instance ) {
+				$was_cache_addition_suspended = wp_suspend_cache_addition();
+				if ( $this->is_preview() && ! $was_cache_addition_suspended ) {
+					wp_suspend_cache_addition( true );
+				}
+
+				$this->widget( $args, $instance );
+
+				if ( $this->is_preview() ) {
+					wp_suspend_cache_addition( $was_cache_addition_suspended );
+				}
+			}
 		}
 	}
 
@@ -241,7 +264,16 @@ class WP_Widget {
 
 				$old_instance = isset($all_instances[$number]) ? $all_instances[$number] : array();
 
+				$was_cache_addition_suspended = wp_suspend_cache_addition();
+				if ( $this->is_preview() && ! $was_cache_addition_suspended ) {
+					wp_suspend_cache_addition( true );
+				}
+
 				$instance = $this->update($new_instance, $old_instance);
+
+				if ( $this->is_preview() ) {
+					wp_suspend_cache_addition( $was_cache_addition_suspended );
+				}
 
 				/**
 				 * Filter a widget's settings before saving.

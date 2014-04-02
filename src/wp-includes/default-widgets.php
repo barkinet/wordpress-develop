@@ -660,11 +660,8 @@ class WP_Widget_Recent_Posts extends WP_Widget {
 	}
 
 	function widget($args, $instance) {
-		global $wp_customize;
-		$is_customize_preview = ( isset( $wp_customize ) && $wp_customize->is_preview() ) ;
-
 		$cache = array();
-		if ( ! $is_customize_preview ) {
+		if ( ! $this->is_preview() ) {
 			$cache = wp_cache_get( 'widget_recent_posts', 'widget' );
 		}
 
@@ -731,7 +728,7 @@ class WP_Widget_Recent_Posts extends WP_Widget {
 
 		endif;
 
-		if ( ! $is_customize_preview ) {
+		if ( ! $this->is_preview() ) {
 			$cache[ $args['widget_id'] ] = ob_get_flush();
 			wp_cache_set( 'widget_recent_posts', $cache, 'widget' );
 		} else {
@@ -817,11 +814,8 @@ class WP_Widget_Recent_Comments extends WP_Widget {
 	}
 
 	function widget( $args, $instance ) {
-		global $comments, $comment, $wp_customize;
-		$is_customize_preview = ( isset( $wp_customize ) && $wp_customize->is_preview() );
-
 		$cache = array();
-		if ( ! $is_customize_preview ) {
+		if ( ! $this->is_preview() ) {
 			$cache = wp_cache_get('widget_recent_comments', 'widget');
 		}
 		if ( ! is_array( $cache ) ) {
@@ -882,7 +876,7 @@ class WP_Widget_Recent_Comments extends WP_Widget {
 
 		echo $output;
 
-		if ( ! $is_customize_preview ) {
+		if ( ! $this->is_preview() ) {
 			$cache[ $args['widget_id'] ] = $output;
 			wp_cache_set( 'widget_recent_comments', $cache, 'widget' );
 		}
