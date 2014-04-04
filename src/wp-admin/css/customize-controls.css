@@ -150,20 +150,20 @@ body {
 	margin-bottom: 8px;
 }
 
-.customize-control select,
-.customize-control input[type="text"],
-.customize-control input[type="radio"],
-.customize-control input[type="checkbox"] {
+.customize-control:not(.customize-control-widget_form) select,
+.customize-control:not(.customize-control-widget_form) input[type="text"],
+.customize-control:not(.customize-control-widget_form) input[type="radio"],
+.customize-control:not(.customize-control-widget_form) input[type="checkbox"] {
 	line-height: 28px;
 }
 
-.customize-control input[type="text"] {
+.customize-control:not(.customize-control-widget_form) input[type="text"] {
 	width: 98%;
 	line-height: 18px;
 	margin: 0;
 }
 
-.customize-control select {
+.customize-control:not(.customize-control-widget_form) select {
 	min-width: 50%;
 	max-width: 100%;
 	height: 28px;
