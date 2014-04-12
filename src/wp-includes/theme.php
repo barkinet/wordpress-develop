@@ -1791,6 +1791,11 @@ function check_theme_switched() {
 	if ( $stylesheet = get_option( 'theme_switched' ) ) {
 		$old_theme = wp_get_theme( $stylesheet );
 
+		if ( get_option( 'theme_switched_via_customizer' ) ) {
+			remove_filter( 'after_switch_theme', '_wp_sidebars_changed' );
+			update_option( 'theme_switched_via_customizer', false );
+		}
+
 		if ( $old_theme->exists() ) {
 			/**
 			 * Fires on the first WP load after a theme switch if the old theme still exists.

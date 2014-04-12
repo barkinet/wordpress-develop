@@ -315,6 +315,23 @@ final class WP_Customize_Widgets {
 		}
 	}
 
+	public function get_sidebars_widgets() {
+		global $sidebars_widgets;
+
+		$sidebars_widgets = get_option( 'sidebars_widgets' );
+		if ( ! $this->manager->is_theme_active() &&
+			( ( is_admin() && ! defined( 'DOING_AJAX' ) ) ||
+			// Only override with widgets from theme_mods when loading the initial iframe
+			( isset( $_POST['customize_messenger_channel'] ) && $_POST['customize_messenger_channel'] === 'preview-0' ) ) ) {
+
+			$sidebars_widgets = retrieve_widgets( true, false );
+		}
+
+		unset( $sidebars_widgets['array_version'] );
+
+		return $sidebars_widgets;
+	}
+
 	/**
 	 * Register customizer settings and controls for all sidebars and widgets.
 	 *
@@ -327,7 +344,7 @@ final class WP_Customize_Widgets {
 		$sidebars_widgets = array_merge(
 			array( 'wp_inactive_widgets' => array() ),
 			array_fill_keys( array_keys( $GLOBALS['wp_registered_sidebars'] ), array() ),
-			wp_get_sidebars_widgets()
+			$this->get_sidebars_widgets()
 		);
 
 		$new_setting_ids = array();
@@ -891,9 +908,8 @@ final class WP_Customize_Widgets {
 	 * @param array $sidebars_widgets List of widgets for the current sidebar.
 	 */
 	public function preview_sidebars_widgets( $sidebars_widgets ) {
-		$sidebars_widgets = get_option( 'sidebars_widgets' );
+		$sidebars_widgets = $this->get_sidebars_widgets();
 
-		unset( $sidebars_widgets['array_version'] );
 		return $sidebars_widgets;
 	}
 
