@@ -1572,17 +1572,15 @@
 		 * @return {wp.customize.controlConstructor.widget_form[]}
 		 */
 		getWidgetFormControls: function() {
-			var formControls;
+			var formControls = [];
 
-			formControls = _( this.setting() ).map( function( widgetId ) {
+			_( this.setting() ).each( function( widgetId ) {
 				var settingId = widgetIdToSettingId( widgetId ),
 					formControl = api.control( settingId );
 
-				if ( ! formControl ) {
-					return;
+				if ( formControl ) {
+					formControls.push( formControl );
 				}
-
-				return formControl;
 			} );
 
 			return formControls;
