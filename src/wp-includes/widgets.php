@@ -1404,8 +1404,10 @@ function _wp_sidebars_changed() {
 /**
  * Look for "lost" widgets, this has to run at least on each theme change
  *
- * @param bool $theme_changed
- * @param bool $update
+ * @since 2.8.0
+ *
+ * @param bool $theme_changed  Whether the theme was changed.
+ * @param bool $update  Whether to update the theme_mods. False is used for deferred update in Customizer.
  *
  * @return array
  */
