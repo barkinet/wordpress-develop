@@ -286,7 +286,7 @@ final class WP_Customize_Widgets {
 	}
 
 	/**
-	 * Handle theme switch
+	 * Handle theme switch.
 	 *
 	 * When switching a theme via the customizer, supply any previously-configured
 	 * sidebars_widgets from the target theme as the initial sidebars_widgets
@@ -309,7 +309,7 @@ final class WP_Customize_Widgets {
 	}
 
 	/**
-	 * Filter old_sidebars_widgets_data customizer setting
+	 * Filter old_sidebars_widgets_data customizer setting.
 	 *
 	 * When switching themes, filter the Customizer setting
 	 * old_sidebars_widgets_data to supply initial $sidebars_widgets before they
@@ -329,7 +329,7 @@ final class WP_Customize_Widgets {
 	}
 
 	/**
-	 * Filter sidebars_widgets option for theme switch
+	 * Filter sidebars_widgets option for theme switch.
 	 *
 	 * When switching themes, the retrieve_widgets() function is run when the
 	 * Customizer initializes, and then the new sidebars_widgets here get
