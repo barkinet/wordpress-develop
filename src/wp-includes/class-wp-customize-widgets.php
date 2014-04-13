@@ -315,16 +315,41 @@ final class WP_Customize_Widgets {
 		}
 	}
 
+	/**
+	 * Get sidebar configuration
+	 *
+	 * Fetch the sidebar configuration directly from the option so that any preview filters are applied and 
+	 * when the customizer is loaded with a theme that is not active override the initial sidebar in the configuration
+	 * that would be applied if the theme was activated instead of being previewed.
+	 *
+	 * @since 3.9
+	 * @access public
+	 */
 	public function get_sidebars_widgets() {
 		global $sidebars_widgets;
 
-		$sidebars_widgets = get_option( 'sidebars_widgets' );
+		$sidebars_widgets = get_option( 'sidebars_widgets', array() );
+
 		if ( ! $this->manager->is_theme_active() &&
 			( ( is_admin() && ! defined( 'DOING_AJAX' ) ) ||
 			// Only override with widgets from theme_mods when loading the initial iframe
 			( isset( $_POST['customize_messenger_channel'] ) && $_POST['customize_messenger_channel'] === 'preview-0' ) ) ) {
 
-			$sidebars_widgets = retrieve_widgets( true, false );
+			if ( ! isset( $this->sidebars_widgets ) ) {
+				$temporary_preview = false;
+				if ( ! $this->manager->is_preview() ) {
+					$temporary_preview = true;
+					$this->manager->start_previewing_theme();
+				}
+				// Cache the modified version to avoid manipulating the set of widgets a second time
+				$this->sidebars_widgets = retrieve_widgets( true, false );
+				if ( $temporary_preview ) {
+					$this->manager->stop_previewing_theme();
+				}
+			}
+
+			// Override the widgets as fetched from the option
+			$sidebars_widgets = $this->sidebars_widgets;
 		}
 
 		unset( $sidebars_widgets['array_version'] );

@@ -1572,15 +1572,17 @@
 		 * @return {wp.customize.controlConstructor.widget_form[]}
 		 */
 		getWidgetFormControls: function() {
-			var formControls = [];
+			var formControls;
 
-			_( this.setting() ).each( function( widgetId ) {
+			formControls = _( this.setting() ).map( function( widgetId ) {
 				var settingId = widgetIdToSettingId( widgetId ),
 					formControl = api.control( settingId );
 
-				if ( formControl ) {
-					formControls.push( formControl );
+				if ( ! formControl ) {
+					return;
 				}
+
+				return formControl;
 			} );
 
 			return formControls;
@@ -1612,7 +1614,7 @@
 				widgetNumber = widget.get( 'multi_number' );
 			}
 
-			controlHtml = $( '#widget-tpl-' + widget.get( 'id' ) ).html();
+			controlHtml = $.trim( $( '#widget-tpl-' + widget.get( 'id' ) ).html() );
 			if ( widget.get( 'is_multi' ) ) {
 				controlHtml = controlHtml.replace( /<[^<>]+>/g, function( m ) {
 					return m.replace( /__i__|%i%/g, widgetNumber );
