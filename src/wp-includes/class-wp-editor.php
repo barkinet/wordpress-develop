@@ -776,6 +776,7 @@ final class _WP_Editors {
 			'Blockquote' => __( 'Blockquote' ),
 			'Div' => _x( 'Div', 'HTML tag' ),
 			'Pre' => _x( 'Pre', 'HTML tag' ),
+			'Address' => _x( 'Address', 'HTML tag' ),
 
 			'Inline' => _x( 'Inline', 'HTML elements' ),
 			'Underline' => __( 'Underline' ),
