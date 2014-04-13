@@ -942,6 +942,7 @@
 			params.action = 'update-widget';
 			params.wp_customize = 'on';
 			params.nonce = api.Widgets.data.nonce;
+			params.theme = api.settings.theme.stylesheet;
 
 			data = $.param( params );
 			$inputs = this._getInputs( $widgetContent );
