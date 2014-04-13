@@ -792,6 +792,11 @@ function switch_theme( $stylesheet ) {
 	if ( is_admin() && false === get_option( 'theme_mods_' . $stylesheet ) ) {
 		$default_theme_mods = (array) get_option( 'mods_' . $new_name );
 		add_option( "theme_mods_$stylesheet", $default_theme_mods );
+	} else {
+		// Since retrieve_widgets() is called when initializing the customizer theme, we need to remove the theme mods to avoid overwriting changes made via the widget customizer when accessing /wp-admin/widgets.php
+		if ( current_action() === 'wp_ajax_customize_save' ) {
+			remove_theme_mod( 'sidebars_widgets' );
+		}
 	}
 
 	update_option( 'theme_switched', $old_theme->get_stylesheet() );
