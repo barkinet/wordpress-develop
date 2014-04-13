@@ -418,7 +418,7 @@ final class WP_Customize_Widgets {
 			$new_setting_ids[] = $setting_id;
 		}
 
-		/**
+		/*
 		 * Add a setting which will be supplied for the theme's sidebars_widgets
 		 * theme_mod when the the theme is switched.
 		 */
