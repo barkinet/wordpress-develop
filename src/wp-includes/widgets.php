@@ -1401,8 +1401,15 @@ function _wp_sidebars_changed() {
 	retrieve_widgets(true);
 }
 
-// look for "lost" widgets, this has to run at least on each theme change
-function retrieve_widgets($theme_changed = false, $update = true ) {
+/**
+ * Look for "lost" widgets, this has to run at least on each theme change
+ *
+ * @param bool $theme_changed
+ * @param bool $update
+ *
+ * @return array
+ */
+function retrieve_widgets( $theme_changed = false, $update = true ) {
 	global $wp_registered_sidebars, $sidebars_widgets, $wp_registered_widgets;
 
 	$registered_sidebar_keys = array_keys( $wp_registered_sidebars );
@@ -1499,7 +1506,7 @@ function retrieve_widgets($theme_changed = false, $update = true ) {
 
 	$sidebars_widgets['wp_inactive_widgets'] = array_merge($lost_widgets, (array) $sidebars_widgets['wp_inactive_widgets']);
 	if ( $update ) {
-		wp_set_sidebars_widgets($sidebars_widgets);
+		wp_set_sidebars_widgets( $sidebars_widgets );
 	}
 
 	return $sidebars_widgets;

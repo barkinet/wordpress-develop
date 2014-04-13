@@ -752,10 +752,17 @@ function preview_theme_ob_filter_callback( $matches ) {
  * @param string $stylesheet Stylesheet name
  */
 function switch_theme( $stylesheet ) {
-	global $wp_theme_directories, $sidebars_widgets;
+	global $wp_theme_directories, $wp_customize, $sidebars_widgets;
 
-	if ( is_array( $sidebars_widgets ) )
-		set_theme_mod( 'sidebars_widgets', array( 'time' => time(), 'data' => $sidebars_widgets ) );
+	$_sidebars_widgets = null;
+	if ( current_action() === 'wp_ajax_customize_save' ) {
+		$_sidebars_widgets = $wp_customize->post_value( $wp_customize->get_setting( 'old_sidebars_widgets_data' ) );
+	} else if ( is_array( $sidebars_widgets ) ) {
+		$_sidebars_widgets = $sidebars_widgets;
+	}
+	if ( is_array( $_sidebars_widgets ) ) {
+		set_theme_mod( 'sidebars_widgets', array( 'time' => time(), 'data' => $_sidebars_widgets ) );
+	}
 
 	$old_theme  = wp_get_theme();
 	$new_theme = wp_get_theme( $stylesheet );
@@ -1791,8 +1798,11 @@ function check_theme_switched() {
 	if ( $stylesheet = get_option( 'theme_switched' ) ) {
 		$old_theme = wp_get_theme( $stylesheet );
 
+		/**
+		 * Prevent retrieve_widgets() from running since Customizer already called it up front
+		 */
 		if ( get_option( 'theme_switched_via_customizer' ) ) {
-			remove_filter( 'after_switch_theme', '_wp_sidebars_changed' );
+			remove_action( 'after_switch_theme', '_wp_sidebars_changed' );
 			update_option( 'theme_switched_via_customizer', false );
 		}
 
