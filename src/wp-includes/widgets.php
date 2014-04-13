@@ -1402,7 +1402,7 @@ function _wp_sidebars_changed() {
 }
 
 /**
- * Look for "lost" widgets, this has to run at least on each theme change
+ * Look for "lost" widgets, this has to run at least on each theme change.
  *
  * @since 2.8.0
  *
