@@ -125,9 +125,6 @@ final class WP_Customize_Widgets {
 	 * @access public
 	 */
 	public function setup_widget_addition_previews() {
-
-
-
 		$is_customize_preview = false;
 
 		if ( ! empty( $this->manager ) && ! is_admin() && 'on' === $this->get_post_value( 'wp_customize' ) ) {
@@ -312,6 +309,13 @@ final class WP_Customize_Widgets {
 	}
 
 	/**
+	 * Filter old_sidebars_widgets_data customizer setting
+	 *
+	 * When switching themes, filter the Customizer setting
+	 * old_sidebars_widgets_data to supply initial $sidebars_widgets before they
+	 * were overridden by retrieve_widgets(). The value for
+	 * old_sidebars_widgets_data gets set in the old theme's sidebars_widgets
+	 * theme_mod.
 	 *
 	 * @see WP_Customize_Widgets::handle_theme_switch()
 	 * @since 3.9.0
@@ -325,6 +329,11 @@ final class WP_Customize_Widgets {
 	}
 
 	/**
+	 * Filter sidebars_widgets option for theme switch
+	 *
+	 * When switching themes, the retrieve_widgets() function is run when the
+	 * Customizer initializes, and then the new sidebars_widgets here get
+	 * supplied as the default value for the sidebars_widgets option.
 	 *
 	 * @see WP_Customize_Widgets::handle_theme_switch()
 	 * @since 3.9.0

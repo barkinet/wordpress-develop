@@ -1803,9 +1803,7 @@ function check_theme_switched() {
 	if ( $stylesheet = get_option( 'theme_switched' ) ) {
 		$old_theme = wp_get_theme( $stylesheet );
 
-		/**
-		 * Prevent retrieve_widgets() from running since Customizer already called it up front
-		 */
+		// Prevent retrieve_widgets() from running since Customizer already called it up front
 		if ( get_option( 'theme_switched_via_customizer' ) ) {
 			remove_action( 'after_switch_theme', '_wp_sidebars_changed' );
 			update_option( 'theme_switched_via_customizer', false );
