@@ -754,13 +754,6 @@ final class _WP_Editors {
 			// Default TinyMCE strings
 			'New document' => __( 'New document' ),
 			'Formats' => _x( 'Formats', 'TinyMCE' ),
-			'Headers' => _x( 'Headings', 'TinyMCE' ),
-			'Header 1' => __( 'Heading 1' ),
-			'Header 2' => __( 'Heading 2' ),
-			'Header 3' => __( 'Heading 3' ),
-			'Header 4' => __( 'Heading 4' ),
-			'Header 5' => __( 'Heading 5' ),
-			'Header 6' => __( 'Heading 6' ),
 
 			'Headings' => _x( 'Headings', 'TinyMCE' ),
 			'Heading 1' => __( 'Heading 1' ),
@@ -983,11 +976,6 @@ final class _WP_Editors {
 		$baseurl = self::$baseurl;
 		$mce_locale = self::$mce_locale;
 
-		// Set direction
-		if ( is_rtl() ) {
-			$mce_translation['_dir'] = 'rtl';
-		}
-
 		/**
 		 * Filter translated strings prepared for TinyMCE.
 		 *
@@ -1002,6 +990,11 @@ final class _WP_Editors {
 			if ( false !== strpos( $value, '&' ) ) {
 				$mce_translation[$key] = html_entity_decode( $value, ENT_QUOTES, 'UTF-8' );
 			}
+		}
+
+		// Set direction
+		if ( is_rtl() ) {
+			$mce_translation['_dir'] = 'rtl';
 		}
 
 		return "tinymce.addI18n( '$mce_locale', " . json_encode( $mce_translation ) . ");\n" .
@@ -1097,8 +1090,7 @@ final class _WP_Editors {
 				echo "<script type='text/javascript' src='{$baseurl}/plugins/compat3x/plugin{$suffix}.js?$version'></script>\n";
 			}
 
-			if ( 'en' != self::$mce_locale )
-				echo "<script type='text/javascript'>\n" . self::wp_mce_translation() . "</script>\n";
+			echo "<script type='text/javascript'>\n" . self::wp_mce_translation() . "</script>\n";
 
 			if ( self::$ext_plugins ) {
 				// Load the old-format English strings to prevent unsightly labels in old style popups
@@ -1272,9 +1264,9 @@ final class _WP_Editors {
 
 		<div id="wp-fullscreen-save">
 			<input type="button" class="button button-primary right" value="<?php echo $save; ?>" onclick="wp.editor.fullscreen.save();" />
-			<span class="spinner"></span>
 			<span class="wp-fullscreen-saved-message"><?php if ( $post->post_status == 'publish' ) _e('Updated.'); else _e('Saved.'); ?></span>
 			<span class="wp-fullscreen-error-message"><?php _e('Save failed.'); ?></span>
+			<span class="spinner"></span>
 		</div>
 
 		</div>
