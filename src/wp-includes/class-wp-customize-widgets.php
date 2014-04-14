@@ -132,12 +132,12 @@ final class WP_Customize_Widgets {
 		}
 
 		$is_ajax_widget_update = false;
-		if ( defined( 'DOING_AJAX' ) && DOING_AJAX && 'update-widget' === $this->get_post_value( 'action' ) ) {
+		if ( $this->manager->doing_ajax() && 'update-widget' === $this->get_post_value( 'action' ) ) {
 			$is_ajax_widget_update = check_ajax_referer( 'update-widget', 'nonce', false );
 		}
 
 		$is_ajax_customize_save = false;
-		if ( defined( 'DOING_AJAX' ) && DOING_AJAX && 'customize_save' === $this->get_post_value( 'action' ) ) {
+		if ( $this->manager->doing_ajax() && 'customize_save' === $this->get_post_value( 'action' ) ) {
 			$is_ajax_customize_save = check_ajax_referer( 'save-customize_' . $this->manager->get_stylesheet(), 'nonce', false );
 		}
 
@@ -298,14 +298,16 @@ final class WP_Customize_Widgets {
 	 * @access public
 	 */
 	public function override_sidebars_widgets_for_theme_switch() {
-		if ( 'customize.php' === $GLOBALS['pagenow'] && ! $this->manager->is_theme_active() ) {
-			$this->old_sidebars_widgets = wp_get_sidebars_widgets();
-			add_filter( 'customize_value_old_sidebars_widgets_data', array( $this, 'filter_customize_value_old_sidebars_widgets_data' ) );
-
-			$GLOBALS['sidebars_widgets'] = $this->old_sidebars_widgets; // retrieve_widgets() looks at the global $sidebars_widgets
-			$GLOBALS['sidebars_widgets'] = retrieve_widgets( true, false );
-			add_filter( 'option_sidebars_widgets', array( $this, 'filter_option_sidebars_widgets_for_theme_switch' ), 1 );
+		if ( $this->manager->doing_ajax() || $this->manager->is_theme_active() ) {
+			return;
 		}
+
+		$this->old_sidebars_widgets = wp_get_sidebars_widgets();
+		add_filter( 'customize_value_old_sidebars_widgets_data', array( $this, 'filter_customize_value_old_sidebars_widgets_data' ) );
+
+		$GLOBALS['sidebars_widgets'] = $this->old_sidebars_widgets; // retrieve_widgets() looks at the global $sidebars_widgets
+		$GLOBALS['sidebars_widgets'] = retrieve_widgets( true, false );
+		add_filter( 'option_sidebars_widgets', array( $this, 'filter_option_sidebars_widgets_for_theme_switch' ), 1 );
 	}
 
 	/**
