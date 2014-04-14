@@ -298,6 +298,8 @@ final class WP_Customize_Widgets {
 	 * @access public
 	 */
 	public function override_sidebars_widgets_for_theme_switch() {
+		global $sidebars_widgets;
+
 		if ( $this->manager->doing_ajax() || $this->manager->is_theme_active() ) {
 			return;
 		}
@@ -305,8 +307,9 @@ final class WP_Customize_Widgets {
 		$this->old_sidebars_widgets = wp_get_sidebars_widgets();
 		add_filter( 'customize_value_old_sidebars_widgets_data', array( $this, 'filter_customize_value_old_sidebars_widgets_data' ) );
 
-		$GLOBALS['sidebars_widgets'] = $this->old_sidebars_widgets; // retrieve_widgets() looks at the global $sidebars_widgets
-		$GLOBALS['sidebars_widgets'] = retrieve_widgets( true, false );
+		// retrieve_widgets() looks at the global $sidebars_widgets
+		$sidebars_widgets = $this->old_sidebars_widgets;
+		$sidebars_widgets = retrieve_widgets( 'customize' );
 		add_filter( 'option_sidebars_widgets', array( $this, 'filter_option_sidebars_widgets_for_theme_switch' ), 1 );
 	}
 
@@ -326,8 +329,7 @@ final class WP_Customize_Widgets {
 	 * @param array $sidebars_widgets
 	 */
 	public function filter_customize_value_old_sidebars_widgets_data( $old_sidebars_widgets ) {
-		$old_sidebars_widgets = $this->old_sidebars_widgets;
-		return $old_sidebars_widgets;
+		return $this->old_sidebars_widgets;
 	}
 
 	/**
@@ -462,6 +464,16 @@ final class WP_Customize_Widgets {
 						'description' => $GLOBALS['wp_registered_sidebars'][$sidebar_id]['description'],
 						'priority' => 1000 + array_search( $sidebar_id, array_keys( $wp_registered_sidebars ) ),
 					);
+
+					/**
+					 * Filter Customizer widget section arguments for a given sidebar.
+					 *
+					 * @since 3.9.0
+					 *
+					 * @param array      $section_args Array of Customizer widget section arguments.
+					 * @param string     $section_id   Customizer section ID.
+					 * @param int|string $sidebar_id   Sidebar ID.
+					 */
 					$section_args = apply_filters( 'customizer_widgets_section_args', $section_args, $section_id, $sidebar_id );
 
 					$this->manager->add_section( $section_id, $section_args );
@@ -1484,6 +1496,8 @@ final class WP_Customize_Widgets {
 
 		if ( isset( $this->_captured_options[$option_name] ) ) {
 			$value = $this->_captured_options[$option_name];
+
+			/** This filter is documented in wp-includes/option.php */
 			$value = apply_filters( 'option_' . $option_name, $value );
 		}
 

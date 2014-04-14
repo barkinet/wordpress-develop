@@ -1406,12 +1406,11 @@ function _wp_sidebars_changed() {
  *
  * @since 2.8.0
  *
- * @param bool $theme_changed  Whether the theme was changed.
- * @param bool $update  Whether to update the theme_mods. False is used for deferred update in Customizer.
- *
+ * @param mixed $theme_changed Whether the theme was changed as a boolean. A value
+ *                             of 'customize' defers updates for the customizer.
  * @return array
  */
-function retrieve_widgets( $theme_changed = false, $update = true ) {
+function retrieve_widgets( $theme_changed = false ) {
 	global $wp_registered_sidebars, $sidebars_widgets, $wp_registered_widgets;
 
 	$registered_sidebar_keys = array_keys( $wp_registered_sidebars );
@@ -1422,7 +1421,7 @@ function retrieve_widgets( $theme_changed = false, $update = true ) {
 		// time() that sidebars were stored is in $old_sidebars_widgets['time']
 		$_sidebars_widgets = $old_sidebars_widgets['data'];
 
-		if ( $update ) {
+		if ( 'customize' === $theme_changed ) {
 			remove_theme_mod( 'sidebars_widgets' );
 		}
 
@@ -1507,7 +1506,7 @@ function retrieve_widgets( $theme_changed = false, $update = true ) {
 	}
 
 	$sidebars_widgets['wp_inactive_widgets'] = array_merge($lost_widgets, (array) $sidebars_widgets['wp_inactive_widgets']);
-	if ( $update ) {
+	if ( 'customize' === $theme_changed ) {
 		wp_set_sidebars_widgets( $sidebars_widgets );
 	}
 
