@@ -78,8 +78,8 @@ final class WP_Customize_Widgets {
 	public function __construct( $manager ) {
 		$this->manager = $manager;
 
-		add_action( 'widgets_init',                            array( $this, 'handle_theme_switch' ), 10000 );
 		add_action( 'after_setup_theme',                       array( $this, 'setup_widget_addition_previews' ) );
+		add_action( 'wp_loaded',                               array( $this, 'override_sidebars_widgets_for_theme_switch' ) );
 		add_action( 'customize_controls_init',                 array( $this, 'customize_controls_init' ) );
 		add_action( 'customize_register',                      array( $this, 'schedule_customize_register' ), 1 );
 		add_action( 'customize_controls_enqueue_scripts',      array( $this, 'enqueue_scripts' ) );
@@ -286,7 +286,7 @@ final class WP_Customize_Widgets {
 	}
 
 	/**
-	 * Handle theme switch.
+	 * Override sidebars_widgets for theme switch.
 	 *
 	 * When switching a theme via the customizer, supply any previously-configured
 	 * sidebars_widgets from the target theme as the initial sidebars_widgets
@@ -297,7 +297,7 @@ final class WP_Customize_Widgets {
 	 * @since 3.9.0
 	 * @access public
 	 */
-	public function handle_theme_switch() {
+	public function override_sidebars_widgets_for_theme_switch() {
 		if ( 'customize.php' === $GLOBALS['pagenow'] && ! $this->manager->is_theme_active() ) {
 			$this->old_sidebars_widgets = wp_get_sidebars_widgets();
 			add_filter( 'customize_value_old_sidebars_widgets_data', array( $this, 'filter_customize_value_old_sidebars_widgets_data' ) );
