@@ -232,10 +232,10 @@ final class WP_Customize_Widgets {
 	 * @since 3.9.0
 	 * @access public
 	 *
-	 * @param array $value Widget instance(s).
-	 * @return array Widget instance(s) with additions.
+	 * @param array|bool|mixed $value Widget instance(s), false if open was empty.
+	 * @return array|mixed Widget instance(s) with additions.
 	 */
-	public function prepreview_added_widget_instance( $value ) {
+	public function prepreview_added_widget_instance( $value = false ) {
 		if ( ! preg_match( '/^(?:default_)?option_(widget_(.+))/', current_filter(), $matches ) ) {
 			return $value;
 		}
@@ -248,10 +248,13 @@ final class WP_Customize_Widgets {
 			}
 			$widget_number = $parsed_setting_id['number'];
 
-			// Single widget.
-			if ( ! $widget_number ) {
-				$value = array();
-			} else if ( false === $value || ! isset( $value[ $widget_number ] ) ) { // Multi widget
+			if ( is_null( $widget_number ) ) {
+				// Single widget.
+				if ( false === $value ) {
+					$value = array();
+				}
+			} else {
+				// Multi widget.
 				if ( empty( $value ) ) {
 					$value = array( '_multiwidget' => 1 );
 				}
