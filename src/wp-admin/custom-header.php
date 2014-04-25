@@ -1300,10 +1300,13 @@ wp_nonce_field( 'custom-header-options', '_wpnonce-custom-header-options' ); ?>
 			<p>
 			<?php
 				echo sprintf(
-					'%s<a href="/wp-admin/customize.php">%s</a>.',
-					__( 'Attention: use of this page is deprecated in favor of the ' ),
-					__( 'Customizer' )
-				);
+					__( 'Attention: use of this page is deprecated in favor of the %1$s.' ),
+						sprintf(
+							'<a href="%1$s">%2$s</a>',
+							admin_url( 'customize.php' ),
+							esc_html__( 'Customizer' )
+						)
+					); // xss ok
 			?>
 			</p>
 		</div>

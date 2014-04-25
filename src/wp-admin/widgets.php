@@ -25,6 +25,35 @@ function wp_widgets_access_body_class($classes) {
 	return "$classes widgets_access ";
 }
 
+
+/**
+ * Adds Message to Widgets Admin Page to guide user to Widget Customizer
+ * @action widgets_admin_page
+ */
+function wp_widget_customizer_link() {
+	$screen = get_current_screen();
+	if ( $screen->id !== 'widgets' ) {
+		return;
+	}
+	?>
+		<div class="updated">
+			<p>
+				<?php
+					echo sprintf(
+						__( 'The Widget Customizer is now available. You should now edit and preview changes to widgets in the %1$s.' ),
+						sprintf(
+							'<a href="%1$s">%2$s</a>',
+							admin_url( 'customize.php' ),
+							esc_html__( 'Customizer', 'widget-customizer' )
+						)
+					); // xss ok
+				?>
+			</p>
+		</div>
+	<?php
+}
+add_action( 'admin_notices', 'wp_widget_customizer_link' );
+
 if ( 'on' == $widgets_access ) {
 	add_filter( 'admin_body_class', 'wp_widgets_access_body_class' );
 } else {
