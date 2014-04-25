@@ -270,12 +270,15 @@ if ( ! empty( $messages ) ) {
 <?php
 if ( is_multisite() ) {
 	if ( $do_both )
+
+		echo '<div id="add-existing-user-wrap">';
+
 		echo '<h3 id="add-existing-user">' . __('Add Existing User') . '</h3>';
 	if ( !is_super_admin() ) {
-		_e( 'Enter the email address of an existing user on this network to invite them to this site. That person will be sent an email asking them to confirm the invite.' );
+		echo '<p>' . __( 'Enter the email address of an existing user on this network to invite them to this site. That person will be sent an email asking them to confirm the invite.' ) . '</p>';
 		$label = __('E-mail');
 	} else {
-		_e( 'Enter the email address or username of an existing user on this network to invite them to this site. That person will be sent an email asking them to confirm the invite.' );
+		echo '<p>' . __( 'Enter the email address or username of an existing user on this network to invite them to this site. That person will be sent an email asking them to confirm the invite.' ) . '</p>';
 		$label = __('E-mail or Username');
 	}
 ?>
@@ -326,6 +329,10 @@ do_action( 'user_new_form', 'add-existing-user' );
 <?php submit_button( __( 'Add Existing User '), 'primary', 'adduser', true, array( 'id' => 'addusersub' ) ); ?>
 </form>
 <?php
+// end wrap div
+echo '</div>';
+
+
 } // is_multisite()
 
 if ( current_user_can( 'create_users') ) {
