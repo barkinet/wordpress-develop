@@ -69,9 +69,10 @@ class Custom_Background {
 
 		$this->page = $page = add_theme_page(__('Background'), __('Background'), 'edit_theme_options', 'custom-background', array($this, 'admin_page'));
 
-		add_action("load-$page", array($this, 'admin_load'));
-		add_action("load-$page", array($this, 'take_action'), 49);
-		add_action("load-$page", array($this, 'handle_upload'), 49);
+		add_action("load-$page",     array($this, 'admin_load'));
+		add_action("load-$page",     array($this, 'take_action'), 49);
+		add_action("load-$page",     array($this, 'handle_upload'), 49);
+		add_action( 'admin_notices', array($this, 'deprecation_warning') );
 
 		if ( $this->admin_header_callback )
 			add_action("admin_head-$page", $this->admin_header_callback, 51);
@@ -390,6 +391,31 @@ if ( current_theme_supports( 'custom-background', 'default-color' ) )
 		/** This action is documented in wp-admin/custom-header.php */
 		do_action( 'wp_create_file_in_uploads', $file, $id ); // For replication
 		$this->updated = true;
+	}
+
+	/**
+	 * Render warning indicating that this page is deprecated in favor of the Customizer
+	 *
+	 * @since 3.9.0
+	 */
+	function deprecation_warning() {
+		$screen = get_current_screen();
+		if ( $screen->id != 'appearance_page_custom-background' ) {
+			return;
+		}
+		?>
+		<div class="update-nag">
+			<p>
+			<?php
+				echo sprintf(
+					'%s<a href="/wp-admin/customize.php">%s</a>.',
+					__( 'Attention: use of this page is deprecated in favor of the' ),
+					__( 'Customizer' )
+				);
+			?>
+			</p>
+		</div>
+		<?php
 	}
 
 	/**

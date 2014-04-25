@@ -78,6 +78,7 @@ class Custom_Image_Header {
 		add_action( 'wp_ajax_custom-header-crop',   array( $this, 'ajax_header_crop'        ) );
 		add_action( 'wp_ajax_custom-header-add',    array( $this, 'ajax_header_add'         ) );
 		add_action( 'wp_ajax_custom-header-remove', array( $this, 'ajax_header_remove'      ) );
+		add_action( 'admin_notices',                array($this, 'deprecation_warning') );
 	}
 
 	/**
@@ -1283,4 +1284,30 @@ wp_nonce_field( 'custom-header-options', '_wpnonce-custom-header-options' ); ?>
 
 		return $header_images;
 	}
+
+	/**
+	 * Render warning indicating that this page is deprecated in favor of the Customizer
+	 *
+	 * @since 3.9.0
+	 */
+	public function deprecation_warning() {
+		$screen = get_current_screen();
+		if ( $screen->id != 'appearance_page_custom-background' ) {
+			return;
+		}
+		?>
+		<div class="update-nag">
+			<p>
+			<?php
+				echo sprintf(
+					'%s<a href="/wp-admin/customize.php">%s</a>.',
+					__( 'Attention: use of this page is deprecated in favor of the' ),
+					__( 'Customizer' )
+				);
+			?>
+			</p>
+		</div>
+		<?php
+	}
+
 }
