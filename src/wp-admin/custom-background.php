@@ -409,7 +409,7 @@ if ( current_theme_supports( 'custom-background', 'default-color' ) )
 			<?php
 				echo sprintf(
 					'%s<a href="/wp-admin/customize.php">%s</a>.',
-					__( 'Attention: use of this page is deprecated in favor of the' ),
+					__( 'Attention: use of this page is deprecated in favor of the ' ),
 					__( 'Customizer' )
 				);
 			?>

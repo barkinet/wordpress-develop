@@ -1292,7 +1292,7 @@ wp_nonce_field( 'custom-header-options', '_wpnonce-custom-header-options' ); ?>
 	 */
 	public function deprecation_warning() {
 		$screen = get_current_screen();
-		if ( $screen->id != 'appearance_page_custom-background' ) {
+		if ( $screen->id != 'appearance_page_custom-header' ) {
 			return;
 		}
 		?>
@@ -1301,7 +1301,7 @@ wp_nonce_field( 'custom-header-options', '_wpnonce-custom-header-options' ); ?>
 			<?php
 				echo sprintf(
 					'%s<a href="/wp-admin/customize.php">%s</a>.',
-					__( 'Attention: use of this page is deprecated in favor of the' ),
+					__( 'Attention: use of this page is deprecated in favor of the ' ),
 					__( 'Customizer' )
 				);
 			?>
