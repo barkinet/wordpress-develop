@@ -1288,11 +1288,11 @@ wp_nonce_field( 'custom-header-options', '_wpnonce-custom-header-options' ); ?>
 	/**
 	 * Render warning indicating that this page is deprecated in favor of the Customizer
 	 *
-	 * @since 3.9.0
+	 * @since 4.0
 	 */
 	public function deprecation_warning() {
 		$screen = get_current_screen();
-		if ( $screen->id != 'appearance_page_custom-header' ) {
+		if ( $screen->id !== 'appearance_page_custom-header' ) {
 			return;
 		}
 		?>

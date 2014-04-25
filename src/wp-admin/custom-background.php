@@ -396,11 +396,11 @@ if ( current_theme_supports( 'custom-background', 'default-color' ) )
 	/**
 	 * Render warning indicating that this page is deprecated in favor of the Customizer
 	 *
-	 * @since 3.9.0
+	 * @since 4.0
 	 */
 	function deprecation_warning() {
 		$screen = get_current_screen();
-		if ( $screen->id != 'appearance_page_custom-background' ) {
+		if ( $screen->id !== 'appearance_page_custom-background' ) {
 			return;
 		}
 		?>
