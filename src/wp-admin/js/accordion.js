@@ -3,12 +3,21 @@
 	$( document ).ready( function () {
 
 		// Expand/Collapse on click
-		$( '.accordion-container' ).on( 'click keydown', '.accordion-section-title', function( e ) {
+		$( 'body' ).on( 'click keydown', '.accordion-section-title', function( e ) {
 			if ( e.type === 'keydown' && 13 !== e.which ) // "return" key
 					return;
 			e.preventDefault(); // Keep this AFTER the key filter above
 
 			accordionSwitch( $( this ) );
+		});
+
+		// Back to top-level of pages
+		$( '.accordion-container' ).on( 'click keydown', '.control-page-back', function( e ) {
+			if ( e.type === 'keydown' && 13 !== e.which ) // "return" key
+					return;
+			e.preventDefault(); // Keep this AFTER the key filter above
+
+			pageSwitch( $( this ) );
 		});
 
 		// Re-initialize accordion when screen options are toggled
@@ -41,6 +50,10 @@
 			return;
 		}
 
+		if ( 0 == content.length ) {
+			return;
+		}
+
 		if ( section.hasClass( 'open' ) ) {
 			section.toggleClass( 'open' );
 			content.toggle( true ).slideToggle( 150 );
@@ -56,25 +69,20 @@
 
 	function pageSwitch( page ) {
 		var section = page.closest( '.accordion-section' ),
-			container = section.closest( '.accordion-container' );
-			pageId = $(page).attr('id').replace( 'accordion-section-', '' ),
-			subsections = container.find( '.control-subsection' ),
-			children = container.find( '.in-page-' + pageId ),
-			siblings = container.find( '.accordion-section' );
+			container = section.closest( '.wp-full-overlay' );
+			siblings = container.find( '.accordion-section.open' );
+			content = section.find( '.control-page-content' );
 
 		if ( section.hasClass( 'current-page' ) ) {
-			// Go back to the top-level.
 			section.toggleClass( 'current-page' );
-			siblings.show();
-			subsections.hide();
-			section.show();
+			container.toggleClass( 'in-page' );
+			content.hide();
 		} else {
-			// Enter the page.
 			siblings.removeClass( 'open' );
-			siblings.hide();
-			section.toggleClass( 'current-page' );
-			section.show();
-			children.show();
+			content.show( 0, function() {
+				section.toggleClass( 'current-page' );
+				container.toggleClass( 'in-page' );
+			} );
 		}
 	}
 
