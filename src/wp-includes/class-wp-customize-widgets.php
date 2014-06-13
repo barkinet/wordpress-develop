@@ -462,9 +462,8 @@ final class WP_Customize_Widgets {
 				if ( $is_active_sidebar ) {
 
 					$section_args = array(
-						/* translators: %s: sidebar name */
-						'title' => sprintf( __( 'Widgets: %s' ), $GLOBALS['wp_registered_sidebars'][$sidebar_id]['name'] ),
-						'description' => $GLOBALS['wp_registered_sidebars'][$sidebar_id]['description'],
+						'title' => $GLOBALS['wp_registered_sidebars'][ $sidebar_id ]['name'],
+						'description' => $GLOBALS['wp_registered_sidebars'][ $sidebar_id ]['description'],
 						'priority' => 1000 + array_search( $sidebar_id, array_keys( $wp_registered_sidebars ) ),
 						'page' => 'widgets',
 					);
