@@ -65,7 +65,7 @@ class WP_Customize_Control {
 	 * @access public
 	 * @var array
 	 */
-	public $numerical = array();
+	public $input_attrs = array();
 
 	/**
 	 * @access public
@@ -251,6 +251,21 @@ class WP_Customize_Control {
 	}
 
 	/**
+	 * Render the custom attributes for the control's input element.
+	 *
+	 * @since 4.0.0
+	 */
+	public function input_attrs() {
+		$attrs = $this->input_attrs;
+		$allowed_attrs = array( 'class', 'style', 'title', 'spellcheck', 'placeholder', 'required', 'pattern', 'min', 'max', 'step' );
+		foreach( $attrs as $attr => $value ) {
+			if ( in_array( $attr, $allowed_attrs ) ) {
+				echo $attr . '="' . esc_attr( $value ) . '" ';
+			}
+		}
+	}
+
+	/**
 	 * Render the control's content.
 	 *
 	 * Allows the content to be overriden without having to rewrite the wrapper in $this->render().
@@ -266,7 +281,7 @@ class WP_Customize_Control {
 				?>
 				<label>
 					<span class="customize-control-title"><?php echo esc_html( $this->label ); ?></span>
-					<input type="text" value="<?php echo esc_attr( $this->value() ); ?>" <?php $this->link(); ?> />
+					<input type="text" <?php $this->input_attrs(); ?> value="<?php echo esc_attr( $this->value() ); ?>" <?php $this->link(); ?> />
 				</label>
 				<?php
 				break;
@@ -320,44 +335,6 @@ class WP_Customize_Control {
 				</label>
 				<?php
 				break;
-			case 'number':
-				if( ! empty( $this->numerical ) ) {
-					$numerical = $this->numerical;
-					$min = ( isset( $numerical->min ) ) ? $numerical->min : '';
-					$max = ( isset( $numerical->max ) ) ? $numerical->max : '';
-					$step = ( isset( $numerical->step ) ) ? $numerical->step : '';
-					$numerical = 'min="' . esc_attr( $min ) . '" max="' . esc_attr( $max ) . '" step="' . esc_attr( $step ) . '" ';
-				}
-				else {
-					$numerical = '';
-				}
-
-				?>
-				<label>
-					<span class="customize-control-title"><?php echo esc_html( $this->label ); ?></span>
-					<input type="number" <?php echo $numerical; ?> value="<?php echo esc_attr( $this->value() ); ?>" <?php $this->link(); ?> />
-				</label>
-				<?php
-				break;
-			case 'range':
-				if( ! empty( $this->numerical ) ) {
-					$numerical = $this->numerical;
-					$min = ( isset( $numerical->min ) ) ? $numerical->min : '';
-					$max = ( isset( $numerical->max ) ) ? $numerical->max : '';
-					$step = ( isset( $numerical->step ) ) ? $numerical->step : '';
-					$numerical = 'min="' . esc_attr( $min ) . '" max="' . esc_attr( $max ) . '" step="' . esc_attr( $step ) . '" ';
-				}
-				else {
-					$numerical = '';
-				}
-
-				?>
-				<label>
-					<span class="customize-control-title"><?php echo esc_html( $this->label ); ?></span>
-					<input type="range" <?php echo $numerical; ?> value="<?php echo esc_attr( $this->value() ); ?>" <?php $this->link(); ?> />
-				</label>
-				<?php
-				break;
 			case 'dropdown-pages':
 				$dropdown = wp_dropdown_pages(
 					array(
@@ -382,7 +359,7 @@ class WP_Customize_Control {
 				?>
 				<label>
 					<span class="customize-control-title"><?php echo esc_html( $this->label ); ?></span>
-					<input type="<?php echo esc_attr( $this->type ); ?>" value="<?php echo esc_attr( $this->value() ); ?>" <?php $this->link(); ?> />
+					<input type="<?php echo esc_attr( $this->type ); ?>" <?php $this->input_attrs(); ?> value="<?php echo esc_attr( $this->value() ); ?>" <?php $this->link(); ?> />
 				</label>
 				<?php
 				break;
