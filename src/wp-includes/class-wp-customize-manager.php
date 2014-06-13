@@ -670,8 +670,7 @@ final class WP_Customize_Manager {
 	public function add_page( $id, $args = array() ) {
 		if ( is_a( $id, 'WP_Customize_Page' ) ) {
 			$page = $id;
-		}
-		else {
+		} else {
 			$page = new WP_Customize_Page( $this, $id, $args );
 		}
 
@@ -850,7 +849,6 @@ final class WP_Customize_Manager {
 			}
 		}
 		$this->sections = $sections;
-		//var_dump($this->pages);
 
 		// Prepare pages.
 		// Reversing makes uasort sort by time added when conflicts occur.

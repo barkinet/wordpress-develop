@@ -234,7 +234,7 @@ class WP_Customize_Page extends WP_Customize_Section {
 	/**
 	 * Render the page, and the sections that have been added to it.
 	 *
-	 * @since 3.4.0
+	 * @since 4.0.0
 	 */
 	protected function render() {
 		?>
