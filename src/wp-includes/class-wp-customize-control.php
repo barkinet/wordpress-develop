@@ -65,6 +65,12 @@ class WP_Customize_Control {
 	 * @access public
 	 * @var array
 	 */
+	public $numerical = array();
+
+	/**
+	 * @access public
+	 * @var array
+	 */
 	public $json = array();
 
 	/**
@@ -249,7 +255,8 @@ class WP_Customize_Control {
 	 *
 	 * Allows the content to be overriden without having to rewrite the wrapper in $this->render().
 	 *
-	 * Supports basic input types `text`, `checkbox`, `radio`, `select` and `dropdown-pages`.
+	 * Supports basic input types `text`, `checkbox`, `textarea`, `radio`, `select` and `dropdown-pages`.
+	 * Additional input types such as `email`, `url`, and `date` are supported implicitly.
 	 *
 	 * @since 3.4.0
 	 */
@@ -268,6 +275,14 @@ class WP_Customize_Control {
 				<label>
 					<input type="checkbox" value="<?php echo esc_attr( $this->value() ); ?>" <?php $this->link(); checked( $this->value() ); ?> />
 					<?php echo esc_html( $this->label ); ?>
+				</label>
+				<?php
+				break;
+			case 'textarea':
+				?>
+				<label>
+					<span class="customize-control-title"><?php echo esc_html( $this->label ); ?></span>
+					<textarea rows="5" <?php $this->link(); ?>><?php echo esc_textarea( $this->value() ); ?></textarea>
 				</label>
 				<?php
 				break;
@@ -302,6 +317,44 @@ class WP_Customize_Control {
 							echo '<option value="' . esc_attr( $value ) . '"' . selected( $this->value(), $value, false ) . '>' . $label . '</option>';
 						?>
 					</select>
+				</label>
+				<?php
+				break;
+			case 'number':
+				if( ! empty( $this->numerical ) ) {
+					$numerical = $this->numerical;
+					$min = ( isset( $numerical->min ) ) ? $numerical->min : '';
+					$max = ( isset( $numerical->max ) ) ? $numerical->max : '';
+					$step = ( isset( $numerical->step ) ) ? $numerical->step : '';
+					$numerical = 'min="' . esc_attr( $min ) . '" max="' . esc_attr( $max ) . '" step="' . esc_attr( $step ) . '" ';
+				}
+				else {
+					$numerical = '';
+				}
+
+				?>
+				<label>
+					<span class="customize-control-title"><?php echo esc_html( $this->label ); ?></span>
+					<input type="number" <?php echo $numerical; ?> value="<?php echo esc_attr( $this->value() ); ?>" <?php $this->link(); ?> />
+				</label>
+				<?php
+				break;
+			case 'range':
+				if( ! empty( $this->numerical ) ) {
+					$numerical = $this->numerical;
+					$min = ( isset( $numerical->min ) ) ? $numerical->min : '';
+					$max = ( isset( $numerical->max ) ) ? $numerical->max : '';
+					$step = ( isset( $numerical->step ) ) ? $numerical->step : '';
+					$numerical = 'min="' . esc_attr( $min ) . '" max="' . esc_attr( $max ) . '" step="' . esc_attr( $step ) . '" ';
+				}
+				else {
+					$numerical = '';
+				}
+
+				?>
+				<label>
+					<span class="customize-control-title"><?php echo esc_html( $this->label ); ?></span>
+					<input type="range" <?php echo $numerical; ?> value="<?php echo esc_attr( $this->value() ); ?>" <?php $this->link(); ?> />
 				</label>
 				<?php
 				break;
