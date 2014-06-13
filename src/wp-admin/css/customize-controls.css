@@ -32,6 +32,11 @@ body {
 	display: block;
 }
 
+#customize-controls .wp-full-overlay-sidebar-content {
+	overflow-y: auto;
+	overflow-x: hidden;
+}
+
 #customize-info {
 	border: none;
 	border-top: 1px solid #ddd;
@@ -103,7 +108,7 @@ body {
 	background: white;
 }
 
-#customize-theme-controls .control-section:hover .accordion-section-title,
+#customize-theme-controls .control-section:hover > .accordion-section-title,
 #customize-theme-controls .control-section .accordion-section-title:hover,
 #customize-theme-controls .control-section.open .accordion-section-title,
 #customize-theme-controls .control-section .accordion-section-title:focus {
@@ -143,47 +148,116 @@ body {
 	margin: 0;
 }
 
-.control-section.control-page .accordion-section-title:after {
+.control-section.control-page > .accordion-section-title:after {
 	content: "\f139";
 }
 
-#customize-theme-controls .control-subsection {
+.current-page > .accordion-section-title {
 	display: none;
 }
 
-#customize-theme-controls .control-section.current-page {
-	background-color: #fff;
-	color: #666666;
-	border-left: none;
-	border-right: none;
-	border-bottom: 1px solid #eee;
-	padding: 12px 15px 15px;
+.accordion-container.control-page-content {
+	display: none;
+	position: relative;
+	left: 300px;
+	top: 0;
+	width: 300px;
+	border-top: 1px solid #ddd;
+	transition: left ease-in-out .18s;
 }
 
-#customize-theme-controls .control-section.current-page h3.accordion-section-title {
+.current-page .accordion-container.control-page-content {
+	width: 100%;
+	left: 0;
+}
+
+.control-page-back {
+	display: block;
+	position: fixed;
+	top: 0;
+	z-index: 99;
+	left: -48px;
+	width: 45px;
+	height: 45px;
+	padding-right: 2px;
+	background: #eee;
+	border-right: 1px solid #ddd;
+	cursor: pointer;
+	transition: left ease-in-out .18s, color ease-in .1s;
+}
+
+.control-page-back:focus,
+.control-page-back:hover {
+	background: #0074a2;
+	color: #fff;
+	outline: none;
+}
+
+.control-page-back:before {
+	font: normal 29px/1 dashicons;
+	content: "\f340";
+	position: relative;
+	top: 9px;
+	left: 9px;
+}
+
+.current-page .control-page-back {
+	left: 0;
+}
+
+.wp-full-overlay-sidebar .wp-full-overlay-header {
+	transition: padding ease-in-out .18s;
+}
+
+.in-page .wp-full-overlay-sidebar .wp-full-overlay-header {
+	padding-left: 62px;
+}
+
+#customize-info,
+#customize-theme-controls > ul > .accordion-section {
+	position: relative;
+	left: 0;
+	transition: left ease-in-out .18s;
+}
+
+.in-page #customize-info,
+.in-page #customize-theme-controls > ul > .accordion-section {
+	left: -300px;
+	width: 300px;
+}
+
+.in-page .accordion-section.current-page {
+	left: 0;
+}
+
+.in-page #customize-theme-controls .accordion-section.current-page {
+	position: absolute;
+	left: 0;
+	top: 0;
+	width: 100%;
+}
+
+#customize-theme-controls .control-section.current-page {
+	padding: 0;
+}
+
+#customize-theme-controls .control-section.current-page > h3.accordion-section-title {
+	position: relative;
+	left: -300px;
+	width: 300px;
+}
+
+.control-section.current-page .accordion-section-title .page-title {
 	font-size: 20px;
 	font-weight: 200;
 	line-height: 24px;
 	display: block;
 	border: none;
-	background: transparent;
-	padding: 0;
 }
 
-.control-section.control-page.current-page .accordion-section-title:after {
-	content: "\f141";
-	top: -6px;
-	right: -5px;
-}
-
-.control-section .preview-notice {
+.control-section.control-page.current-page .preview-notice {
 	font-size: 13px;
 	line-height: 24px;
-	display: none;
-}
-
-.control-section.current-page .preview-notice {
-	display: block;
 }
 
 .customize-control {
