@@ -239,17 +239,28 @@ class WP_Customize_Page extends WP_Customize_Section {
 	protected function render() {
 		?>
 		<li id="accordion-section-<?php echo esc_attr( $this->id ); ?>" class="control-section control-page accordion-section">
-			<span class="preview-notice"><?php _e( 'You are editing your site&#8217;s' ); ?></span>
 			<h3 class="accordion-section-title" tabindex="0"><?php echo esc_html( $this->title ); ?></h3>
-			<ul class="accordion-section-content">
-				<?php if ( ! empty( $this->description ) ) : ?>
-				<li><p class="description"><?php echo $this->description; ?></p></li>
-				<?php endif; ?>
+			<span class="control-page-back" tabindex="0"><span class="screen-reader-text">Back to Customize</span></span>
+			<ul class="accordion-container control-page-content">
+				<li class="accordion-section control-section">
+					<div class="accordion-section-title" tabindex="0">
+						<span class="preview-notice"><?php _e( 'You are editing your site&#8217;s' ); ?>
+							<strong class="page-title"><?php echo esc_html( $this->title ); ?></strong>
+						</span>
+					</div>
+					<?php if ( ! empty( $this->description ) ) : ?>
+						<div class="accordion-section-content description">
+							<?php echo $this->description; ?>
+						</div>
+					<?php endif; ?>
+				</li>
+				<?php
+				foreach ( $this->sections as $section ) {
+					$section->maybe_render();
+				}
+				?>
 			</ul>
 		</li>
 		<?php
-		foreach ( $this->sections as $section ) {
-			$section->maybe_render();
-		}
 	}
 }
