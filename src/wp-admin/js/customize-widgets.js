@@ -1425,7 +1425,7 @@
 			} );
 
 			// Show the sidebar section when it becomes visible
-			registeredSidebar.on( 'change:is_rendered', function( ) {
+			/*registeredSidebar.on( 'change:is_rendered', function( ) {
 				var sectionSelector = '#accordion-section-sidebar-widgets-' + this.get( 'id' ), $section;
 
 				$section = $( sectionSelector );
@@ -1443,7 +1443,7 @@
 
 					$section.stop().slideUp();
 				}
-			} );
+			} );*/
 		},
 
 		/**

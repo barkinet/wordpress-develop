@@ -36,6 +36,11 @@
 		if ( section.hasClass( 'cannot-expand' ) )
 			return;
 
+		if ( section.hasClass( 'control-page' ) ) {
+			pageSwitch( section );
+			return;
+		}
+
 		if ( section.hasClass( 'open' ) ) {
 			section.toggleClass( 'open' );
 			content.toggle( true ).slideToggle( 150 );
@@ -47,6 +52,31 @@
 		}
 
 		accordionInit();
+	}
+
+	function pageSwitch( page ) {
+		var section = page.closest( '.accordion-section' ),
+			container = section.closest( '.accordion-container' );
+			pageId = $(page).attr('id').replace( 'accordion-section-', '' ),
+			subsections = container.find( '.control-subsection' ),
+			children = container.find( '.in-page-' + pageId ),
+			siblings = container.find( '.accordion-section' );
+
+		if ( section.hasClass( 'current-page' ) ) {
+			// Go back to the top-level.
+			section.toggleClass( 'current-page' );
+			siblings.show();
+			subsections.hide();
+			section.show();
+		} else {
+			// Enter the page.
+			siblings.removeClass( 'open' );
+			siblings.hide();
+			section.toggleClass( 'current-page' );
+			section.show();
+			children.show();
+		}
+		
 	}
 
 	// Initialize the accordion (currently just corner fixes)

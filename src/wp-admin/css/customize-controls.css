@@ -143,6 +143,49 @@ body {
 	margin: 0;
 }
 
+.control-section.control-page .accordion-section-title:after {
+	content: "\f139";
+}
+
+#customize-theme- controls .control-subsection {
+	display: none;
+}
+
+#customize-theme-controls .control-section.current-page {
+	background-color: #fff;
+	color: #666666;
+	border-left: none;
+	border-right: none;
+	border-bottom: 1px solid #eee;
+	padding: 12px 15px 15px;
+}
+
+#customize-theme-controls .control-section.current-page h3.accordion-section-title {
+	font-size: 20px;
+	font-weight: 200;
+	line-height: 24px;
+	display: block;
+	border: none;
+	background: transparent;
+	padding: 0;
+}
+
+.control-section.control-page.current-page .accordion-section-title:after {
+	content: "\f141";
+	top: -6px;
+	right: -5px;
+}
+
+.control-section .preview-notice {
+	font-size: 13px;
+	line-height: 24px;
+	display: none;
+}
+
+.control-section.current-page .preview-notice {
+	display: block;
+}
+
 .customize-control {
 	width: 100%;
 	float: left;

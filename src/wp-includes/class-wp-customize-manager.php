@@ -45,6 +45,7 @@ final class WP_Customize_Manager {
 	public $widgets;
 
 	protected $settings = array();
+	protected $pages    = array();
 	protected $sections = array();
 	protected $controls = array();
 
@@ -312,6 +313,17 @@ final class WP_Customize_Manager {
 	 */
 	public function sections() {
 		return $this->sections;
+	}
+
+	/**
+	 * Get the registered pages.
+	 *
+	 * @since 4.0.0
+	 *
+	 * @return array
+	 */
+	public function pages() {
+		return $this->pages;
 	}
 
 	/**
@@ -648,6 +660,50 @@ final class WP_Customize_Manager {
 	}
 
 	/**
+	 * Add a customize page.
+	 *
+	 * @since 4.0.0
+	 *
+	 * @param WP_Customize_Page|string $id   Customize Page object, or Page ID.
+	 * @param array                    $args Page arguments.
+	 */
+	public function add_page( $id, $args = array() ) {
+		if ( is_a( $id, 'WP_Customize_Page' ) ) {
+			$page = $id;
+		}
+		else {
+			$page = new WP_Customize_Page( $this, $id, $args );
+		}
+
+		$this->pages[ $page->id ] = $page;
+	}
+
+	/**
+	 * Retrieve a customize page.
+	 *
+	 * @since 4.0.0
+	 *
+	 * @param string $id Page ID.
+	 * @return WP_Customize_Page
+	 */
+	public function get_page( $id ) {
+		if ( isset( $this->pages[ $id ] ) ) {
+			return $this->pages[ $id ];
+		}
+	}
+
+	/**
+	 * Remove a customize page.
+	 *
+	 * @since 4.0.0
+	 *
+	 * @param string $id Page ID.
+	 */
+	public function remove_page( $id ) {
+		unset( $this->pages[ $id ] );
+	}
+
+	/**
 	 * Add a customize section.
 	 *
 	 * @since 3.4.0
@@ -749,7 +805,7 @@ final class WP_Customize_Manager {
 	}
 
 	/**
-	 * Prepare settings and sections.
+	 * Prepare pages, sections, and controls.
 	 *
 	 * For each, check if required related components exist,
 	 * whether the user has the necessary capabilities,
@@ -763,8 +819,9 @@ final class WP_Customize_Manager {
 		$controls = array();
 
 		foreach ( $this->controls as $id => $control ) {
-			if ( ! isset( $this->sections[ $control->section ] ) || ! $control->check_capabilities() )
+			if ( ! isset( $this->sections[ $control->section ] ) || ! $control->check_capabilities() ) {
 				continue;
+			}
 
 			$this->sections[ $control->section ]->controls[] = $control;
 			$controls[ $id ] = $control;
@@ -778,13 +835,38 @@ final class WP_Customize_Manager {
 		$sections = array();
 
 		foreach ( $this->sections as $section ) {
-			if ( ! $section->check_capabilities() || ! $section->controls )
+			if ( ! $section->check_capabilities() || ! $section->controls ) {
 				continue;
+			}
 
 			usort( $section->controls, array( $this, '_cmp_priority' ) );
-			$sections[] = $section;
+
+			if ( ! $section->page ) {
+				// Top-level section.
+				$sections[] = $section;
+			} else {
+				// This section belongs to a page.
+				$this->pages[ $section->page ]->sections[] = $section;
+			}
 		}
 		$this->sections = $sections;
+		//var_dump($this->pages);
+
+		// Prepare pages.
+		// Reversing makes uasort sort by time added when conflicts occur.
+		$this->pages = array_reverse( $this->pages );
+		uasort( $this->pages, array( $this, '_cmp_priority' ) );
+		$pages = array();
+
+		foreach ( $this->pages as $page ) {
+			if ( ! $page->check_capabilities() || ! $page->sections ) {
+				continue;
+			}
+
+			usort( $page->sections, array( $this, '_cmp_priority' ) );
+			$pages[] = $page;
+		}
+		$this->pages = $pages;
 	}
 
 	/**
