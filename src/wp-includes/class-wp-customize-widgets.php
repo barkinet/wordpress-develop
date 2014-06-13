@@ -434,7 +434,7 @@ final class WP_Customize_Widgets {
 		}
 
 		$this->manager->add_page( 'widgets', array(
-			'title' => 'Widgets',
+			'title' => __( 'Widgets' ),
 		) );
 
 		foreach ( $sidebars_widgets as $sidebar_id => $sidebar_widget_ids ) {
