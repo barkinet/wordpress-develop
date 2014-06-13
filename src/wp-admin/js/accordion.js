@@ -76,7 +76,6 @@
 			section.show();
 			children.show();
 		}
-		
 	}
 
 	// Initialize the accordion (currently just corner fixes)
