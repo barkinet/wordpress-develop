@@ -325,6 +325,14 @@ class WP_Customize_Control {
 					$dropdown
 				);
 				break;
+			default:
+				?>
+				<label>
+					<span class="customize-control-title"><?php echo esc_html( $this->label ); ?></span>
+					<input type="<?php echo esc_attr( $this->type ); ?>" value="<?php echo esc_attr( $this->value() ); ?>" <?php $this->link(); ?> />
+				</label>
+				<?php
+				break;
 		}
 	}
 }
