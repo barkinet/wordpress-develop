@@ -1423,6 +1423,27 @@
 
 				registeredSidebar.set( 'is_rendered', isRendered );
 			} );
+
+			// Show the sidebar section when it becomes visible
+			registeredSidebar.on( 'change:is_rendered', function( ) {
+				var sectionSelector = '#accordion-section-sidebar-widgets-' + this.get( 'id' ), $section;
+
+				$section = $( sectionSelector );
+				if ( this.get( 'is_rendered' ) ) {
+					$section.stop().slideDown( function() {
+						$( this ).css( 'height', 'auto' ); // so that the .accordion-section-content won't overflow
+					} );
+
+				} else {
+					// Make sure that hidden sections get closed first
+					if ( $section.hasClass( 'open' ) ) {
+						// it would be nice if accordionSwitch() in accordion.js was public
+						$section.find( '.accordion-section-title' ).trigger( 'click' );
+					}
+
+					$section.stop().slideUp();
+				}
+			} );
 		},
 
 		/**
