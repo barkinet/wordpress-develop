@@ -3,7 +3,7 @@
 	$( document ).ready( function () {
 
 		// Expand/Collapse on click
-		$( 'body' ).on( 'click keydown', '.accordion-section-title', function( e ) {
+		$( '.accordion-container' ).on( 'click keydown', '.accordion-section-title', function( e ) {
 			if ( e.type === 'keydown' && 13 !== e.which ) // "return" key
 					return;
 			e.preventDefault(); // Keep this AFTER the key filter above
@@ -51,6 +51,7 @@
 		}
 
 		if ( 0 == content.length ) {
+			section.addClass( 'no-content' );
 			return;
 		}
 
