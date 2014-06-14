@@ -156,7 +156,7 @@ body {
 	display: none;
 }
 
-.accordion-container.control-page-content {
+.accordion-sub-container.control-page-content {
 	display: none;
 	position: relative;
 	left: 300px;
@@ -166,7 +166,7 @@ body {
 	transition: left ease-in-out .18s;
 }
 
-.current-page .accordion-container.control-page-content {
+.current-page .accordion-sub-container.control-page-content {
 	width: 100%;
 	left: 0;
 }
