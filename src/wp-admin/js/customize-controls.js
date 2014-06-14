@@ -843,6 +843,8 @@
 				parentLocation += '?' + $.param( queryVars );
 				parentLocation += location.hash;
 				history.pushState( state, '', parentLocation );
+
+				$( '.back.button:first' ).prop( 'href', url );
 			} );
 
 			// Pop state
@@ -858,6 +860,8 @@
 					url = api.settings.url.home;
 				}
 				self.previewUrl( url );
+
+				$( '.back.button:first' ).prop( 'href', url );
 			} );
 
 		},
