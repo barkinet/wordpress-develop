@@ -794,6 +794,72 @@
 
 			// Update the URL when the iframe sends a URL message.
 			this.bind( 'url', this.previewUrl );
+
+			this.addHistory();
+		},
+
+		/**
+		 * Given a URL query string, return the query vars contained within it
+		 *
+		 * @param {String} queryString
+		 * @returns {Object}
+		 */
+		parseQueryVars: function ( queryString ) {
+			var queryVars = {};
+			if ( queryString ) {
+				$.each( queryString.split( '&' ), function () {
+					var key, value, pair;
+					pair = this.split( '=', 2 );
+					key = decodeURIComponent( pair[0] );
+					value = pair[1] ? decodeURIComponent( pair[1] ) : null;
+					queryVars[ key ] = value;
+				} );
+			}
+			return queryVars;
+		},
+
+		/**
+		 * Add support for history for navigation in Customize preview
+		 */
+		addHistory: function () {
+			var self, previousUrl;
+			if ( ! history.pushState ) {
+				return;
+			}
+			self = this;
+
+			// Push state
+			this.bind( 'url', function ( url ) {
+				var state, parentLocation, queryVars;
+				if ( previousUrl === url ) {
+					return;
+				}
+				previousUrl = url;
+
+				state = { customizePreviewUrl: url };
+				parentLocation = location.pathname;
+				queryVars = self.parseQueryVars( location.search.substr( 1 ) );
+				queryVars.url = url;
+				parentLocation += '?' + $.param( queryVars );
+				parentLocation += location.hash;
+				history.pushState( state, '', parentLocation );
+			} );
+
+			// Pop state
+			$( window ).on( 'popstate', function ( e ) {
+				var state, url, queryVars;
+				state = e.originalEvent.state;
+				queryVars = self.parseQueryVars( location.search.substr( 1 ) );
+				if ( state && state.customizePreviewUrl ) {
+					url = state.customizePreviewUrl;
+				} else if ( queryVars.url ) {
+					url = queryVars.url;
+				} else {
+					url = api.settings.url.home;
+				}
+				self.previewUrl( url );
+			} );
+
 		},
 
 		query: function() {},
