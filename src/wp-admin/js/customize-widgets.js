@@ -1752,11 +1752,6 @@
 
 		// Open and focus widget control
 		api.previewer.bind( 'focus-widget-control', api.Widgets.focusWidgetFormControl );
-
-		// Refresh preview when a refresh message is received
-		api.previewer.bind( 'refresh', function () {
-			api.previewer.refresh();
-		} );
 	} );
 
 	/**
