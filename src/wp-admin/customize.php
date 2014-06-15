@@ -68,11 +68,13 @@ endif;
 
 $is_ios = wp_is_mobile() && preg_match( '/iPad|iPod|iPhone/', $_SERVER['HTTP_USER_AGENT'] );
 
-if ( $is_ios )
+if ( $is_ios ) {
 	$body_class .= ' ios';
+}
 
-if ( is_rtl() )
-	$body_class .=  ' rtl';
+if ( is_rtl() ) {
+	$body_class .= ' rtl';
+}
 $body_class .= ' locale-' . sanitize_html_class( strtolower( str_replace( '_', '-', get_locale() ) ) );
 
 $admin_title = sprintf( __( '%1$s &#8212; WordPress' ), strip_tags( sprintf( __( 'Customize %s' ), $wp_customize->theme()->display('Name') ) ) );

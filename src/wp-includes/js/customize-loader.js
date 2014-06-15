@@ -36,8 +36,9 @@ window.wp = window.wp || {};
 			});
 
 			// Add navigation listeners.
-			if ( $.support.history )
+			if ( $.support.history ) {
 				this.window.on( 'popstate', Loader.popstate );
+			}
 
 			if ( $.support.hashchange ) {
 				this.window.on( 'hashchange', Loader.hashchange );
@@ -47,27 +48,31 @@ window.wp = window.wp || {};
 
 		popstate: function( e ) {
 			var state = e.originalEvent.state;
-			if ( state && state.customize )
+			if ( state && state.customize ) {
 				Loader.open( state.customize );
-			else if ( Loader.active )
+			} else if ( Loader.active ) {
 				Loader.close();
+			}
 		},
 
 		hashchange: function() {
 			var hash = window.location.toString().split('#')[1];
 
-			if ( hash && 0 === hash.indexOf( 'wp_customize=on' ) )
+			if ( hash && 0 === hash.indexOf( 'wp_customize=on' ) ) {
 				Loader.open( Loader.settings.url + '?' + hash );
+			}
 
-			if ( ! hash && ! $.support.history )
+			if ( ! hash && ! $.support.history ) {
 				Loader.close();
+			}
 		},
 
 		open: function( src ) {
 			var hash;
 
-			if ( this.active )
+			if ( this.active ) {
 				return;
+			}
 
 			// Load the full page on mobile devices.
 			if ( Loader.settings.browser.mobile )
@@ -92,26 +97,29 @@ window.wp = window.wp || {};
 			});
 
 			this.messenger.bind( 'close', function() {
-				if ( $.support.history )
+				if ( $.support.history ) {
 					history.back();
-				else if ( $.support.hashchange )
+				} else if ( $.support.hashchange ) {
 					window.location.hash = '';
-				else
+				} else {
 					Loader.close();
+				}
 			});
 
 			this.messenger.bind( 'activated', function( location ) {
-				if ( location )
+				if ( location ) {
 					window.location = location;
+				}
 			});
 
 			hash = src.split('?')[1];
 
 			// Ensure we don't call pushState if the user hit the forward button.
-			if ( $.support.history && window.location.href !== src )
+			if ( $.support.history && window.location.href !== src ) {
 				history.pushState( { customize: src }, '', src );
-			else if ( ! $.support.history && $.support.hashchange && hash )
+			} else if ( ! $.support.history && $.support.hashchange && hash ) {
 				window.location.hash = 'wp_customize=on&' + hash;
+			}
 
 			this.trigger( 'open' );
 		},
@@ -121,15 +129,17 @@ window.wp = window.wp || {};
 		},
 
 		close: function() {
-			if ( ! this.active )
+			if ( ! this.active ) {
 				return;
+			}
 			this.active = false;
 
 			this.trigger( 'close' );
 
 			// Return focus to link that was originally clicked.
-			if ( this.link )
+			if ( this.link ) {
 				this.link.focus();
+			}
 		},
 
 		closed: function() {
