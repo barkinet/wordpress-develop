@@ -857,11 +857,15 @@
 				var state, url;
 
 				state = e.originalEvent.state;
-				queryVars = self.parseQueryVars( location.search.substr( 1 ) );
+
+				// Handle hitting back to themes page after having reloaded on a page in the Customizer
+				if ( ! state && /themes\.php$/.test( location.pathname ) ) {
+					location.replace( location.href );
+					return;
+				}
+
 				if ( state && state.customizePreviewUrl ) {
 					url = state.customizePreviewUrl;
-				} else if ( queryVars.url ) {
-					url = queryVars.url;
 				} else {
 					url = api.settings.url.home;
 				}
