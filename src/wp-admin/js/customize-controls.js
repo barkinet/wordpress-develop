@@ -855,9 +855,10 @@
 
 			// Pop state
 			$( window.parent ).on( 'popstate', function ( e ) {
-				var state, url;
+				var state, url, queryVars;
 
 				state = e.originalEvent.state;
+				queryVars = self.parseQueryVars( location.search.substr( 1 ) );
 
 				// Handle hitting back to themes page after having reloaded on a page in the Customizer
 				if ( ! state && /themes\.php$/.test( location.pathname ) ) {
@@ -867,10 +868,22 @@
 
 				if ( state && state.customizePreviewUrl ) {
 					url = state.customizePreviewUrl;
+				} else if ( queryVars.url ) {
+					/*
+					 * When popped to initial state, then state is null and so
+					 * we don't have customizePreviewUrl, so we can grab it from
+					 * the URL query parameter. Note that the previewUrl value
+					 * has a validator in place which will prevent illegal
+					 * or malicious URLs from being injected into the preview.
+					 */
+					url = queryVars.url;
 				} else {
+					// Use the homepage as the preview URL as default
 					url = api.settings.url.home;
 				}
+				self.previewUrl.unbind( pushStatePreviewUrl );
 				self.previewUrl( url );
+				self.previewUrl.bind( pushStatePreviewUrl );
 
 				if ( api.settings.theme.active ) {
 					backLink.prop( 'href', url );
