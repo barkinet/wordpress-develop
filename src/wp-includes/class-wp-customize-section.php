@@ -242,7 +242,7 @@ class WP_Customize_Page extends WP_Customize_Section {
 			<h3 class="accordion-section-title" tabindex="0"><?php echo esc_html( $this->title ); ?></h3>
 			<span class="control-page-back" tabindex="0"><span class="screen-reader-text">Back to Customize</span></span>
 			<ul class="accordion-sub-container control-page-content">
-				<li class="accordion-section control-section">
+				<li class="accordion-section control-section<?php if ( empty( $this->description ) ) echo ' cannot-expand'; ?>">
 					<div class="accordion-section-title" tabindex="0">
 						<span class="preview-notice"><?php _e( 'You are editing your site&#8217;s' ); ?>
 							<strong class="page-title"><?php echo esc_html( $this->title ); ?></strong>
