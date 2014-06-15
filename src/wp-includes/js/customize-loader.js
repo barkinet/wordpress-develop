@@ -36,8 +36,9 @@ window.wp = window.wp || {};
 			});
 
 			// Add navigation listeners.
-			if ( $.support.history )
+			if ( $.support.history ) {
 				this.window.on( 'popstate', Loader.popstate );
+			}
 
 			if ( $.support.hashchange ) {
 				this.window.on( 'hashchange', Loader.hashchange );
@@ -47,17 +48,18 @@ window.wp = window.wp || {};
 
 		popstate: function( e ) {
 			var state = e.originalEvent.state;
-			if ( state && state.customize )
+			if ( state && state.customize ) {
 				Loader.open( state.customize );
-			else if ( Loader.active )
+			} else if ( Loader.active && ( ! state || ! state.customizePreviewUrl ) ) {
 				Loader.close();
+			}
 		},
 
 		hashchange: function() {
 			var hash = window.location.toString().split('#')[1];
 
 			if ( hash && 0 === hash.indexOf( 'wp_customize=on' ) )
-				Loader.open( Loader.settings.url + '?' + hash );
+				Loader.open( Loader.settings.url.customize + '?' + hash );
 
 			if ( ! hash && ! $.support.history )
 				Loader.close();
@@ -121,15 +123,17 @@ window.wp = window.wp || {};
 		},
 
 		close: function() {
-			if ( ! this.active )
+			if ( ! this.active ) {
 				return;
+			}
 			this.active = false;
 
 			this.trigger( 'close' );
 
 			// Return focus to link that was originally clicked.
-			if ( this.link )
+			if ( this.link ) {
 				this.link.focus();
+			}
 		},
 
 		closed: function() {

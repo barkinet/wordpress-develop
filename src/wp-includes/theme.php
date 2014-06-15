@@ -1871,7 +1871,10 @@ function _wp_customize_loader_settings() {
 	);
 
 	$settings = array(
-		'url'           => esc_url( admin_url( 'customize.php' ) ),
+		'url'           => array(
+			'customize' => esc_url_raw( admin_url( 'customize.php' ) ),
+			'home'      => esc_url_raw( home_url( '/' ) ),
+		),
 		'isCrossDomain' => $cross_domain,
 		'browser'       => $browser,
 	);
