@@ -695,6 +695,9 @@
 		tmpl = api.settings.documentTitleTmpl;
 		title = tmpl.replace( '{{title}}', documentTitle );
 		document.title = title;
+		if ( window !== window.parent ) {
+			window.parent.document.title = document.title;
+		}
 	};
 
 	api.Previewer = api.Messenger.extend({
