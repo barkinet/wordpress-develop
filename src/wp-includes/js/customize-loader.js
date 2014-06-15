@@ -94,12 +94,24 @@ window.wp = window.wp || {};
 			});
 
 			this.messenger.bind( 'close', function() {
-				if ( $.support.history )
+				var goBackToThemesPage;
+				if ( $.support.history ) {
+					goBackToThemesPage = function ( e ) {
+						var state;
+						state = e.originalEvent.state;
+						if ( state && ( state.customize || state.customizePreviewUrl ) ) {
+							history.back();
+						} else {
+							$( window ).off( 'popstate', goBackToThemesPage );
+						}
+					};
+					$( window ).on( 'popstate', goBackToThemesPage );
 					history.back();
-				else if ( $.support.hashchange )
+				} else if ( $.support.hashchange ) {
 					window.location.hash = '';
-				else
+				} else {
 					Loader.close();
+				}
 			});
 
 			this.messenger.bind( 'activated', function( location ) {
