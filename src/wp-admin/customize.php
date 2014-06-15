@@ -12,18 +12,23 @@ define( 'IFRAME_REQUEST', true );
 /** Load WordPress Administration Bootstrap */
 require_once( dirname( __FILE__ ) . '/admin.php' );
 
-if ( ! current_user_can( 'edit_theme_options' ) )
+if ( ! current_user_can( 'edit_theme_options' ) ) {
 	wp_die( __( 'Cheatin&#8217; uh?' ) );
+}
+
+global $wp_scripts, $wp_customize;
 
 wp_reset_vars( array( 'url', 'return' ) );
 $url = urldecode( $url );
 $url = wp_validate_redirect( $url, home_url( '/' ) );
-if ( $return )
-	$return = wp_validate_redirect( urldecode( $return ) );
-if ( ! $return )
-	$return = $url;
 
-global $wp_scripts, $wp_customize;
+if ( $return ) {
+	$return = wp_validate_redirect( urldecode( $return ) );
+} elseif ( ! $wp_customize->is_theme_active() ) {
+	$return = admin_url( 'themes.php' );
+} else {
+	$return = $url;
+}
 
 $registered = $wp_scripts->registered;
 $wp_scripts = new WP_Scripts;

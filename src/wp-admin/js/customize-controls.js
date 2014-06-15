@@ -728,8 +728,13 @@
 						}
 					}
 
-					clearTimeout( timeout );
-					timeout = setTimeout( callback, self.refreshBuffer );
+					try {
+						clearTimeout( timeout );
+						timeout = setTimeout( callback, self.refreshBuffer );
+					} catch ( e ) {
+						// Handle Uncaught InvalidAccessError: Failed to execute 'setTimeout' on 'Window': No script context is available in which to execute the script.
+						return callback();
+					}
 				};
 			})( this );
 
@@ -794,6 +799,97 @@
 
 			// Update the URL when the iframe sends a URL message.
 			this.bind( 'url', this.previewUrl );
+
+			this.addHistory();
+		},
+
+		/**
+		 * Given a URL query string, return the query vars contained within it
+		 *
+		 * @param {String} queryString
+		 * @returns {Object}
+		 */
+		parseQueryVars: function ( queryString ) {
+			var queryVars = {};
+			if ( queryString ) {
+				$.each( queryString.split( '&' ), function () {
+					var key, value, pair;
+					pair = this.split( '=', 2 );
+					key = decodeURIComponent( pair[0] );
+					value = pair[1] ? decodeURIComponent( pair[1] ) : null;
+					queryVars[ key ] = value;
+				} );
+			}
+			return queryVars;
+		},
+
+		/**
+		 * Add support for history for navigation in Customize preview
+		 */
+		addHistory: function () {
+			var self, backLink, pushStatePreviewUrl;
+			if ( ! history.pushState ) {
+				return;
+			}
+			self = this;
+			backLink = $( '.back.button:first' );
+
+			// Push state
+			pushStatePreviewUrl = function ( url ) {
+				var state, parentLocation, queryVars;
+				state = { customizePreviewUrl: url };
+				parentLocation = location.pathname;
+				queryVars = self.parseQueryVars( location.search.substr( 1 ) );
+				queryVars.url = url;
+				parentLocation += '?' + $.param( queryVars );
+				parentLocation += location.hash;
+
+				// parent frame is for the sake of customizer loaded into iframe for Live Preview
+				window.parent.history.pushState( state, '', parentLocation );
+
+				if ( api.settings.theme.active ) {
+					backLink.prop( 'href', url );
+				}
+			};
+			this.previewUrl.bind( pushStatePreviewUrl );
+
+			// Pop state
+			$( window.parent ).on( 'popstate', function ( e ) {
+				var state, url, queryVars;
+
+				state = e.originalEvent.state;
+				queryVars = self.parseQueryVars( location.search.substr( 1 ) );
+
+				// Handle hitting back to themes page after having reloaded on a page in the Customizer
+				if ( ! state && /themes\.php$/.test( location.pathname ) ) {
+					location.replace( location.href );
+					return;
+				}
+
+				if ( state && state.customizePreviewUrl ) {
+					url = state.customizePreviewUrl;
+				} else if ( queryVars.url ) {
+					/*
+					 * When popped to initial state, then state is null and so
+					 * we don't have customizePreviewUrl, so we can grab it from
+					 * the URL query parameter. Note that the previewUrl value
+					 * has a validator in place which will prevent illegal
+					 * or malicious URLs from being injected into the preview.
+					 */
+					url = queryVars.url;
+				} else {
+					// Use the homepage as the preview URL as default
+					url = api.settings.url.home;
+				}
+				self.previewUrl.unbind( pushStatePreviewUrl );
+				self.previewUrl( url );
+				self.previewUrl.bind( pushStatePreviewUrl );
+
+				if ( api.settings.theme.active ) {
+					backLink.prop( 'href', url );
+				}
+			} );
+
 		},
 
 		query: function() {},
