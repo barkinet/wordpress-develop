@@ -822,11 +822,12 @@
 		 * Add support for history for navigation in Customize preview
 		 */
 		addHistory: function () {
-			var self, previousUrl;
+			var self, previousUrl, backLink;
 			if ( ! history.pushState ) {
 				return;
 			}
 			self = this;
+			backLink = $( '.back.button:first' );
 
 			// Push state
 			this.bind( 'url', function ( url ) {
@@ -842,14 +843,19 @@
 				queryVars.url = url;
 				parentLocation += '?' + $.param( queryVars );
 				parentLocation += location.hash;
-				history.pushState( state, '', parentLocation );
 
-				$( '.back.button:first' ).prop( 'href', url );
+				// parent frame is for the sake of customizer loaded into iframe for Live Preview
+				window.parent.history.pushState( state, '', parentLocation );
+
+				if ( api.settings.theme.active ) {
+					backLink.prop( 'href', url );
+				}
 			} );
 
 			// Pop state
-			$( window ).on( 'popstate', function ( e ) {
-				var state, url, queryVars;
+			$( window.parent ).on( 'popstate', function ( e ) {
+				var state, url;
+
 				state = e.originalEvent.state;
 				queryVars = self.parseQueryVars( location.search.substr( 1 ) );
 				if ( state && state.customizePreviewUrl ) {
@@ -861,7 +867,9 @@
 				}
 				self.previewUrl( url );
 
-				$( '.back.button:first' ).prop( 'href', url );
+				if ( api.settings.theme.active ) {
+					backLink.prop( 'href', url );
+				}
 			} );
 
 		},
