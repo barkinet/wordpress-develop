@@ -728,8 +728,13 @@
 						}
 					}
 
-					clearTimeout( timeout );
-					timeout = setTimeout( callback, self.refreshBuffer );
+					try {
+						clearTimeout( timeout );
+						timeout = setTimeout( callback, self.refreshBuffer );
+					} catch ( e ) {
+						// Handle Uncaught InvalidAccessError: Failed to execute 'setTimeout' on 'Window': No script context is available in which to execute the script.
+						return callback();
+					}
 				};
 			})( this );
 
