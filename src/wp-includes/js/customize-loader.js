@@ -75,8 +75,12 @@ window.wp = window.wp || {};
 			}
 
 			// Load the full page on mobile devices.
-			if ( Loader.settings.browser.mobile )
+			if ( Loader.settings.browser.mobile ) {
 				return window.location = src;
+			}
+
+			// Store the document title prior to opening the Live Preview
+			this.originalDocumentTitle = document.title;
 
 			this.active = true;
 			this.body.addClass('customize-loading');
@@ -135,6 +139,11 @@ window.wp = window.wp || {};
 			this.active = false;
 
 			this.trigger( 'close' );
+
+			// Restore document title prior to opening the Live Preview
+			if ( this.originalDocumentTitle ) {
+				document.title = this.originalDocumentTitle;
+			}
 
 			// Return focus to link that was originally clicked.
 			if ( this.link ) {
