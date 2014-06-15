@@ -50,11 +50,6 @@
 			return;
 		}
 
-		if ( 0 == content.length ) {
-			section.addClass( 'no-content' );
-			return;
-		}
-
 		if ( section.hasClass( 'open' ) ) {
 			section.toggleClass( 'open' );
 			content.toggle( true ).slideToggle( 150 );
