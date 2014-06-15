@@ -827,7 +827,7 @@
 		 * Add support for history for navigation in Customize preview
 		 */
 		addHistory: function () {
-			var self, previousUrl, backLink;
+			var self, backLink, pushStatePreviewUrl;
 			if ( ! history.pushState ) {
 				return;
 			}
@@ -835,13 +835,8 @@
 			backLink = $( '.back.button:first' );
 
 			// Push state
-			this.bind( 'url', function ( url ) {
+			pushStatePreviewUrl = function ( url ) {
 				var state, parentLocation, queryVars;
-				if ( previousUrl === url ) {
-					return;
-				}
-				previousUrl = url;
-
 				state = { customizePreviewUrl: url };
 				parentLocation = location.pathname;
 				queryVars = self.parseQueryVars( location.search.substr( 1 ) );
@@ -855,7 +850,8 @@
 				if ( api.settings.theme.active ) {
 					backLink.prop( 'href', url );
 				}
-			} );
+			};
+			this.previewUrl.bind( pushStatePreviewUrl );
 
 			// Pop state
 			$( window.parent ).on( 'popstate', function ( e ) {
