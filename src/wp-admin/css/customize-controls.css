@@ -18,6 +18,10 @@ body {
 	color: #666666;
 }
 
+#customize-controls .accordion-container {
+	border-top: 1px solid #ddd;
+}
+
 #customize-header-actions .button-primary {
 	float: right;
 	margin-top: 9px;
@@ -34,7 +38,6 @@ body {
 
 #customize-info {
 	border: none;
-	border-top: 1px solid #ddd;
 }
 
 #customize-info .accordion-section-title {
