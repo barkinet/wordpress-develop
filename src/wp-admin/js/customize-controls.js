@@ -37,6 +37,7 @@
 			this.id = id;
 			this.selector = '#customize-control-' + id.replace( /\]/g, '' ).replace( /\[/g, '-' );
 			this.container = $( this.selector );
+			this.active = new api.Value( this.params.active );
 
 			settings = $.map( this.params.settings, function( value ) {
 				return value;
@@ -79,6 +80,20 @@
 					element.set( setting() );
 				});
 			});
+
+			if ( false === control.active() ) {
+				control.container.hide();
+			} else {
+				control.container.show();
+			}
+
+			control.active.bind( function ( active ) {
+				if ( active ) {
+					control.container.slideDown();
+				} else {
+					control.container.slideUp();
+				}
+			} );
 		},
 
 		ready: function() {},

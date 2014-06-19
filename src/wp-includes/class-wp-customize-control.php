@@ -73,6 +73,19 @@ class WP_Customize_Control {
 	 */
 	public $type = 'text';
 
+	/**
+	 * Callback
+	 *
+	 * @since 4.0.0
+	 *
+	 * @access public
+	 * @see WP_Customize_Control::is_active()
+	 * @var callable  Callback is called with one argument, the instance of
+	 *                WP_Customize_Control, and returns bool to indicate whether
+	 *                the control is active (such as it relates to the URL
+	 *                currently being previewed).
+	 */
+	public $active_callback = '__return_true';
 
 	/**
 	 * Constructor.
@@ -90,16 +103,18 @@ class WP_Customize_Control {
 	public function __construct( $manager, $id, $args = array() ) {
 		$keys = array_keys( get_object_vars( $this ) );
 		foreach ( $keys as $key ) {
-			if ( isset( $args[ $key ] ) )
+			if ( isset( $args[ $key ] ) ) {
 				$this->$key = $args[ $key ];
+			}
 		}
 
 		$this->manager = $manager;
 		$this->id = $id;
 
 		// Process settings.
-		if ( empty( $this->settings ) )
+		if ( empty( $this->settings ) ) {
 			$this->settings = $id;
+		}
 
 		$settings = array();
 		if ( is_array( $this->settings ) ) {
@@ -120,6 +135,29 @@ class WP_Customize_Control {
 	 */
 	public function enqueue() {}
 
+	/**
+	 * Check whether control is active to current customizer preview.
+	 *
+	 * @since 4.0.0
+	 *
+	 * @return bool
+	 */
+	public function is_active() {
+		$control = $this;
+		$active = call_user_func( $this->active_callback, $this );
+
+		/**
+		 * Filter response of WP_Customize_Control::is_active().
+		 *
+		 * @since 4.0.0
+		 *
+		 * @param bool $active
+		 * @param WP_Customize_Control $control
+		 */
+		$active = apply_filters( 'customize_control_active', $active, $control );
+
+		return $active;
+	}
 
 	/**
 	 * Fetch a setting's value.
@@ -131,8 +169,9 @@ class WP_Customize_Control {
 	 * @return mixed The requested setting's value, if the setting exists.
 	 */
 	public final function value( $setting_key = 'default' ) {
-		if ( isset( $this->settings[ $setting_key ] ) )
+		if ( isset( $this->settings[ $setting_key ] ) ) {
 			return $this->settings[ $setting_key ]->value();
+		}
 	}
 
 	/**
@@ -147,6 +186,7 @@ class WP_Customize_Control {
 		}
 
 		$this->json['type'] = $this->type;
+		$this->json['active'] = $this->is_active();
 	}
 
 	/**

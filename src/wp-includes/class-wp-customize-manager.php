@@ -462,7 +462,8 @@ final class WP_Customize_Manager {
 	public function customize_preview_settings() {
 		$settings = array(
 			'values'  => array(),
-			'channel' => esc_js( $_POST['customize_messenger_channel'] ),
+			'channel' => wp_unslash( $_POST['customize_messenger_channel'] ),
+			'activeControls' => array(),
 		);
 
 		if ( 2 == $this->nonce_tick ) {
@@ -474,6 +475,9 @@ final class WP_Customize_Manager {
 
 		foreach ( $this->settings as $id => $setting ) {
 			$settings['values'][ $id ] = $setting->js_value();
+		}
+		foreach ( $this->controls as $id => $control ) {
+			$settings['activeControls'][ $id ] = $control->is_active();
 		}
 
 		?>
