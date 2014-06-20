@@ -12,8 +12,9 @@ define( 'IFRAME_REQUEST', true );
 /** Load WordPress Administration Bootstrap */
 require_once( dirname( __FILE__ ) . '/admin.php' );
 
-if ( ! current_user_can( 'edit_theme_options' ) )
+if ( ! current_user_can( 'customize' ) ) {
 	wp_die( __( 'Cheatin&#8217; uh?' ) );
+}
 
 wp_reset_vars( array( 'url', 'return' ) );
 $url = urldecode( $url );

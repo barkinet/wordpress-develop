@@ -584,6 +584,7 @@ function populate_roles() {
 	populate_roles_270();
 	populate_roles_280();
 	populate_roles_300();
+	populate_roles_400();
 }
 
 /**
@@ -633,6 +634,7 @@ function populate_roles_160() {
 	$role->add_cap('publish_posts');
 	$role->add_cap('edit_pages');
 	$role->add_cap('read');
+	$role->add_cap('customize');
 	$role->add_cap('level_10');
 	$role->add_cap('level_9');
 	$role->add_cap('level_8');
@@ -826,6 +828,19 @@ function populate_roles_300() {
 		$role->add_cap( 'edit_theme_options' );
 		$role->add_cap( 'delete_themes' );
 		$role->add_cap( 'export' );
+	}
+}
+
+/**
+ * Create and modify WordPress roles for WordPress 4.0.
+ *
+ * @since 4.0.0
+ */
+function populate_roles_400() {
+	$role = get_role( 'administrator' );
+
+	if ( ! empty( $role ) ) {
+		$role->add_cap( 'customize' );
 	}
 }
 
