@@ -66,7 +66,7 @@ window.wp = window.wp || {};
 		},
 
 		open: function( src ) {
-			var hash;
+			var hash, messenger;
 
 			if ( this.active )
 				return;
@@ -82,18 +82,18 @@ window.wp = window.wp || {};
 			this.iframe.one( 'load', this.loaded );
 
 			// Create a postMessage connection with the iframe.
-			this.messenger = new api.Messenger({
+			this.messenger = messenger = new api.Messenger({
 				url: src,
 				channel: 'loader',
 				targetWindow: this.iframe[0].contentWindow
 			});
 
 			// Wait for the connection from the iframe before sending any postMessage events.
-			this.messenger.bind( 'ready', function() {
+			messenger.bind( 'ready', function() {
 				Loader.messenger.send( 'back' );
-			});
+			} );
 
-			this.messenger.bind( 'close', function() {
+			messenger.bind( 'close', function() {
 				var goBackToThemesPage;
 				if ( $.support.history ) {
 					goBackToThemesPage = function ( e ) {
@@ -114,18 +114,32 @@ window.wp = window.wp || {};
 				}
 			});
 
-			this.messenger.bind( 'activated', function( location ) {
+			messenger.bind( 'activated', function( location ) {
 				if ( location )
 					window.location = location;
 			});
 
 			hash = src.split('?')[1];
 
-			// Ensure we don't call pushState if the user hit the forward button.
-			if ( $.support.history && window.location.href !== src )
-				history.pushState( { customize: src }, '', src );
-			else if ( ! $.support.history && $.support.hashchange && hash )
+			if ( $.support.history ) {
+				// Ensure we don't call pushState if the user hit the forward button.
+				if ( window.location.href !== src ) {
+					history.pushState( { customize: src }, '', src );
+				}
+
+				// Allow customizer to control history of parent
+				messenger.bind( 'pushstate', function( args ) {
+					history.pushState.apply( history, args );
+				} );
+
+				// Forward popstate events to customizer
+				$( window ).on( 'popstate', function ( e ) {
+					messenger.send( 'popstate', [ e.originalEvent.state, window.location ] );
+				} );
+
+			} else if ( $.support.hashchange && hash ) {
 				window.location.hash = 'wp_customize=on&' + hash;
+			}
 
 			this.trigger( 'open' );
 		},

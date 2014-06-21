@@ -827,7 +827,7 @@
 		 * Add support for history for navigation in Customize preview
 		 */
 		addHistory: function () {
-			var self, backLink, pushStatePreviewUrl;
+			var self, backLink, pushStatePreviewUrl, popState;
 			if ( ! history.pushState ) {
 				return;
 			}
@@ -845,7 +845,11 @@
 				parentLocation += location.hash;
 
 				// parent frame is for the sake of customizer loaded into iframe for Live Preview
-				window.parent.history.pushState( state, '', parentLocation );
+				if ( api.parent.targetWindow() ) {
+					api.parent.send( 'pushstate', [ state, '', parentLocation ] );
+				} else {
+					window.history.pushState( state, '', parentLocation );
+				}
 
 				if ( api.settings.theme.active ) {
 					backLink.prop( 'href', url );
@@ -854,15 +858,14 @@
 			this.previewUrl.bind( pushStatePreviewUrl );
 
 			// Pop state
-			$( window.parent ).on( 'popstate', function ( e ) {
-				var state, url, queryVars;
+			popState = function ( state, windowLocation ) {
+				var url, queryVars;
 
-				state = e.originalEvent.state;
-				queryVars = self.parseQueryVars( location.search.substr( 1 ) );
+				queryVars = self.parseQueryVars( windowLocation.search.substr( 1 ) );
 
 				// Handle hitting back to themes page after having reloaded on a page in the Customizer
-				if ( ! state && /themes\.php$/.test( location.pathname ) ) {
-					location.replace( location.href );
+				if ( ! state && /themes\.php$/.test( windowLocation.pathname ) ) {
+					location.replace( windowLocation.href );
 					return;
 				}
 
@@ -888,8 +891,17 @@
 				if ( api.settings.theme.active ) {
 					backLink.prop( 'href', url );
 				}
-			} );
+			};
 
+			if ( api.parent.targetWindow() ) {
+				api.parent.bind( 'popstate', function ( args ) {
+					popState.apply( null, args );
+				} );
+			} else {
+				$( window ).on( 'popstate', function ( e ) {
+					popState( e.originalEvent.state, window.location );
+				} );
+			}
 		},
 
 		query: function() {},
@@ -1009,7 +1021,7 @@
 		if ( ! $.support.postMessage || ( ! $.support.cors && api.settings.isCrossDomain ) )
 			return window.location = api.settings.url.fallback;
 
-		var previewer, parent, topFocus,
+		var previewer, topFocus,
 			body = $( document.body ),
 			overlay = body.children('.wp-full-overlay');
 
@@ -1022,6 +1034,12 @@
 				e.preventDefault();
 			}
 		});
+
+		// Create a potential postMessage connection with the parent frame.
+		api.parent = new api.Messenger( {
+			url: api.settings.url.parent,
+			channel: 'loader'
+		} );
 
 		// Initialize Previewer
 		previewer = new api.Previewer({
@@ -1209,37 +1227,32 @@
 			event.preventDefault();
 		});
 
-		// Create a potential postMessage connection with the parent frame.
-		parent = new api.Messenger({
-			url: api.settings.url.parent,
-			channel: 'loader'
-		});
-
 		// If we receive a 'back' event, we're inside an iframe.
 		// Send any clicks to the 'Return' link to the parent page.
-		parent.bind( 'back', function() {
+		api.parent.bind( 'back', function() {
 			$('.back').on( 'click.back', function( event ) {
 				event.preventDefault();
-				parent.send( 'close' );
+				api.parent.send( 'close' );
 			});
 		});
 
 		// Pass events through to the parent.
 		api.bind( 'saved', function() {
-			parent.send( 'saved' );
+			api.parent.send( 'saved' );
 		});
 
 		// When activated, let the loader handle redirecting the page.
 		// If no loader exists, redirect the page ourselves (if a url exists).
 		api.bind( 'activated', function() {
-			if ( parent.targetWindow() )
-				parent.send( 'activated', api.settings.url.activated );
-			else if ( api.settings.url.activated )
+			if ( api.parent.targetWindow() ) {
+				api.parent.send( 'activated', api.settings.url.activated );
+			} else if ( api.settings.url.activated ) {
 				window.location = api.settings.url.activated;
+			}
 		});
 
 		// Initialize the connection with the parent frame.
-		parent.send( 'ready' );
+		api.parent.send( 'ready' );
 
 		// Control visibility for default controls
 		$.each({
