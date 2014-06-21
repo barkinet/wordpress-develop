@@ -78,10 +78,10 @@ if ( is_rtl() ) {
 $body_class .= ' locale-' . sanitize_html_class( strtolower( str_replace( '_', '-', get_locale() ) ) );
 
 if ( $wp_customize->is_theme_active() ) {
-	$document_title_tmpl = _x( 'Customize: {{title}} &#8212; WordPress', '{{title}} is for JS template' );
+	$document_title_tmpl = _x( 'Customize: {{title}}', '{{title}} is for JS template' );
 } else {
 	$document_title_tmpl = sprintf(
-		_x( 'Live Preview %s: {{title}} &#8212; WordPress', '%s is theme name, {{title}} is for JS template' ),
+		_x( 'Live Preview %s: {{title}}', '%s is theme name, {{title}} is for JS template' ),
 		strip_tags( $wp_customize->theme()->display( 'Name' ) )
 	);
 }
