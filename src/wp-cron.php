@@ -117,13 +117,25 @@ if ( $doing_cron_transient != $doing_wp_cron ) {
 	$wp_cron_exit_handler( 'cron_lock_check_fail' );
 }
 
+/**
+ * @todo docs
+ */
+do_action( 'wp_cron_before_crons_loop', $crons );
 foreach ( $crons as $timestamp => $cronhooks ) {
 	if ( $timestamp > $gmt_time ) {
 		break;
 	}
 
+	/**
+	 * @todo docs
+	 */
+	do_action( 'wp_cron_before_cronhooks_loop', $cronhooks );
 	foreach ( $cronhooks as $hook => $keys ) {
 
+		/**
+		 * @todo docs
+		 */
+		do_action( 'wp_cron_before_keys_loop', $keys );
 		foreach ( $keys as $k => $v ) {
 
 			$schedule = $v['schedule'];
@@ -136,6 +148,11 @@ foreach ( $crons as $timestamp => $cronhooks ) {
 			wp_unschedule_event( $timestamp, $hook, $v['args'] );
 
 			/**
+			 * @todo docs
+			 */
+			do_action( 'wp_cron_before_hook', $hook, $v['args'], $schedule, $timestamp );
+
+			/**
 			 * Fires scheduled events.
 			 *
 			 * @internal
@@ -146,13 +163,32 @@ foreach ( $crons as $timestamp => $cronhooks ) {
 			 */
 			do_action_ref_array( $hook, $v['args'] );
 
+			/**
+			 * @todo docs
+			 */
+			do_action( 'wp_cron_after_hook', $hook, $v['args'], $schedule, $timestamp );
+
 			// If the hook ran too long and another cron process stole the lock, quit.
 			if ( _get_cron_lock() != $doing_wp_cron ) {
 				$wp_cron_exit_handler( 'ok_exit_prematurely' );
 			}
 		}
+
+		/**
+		 * @todo docs
+		 */
+		do_action( 'wp_cron_after_keys_loop', $keys );
 	}
+
+	/**
+	 * @todo docs
+	 */
+	do_action( 'wp_cron_after_cronhooks_loop', $cronhooks );
 }
+/**
+ * @todo docs
+ */
+do_action( 'wp_cron_after_crons_loop', $crons );
 
 if ( _get_cron_lock() == $doing_wp_cron ) {
 	delete_transient( 'doing_cron' );
