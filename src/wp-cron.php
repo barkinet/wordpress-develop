@@ -11,10 +11,6 @@
 
 ignore_user_abort( true );
 
-if ( ! empty( $_POST ) || defined( 'DOING_AJAX' ) || defined( 'DOING_CRON' ) ) {
-	die( 'bad_post_request_or_doing_ajax_or_doing_cron' );
-}
-
 /**
  * Tell WordPress we are doing the CRON task.
  *
@@ -25,6 +21,47 @@ define( 'DOING_CRON', true );
 if ( ! defined( 'ABSPATH' ) ) {
 	/** Set up WordPress environment */
 	require_once( dirname( __FILE__ ) . '/wp-load.php' );
+}
+
+/**
+ * Default handler for a WP Cron exit
+ *
+ * @param string $code
+ */
+function wp_cron_default_exit_handler( $code ) {
+	do_action( 'wp_cron_response_close', $code );
+	if ( 'bad_post_request_or_doing_ajax_or_doing_cron' === $code ) {
+		$response = 400;
+	} elseif ( 'empty_cron_array' === $code ) {
+		$response = 204;
+	} elseif ( 'no_scheduled_actions_due' === $code ) {
+		$response = 204;
+	} elseif ( 'cron_locked' === $code ) {
+		$response = 403;
+	} elseif ( 'cron_lock_check_fail' === $code ) {
+		$response = 400;
+	} elseif ( 'ok_exit_prematurely' === $code ) {
+		$response = 200;
+	} elseif ( 'ok' === $code ) {
+		$response = 200;
+	} else {
+		$response = 500;
+	}
+	if ( ! headers_sent() ) {
+		header( 'Content-Type: text/plain' );
+		status_header( $response );
+	}
+	wp_die( $code, '', compact( $response ) );
+}
+
+/**
+ * @var string $wp_cron_exit_handler
+ * @todo docs
+ */
+$wp_cron_exit_handler = apply_filters( 'wp_cron_exit_handler', 'wp_cron_default_exit_handler' );
+
+if ( ! empty( $_POST ) || defined( 'DOING_AJAX' ) || defined( 'DOING_CRON' ) ) {
+	$wp_cron_exit_handler( 'bad_post_request_or_doing_ajax_or_doing_cron' );
 }
 
 // Uncached doing_cron transient fetch
@@ -49,14 +86,14 @@ function _get_cron_lock() {
 }
 
 if ( false === $crons = _get_cron_array() ) {
-	die( 'empty_cron_array' );
+	$wp_cron_exit_handler( 'empty_cron_array' );
 }
 
 $keys = array_keys( $crons );
 $gmt_time = microtime( true );
 
 if ( isset( $keys[0] ) && $keys[0] > $gmt_time ) {
-	die( 'no_scheduled_actions_due' );
+	$wp_cron_exit_handler( 'no_scheduled_actions_due' );
 }
 
 $doing_cron_transient = get_transient( 'doing_cron' );
@@ -66,8 +103,7 @@ if ( empty( $doing_wp_cron ) ) {
 	if ( empty( $_GET['doing_wp_cron'] ) ) {
 		// Called from external script/job. Try setting a lock.
 		if ( $doing_cron_transient && ( $doing_cron_transient + WP_CRON_LOCK_TIMEOUT > $gmt_time ) ) {
-			status_header( 400 );
-			die( 'cron_locked' );
+			$wp_cron_exit_handler( 'cron_locked' );
 		}
 		$doing_cron_transient = $doing_wp_cron = sprintf( '%.22F', microtime( true ) );
 		set_transient( 'doing_cron', $doing_wp_cron );
@@ -78,7 +114,7 @@ if ( empty( $doing_wp_cron ) ) {
 
 // Check lock
 if ( $doing_cron_transient != $doing_wp_cron ) {
-	die( 'cron_lock_check_fail' );
+	$wp_cron_exit_handler( 'cron_lock_check_fail' );
 }
 
 foreach ( $crons as $timestamp => $cronhooks ) {
@@ -112,7 +148,7 @@ foreach ( $crons as $timestamp => $cronhooks ) {
 
 			// If the hook ran too long and another cron process stole the lock, quit.
 			if ( _get_cron_lock() != $doing_wp_cron ) {
-				die( 'ok_exit_prematurely' );
+				$wp_cron_exit_handler( 'ok_exit_prematurely' );
 			}
 		}
 	}
@@ -122,4 +158,4 @@ if ( _get_cron_lock() == $doing_wp_cron ) {
 	delete_transient( 'doing_cron' );
 }
 
-die( 'ok' );
+$wp_cron_exit_handler( 'ok' );
