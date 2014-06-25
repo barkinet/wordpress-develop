@@ -2242,7 +2242,7 @@ function wp_nonce_ays( $action ) {
  * @param string|array $args Optional arguments to control behavior.
  */
 function wp_die( $message = '', $title = '', $args = array() ) {
-	if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
+	if ( ( defined( 'DOING_AJAX' ) && DOING_AJAX ) || ( defined( 'DOING_CRON' ) && DOING_CRON ) ) {
 		/**
 		 * Filter callback for killing WordPress execution for AJAX requests.
 		 *
