@@ -55,10 +55,6 @@ wp_enqueue_style( 'ie' );
 wp_enqueue_script('utils');
 wp_enqueue_script( 'svg-painter' );
 
-if ( current_user_can( 'edit_theme_options' ) ) {
-	wp_enqueue_script( 'customize-loader' );
-}
-
 $admin_body_class = preg_replace('/[^a-z0-9_-]+/i', '-', $hook_suffix);
 ?>
 <script type="text/javascript">

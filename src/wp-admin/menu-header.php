@@ -141,8 +141,7 @@ function _wp_menu_output( $menu, $submenu, $submenu_as_parent = true ) {
 				if ( ! current_user_can( $sub_item[1] ) )
 					continue;
 
-				$class = explode( ' ', $sub_item[3] );
-				// @todo: esc_attr each item
+				$class = array();
 				if ( $first ) {
 					$class[] = 'wp-first-item';
 					$first = false;
