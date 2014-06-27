@@ -26,7 +26,7 @@ window.wp = window.wp || {};
 			this.bind( 'open', this.overlay.show );
 			this.bind( 'close', this.overlay.hide );
 
-			$('#wpbody').on( 'click', '.load-customize', function( event ) {
+			$('#wpwrap').on( 'click', '.load-customize', function( event ) {
 				event.preventDefault();
 
 				// Store a reference to the link that opened the customizer.
