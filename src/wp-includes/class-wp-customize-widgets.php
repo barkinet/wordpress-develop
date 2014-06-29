@@ -1072,6 +1072,19 @@ final class WP_Customize_Widgets {
 	}
 
 	/**
+	 * Determine if a is present on the page.
+	 *
+	 * @since 4.0.0
+	 * @access public
+	 *
+	 * @param string $sidebar_id
+	 * @return bool
+	 */
+	public function is_sidebar_rendered( $sidebar_id ) {
+		return in_array( $sidebar_id, $this->rendered_sidebars );
+	}
+
+	/**
 	 * Tally the sidebars rendered via is_active_sidebar().
 	 *
 	 * Keep track of the times that is_active_sidebar() is called

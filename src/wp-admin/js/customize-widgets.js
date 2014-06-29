@@ -1418,12 +1418,11 @@
 			} );
 
 			// Update the model with whether or not the sidebar is rendered
-			api.Widgets.Previewer.bind( 'rendered-sidebars', function( renderedSidebars ) {
-				var isRendered = !! renderedSidebars[self.params.sidebar_id];
-
-				registeredSidebar.set( 'is_rendered', isRendered );
+			self.active.bind( function ( active ) {
+				registeredSidebar.set( 'is_rendered', active );
 			} );
 
+			// @todo Generalize this in customize-controls.php for any control and containing section/panel
 			// Show the sidebar section when it becomes visible
 			registeredSidebar.on( 'change:is_rendered', function( ) {
 				var sectionSelector = '#accordion-section-sidebar-widgets-' + this.get( 'id' ), $section;

@@ -944,6 +944,13 @@ class WP_Widget_Area_Customize_Control extends WP_Customize_Control {
 	public $type = 'sidebar_widgets';
 	public $sidebar_id;
 
+	public function __construct( $manager, $id, $args = array() ) {
+		if ( empty( $args['active_callback'] ) ) {
+			$args['active_callback'] = array( $this, 'active_callback' );
+		}
+		parent::__construct( $manager, $id, $args );
+	}
+
 	public function to_json() {
 		parent::to_json();
 		$exported_properties = array( 'sidebar_id' );
@@ -963,6 +970,13 @@ class WP_Widget_Area_Customize_Control extends WP_Customize_Control {
 			<span class="reorder-done"><?php _ex( 'Done', 'Cancel reordering widgets in Customizer'  ); ?></span>
 		</span>
 		<?php
+	}
+
+	/**
+	 * @return bool
+	 */
+	function active_callback() {
+		return $this->manager->widgets->is_sidebar_rendered( $this->sidebar_id );
 	}
 }
 

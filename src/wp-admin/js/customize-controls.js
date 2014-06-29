@@ -578,6 +578,18 @@
 
 			this.bind( 'ready', this._ready );
 
+			this.bind( 'ready', function ( data ) {
+				if ( ! data || ! data.activeControls ) {
+					return;
+				}
+				$.each( data.activeControls, function ( id, active ) {
+					var control = api.control( id );
+					if ( control ) {
+						control.active( active );
+					}
+				} );
+			} );
+
 			this.request = $.ajax( this.previewUrl(), {
 				type: 'POST',
 				data: this.query,
