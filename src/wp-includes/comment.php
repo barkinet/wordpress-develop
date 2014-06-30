@@ -239,23 +239,23 @@ class WP_Comment_Query {
 	 * @access public
 	 * @var array
 	 */
-	var $query_vars;
+	public $query_vars;
 
 	/**
 	 * List of comments.
 	 *
-	 * @since 3.7
+	 * @since 4.0.0
 	 * @access public
 	 * @var array
 	 */
-	var $comments;
+	public $comments;
 
 	/**
 	 * Constructor.
 	 *
 	 * Sets up the comment query, if parameter is not empty.
 	 *
-	 * @since 3.7
+	 * @since 4.0.0
 	 * @access public
 	 *
 	 * @param string $query URL query string.
@@ -327,7 +327,7 @@ class WP_Comment_Query {
 	/**
 	 * Execute the query
 	 *
-	 * @since 3.7
+	 * @since 4.0.0
 	 *
 	 * @return int|array
 	 */
