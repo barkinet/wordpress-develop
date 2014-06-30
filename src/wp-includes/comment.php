@@ -1517,10 +1517,12 @@ function wp_get_current_commenter() {
  * 'comment_date_gmt', 'comment_parent', 'comment_approved', and 'user_id'.
  *
  * @since 2.0.0
+ * @uses apply_filters() Calls 'wp_insert_comment_data' hook with comment data prior to insertion
+ * @uses do_action() Calls 'wp_insert_comment' hook with inserted comment ID and comment object
  * @uses $wpdb
  *
  * @param array $commentdata Contains information on the comment.
- * @return int The new comment's ID.
+ * @return int|WP_Error The new comment's ID, or instance of WP_Error
  */
 function wp_insert_comment($commentdata) {
 	global $wpdb;
@@ -1545,6 +1547,11 @@ function wp_insert_comment($commentdata) {
 	$data = array_intersect_key( $commentdata, $defaults );
 	$data = apply_filters( 'wp_insert_comment_data', $data );
 	extract($data, EXTR_SKIP);
+
+	if ( empty( $comment_post_ID ) || ! get_post( $comment_post_ID ) ) {
+		return new WP_Error( 'invalid_comment_post_id', __( 'Missing or invalid comment_post_ID' ) );
+	}
+
 	$wpdb->insert($wpdb->comments, $data);
 
 	$id = (int) $wpdb->insert_id;
