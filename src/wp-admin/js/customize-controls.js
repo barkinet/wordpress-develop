@@ -1128,6 +1128,13 @@
 			});
 		});
 
+		// Prompt user with AYS dialog if leaving the Customizer with unsaved changes
+		$( window ).on( 'beforeunload', function () {
+			if ( ! api.state( 'saved' )() ) {
+				return api.l10n.saveAlert;
+			}
+		} );
+
 		// Pass events through to the parent.
 		api.bind( 'saved', function() {
 			parent.send( 'saved' );
