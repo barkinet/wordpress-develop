@@ -1524,26 +1524,27 @@ function wp_get_current_commenter() {
  */
 function wp_insert_comment($commentdata) {
 	global $wpdb;
-	extract(wp_unslash($commentdata), EXTR_SKIP);
-
-	if ( ! isset($comment_author_IP) )
-		$comment_author_IP = '';
-	if ( ! isset($comment_date) )
-		$comment_date = current_time('mysql');
-	if ( ! isset($comment_date_gmt) )
-		$comment_date_gmt = get_gmt_from_date($comment_date);
-	if ( ! isset($comment_parent) )
-		$comment_parent = 0;
-	if ( ! isset($comment_approved) )
-		$comment_approved = 1;
-	if ( ! isset($comment_karma) )
-		$comment_karma = 0;
-	if ( ! isset($user_id) )
-		$user_id = 0;
-	if ( ! isset($comment_type) )
-		$comment_type = '';
-
-	$data = compact('comment_post_ID', 'comment_author', 'comment_author_email', 'comment_author_url', 'comment_author_IP', 'comment_date', 'comment_date_gmt', 'comment_content', 'comment_karma', 'comment_approved', 'comment_agent', 'comment_type', 'comment_parent', 'user_id');
+	$commentdata = wp_unslash( $commentdata );
+	$defaults = array(
+		'comment_post_ID' => null,
+		'comment_author' => '',
+		'comment_author_email' => '',
+		'comment_author_url' => '',
+		'comment_author_IP' => '',
+		'comment_date' => current_time( 'mysql', false ),
+		'comment_date_gmt' => current_time( 'mysql', true ),
+		'comment_content' => '',
+		'comment_karma' => 0,
+		'comment_approved' => 1,
+		'comment_agent' => '',
+		'comment_type' => '',
+		'comment_parent' => 0,
+		'user_id' => 0,
+	);
+	$commentdata = array_merge( $defaults, $commentdata );
+	$data = array_intersect_key( $commentdata, $defaults );
+	$data = apply_filters( 'wp_insert_comment_data', $data );
+	extract($data, EXTR_SKIP);
 	$wpdb->insert($wpdb->comments, $data);
 
 	$id = (int) $wpdb->insert_id;
