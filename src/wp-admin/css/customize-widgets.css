@@ -23,43 +23,37 @@
 	opacity: 0.5;
 }
 
-
-.customize-control-widget_form .widget-control-save {
+.customize-control-widget_form .widget-control-save,
+.customize-control-widget_form .spinner {
 	display: none;
 }
 
-.customize-control-widget_form .spinner {
-	display: inline;
-	opacity: 0.0;
-	-webkit-transition: opacity 0.1s;
-	transition: opacity 0.1s;
-}
 .customize-control-widget_form.previewer-loading .spinner {
-	opacity: 1.0;
+	display: inline;
+}
+
+.customize-control-widget_form.widget-form-disabled .widget-content {
+	opacity: 0.7;
+	pointer-events: none;
+	-moz-user-select: none;
+	-webkit-user-select: none;
+	-ms-user-select: none;
+	user-select: none;
 }
 
 .customize-control-widget_form .widget {
 	margin-bottom: 0;
 }
 
-.customize-control-widget_form:not(.wide-widget-control) {
-	/**
-	 * Prevent plugins (e.g. Widget Visibility in Jetpack) from forcing widget forms
-	 * to be wide and so overflow the customizer panel
-	 */
-	left: auto !important;
-	max-width: 100%;
-}
 .customize-control-widget_form.wide-widget-control .widget-inside {
 	position: fixed;
 	left: 299px;
 	top: 25%;
-	padding: 20px;
 	border: 1px solid rgb(229, 229, 229);
-	z-index: -1;
+	overflow: auto;
 }
-.customize-control-widget_form.wide-widget-control.collapsing .widget-inside {
-	z-index: -2;
+.customize-control-widget_form.wide-widget-control .widget-inside > .form {
+	padding: 20px;
 }
 
 .customize-control-widget_form.wide-widget-control .widget-top {
@@ -101,24 +95,18 @@
 	cursor: move;
 }
 
-/* @todo What does this do? */
-.control-section.accordion-section.widget-customizer-highlighted > .accordion-section-title,
-.customize-control-widget_form.widget-customizer-highlighted {
+.control-section.accordion-section.highlighted > .accordion-section-title,
+.customize-control-widget_form.highlighted {
 	outline: none;
-	-webkit-box-shadow: 0 0 3px #ce0000;
-	box-shadow: 0 0 3px #ce0000;
+	-webkit-box-shadow: 0 0 2px rgba(30,140,190,0.8);
+	box-shadow: 0 0 2px rgba(30,140,190,0.8);
+	position: relative;
+	z-index: 1;
 }
 
 #widget-customizer-control-templates {
 	display: none;
 }
-
-
-/* MP6-compat */
-#customize-theme-controls .accordion-section-content .widget {
-	color: black;
-}
-
 
 /**
 * Widget reordering styles
@@ -126,8 +114,7 @@
 
 .reorder-toggle {
 	float: right;
-	padding: 5px 10px;
-	margin-right: 10px;
+	padding: 5px 8px;
 	text-decoration: none;
 	cursor: pointer;
 	outline: none;
@@ -182,9 +169,11 @@
 	right: 0;
 	width: 100%;
 	height: 100%;
-	font: normal normal 20px/43px 'Genericons';
+	font: normal 20px/43px 'dashicons';
 	text-align: center;
 	text-indent: 0;
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
 }
 
 .widget-reorder-nav span:hover,
@@ -194,15 +183,15 @@
 }
 
 .move-widget:before {
-	content: '\f442';
+	content: '\f504';
 }
 
 .move-widget-down:before {
-	content: '\f431';
+	content: '\f347';
 }
 
 .move-widget-up:before {
-	content: '\f432';
+	content: '\f343';
 }
 
 #customize-theme-controls .first-widget .move-widget-up,
@@ -250,13 +239,13 @@
 
 #customize-theme-controls .widget-area-select li:before {
 	display: none;
-	content: '\f418';
+	content: '\f147';
 	position: absolute;
-	top: 10px;
+	top: 12px;
 	left: 10px;
-	font-family: 'Genericons';
-	font-size: 24px;
-	line-height: 1;
+	font: normal 20px/1 'dashicons';
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
 }
 
 #customize-theme-controls .widget-area-select li:last-child {
@@ -266,7 +255,6 @@
 #customize-theme-controls .widget-area-select .selected {
 	color: #fff;
 	text-shadow: 0 -1px 0 rgba(0,0,0,.4);
-	border-top: 1px solid #207fa1;
 	background: #2ea2cc;
 }
 
@@ -274,17 +262,9 @@
 	display: block;
 }
 
-#customize-theme-controls .widget-area-select .selected:last-child {
-	border-bottom: 1px solid #207fa1;
-}
-
 #customize-theme-controls .move-widget-actions {
 	text-align: right;
 	padding: 12px;
-}
-
-#customize-theme-controls .widget-area-select + li {
-	border-top: 1px solid #207fa1;
 }
 
 #customize-theme-controls .reordering .widget-title-action {
@@ -304,16 +284,16 @@
 	width: 100%;
 }
 
-.add-new-widget {
+#customize-theme-controls .add-new-widget {
 	cursor: pointer;
 	float: right;
+	margin-left: 10px;
 	-webkit-transition: all 0.2s;
 	transition: all 0.2s;
 	-webkit-user-select: none;
 	-moz-user-select: none;
 	-ms-user-select: none;
 	user-select: none;
-	-moz-outline: none;
 	outline: none;
 }
 
@@ -321,18 +301,19 @@
 	content: "\f132";
 	display: inline-block;
 	position: relative;
-		left: -2px;
-		top: -1px;
-	font: normal 16px/1 'dashicons';
+	left: -2px;
+	top: -1px;
+	font: normal 20px/1 'dashicons';
 	vertical-align: middle;
 	-webkit-transition: all 0.2s;
 	transition: all 0.2s;
 	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
 }
 
 body.adding-widget .add-new-widget,
 body.adding-widget .add-new-widget:hover {
-	background: #EEE;
+	background: #eee;
 	border-color: #999;
 	color: #333;
 	-webkit-box-shadow: inset 0 2px 5px -3px rgba(0, 0, 0, 0.5);
@@ -387,6 +368,7 @@ body.adding-widget .add-new-widget:before {
 	padding: 20px 15px 20px 60px;
 	border-bottom: 1px solid #e4e4e4;
 	cursor: pointer;
+	display: none;
 }
 
 #available-widgets .widget-tpl:hover,
@@ -430,18 +412,17 @@ body.adding-widget #customize-preview {
 }
 
 
-/** Widget Icon styling **
-
-* No plurals in naming.
-* Ordered from lowest to highest specificity.
-
-**/
+/**
+ * Widget Icon styling
+ * No plurals in naming.
+ * Ordered from lowest to highest specificity.
+ **/
 #available-widgets .widget-title {
 	position: relative;
 }
 
 #available-widgets .widget-title:before {
-	content:"\f132";
+	content: "\f132";
 	position: absolute;
 	top: -3px;
 	right: 100%;
@@ -449,14 +430,13 @@ body.adding-widget #customize-preview {
 	width: 20px;
 	height: 20px;
 	color: #333;
-	font: normal 20px/1 'dashicons', 'widgeticons';
+	font: normal 20px/1 'dashicons';
 	text-align: center;
-	-webkit-border-radius: 2px;
-	border-radius: 2px;
 	-webkit-box-sizing: border-box;
 	-moz-box-sizing: border-box;
 	box-sizing: border-box;
 	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
 }
 
 /* smiley */
@@ -618,6 +598,6 @@ body.adding-widget #customize-preview {
 		padding: 9px 15px 11px 42px;
 	}
 	#customize-theme-controls .widget-area-select li:before {
-		top: 6px;
+		top: 8px;
 	}
 }

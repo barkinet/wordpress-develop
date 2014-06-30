@@ -362,11 +362,19 @@ div.dashboard-widget-notice {
 }
 
 #dashboard_right_now .main {
+	overflow: hidden;
 	padding: 0 12px 11px;
 }
 
 #dashboard_right_now .main p {
 	margin: 0;
+}
+
+#dashboard_right_now #wp-version-message .button {
+	clear: right;
+	float: right;
+	position: relative;
+	top: -5px;
 }
 
 .mu-storage {
@@ -603,9 +611,6 @@ form.initial-form.quickpress-open input#title {
 }
 
 #dashboard_activity h4.comment-meta {
-	overflow: hidden;
-	text-overflow: ellipsis;
-	white-space: nowrap;
 	margin-bottom: 4px;
 }
 
@@ -664,12 +669,6 @@ form.initial-form.quickpress-open input#title {
 	padding: 8px 12px 4px;
 }
 
-#future-posts .show-more,
-#published-posts .show-more {
-	float: right;
-	margin-right: 12px;
-}
-
 #future-posts ul,
 #published-posts ul {
 	clear: both;
@@ -711,6 +710,7 @@ form.initial-form.quickpress-open input#title {
 #activity-widget #the-comment-list div.undo {
 	background: none;
 	padding: 6px 0;
+	margin-left: 12px;
 }
 
 #activity-widget #the-comment-list .alternate,
@@ -718,7 +718,7 @@ form.initial-form.quickpress-open input#title {
 	background: none;
 }
 
-#activity-widget #the-comment-list .comment {
+#activity-widget #the-comment-list .comment-item {
 	background: #fafafa;
 	padding: 12px;
 	position: relative;
@@ -726,7 +726,6 @@ form.initial-form.quickpress-open input#title {
 
 #activity-widget #the-comment-list img {
 	position: absolute;
-	left: 13px;
 	top: 13px;
 }
 
@@ -752,7 +751,7 @@ form.initial-form.quickpress-open input#title {
 }
 
 #activity-widget #the-comment-list .unapproved {
-	background-color: #fefaf7;
+	background-color: #fef7f1;
 }
 
 #activity-widget #the-comment-list .unapproved:before {
@@ -768,7 +767,6 @@ form.initial-form.quickpress-open input#title {
 
 #activity-widget #the-comment-list .spam-undo-inside .avatar,
 #activity-widget #the-comment-list .trash-undo-inside .avatar {
-	margin-right: 20px;
 	position: relative;
 	top: 0;
 }
@@ -890,7 +888,8 @@ h3:hover .edit-box {
 
 /* QuickDraft */
 
-#title-wrap label {
+#title-wrap label,
+#description-wrap label {
 	cursor: text;
 }
 

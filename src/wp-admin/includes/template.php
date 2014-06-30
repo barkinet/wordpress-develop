@@ -21,8 +21,8 @@
  * @since 2.5.1
  */
 class Walker_Category_Checklist extends Walker {
-	var $tree_type = 'category';
-	var $db_fields = array ('parent' => 'parent', 'id' => 'term_id'); //TODO: decouple this
+	public $tree_type = 'category';
+	public $db_fields = array ('parent' => 'parent', 'id' => 'term_id'); //TODO: decouple this
 
 	/**
 	 * Starts the list before the elements are added.
@@ -35,7 +35,7 @@ class Walker_Category_Checklist extends Walker {
 	 * @param int    $depth  Depth of category. Used for tab indentation.
 	 * @param array  $args   An array of arguments. @see wp_terms_checklist()
 	 */
-	function start_lvl( &$output, $depth = 0, $args = array() ) {
+	public function start_lvl( &$output, $depth = 0, $args = array() ) {
 		$indent = str_repeat("\t", $depth);
 		$output .= "$indent<ul class='children'>\n";
 	}
@@ -51,7 +51,7 @@ class Walker_Category_Checklist extends Walker {
 	 * @param int    $depth  Depth of category. Used for tab indentation.
 	 * @param array  $args   An array of arguments. @see wp_terms_checklist()
 	 */
-	function end_lvl( &$output, $depth = 0, $args = array() ) {
+	public function end_lvl( &$output, $depth = 0, $args = array() ) {
 		$indent = str_repeat("\t", $depth);
 		$output .= "$indent</ul>\n";
 	}
@@ -69,20 +69,29 @@ class Walker_Category_Checklist extends Walker {
 	 * @param array  $args     An array of arguments. @see wp_terms_checklist()
 	 * @param int    $id       ID of the current term.
 	 */
-	function start_el( &$output, $category, $depth = 0, $args = array(), $id = 0 ) {
-		extract($args);
-		if ( empty($taxonomy) )
+	public function start_el( &$output, $category, $depth = 0, $args = array(), $id = 0 ) {
+		if ( empty( $args['taxonomy'] ) ) {
 			$taxonomy = 'category';
+		} else {
+			$taxonomy = $args['taxonomy'];
+		}
 
-		if ( $taxonomy == 'category' )
+		if ( $taxonomy == 'category' ) {
 			$name = 'post_category';
-		else
-			$name = 'tax_input['.$taxonomy.']';
+		} else {
+			$name = 'tax_input[' . $taxonomy . ']';
+		}
+		$args['popular_cats'] = empty( $args['popular_cats'] ) ? array() : $args['popular_cats'];
+		$class = in_array( $category->term_id, $args['popular_cats'] ) ? ' class="popular-category"' : '';
 
-		$class = in_array( $category->term_id, $popular_cats ) ? ' class="popular-category"' : '';
+		$args['selected_cats'] = empty( $args['selected_cats'] ) ? array() : $args['selected_cats'];
 
 		/** This filter is documented in wp-includes/category-template.php */
-		$output .= "\n<li id='{$taxonomy}-{$category->term_id}'$class>" . '<label class="selectit"><input value="' . $category->term_id . '" type="checkbox" name="'.$name.'[]" id="in-'.$taxonomy.'-' . $category->term_id . '"' . checked( in_array( $category->term_id, $selected_cats ), true, false ) . disabled( empty( $args['disabled'] ), false, false ) . ' /> ' . esc_html( apply_filters( 'the_category', $category->name ) ) . '</label>';
+		$output .= "\n<li id='{$taxonomy}-{$category->term_id}'$class>" .
+			'<label class="selectit"><input value="' . $category->term_id . '" type="checkbox" name="'.$name.'[]" id="in-'.$taxonomy.'-' . $category->term_id . '"' .
+			checked( in_array( $category->term_id, $args['selected_cats'] ), true, false ) .
+			disabled( empty( $args['disabled'] ), false, false ) . ' /> ' .
+			esc_html( apply_filters( 'the_category', $category->name ) ) . '</label>';
 	}
 
 	/**
@@ -97,7 +106,7 @@ class Walker_Category_Checklist extends Walker {
 	 * @param int    $depth    Depth of the term in reference to parents. Default 0.
 	 * @param array  $args     An array of arguments. @see wp_terms_checklist()
 	 */
-	function end_el( &$output, $category, $depth = 0, $args = array() ) {
+	public function end_el( &$output, $category, $depth = 0, $args = array() ) {
 		$output .= "</li>\n";
 	}
 }
@@ -136,7 +145,7 @@ function wp_category_checklist( $post_id = 0, $descendants_and_self = 0, $select
  * @param int $post_id
  * @param array $args
  */
-function wp_terms_checklist($post_id = 0, $args = array()) {
+function wp_terms_checklist( $post_id = 0, $args = array() ) {
  	$defaults = array(
 		'descendants_and_self' => 0,
 		'selected_cats' => false,
@@ -156,41 +165,55 @@ function wp_terms_checklist($post_id = 0, $args = array()) {
 	 * @param array $args    An array of arguments.
 	 * @param int   $post_id The post ID.
 	 */
-	$args = apply_filters( 'wp_terms_checklist_args', $args, $post_id );
+	$params = apply_filters( 'wp_terms_checklist_args', $args, $post_id );
 
-	extract( wp_parse_args($args, $defaults), EXTR_SKIP );
+	$r = wp_parse_args( $params, $defaults );
 
-	if ( empty($walker) || !is_a($walker, 'Walker') )
+	if ( empty( $r['walker'] ) || ! is_a( $r['walker'], 'Walker' ) ) {
 		$walker = new Walker_Category_Checklist;
+	} else {
+		$walker = $r['walker'];
+	}
 
-	$descendants_and_self = (int) $descendants_and_self;
+	$taxonomy = $r['taxonomy'];
+	$descendants_and_self = (int) $r['descendants_and_self'];
 
-	$args = array('taxonomy' => $taxonomy);
+	$args = array( 'taxonomy' => $taxonomy );
 
-	$tax = get_taxonomy($taxonomy);
-	$args['disabled'] = !current_user_can($tax->cap->assign_terms);
+	$tax = get_taxonomy( $taxonomy );
+	$args['disabled'] = ! current_user_can( $tax->cap->assign_terms );
 
-	if ( is_array( $selected_cats ) )
-		$args['selected_cats'] = $selected_cats;
-	elseif ( $post_id )
-		$args['selected_cats'] = wp_get_object_terms($post_id, $taxonomy, array_merge($args, array('fields' => 'ids')));
-	else
+	if ( is_array( $r['selected_cats'] ) ) {
+		$args['selected_cats'] = $r['selected_cats'];
+	} elseif ( $post_id ) {
+		$args['selected_cats'] = wp_get_object_terms( $post_id, $taxonomy, array_merge( $args, array( 'fields' => 'ids' ) ) );
+	} else {
 		$args['selected_cats'] = array();
-
-	if ( is_array( $popular_cats ) )
-		$args['popular_cats'] = $popular_cats;
-	else
-		$args['popular_cats'] = get_terms( $taxonomy, array( 'fields' => 'ids', 'orderby' => 'count', 'order' => 'DESC', 'number' => 10, 'hierarchical' => false ) );
-
+	}
+	if ( is_array( $r['popular_cats'] ) ) {
+		$args['popular_cats'] = $r['popular_cats'];
+	} else {
+		$args['popular_cats'] = get_terms( $taxonomy, array(
+			'fields' => 'ids',
+			'orderby' => 'count',
+			'order' => 'DESC',
+			'number' => 10,
+			'hierarchical' => false
+		) );
+	}
 	if ( $descendants_and_self ) {
-		$categories = (array) get_terms($taxonomy, array( 'child_of' => $descendants_and_self, 'hierarchical' => 0, 'hide_empty' => 0 ) );
+		$categories = (array) get_terms( $taxonomy, array(
+			'child_of' => $descendants_and_self,
+			'hierarchical' => 0,
+			'hide_empty' => 0
+		) );
 		$self = get_term( $descendants_and_self, $taxonomy );
 		array_unshift( $categories, $self );
 	} else {
-		$categories = (array) get_terms($taxonomy, array('get' => 'all'));
+		$categories = (array) get_terms( $taxonomy, array( 'get' => 'all' ) );
 	}
 
-	if ( $checked_ontop ) {
+	if ( $r['checked_ontop'] ) {
 		// Post process $categories rather than adding an exclude to the get_terms() query to keep the query the same across all posts (for any query cache)
 		$checked_categories = array();
 		$keys = array_keys( $categories );
@@ -203,10 +226,10 @@ function wp_terms_checklist($post_id = 0, $args = array()) {
 		}
 
 		// Put checked cats on top
-		echo call_user_func_array(array(&$walker, 'walk'), array($checked_categories, 0, $args));
+		echo call_user_func_array( array( $walker, 'walk' ), array( $checked_categories, 0, $args ) );
 	}
 	// Then the rest of them
-	echo call_user_func_array(array(&$walker, 'walk'), array($categories, 0, $args));
+	echo call_user_func_array( array( $walker, 'walk' ), array( $categories, 0, $args ) );
 }
 
 /**
@@ -341,11 +364,21 @@ function get_inline_data($post) {
 		$taxonomy = get_taxonomy( $taxonomy_name );
 
 		if ( $taxonomy->hierarchical && $taxonomy->show_ui ) {
-				echo '<div class="post_category" id="' . $taxonomy_name . '_' . $post->ID . '">'
-					. implode( ',', wp_get_object_terms( $post->ID, $taxonomy_name, array( 'fields' => 'ids' ) ) ) . '</div>';
+
+			$terms = get_object_term_cache( $post->ID, $taxonomy_name );
+			if ( false === $terms ) {
+				$terms = wp_get_object_terms( $post->ID, $taxonomy_name );
+				wp_cache_add( $post->ID, $terms, $taxonomy_name . '_relationships' );
+			}
+			$term_ids = empty( $terms ) ? array() : wp_list_pluck( $terms, 'term_id' );
+
+			echo '<div class="post_category" id="' . $taxonomy_name . '_' . $post->ID . '">' . implode( ',', $term_ids ) . '</div>';
+
 		} elseif ( $taxonomy->show_ui ) {
+
 			echo '<div class="tags_input" id="'.$taxonomy_name.'_'.$post->ID.'">'
 				. esc_html( str_replace( ',', ', ', get_terms_to_edit( $post->ID, $taxonomy_name ) ) ) . '</div>';
+
 		}
 	}
 
@@ -566,7 +599,7 @@ function _list_meta_row( $entry, &$count ) {
 	$delete_nonce = wp_create_nonce( 'delete-meta_' . $entry['meta_id'] );
 
 	$r .= "\n\t<tr id='meta-{$entry['meta_id']}' class='$style'>";
-	$r .= "\n\t\t<td class='left'><label class='screen-reader-text' for='meta[{$entry['meta_id']}][key]'>" . __( 'Key' ) . "</label><input name='meta[{$entry['meta_id']}][key]' id='meta[{$entry['meta_id']}][key]' type='text' size='20' value='{$entry['meta_key']}' />";
+	$r .= "\n\t\t<td class='left'><label class='screen-reader-text' for='meta-{$entry['meta_id']}-key'>" . __( 'Key' ) . "</label><input name='meta[{$entry['meta_id']}][key]' id='meta-{$entry['meta_id']}-key' type='text' size='20' value='{$entry['meta_key']}' />";
 
 	$r .= "\n\t\t<div class='submit'>";
 	$r .= get_submit_button( __( 'Delete' ), 'deletemeta small', "deletemeta[{$entry['meta_id']}]", false, array( 'data-wp-lists' => "delete:the-list:meta-{$entry['meta_id']}::_ajax_nonce=$delete_nonce" ) );
@@ -576,7 +609,7 @@ function _list_meta_row( $entry, &$count ) {
 	$r .= wp_nonce_field( 'change-meta', '_ajax_nonce', false, false );
 	$r .= "</td>";
 
-	$r .= "\n\t\t<td><label class='screen-reader-text' for='meta[{$entry['meta_id']}][value]'>" . __( 'Value' ) . "</label><textarea name='meta[{$entry['meta_id']}][value]' id='meta[{$entry['meta_id']}][value]' rows='2' cols='30'>{$entry['meta_value']}</textarea></td>\n\t</tr>";
+	$r .= "\n\t\t<td><label class='screen-reader-text' for='meta-{$entry['meta_id']}-value'>" . __( 'Value' ) . "</label><textarea name='meta[{$entry['meta_id']}][value]' id='meta-{$entry['meta_id']}-value' rows='2' cols='30'>{$entry['meta_value']}</textarea></td>\n\t</tr>";
 	return $r;
 }
 
@@ -599,22 +632,26 @@ function meta_form( $post = null ) {
 	 *
 	 * @param int $limit Number of custom fields to retrieve. Default 30.
 	 */
-	$limit = (int) apply_filters( 'postmeta_form_limit', 30 );
-	$keys = $wpdb->get_col( "
-		SELECT meta_key
+	$limit = apply_filters( 'postmeta_form_limit', 30 );
+	$sql = "SELECT meta_key
 		FROM $wpdb->postmeta
 		GROUP BY meta_key
-		HAVING meta_key NOT LIKE '\_%'
+		HAVING meta_key NOT LIKE %s
 		ORDER BY meta_key
-		LIMIT $limit" );
-	if ( $keys )
-		natcasesort($keys);
+		LIMIT %d";
+	$keys = $wpdb->get_col( $wpdb->prepare( $sql, $wpdb->esc_like( '_' ) . '%', $limit ) );
+	if ( $keys ) {
+		natcasesort( $keys );
+		$meta_key_input_id = 'metakeyselect';
+	} else {
+		$meta_key_input_id = 'metakeyinput';
+	}
 ?>
 <p><strong><?php _e( 'Add New Custom Field:' ) ?></strong></p>
 <table id="newmeta">
 <thead>
 <tr>
-<th class="left"><label for="metakeyselect"><?php _ex( 'Name', 'meta name' ) ?></label></th>
+<th class="left"><label for="<?php echo $meta_key_input_id; ?>"><?php _ex( 'Name', 'meta name' ) ?></label></th>
 <th><label for="metavalue"><?php _e( 'Value' ) ?></label></th>
 </tr>
 </thead>
@@ -696,7 +733,7 @@ function touch_time( $edit = 1, $for_post = 1, $tab_index = 0, $multi = 0 ) {
 	$cur_hh = gmdate( 'H', $time_adj );
 	$cur_mn = gmdate( 'i', $time_adj );
 
-	$month = "<select " . ( $multi ? '' : 'id="mm" ' ) . "name=\"mm\"$tab_index_attribute>\n";
+	$month = '<label for="mm" class="screen-reader-text">' . __( 'Month' ) . '</label><select ' . ( $multi ? '' : 'id="mm" ' ) . 'name="mm"' . $tab_index_attribute . ">\n";
 	for ( $i = 1; $i < 13; $i = $i +1 ) {
 		$monthnum = zeroise($i, 2);
 		$month .= "\t\t\t" . '<option value="' . $monthnum . '" ' . selected( $monthnum, $mm, false ) . '>';
@@ -705,10 +742,10 @@ function touch_time( $edit = 1, $for_post = 1, $tab_index = 0, $multi = 0 ) {
 	}
 	$month .= '</select>';
 
-	$day = '<input type="text" ' . ( $multi ? '' : 'id="jj" ' ) . 'name="jj" value="' . $jj . '" size="2" maxlength="2"' . $tab_index_attribute . ' autocomplete="off" />';
-	$year = '<input type="text" ' . ( $multi ? '' : 'id="aa" ' ) . 'name="aa" value="' . $aa . '" size="4" maxlength="4"' . $tab_index_attribute . ' autocomplete="off" />';
-	$hour = '<input type="text" ' . ( $multi ? '' : 'id="hh" ' ) . 'name="hh" value="' . $hh . '" size="2" maxlength="2"' . $tab_index_attribute . ' autocomplete="off" />';
-	$minute = '<input type="text" ' . ( $multi ? '' : 'id="mn" ' ) . 'name="mn" value="' . $mn . '" size="2" maxlength="2"' . $tab_index_attribute . ' autocomplete="off" />';
+	$day = '<label for="jj" class="screen-reader-text">' . __( 'Day' ) . '</label><input type="text" ' . ( $multi ? '' : 'id="jj" ' ) . 'name="jj" value="' . $jj . '" size="2" maxlength="2"' . $tab_index_attribute . ' autocomplete="off" />';
+	$year = '<label for="aa" class="screen-reader-text">' . __( 'Year' ) . '</label><input type="text" ' . ( $multi ? '' : 'id="aa" ' ) . 'name="aa" value="' . $aa . '" size="4" maxlength="4"' . $tab_index_attribute . ' autocomplete="off" />';
+	$hour = '<label for="hh" class="screen-reader-text">' . __( 'Hour' ) . '</label><input type="text" ' . ( $multi ? '' : 'id="hh" ' ) . 'name="hh" value="' . $hh . '" size="2" maxlength="2"' . $tab_index_attribute . ' autocomplete="off" />';
+	$minute = '<label for="mn" class="screen-reader-text">' . __( 'Minute' ) . '</label><input type="text" ' . ( $multi ? '' : 'id="mn" ' ) . 'name="mn" value="' . $mn . '" size="2" maxlength="2"' . $tab_index_attribute . ' autocomplete="off" />';
 
 	echo '<div class="timestamp-wrap">';
 	/* translators: 1: month, 2: day, 3: year, 4: hour, 5: minute */
@@ -719,10 +756,19 @@ function touch_time( $edit = 1, $for_post = 1, $tab_index = 0, $multi = 0 ) {
 	if ( $multi ) return;
 
 	echo "\n\n";
-	foreach ( array('mm', 'jj', 'aa', 'hh', 'mn') as $timeunit ) {
-		echo '<input type="hidden" id="hidden_' . $timeunit . '" name="hidden_' . $timeunit . '" value="' . $$timeunit . '" />' . "\n";
+	$map = array(
+		'mm' => array( $mm, $cur_mm ),
+		'jj' => array( $jj, $cur_jj ),
+		'aa' => array( $aa, $cur_aa ),
+		'hh' => array( $hh, $cur_hh ),
+		'mn' => array( $mn, $cur_mn ),
+	);
+	foreach ( $map as $timeunit => $value ) {
+		list( $unit, $curr ) = $value;
+
+		echo '<input type="hidden" id="hidden_' . $timeunit . '" name="hidden_' . $timeunit . '" value="' . $unit . '" />' . "\n";
 		$cur_timeunit = 'cur_' . $timeunit;
-		echo '<input type="hidden" id="' . $cur_timeunit . '" name="' . $cur_timeunit . '" value="' . $$cur_timeunit . '" />' . "\n";
+		echo '<input type="hidden" id="' . $cur_timeunit . '" name="' . $cur_timeunit . '" value="' . $curr . '" />' . "\n";
 	}
 ?>
 
@@ -1261,13 +1307,12 @@ function do_settings_fields($page, $section) {
 function add_settings_error( $setting, $code, $message, $type = 'error' ) {
 	global $wp_settings_errors;
 
-	$new_error = array(
+	$wp_settings_errors[] = array(
 		'setting' => $setting,
-		'code' => $code,
+		'code'    => $code,
 		'message' => $message,
-		'type' => $type
+		'type'    => $type
 	);
-	$wp_settings_errors[] = $new_error;
 }
 
 /**
@@ -1426,8 +1471,9 @@ function the_post_password() {
  * returned.
  *
  * @since 2.7.0
- * @param mixed $post Post id or object. If not supplied the global $post is used.
- * @return string The post title if set
+ *
+ * @param int|WP_Post $post Optional. Post ID or WP_Post object. Default is global `$post`.
+ * @return string The post title if set.
  */
 function _draft_or_post_title( $post = 0 ) {
 	$title = get_the_title( $post );
@@ -1514,9 +1560,7 @@ if ( is_rtl() )
 
 ?>
 </head>
-<?php
-/** This filter is documented in wp-admin/admin-header.php */
-?>
+<?php /** This filter is documented in wp-admin/admin-header.php */ ?>
 <body<?php if ( isset($GLOBALS['body_id']) ) echo ' id="' . $GLOBALS['body_id'] . '"'; ?> class="wp-admin wp-core-ui no-js iframe <?php echo apply_filters( 'admin_body_class', '' ) . ' ' . $admin_body_class; ?>">
 <script type="text/javascript">
 //<![CDATA[
@@ -1827,8 +1871,8 @@ final class WP_Internal_Pointers {
 	 * All pointers can be disabled using the following:
 	 *     remove_action( 'admin_enqueue_scripts', array( 'WP_Internal_Pointers', 'enqueue_scripts' ) );
 	 *
-	 * Individual pointers (e.g. wp330_toolbar) can be disabled using the following:
-	 *     remove_action( 'admin_print_footer_scripts', array( 'WP_Internal_Pointers', 'pointer_wp330_toolbar' ) );
+	 * Individual pointers (e.g. wp390_widgets) can be disabled using the following:
+	 *     remove_action( 'admin_print_footer_scripts', array( 'WP_Internal_Pointers', 'pointer_wp390_widgets' ) );
 	 */
 	public static function enqueue_scripts( $hook_suffix ) {
 		/*
@@ -1837,13 +1881,11 @@ final class WP_Internal_Pointers {
 		 */
 
 		$registered_pointers = array(
-			'index.php'    => 'wp330_toolbar',
 			'post-new.php' => 'wp350_media',
 			'post.php'     => array( 'wp350_media', 'wp360_revisions' ),
 			'edit.php'     => 'wp360_locks',
-			'themes.php'   => array( 'wp330_saving_widgets', 'wp340_customize_current_theme_link' ),
-			'appearance_page_custom-header' => 'wp340_choose_image_from_library',
-			'appearance_page_custom-background' => 'wp340_choose_image_from_library',
+			'widgets.php'  => 'wp390_widgets',
+			'themes.php'   => 'wp390_widgets',
 		);
 
 		// Check if screen related pointer is registered
@@ -1853,10 +1895,8 @@ final class WP_Internal_Pointers {
 		$pointers = (array) $registered_pointers[ $hook_suffix ];
 
 		$caps_required = array(
-			'wp330_saving_widgets' => array( 'edit_theme_options', 'switch_themes' ),
-			'wp340_customize_current_theme_link' => array( 'edit_theme_options' ),
-			'wp340_choose_image_from_library' => array( 'edit_theme_options' ),
 			'wp350_media' => array( 'upload_files' ),
+			'wp390_widgets' => array( 'edit_theme_options' ),
 		);
 
 		// Get dismissed pointers
@@ -1930,71 +1970,11 @@ final class WP_Internal_Pointers {
 		<?php
 	}
 
-	public static function pointer_wp330_toolbar() {
-		$content  = '<h3>' . __( 'New Feature: Toolbar' ) . '</h3>';
-		$content .= '<p>' .  __( 'We&#8217;ve combined the admin bar and the old Dashboard header into one persistent toolbar. Hover over the toolbar items to see what&#8217;s new.' ) . '</p>';
-
-		if ( is_multisite() && is_super_admin() )
-			$content .= '<p>' . __( 'Network Admin is now located in the My Sites menu.' ) . '</p>';
-
-		WP_Internal_Pointers::print_js( 'wp330_toolbar', '#wpadminbar', array(
-			'content'  => $content,
-			'position' => array( 'edge' => 'top', 'align' => 'center' ),
-		) );
-	}
-
-	/**
-	 * Print 'Updated Media Uploader' for 3.3.0.
-	 *
-	 * @since 3.3.0
-	 */
+	public static function pointer_wp330_toolbar() {}
 	public static function pointer_wp330_media_uploader() {}
-
-	/**
-	 * Print 'New Feature: Saving Widgets' for 3.3.0.
-	 *
-	 * @since 3.3.0
-	 */
-	public static function pointer_wp330_saving_widgets() {
-		$content  = '<h3>' . __( 'New Feature: Saving Widgets' ) . '</h3>';
-		$content .= '<p>' . __( 'If you change your mind and revert to your previous theme, we&#8217;ll put the widgets back the way you had them.' ) . '</p>';
-
-		WP_Internal_Pointers::print_js( 'wp330_saving_widgets', '#message2', array(
-			'content'  => $content,
-			'position' => array( 'edge' => 'top', 'align' => is_rtl() ? 'right' : 'left' ),
-		) );
-	}
-
-	/**
-	 * Print 'New Feature: Current Theme Customize Link' for 3.4.0.
-	 *
-	 * @since 3.4.0
-	 */
-	public static function pointer_wp340_customize_current_theme_link() {
-		$content  = '<h3>' . __( 'New Feature: Customizer' ) . '</h3>';
-		$content .= '<p>' . __( 'Click Customize to change the header, background, title and menus of the current theme, all in one place.' ) . '</p>';
-		$content .= '<p>' . __( 'Click the Live Preview links in the Available Themes list below to customize and preview another theme before activating it.' ) . '</p>';
-
-		WP_Internal_Pointers::print_js( 'wp340_customize_current_theme_link', '#customize-current-theme-link', array(
-			'content'  => $content,
-			'position' => array( 'edge' => 'top', 'align' => is_rtl() ? 'right' : 'left', 'offset' => is_rtl() ? '32 0' : '-32 0' ),
-		) );
-	}
-
-	/**
-	 * Print 'New Feature: Choose Image from Library' for 3.4.0.
-	 *
-	 * @since 3.4.0
-	 */
-	public static function pointer_wp340_choose_image_from_library() {
-		$content  = '<h3>' . __( 'New Feature: Choose Image from Library' ) . '</h3>';
-		$content .= '<p>' . __( 'Want to use an image you uploaded earlier? Select it from your media library instead of uploading it again.' ) . '</p>';
-
-		WP_Internal_Pointers::print_js( 'wp340_choose_image_from_library', '#choose-from-library-link', array(
-			'content'  => $content,
-			'position' => array( 'edge' => 'top', 'align' => is_rtl() ? 'right' : 'left', 'defer_loading' => true ),
-		) );
-	}
+	public static function pointer_wp330_saving_widgets() {}
+	public static function pointer_wp340_customize_current_theme_link() {}
+	public static function pointer_wp340_choose_image_from_library() {}
 
 	public static function pointer_wp350_media() {
 		$content  = '<h3>' . __( 'New Media Manager' ) . '</h3>';
@@ -2012,20 +1992,47 @@ final class WP_Internal_Pointers {
 
 		self::print_js( 'wp360_revisions', '.misc-pub-section.misc-pub-revisions', array(
 			'content' => $content,
-			'position' => array( 'edge' => is_rtl() ? 'left' : 'right', 'align' => 'center', 'my' => is_rtl() ? 'left' : 'right-14px' ),
+			'position' => array( 'edge' => is_rtl() ? 'left' : 'right', 'align' => 'center' ),
 		) );
 	}
 
 	public static function pointer_wp360_locks() {
+		if ( ! is_multi_author() ) {
+			return;
+		}
+
 		$content  = '<h3>' . __( 'Edit Lock' ) . '</h3>';
 		$content .= '<p>' . __( 'Someone else is editing this. No need to refresh; the lock will disappear when they&#8217;re done.' ) . '</p>';
-
-		if ( ! is_multi_author() )
-			return;
 
 		self::print_js( 'wp360_locks', 'tr.wp-locked .locked-indicator', array(
 			'content' => $content,
 			'position' => array( 'edge' => 'left', 'align' => 'left' ),
+		) );
+	}
+
+	public static function pointer_wp390_widgets() {
+		if ( ! current_theme_supports( 'widgets' ) ) {
+			return;
+		}
+
+		$content  = '<h3>' . __( 'New Feature: Live Widget Previews' ) . '</h3>';
+		$content .= '<p>' . __( 'Add, edit, and play around with your widgets from the theme customizer.' ) . ' ' . __( 'Preview your changes in real-time and only save them when you&#8217;re ready.' ) . '</p>';
+
+		if ( 'themes' === get_current_screen()->id ) {
+			$selector = '.theme.active .customize';
+			$position = array( 'edge' => is_rtl() ? 'right' : 'left', 'align' => 'center' );
+		} else {
+			$selector = 'a[href="customize.php"]';
+			if ( is_rtl() ) {
+				$position = array( 'edge' => 'right', 'align' => 'center', 'my' => 'right-5px' );
+			} else {
+				$position = array( 'edge' => 'left', 'align' => 'center', 'my' => 'left-5px' );
+			}
+		}
+
+		self::print_js( 'wp390_widgets', $selector, array(
+			'content' => $content,
+			'position' => $position,
 		) );
 	}
 
@@ -2035,7 +2042,7 @@ final class WP_Internal_Pointers {
 	 * @since 3.3.0
 	 */
 	public static function dismiss_pointers_for_new_users( $user_id ) {
-		add_user_meta( $user_id, 'dismissed_wp_pointers', 'wp330_toolbar,wp330_saving_widgets,wp340_choose_image_from_library,wp340_customize_current_theme_link,wp350_media,wp360_revisions,wp360_locks' );
+		add_user_meta( $user_id, 'dismissed_wp_pointers', 'wp350_media,wp360_revisions,wp360_locks,wp390_widgets' );
 	}
 }
 
@@ -2105,13 +2112,12 @@ function wp_star_rating( $args = array() ) {
 		'number' => 0,
 	);
 	$r = wp_parse_args( $args, $defaults );
-	extract( $r, EXTR_SKIP );
 
 	// Non-english decimal places when the $rating is coming from a string
-	$rating = str_replace( ',', '.', $rating );
+	$rating = str_replace( ',', '.', $r['rating'] );
 
 	// Convert Percentage to star rating, 0..5 in .5 increments
-	if ( 'percent' == $type ) {
+	if ( 'percent' == $r['type'] ) {
 		$rating = round( $rating / 10, 0 ) / 2;
 	}
 
@@ -2120,10 +2126,10 @@ function wp_star_rating( $args = array() ) {
 	$half_stars = ceil( $rating - $full_stars );
 	$empty_stars = 5 - $full_stars - $half_stars;
 
-	if ( $number ) {
+	if ( $r['number'] ) {
 		/* translators: 1: The rating, 2: The number of ratings */
-		$title = _n( '%1$s rating based on %2$s rating', '%1$s rating based on %2$s ratings', $number );
-		$title = sprintf( $title, number_format_i18n( $rating, 1 ), number_format_i18n( $number ) );
+		$format = _n( '%1$s rating based on %2$s rating', '%1$s rating based on %2$s ratings', $r['number'] );
+		$title = sprintf( $format, number_format_i18n( $rating, 1 ), number_format_i18n( $r['number'] ) );
 	} else {
 		/* translators: 1: The rating */
 		$title = sprintf( __( '%s rating' ), number_format_i18n( $rating, 1 ) );

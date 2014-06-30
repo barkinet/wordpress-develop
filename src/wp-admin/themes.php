@@ -104,7 +104,7 @@ wp_localize_script( 'theme', '_wpThemeSettings', array(
  	'l10n' => array(
  		'addNew' => __( 'Add New Theme' ),
  		'search'  => __( 'Search Installed Themes' ),
- 		'searchPlaceholder' => __( 'Search installed themes...' ),
+ 		'searchPlaceholder' => __( 'Search installed themes...' ), // placeholder (no ellipsis)
   	),
 ) );
 
@@ -119,7 +119,7 @@ require_once( ABSPATH . 'wp-admin/admin-header.php' );
 	<h2><?php esc_html_e( 'Themes' ); ?>
 		<span class="theme-count"><?php echo count( $themes ); ?></span>
 	<?php if ( ! is_multisite() && current_user_can( 'install_themes' ) ) : ?>
-		<a href="<?php echo admin_url( 'theme-install.php' ); ?>" class="add-new-h2"><?php echo esc_html( _x( 'Add New', 'Add new theme' ) ); ?></a>
+		<a href="<?php echo admin_url( 'theme-install.php' ); ?>" class="hide-if-no-js add-new-h2"><?php echo esc_html( _x( 'Add New', 'Add new theme' ) ); ?></a>
 	<?php endif; ?>
 	</h2>
 <?php
@@ -139,7 +139,7 @@ endif;
 $ct = wp_get_theme();
 
 if ( $ct->errors() && ( ! is_multisite() || current_user_can( 'manage_network_themes' ) ) ) {
-	echo '<p class="error-message">' . sprintf( __( 'ERROR: %s' ), $ct->errors()->get_error_message() ) . '</p>';
+	echo '<div class="error"><p>' . sprintf( __( 'ERROR: %s' ), $ct->errors()->get_error_message() ) . '</p></div>';
 }
 
 /*
@@ -232,6 +232,8 @@ foreach ( $themes as $theme ) :
 	</div>
 </div>
 <div class="theme-overlay"></div>
+
+<p class="no-themes"><?php _e( 'No themes found. Try a different search.' ); ?></p>
 
 <?php
 // List broken themes, if any.
@@ -367,4 +369,4 @@ if ( ! is_multisite() && current_user_can('edit_themes') && $broken_themes = wp_
 	</div>
 </script>
 
-<?php require( ABSPATH . 'wp-admin/admin-footer.php' ); ?>
+<?php require( ABSPATH . 'wp-admin/admin-footer.php' );

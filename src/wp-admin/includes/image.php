@@ -127,34 +127,63 @@ function wp_generate_attachment_metadata( $attachment_id, $file ) {
 
 	} elseif ( preg_match( '#^video/#', get_post_mime_type( $attachment ) ) ) {
 		$metadata = wp_read_video_metadata( $file );
-		$support = current_theme_supports( 'post-thumbnails', 'attachment:video' ) && post_type_supports( 'attachment:video', 'thumbnail' );
+		$support = current_theme_supports( 'post-thumbnails', 'attachment:video' ) || post_type_supports( 'attachment:video', 'thumbnail' );
 	} elseif ( preg_match( '#^audio/#', get_post_mime_type( $attachment ) ) ) {
 		$metadata = wp_read_audio_metadata( $file );
-		$support = current_theme_supports( 'post-thumbnails', 'attachment:audio' ) && post_type_supports( 'attachment:audio', 'thumbnail' );
+		$support = current_theme_supports( 'post-thumbnails', 'attachment:audio' ) || post_type_supports( 'attachment:audio', 'thumbnail' );
 	}
 
 	if ( $support && ! empty( $metadata['image']['data'] ) ) {
-		$ext = '.jpg';
-		switch ( $metadata['image']['mime'] ) {
-		case 'image/gif':
-			$ext = '.gif';
-			break;
-		case 'image/png':
-			$ext = '.png';
-			break;
-		}
-		$basename = str_replace( '.', '-', basename( $file ) ) . '-image' . $ext;
-		$uploaded = wp_upload_bits( $basename, '', $metadata['image']['data'] );
-		if ( false === $uploaded['error'] ) {
-			$attachment = array(
-				'post_mime_type' => $metadata['image']['mime'],
-				'post_type' => 'attachment',
-				'post_content' => '',
-			);
-			$sub_attachment_id = wp_insert_attachment( $attachment, $uploaded['file'] );
-			$attach_data = wp_generate_attachment_metadata( $sub_attachment_id, $uploaded['file'] );
-			wp_update_attachment_metadata( $sub_attachment_id, $attach_data );
-			update_post_meta( $attachment_id, '_thumbnail_id', $sub_attachment_id );
+		// check for existing cover
+		$hash = md5( $metadata['image']['data'] );
+		$posts = get_posts( array(
+			'fields' => 'ids',
+			'post_type' => 'attachment',
+			'post_mime_type' => $metadata['image']['mime'],
+			'post_status' => 'inherit',
+			'posts_per_page' => 1,
+			'meta_key' => '_cover_hash',
+			'meta_value' => $hash
+		) );
+		$exists = reset( $posts );
+
+		if ( ! empty( $exists ) ) {
+			update_post_meta( $attachment_id, '_thumbnail_id', $exists );
+		} else {
+			$ext = '.jpg';
+			switch ( $metadata['image']['mime'] ) {
+			case 'image/gif':
+				$ext = '.gif';
+				break;
+			case 'image/png':
+				$ext = '.png';
+				break;
+			}
+			$basename = str_replace( '.', '-', basename( $file ) ) . '-image' . $ext;
+			$uploaded = wp_upload_bits( $basename, '', $metadata['image']['data'] );
+			if ( false === $uploaded['error'] ) {
+				$image_attachment = array(
+					'post_mime_type' => $metadata['image']['mime'],
+					'post_type' => 'attachment',
+					'post_content' => '',
+				);
+				/**
+				 * Filter the parameters for the attachment thumbnail creation.
+				 *
+				 * @since 3.9.0
+				 *
+				 * @param array $image_attachment An array of parameters to create the thumbnail.
+				 * @param array $metadata         Current attachment metadata.
+				 * @param array $uploaded         An array containing the thumbnail path and url.
+				 */
+				$image_attachment = apply_filters( 'attachment_thumbnail_args', $image_attachment, $metadata, $uploaded );
+
+				$sub_attachment_id = wp_insert_attachment( $image_attachment, $uploaded['file'] );
+				add_post_meta( $sub_attachment_id, '_cover_hash', $hash );
+				$attach_data = wp_generate_attachment_metadata( $sub_attachment_id, $uploaded['file'] );
+				wp_update_attachment_metadata( $sub_attachment_id, $attach_data );
+				update_post_meta( $attachment_id, '_thumbnail_id', $sub_attachment_id );
+			}
 		}
 	}
 
@@ -260,11 +289,16 @@ function wp_read_image_metadata( $file ) {
 			if ( ! empty( $iptc['2#120'][0] ) ) { // description / legacy caption
 				$caption = trim( $iptc['2#120'][0] );
 				if ( empty( $meta['title'] ) ) {
+					mbstring_binary_safe_encoding();
+					$caption_length = strlen( $caption );
+					reset_mbstring_encoding();
+
 					// Assume the title is stored in 2:120 if it's short.
-					if ( strlen( $caption ) < 80 )
+					if ( $caption_length < 80 ) {
 						$meta['title'] = $caption;
-					else
+					} else {
 						$meta['caption'] = $caption;
+					}
 				} elseif ( $caption != $meta['title'] ) {
 					$meta['caption'] = $caption;
 				}
@@ -293,48 +327,64 @@ function wp_read_image_metadata( $file ) {
 	if ( is_callable( 'exif_read_data' ) && in_array( $sourceImageType, apply_filters( 'wp_read_image_metadata_types', array( IMAGETYPE_JPEG, IMAGETYPE_TIFF_II, IMAGETYPE_TIFF_MM ) ) ) ) {
 		$exif = @exif_read_data( $file );
 
-		if ( !empty( $exif['Title'] ) )
+		if ( empty( $meta['title'] ) && ! empty( $exif['Title'] ) ) {
 			$meta['title'] = trim( $exif['Title'] );
+		}
 
 		if ( ! empty( $exif['ImageDescription'] ) ) {
-			if ( empty( $meta['title'] ) && strlen( $exif['ImageDescription'] ) < 80 ) {
+			mbstring_binary_safe_encoding();
+			$description_length = strlen( $exif['ImageDescription'] );
+			reset_mbstring_encoding();
+
+			if ( empty( $meta['title'] ) && $description_length < 80 ) {
 				// Assume the title is stored in ImageDescription
 				$meta['title'] = trim( $exif['ImageDescription'] );
-				if ( ! empty( $exif['COMPUTED']['UserComment'] ) && trim( $exif['COMPUTED']['UserComment'] ) != $meta['title'] )
+				if ( empty( $meta['caption'] ) && ! empty( $exif['COMPUTED']['UserComment'] ) && trim( $exif['COMPUTED']['UserComment'] ) != $meta['title'] ) {
 					$meta['caption'] = trim( $exif['COMPUTED']['UserComment'] );
-			} elseif ( trim( $exif['ImageDescription'] ) != $meta['title'] ) {
+				}
+			} elseif ( empty( $meta['caption'] ) && trim( $exif['ImageDescription'] ) != $meta['title'] ) {
 				$meta['caption'] = trim( $exif['ImageDescription'] );
 			}
-		} elseif ( ! empty( $exif['Comments'] ) && trim( $exif['Comments'] ) != $meta['title'] ) {
+		} elseif ( empty( $meta['caption'] ) && ! empty( $exif['Comments'] ) && trim( $exif['Comments'] ) != $meta['title'] ) {
 			$meta['caption'] = trim( $exif['Comments'] );
 		}
 
-		if ( ! empty( $exif['Artist'] ) )
-			$meta['credit'] = trim( $exif['Artist'] );
-		elseif ( ! empty($exif['Author'] ) )
-			$meta['credit'] = trim( $exif['Author'] );
+		if ( empty( $meta['credit'] ) ) {
+			if ( ! empty( $exif['Artist'] ) ) {
+				$meta['credit'] = trim( $exif['Artist'] );
+			} elseif ( ! empty($exif['Author'] ) ) {
+				$meta['credit'] = trim( $exif['Author'] );
+			}
+		}
 
-		if ( ! empty( $exif['Copyright'] ) )
+		if ( empty( $meta['copyright'] ) && ! empty( $exif['Copyright'] ) ) {
 			$meta['copyright'] = trim( $exif['Copyright'] );
-		if ( ! empty($exif['FNumber'] ) )
+		}
+		if ( ! empty( $exif['FNumber'] ) ) {
 			$meta['aperture'] = round( wp_exif_frac2dec( $exif['FNumber'] ), 2 );
-		if ( ! empty($exif['Model'] ) )
+		}
+		if ( ! empty( $exif['Model'] ) ) {
 			$meta['camera'] = trim( $exif['Model'] );
-		if ( ! empty($exif['DateTimeDigitized'] ) )
-			$meta['created_timestamp'] = wp_exif_date2ts($exif['DateTimeDigitized'] );
-		if ( ! empty($exif['FocalLength'] ) )
+		}
+		if ( empty( $meta['created_timestamp'] ) && ! empty( $exif['DateTimeDigitized'] ) ) {
+			$meta['created_timestamp'] = wp_exif_date2ts( $exif['DateTimeDigitized'] );
+		}
+		if ( ! empty( $exif['FocalLength'] ) ) {
 			$meta['focal_length'] = (string) wp_exif_frac2dec( $exif['FocalLength'] );
-		if ( ! empty($exif['ISOSpeedRatings'] ) ) {
+		}
+		if ( ! empty( $exif['ISOSpeedRatings'] ) ) {
 			$meta['iso'] = is_array( $exif['ISOSpeedRatings'] ) ? reset( $exif['ISOSpeedRatings'] ) : $exif['ISOSpeedRatings'];
 			$meta['iso'] = trim( $meta['iso'] );
 		}
-		if ( ! empty($exif['ExposureTime'] ) )
+		if ( ! empty( $exif['ExposureTime'] ) ) {
 			$meta['shutter_speed'] = (string) wp_exif_frac2dec( $exif['ExposureTime'] );
+		}
 	}
 
 	foreach ( array( 'title', 'caption', 'credit', 'copyright', 'camera', 'iso' ) as $key ) {
-		if ( $meta[ $key ] && ! seems_utf8( $meta[ $key ] ) )
+		if ( $meta[ $key ] && ! seems_utf8( $meta[ $key ] ) ) {
 			$meta[ $key ] = utf8_encode( $meta[ $key ] );
+		}
 	}
 
 	/**
@@ -372,13 +422,16 @@ function file_is_valid_image($path) {
  * @return bool True if suitable, false if not suitable.
  */
 function file_is_displayable_image($path) {
-	$info = @getimagesize($path);
-	if ( empty($info) )
+	$displayable_image_types = array( IMAGETYPE_GIF, IMAGETYPE_JPEG, IMAGETYPE_PNG, IMAGETYPE_BMP );
+
+	$info = @getimagesize( $path );
+	if ( empty( $info ) ) {
 		$result = false;
-	elseif ( !in_array($info[2], array(IMAGETYPE_GIF, IMAGETYPE_JPEG, IMAGETYPE_PNG)) )	// only gif, jpeg and png images can reliably be displayed
+	} elseif ( ! in_array( $info[2], $displayable_image_types ) ) {
 		$result = false;
-	else
+	} else {
 		$result = true;
+	}
 
 	/**
 	 * Filter whether the current image is displayable in the browser.

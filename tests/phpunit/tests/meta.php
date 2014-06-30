@@ -84,6 +84,17 @@ class Tests_Meta extends WP_UnitTestCase {
 	}
 
 	/**
+	 * @ticket 22746
+	 */
+	function test_metadata_exists_with_filter() {
+		// Let's see if it returns the correct value when adding a filter.
+		add_filter( 'get_user_metadata', '__return_zero' );
+		$this->assertFalse( metadata_exists( 'user', $this->author->ID, 'meta_key' ) ); // existing meta key
+		$this->assertFalse( metadata_exists( 'user', 1234567890, 'meta_key' ) );
+		remove_filter( 'get_user_metadata', '__return_zero' );
+	}
+
+	/**
 	 * @ticket 18158
 	 */
 	function test_user_metadata_not_exists() {
@@ -185,5 +196,44 @@ class Tests_Meta extends WP_UnitTestCase {
 			if ( 0 === $i % 2 )
 				wp_cache_delete( $post_id, 'post_meta' );
 		}
+	}
+
+	function test_query_meta_query_order() {
+		$post1 = $this->factory->post->create( array( 'post_title' => 'meta-value-1', 'post_date' => '2007-01-01 00:00:00' ) );
+		$post2 = $this->factory->post->create( array( 'post_title' => 'meta-value-2', 'post_date' => '2007-01-01 00:00:00' ) );
+		$post3 = $this->factory->post->create( array( 'post_title' => 'meta-value-3', 'post_date' => '2007-01-01 00:00:00' ) );
+
+		add_post_meta( $post1, 'order', 1 );
+		add_post_meta( $post2, 'order', 2 );
+		add_post_meta( $post3, 'order', 3 );
+
+		$args = array(
+			'post_type' => 'post',
+			'meta_key' => 'order',
+			'meta_value' => 1,
+			'meta_compare' => '>=',
+			'orderby' => 'meta_value'
+		);
+
+		$args2 = array(
+			'post_type' => 'post',
+			'meta_key' => 'order',
+			'meta_value' => 1,
+			'meta_compare' => '>=',
+			'orderby' => 'meta_value',
+			'meta_query' => array(
+				'relation' => 'OR',
+				array(
+					'key' => 'order',
+					'compare' => '>=',
+					'value' => 1
+				)
+			)
+		);
+
+		$posts = get_posts( $args );
+		$posts2 = get_posts( $args2 );
+
+		$this->assertEquals( wp_list_pluck( $posts, 'post_title' ), wp_list_pluck( $posts2, 'post_title' ) );
 	}
 }

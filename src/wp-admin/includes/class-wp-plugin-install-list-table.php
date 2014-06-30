@@ -9,11 +9,11 @@
  */
 class WP_Plugin_Install_List_Table extends WP_List_Table {
 
-	function ajax_user_can() {
+	public function ajax_user_can() {
 		return current_user_can('install_plugins');
 	}
 
-	function prepare_items() {
+	public function prepare_items() {
 		include( ABSPATH . 'wp-admin/includes/plugin-install.php' );
 
 		global $tabs, $tab, $paged, $type, $term;
@@ -34,6 +34,9 @@ class WP_Plugin_Install_List_Table extends WP_List_Table {
 		$tabs['popular']   = _x( 'Popular', 'Plugin Installer' );
 		$tabs['new']       = _x( 'Newest', 'Plugin Installer' );
 		$tabs['favorites'] = _x( 'Favorites', 'Plugin Installer' );
+		if ( $tab === 'beta' || false !== strpos( $GLOBALS['wp_version'], '-' ) ) {
+			$tabs['beta']      = _x( 'Beta Testing', 'Plugin Installer' );
+		}
 
 		$nonmenu_tabs = array( 'plugin-information' ); //Valid actions to perform which do not have a Menu item.
 
@@ -85,6 +88,7 @@ class WP_Plugin_Install_List_Table extends WP_List_Table {
 			case 'featured':
 			case 'popular':
 			case 'new':
+			case 'beta':
 				$args['browse'] = $tab;
 				break;
 
@@ -133,11 +137,11 @@ class WP_Plugin_Install_List_Table extends WP_List_Table {
 		) );
 	}
 
-	function no_items() {
+	public function no_items() {
 		_e( 'No plugins match your request.' );
 	}
 
-	function get_views() {
+	protected function get_views() {
 		global $tabs, $tab;
 
 		$display_tabs = array();
@@ -150,7 +154,7 @@ class WP_Plugin_Install_List_Table extends WP_List_Table {
 		return $display_tabs;
 	}
 
-	function display_tablenav( $which ) {
+	protected function display_tablenav( $which ) {
 		if ( 'top' ==  $which ) { ?>
 			<div class="tablenav top">
 				<div class="alignleft actions">
@@ -174,13 +178,11 @@ class WP_Plugin_Install_List_Table extends WP_List_Table {
 		}
 	}
 
-	function get_table_classes() {
-		extract( $this->_args );
-
-		return array( 'widefat', $plural );
+	protected function get_table_classes() {
+		return array( 'widefat', $this->_args['plural'] );
 	}
 
-	function get_columns() {
+	protected function get_columns() {
 		return array(
 			'name'        => _x( 'Name', 'plugin name' ),
 			'version'     => __( 'Version' ),
@@ -189,7 +191,7 @@ class WP_Plugin_Install_List_Table extends WP_List_Table {
 		);
 	}
 
-	function display_rows() {
+	protected function display_rows() {
 		$plugins_allowedtags = array(
 			'a' => array( 'href' => array(),'title' => array(), 'target' => array() ),
 			'abbr' => array( 'title' => array() ),'acronym' => array( 'title' => array() ),

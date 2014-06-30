@@ -39,8 +39,11 @@ foreach ( $wpdb->tables( 'ms_global' ) as $table => $prefixed_table )
  */
 function network_domain_check() {
 	global $wpdb;
-	if ( $wpdb->get_var( "SHOW TABLES LIKE '$wpdb->site'" ) )
+
+	$sql = $wpdb->prepare( "SHOW TABLES LIKE %s", $wpdb->esc_like( $wpdb->site ) );
+	if ( $wpdb->get_var( $sql ) ) {
 		return $wpdb->get_var( "SELECT domain FROM $wpdb->site ORDER BY id ASC LIMIT 1" );
+	}
 	return false;
 }
 
@@ -153,7 +156,7 @@ function network_step1( $errors = false ) {
 	if ( defined('DO_NOT_UPGRADE_GLOBAL_TABLES') ) {
 		echo '<div class="error"><p><strong>' . __('ERROR:') . '</strong> ' . __( 'The constant DO_NOT_UPGRADE_GLOBAL_TABLES cannot be defined when creating a network.' ) . '</p></div>';
 		echo '</div>';
-		include ( ABSPATH . 'wp-admin/admin-footer.php' );
+		include( ABSPATH . 'wp-admin/admin-footer.php' );
 		die();
 	}
 
@@ -219,11 +222,11 @@ function network_step1( $errors = false ) {
 		<?php // @todo: Link to an MS readme? ?>
 		<table class="form-table">
 			<tr>
-				<th><label><input type='radio' name='subdomain_install' value='1'<?php checked( $subdomain_install ); ?> /> <?php _e( 'Sub-domains' ); ?></label></th>
+				<th><label><input type="radio" name="subdomain_install" value="1"<?php checked( $subdomain_install ); ?> /> <?php _e( 'Sub-domains' ); ?></label></th>
 				<td><?php printf( _x( 'like <code>site1.%1$s</code> and <code>site2.%1$s</code>', 'subdomain examples' ), $hostname ); ?></td>
 			</tr>
 			<tr>
-				<th><label><input type='radio' name='subdomain_install' value='0'<?php checked( ! $subdomain_install ); ?> /> <?php _e( 'Sub-directories' ); ?></label></th>
+				<th><label><input type="radio" name="subdomain_install" value="0"<?php checked( ! $subdomain_install ); ?> /> <?php _e( 'Sub-directories' ); ?></label></th>
 				<td><?php printf( _x( 'like <code>%1$s/site1</code> and <code>%1$s/site2</code>', 'subdirectory examples' ), $hostname ); ?></td>
 			</tr>
 		</table>
@@ -436,7 +439,7 @@ define('BLOG_ID_CURRENT_SITE', 1);</textarea>
 					$web_config_file .= '
                 <rule name="WordPress Rule for Files" stopProcessing="true">
                     <match url="^' . $iis_subdir_match . 'files/(.+)" ignoreCase="false" />
-                    <action type="Rewrite" url="' . $iis_rewrite_base . 'wp-includes/ms-files.php?file={R:1}" appendQueryString="false" />
+                    <action type="Rewrite" url="' . $iis_rewrite_base . WPINC . '/ms-files.php?file={R:1}" appendQueryString="false" />
                 </rule>';
                 }
                 $web_config_file .= '
@@ -469,9 +472,11 @@ define('BLOG_ID_CURRENT_SITE', 1);</textarea>
     </system.webServer>
 </configuration>';
 
-	?>
-		<li><p><?php printf( __( 'Add the following to your <code>web.config</code> file in <code>%s</code>, <strong>replacing</strong> other WordPress rules:' ), $home_path ); ?></p>
-		<?php
+		echo '<li><p>';
+		/* translators: 1: a filename like .htaccess. 2: a file path. */
+		printf( __( 'Add the following to your %1$s file in %2$s, <strong>replacing</strong> other WordPress rules:' ),
+			'<code>web.config</code>', '<code>' . $home_path . '</code>' );
+		echo '</p>';
 		if ( ! $subdomain_install && WP_CONTENT_DIR != ABSPATH . 'wp-content' )
 			echo '<p><strong>' . __('Warning:') . ' ' . __( 'Subdirectory networks may not be fully compatible with custom wp-content directories.' ) . '</strong></p>';
 		?>
@@ -484,7 +489,7 @@ define('BLOG_ID_CURRENT_SITE', 1);</textarea>
 		$ms_files_rewriting = '';
 		if ( is_multisite() && get_site_option( 'ms_files_rewriting' ) ) {
 			$ms_files_rewriting = "\n# uploaded files\nRewriteRule ^";
-			$ms_files_rewriting .= $subdir_match . "files/(.+) {$rewrite_base}wp-includes/ms-files.php?file={$subdir_replacement_12} [L]" . "\n";
+			$ms_files_rewriting .= $subdir_match . "files/(.+) {$rewrite_base}" . WPINC . "/ms-files.php?file={$subdir_replacement_12} [L]" . "\n";
 		}
 
 		$htaccess_file = <<<EOF
@@ -503,9 +508,11 @@ RewriteRule ^{$subdir_match}(.*\.php)$ {$rewrite_base}$subdir_replacement_12 [L]
 RewriteRule . index.php [L]
 EOF;
 
-		?>
-		<li><p><?php printf( __( 'Add the following to your <code>.htaccess</code> file in <code>%s</code>, <strong>replacing</strong> other WordPress rules:' ), $home_path ); ?></p>
-		<?php
+		echo '<li><p>';
+		/* translators: 1: a filename like .htaccess. 2: a file path. */
+		printf( __( 'Add the following to your %1$s file in %2$s, <strong>replacing</strong> other WordPress rules:' ),
+			'<code>.htaccess</code>', '<code>' . $home_path . '</code>' );
+		echo '</p>';
 		if ( ! $subdomain_install && WP_CONTENT_DIR != ABSPATH . 'wp-content' )
 			echo '<p><strong>' . __('Warning:') . ' ' . __( 'Subdirectory networks may not be fully compatible with custom wp-content directories.' ) . '</strong></p>';
 		?>

@@ -1,10 +1,27 @@
 /* Additional default styles for the editor */
+
+html.ios {
+	height: 100%;
+}
+
+.ios body#tinymce {
+	height: 200%;
+	max-width: none;
+}
+
 body {
 	font-family: Georgia, "Times New Roman", "Bitstream Charter", Times, serif;
 	font-size: 13px;
 	line-height: 19px;
 	color: #333;
 	margin: 10px;
+}
+
+/* When font-weight is different than the default browser style,
+Chrome and Safari replace <strong> and <b> with spans with inline styles on pasting?! */
+body.webkit strong,
+body.webkit b {
+	font-weight: bold !important;
 }
 
 /* DFW mode */
@@ -38,6 +55,13 @@ dl.aligncenter {
 	background-color: #f3f3f3;
 	padding-top: 4px;
 	margin: 10px 0;
+}
+
+.html5-captions .wp-caption {
+	border: none;
+	background-color: transparent;
+	margin: 0;
+	padding: 0;
 }
 
 .mceIEcenter {
@@ -76,6 +100,11 @@ td {
 	margin: 8px;
 }
 
+/* Remove blue highlighting of selected images in WebKit */
+img::selection {
+	background-color: transparent;
+}
+
 /* Styles for the WordPress plugins */
 .mce-content-body img[data-mce-placeholder] {
 	border-radius: 0;
@@ -87,35 +116,28 @@ td {
 	border: 0;
 	-webkit-box-shadow: none;
 	box-shadow: none;
-	width: 95%;
-	height: 10px;
+	width: 96%;
+	height: 16px;
 	display: block;
 	margin: 15px auto 0;
 	outline: 0;
 	cursor: default;
 }
 
-/* Remove blue highlighting of selected images in WebKit */
-img::selection {
-	background-color: transparent;
-}
-
 .mce-content-body img.mce-wp-nextpage[data-mce-selected],
 .mce-content-body img.mce-wp-more[data-mce-selected] {
-	background-color: rgba(128,128,128,0.2);
 	outline: 1px dotted #888;
-	border-color: transparent;
 }
 
 .mce-content-body img.mce-wp-more {
-	border-top: 2px dashed #bbb;
+	background: transparent url( images/more.png ) repeat-y scroll center center;
 }
 
 .mce-content-body img.mce-wp-nextpage {
-    border-top: 3px dotted #bbb;
+    background: transparent url( images/pagebreak.png ) repeat-y scroll center center;
 }
 
-/* Gallery, audio, vudeo placeholders */
+/* Gallery, audio, video placeholders */
 .mce-content-body img.wp-media {
 	border: 1px solid #aaa;
 	background-color: #f2f2f2;
@@ -141,53 +163,6 @@ img::selection {
 	background-image: url(images/gallery.png);
 }
 
-.mce-content-body img.wp-media.wp-video {
-	background-image: url(images/video.png);
-}
-
-.mce-content-body img.wp-media.wp-audio {
-	height: 70px;
-	background-image: url(images/audio.png);
-}
-
-.mce-content-body img.wp-media.wp-playlist {
-	background-image: url("images/playlist-audio.png");
-}
-
-.mce-content-body img.wp-media.wp-video-playlist {
-	background-image: url("images/playlist-video.png");
-}
-
-#wp-image-toolbar {
-	position: absolute;
-}
-
-#wp-image-toolbar .wrapper {
-	position: relative;
-	height: 33px;
-	background-color: #333; /* old IE */
-	background-color: rgba(0,0,0,0.3);
-}
-
-#wp-image-toolbar .dashicons {
-	position: absolute;
-	color: white;
-	width: 36px;
-	height: 32px;
-	line-height: 32px;
-	cursor: pointer;
-}
-
-#wp-image-toolbar div.dashicons-no-alt {
-	top: 0;
-	right: 0;
-}
-
-#wp-image-toolbar div.dashicons-format-image {
-	top: 0;
-	left: 0;
-}
-
 /* Image resize handles */
 .mce-content-body div.mce-resizehandle {
 	border-color: #777;
@@ -203,15 +178,26 @@ img::selection {
 	outline: 0;
 }
 
+audio,
+video,
+embed {
+	display: -moz-inline-stack;
+	display: inline-block;
+	max-width: 100%;
+}
+
+audio {
+	visibility: hidden;
+}
 
 /**
  * WP Views
  */
 
-/* IE hasLayout. Needed for all IE incl. 11 (ugh, not again!!) */
 .wpview-wrap {
-	width: 99.99%;
+	width: 99.99%; /* All IE need hasLayout, incl. 11 (ugh, not again!!) */
 	position: relative;
+	clear: both;
 }
 
 /* delegate the handling of the selection to the wpview tinymce plugin */
@@ -229,49 +215,169 @@ img::selection {
 	top: 0;
 	left: 0;
 	z-index: -1;
+	clip: rect(1px 1px 1px 1px); /* IE7 */
 	clip: rect(1px, 1px, 1px, 1px);
 	overflow: hidden;
 	outline: 0;
+	padding: 0;
+	border: 0;
+	width: 1px;
+	height: 1px;
+}
+
+.wpview-wrap .wpview-clipboard,
+.wpview-wrap .wpview-clipboard * {
+	-moz-user-select: text;
+	-webkit-user-select: text;
+	-ms-user-select: text;
+	user-select: text;
 }
 
 /**
- * Gallery preview
+ * Media previews
  */
-.wpview-type-gallery {
+.wpview-wrap {
     position: relative;
-    padding: 0 0 12px;
     margin-bottom: 16px;
-	cursor: pointer;
+	border: 1px solid transparent;
 }
 
- .wpview-type-gallery:after {
-    content: '';
-    display: block;
-    height: 0;
-    clear: both;
-    visibility: hidden;
+.wpview-wrap[data-mce-selected] {
+	background-color: rgba(0,0,0,0.1);
+	border-color: rgba(0,0,0,0.3);
 }
 
- .wpview-type-gallery.selected {
-	background-color: #efefef;
+.ie8 .wpview-wrap[data-mce-selected],
+.ie7 .wpview-wrap[data-mce-selected] {
+	background-color: #e5e5e5;
+	border-color: #777;
 }
 
-.wpview-type-gallery .toolbar {
-    position: absolute;
-    top: 0;
-    left: 0;
-    background-color: #333;
-    color: white;
-    padding: 4px;
+.wpview-overlay {
+	position: absolute;
+	top: 0;
+	right: 0;
+	bottom: 0;
+	left: 0;
+}
+
+.wpview-wrap[data-mce-selected] .wpview-overlay {
 	display: none;
 }
 
-.wpview-type-gallery.selected .toolbar {
+.wpview-wrap .toolbar {
+	position: absolute;
+	top: 0;
+	left: 0;
+	display: none;
+	z-index: 100;
+}
+
+.wpview-wrap[data-mce-selected] .toolbar {
 	display: block;
 }
 
-.wpview-type-gallery .toolbar span {
+#wp-image-toolbar {
+	position: absolute;
+	margin: 0;
+}
+
+.wpview-wrap .toolbar div,
+#wp-image-toolbar i {
+	margin-top: 7px;
+	margin-left: 7px;
+	padding: 2px;
+	width: 30px;
+	height: 30px;
+	box-shadow: 0 1px 3px rgba(0,0,0,0.5);
+	background-color: #000;
+	background-color: rgba(0,0,0,0.9);
 	cursor: pointer;
+	color: white;
+	font-size: 30px;
+}
+
+.ie8 .wpview-wrap .toolbar div,
+.ie7 .wpview-wrap .toolbar div,
+.ie8 #wp-image-toolbar i,
+.ie7 #wp-image-toolbar i {
+	display: inline;
+	padding: 0;
+}
+
+.ie8 .dashicons-edit,
+.ie7 .dashicons-edit {
+	background-image: url(images/dashicon-edit.png);
+}
+
+.ie8 .dashicons-no-alt,
+.ie7 .dashicons-no-alt {
+	background-image: url(images/dashicon-no-alt.png);
+}
+
+.wpview-error {
+	border: 1px solid #dedede;
+	padding: 1em 0;
+	margin: 0;
+	word-wrap: break-word;
+}
+
+.wpview-wrap[data-mce-selected] .wpview-error {
+	border-color: transparent;
+}
+
+.wpview-error .dashicons {
+	display: block;
+	margin: 0 auto;
+	width: 32px;
+	height: 32px;
+	font-size: 32px;
+}
+
+.wpview-error p {
+	margin: 0;
+	text-align: center;
+	font-family: 'Open Sans', sans-serif;
+}
+
+.wpview-wrap .toolbar div:hover,
+#wp-image-toolbar i:hover {
+	box-shadow: 0 1px 3px rgba(0,0,0,0.8);
+	background-color: #000;
+	color: #2ea2cc;
+}
+
+/* Audio player is short; therefore let's put the toolbar above */
+.wpview-type-audio .toolbar {
+	top: auto;
+	bottom: -34px;
+}
+
+.wpview-type-audio .toolbar div {
+	margin-top: 0;
+}
+
+.wpview-type-audio .toolbar div:first-child {
+	margin-left: 0;
+}
+
+.wont-play {
+	padding: 4px 0;
+}
+
+.wont-play p {
+	font-size: 13px;
+	line-height: 1.3;
+	display: block;
+	width: 70%;
+	margin: 0 15%;
+	text-align: center;
+}
+
+.wpview-type-gallery:after {
+    content: '';
+	display: table;
+    clear: both;
 }
 
 .gallery img[data-mce-selected]:focus {
@@ -283,14 +389,31 @@ img::selection {
 }
 
 .gallery {
-	margin: auto;
-    line-height: 1;
+	margin: auto -6px;
+	padding: 6px 0;
+	line-height: 1;
+	overflow-x: hidden;
 }
+
+.ie7 .gallery,
+.ie8 .gallery {
+	margin: auto;
+}
+
 
 .gallery .gallery-item {
 	float: left;
-	margin: 10px 0 0 0;
+	margin: 0;
 	text-align: center;
+	padding: 6px;
+	-webkit-box-sizing: border-box;
+	-moz-box-sizing: border-box;
+	box-sizing: border-box;
+}
+
+.ie7 .gallery .gallery-item,
+.ie8 .gallery .gallery-item {
+	padding: 6px 0;
 }
 
 .gallery .gallery-caption,
@@ -298,44 +421,57 @@ img::selection {
 	margin: 0;
 }
 
+.gallery .gallery-caption {
+	font-size: 13px;
+	margin: 4px 0;
+}
+
 .gallery-columns-1 .gallery-item {
-	width: 99%;
+	width: 100%;
 }
 
 .gallery-columns-2 .gallery-item {
-	width: 49.5%;
+	width: 50%;
 }
 
 .gallery-columns-3 .gallery-item {
+	width: 33.333%;
+}
+
+.ie8 .gallery-columns-3 .gallery-item,
+.ie7 .gallery-columns-3 .gallery-item {
 	width: 33%;
 }
 
 .gallery-columns-4 .gallery-item {
-	width: 24.75%;
+	width: 25%;
 }
 
 .gallery-columns-5 .gallery-item {
-	width: 19.825%;
+	width: 20%;
 }
 
 .gallery-columns-6 .gallery-item {
-	width: 16%;
+	width: 16.665%;
 }
 
 .gallery-columns-7 .gallery-item {
-	width: 14%;
+	width: 14.285%;
 }
 
 .gallery-columns-8 .gallery-item {
-	width: 12%;
+	width: 12.5%;
 }
 
 .gallery-columns-9 .gallery-item {
-	width: 11%;
+	width: 11.111%;
 }
 
 .gallery img {
-	border: 1px solid #cfcfcf;
+	max-width: 100%;
+	height: auto;
+	border: none;
+	padding: 0;
 }
 
 img.wp-oembed {
@@ -344,4 +480,36 @@ img.wp-oembed {
 	width: 300px;
 	height: 250px;
 	outline: 0;
+}
+
+/* rtl */
+.rtl .gallery .gallery-item {
+	float: right;
+}
+
+.rtl .wpview-wrap .toolbar {
+	left: auto;
+	right: 0;
+}
+
+.rtl .wpview-wrap .toolbar div,
+.rtl #wp-image-toolbar i {
+	margin-left: auto;
+	margin-right: 7px;
+}
+
+@media print,
+	(-o-min-device-pixel-ratio: 5/4),
+	(-webkit-min-device-pixel-ratio: 1.25),
+	(min-resolution: 120dpi) {
+
+	.mce-content-body img.mce-wp-more {
+		background-image: url( images/more-2x.png );
+		background-size: 1900px 20px;
+	}
+
+	.mce-content-body img.mce-wp-nextpage {
+    	background-image: url( images/pagebreak-2x.png );
+		background-size: 1900px 20px;
+	}
 }

@@ -24,13 +24,16 @@ $post_ID = isset($post_ID) ? (int) $post_ID : 0;
 $user_ID = isset($user_ID) ? (int) $user_ID : 0;
 $action = isset($action) ? $action : '';
 
-$media_type = false;
-if ( 'attachment' === $post_type && $post_ID ) {
-	$post = get_post( $post_ID );
-	$media_type = post_supports_thumbnails( $post );
+$thumbnail_support = current_theme_supports( 'post-thumbnails', $post_type ) && post_type_supports( $post_type, 'thumbnail' );
+if ( ! $thumbnail_support && 'attachment' === $post_type && $post->post_mime_type ) {
+	if ( 0 === strpos( $post->post_mime_type, 'audio/' ) ) {
+		$thumbnail_support = post_type_supports( 'attachment:audio', 'thumbnail' ) || current_theme_supports( 'post-thumbnails', 'attachment:audio' );
+	} elseif ( 0 === strpos( $post->post_mime_type, 'video/' ) ) {
+		$thumbnail_support = post_type_supports( 'attachment:video', 'thumbnail' ) || current_theme_supports( 'post-thumbnails', 'attachment:video' );
+	}
 }
 
-if ( post_type_supports( $post_type, 'editor' ) || post_type_supports( $post_type, 'thumbnail' ) || $media_type ) {
+if ( $thumbnail_support ) {
 	add_thickbox();
 	wp_enqueue_media( array( 'post' => $post_ID ) );
 }
@@ -143,6 +146,10 @@ if ( 'attachment' == $post_type ) {
 	wp_enqueue_style( 'imgareaselect' );
 	add_meta_box( 'submitdiv', __('Save'), 'attachment_submit_meta_box', null, 'side', 'core' );
 	add_action( 'edit_form_after_title', 'edit_form_image_editor' );
+
+	if ( 0 === strpos( $post->post_mime_type, 'audio/' ) ) {
+		add_meta_box( 'attachment-id3', __( 'Metadata' ), 'attachment_id3_data_meta_box', null, 'normal', 'core' );
+	}
 } else {
 	add_meta_box( 'submitdiv', __( 'Publish' ), 'post_submit_meta_box', null, 'side', 'core', $publish_callback_args );
 }
@@ -169,14 +176,7 @@ foreach ( get_object_taxonomies( $post ) as $tax_name ) {
 if ( post_type_supports($post_type, 'page-attributes') )
 	add_meta_box('pageparentdiv', 'page' == $post_type ? __('Page Attributes') : __('Attributes'), 'page_attributes_meta_box', null, 'side', 'core');
 
-$audio_post_support = $video_post_support = false;
-$theme_support = current_theme_supports( 'post-thumbnails', $post_type ) && post_type_supports( $post_type, 'thumbnail' );
-if ( 'attachment' === $post_type && ! empty( $post->post_mime_type ) ) {
-	$audio_post_support = 0 === strpos( $post->post_mime_type, 'audio/' ) && current_theme_supports( 'post-thumbnails', 'attachment:audio' ) && post_type_supports( 'attachment:audio', 'thumbnail' );
-	$video_post_support = 0 === strpos( $post->post_mime_type, 'video/' ) && current_theme_supports( 'post-thumbnails', 'attachment:video' ) && post_type_supports( 'attachment:video', 'thumbnail' );
-}
-
-if ( $theme_support || $audio_post_support || $video_post_support )
+if ( $thumbnail_support )
 	add_meta_box('postimagediv', __('Featured Image'), 'post_thumbnail_meta_box', null, 'side', 'low');
 
 if ( post_type_supports($post_type, 'excerpt') )
@@ -263,6 +263,7 @@ if ( 'post' == $post_type ) {
 
 	$title_and_editor  = '<p>' . __('<strong>Title</strong> - Enter a title for your post. After you enter a title, you&#8217;ll see the permalink below, which you can edit.') . '</p>';
 	$title_and_editor .= '<p>' . __('<strong>Post editor</strong> - Enter the text for your post. There are two modes of editing: Visual and Text. Choose the mode by clicking on the appropriate tab. Visual mode gives you a WYSIWYG editor. Click the last icon in the row to get a second row of controls. The Text mode allows you to enter HTML along with your post text. Line breaks will be converted to paragraphs automatically. You can insert media files by clicking the icons above the post editor and following the directions. You can go to the distraction-free writing screen via the Fullscreen icon in Visual mode (second to last in the top row) or the Fullscreen button in Text mode (last in the row). Once there, you can make buttons visible by hovering over the top area. Exit Fullscreen back to the regular post editor.') . '</p>';
+	$title_and_editor .= '<p>' . __( 'Keyboard users: When you&#8217;re working in the visual editor, you can use <kbd>Alt + F10</kbd> to access the toolbar.' ) . '</p>';
 
 	get_current_screen()->add_help_tab( array(
 		'id'      => 'title-post-editor',
@@ -486,7 +487,8 @@ if ( post_type_supports($post_type, 'editor') ) {
 
 <?php wp_editor( $post->post_content, 'content', array(
 	'dfw' => true,
-	'tabfocus_elements' => 'insert-media-button,save-post',
+	'drag_drop_upload' => true,
+	'tabfocus_elements' => 'insert-media-button-1,save-post',
 	'editor_height' => 360,
 	'tinymce' => array(
 		'resize' => false,

@@ -177,7 +177,7 @@ strong .post-com-count:after {
 
 #the-comment-list .unapproved th,
 #the-comment-list .unapproved td {
-	background-color: #fefaf7;
+	background-color: #fef7f1;
 }
 
 #the-comment-list .unapproved th.check-column {
@@ -634,7 +634,6 @@ classes exist in paginate_links() but not seen in list table output. */
 
 .view-switch > a:before {
 	color: #bbb;
-	content: '\f163';
 	display: inline-block;
 	float: left;
 	font: normal 20px/1 'dashicons';
@@ -645,6 +644,10 @@ classes exist in paginate_links() but not seen in list table output. */
 	-moz-osx-font-smoothing: grayscale;
 }
 
+.view-switch > .view-list:before {
+	content: '\f163';
+}
+
 .view-switch a:hover:before {
 	color: #727272;
 }
@@ -653,9 +656,16 @@ classes exist in paginate_links() but not seen in list table output. */
 	color: #0074a2;
 }
 
-.view-switch > a + a:before {
+.view-switch > a + a {
 	margin-left: 5px;
+}
+
+.view-switch > .view-excerpt:before {
 	content: '\f164';
+}
+
+.view-switch > .view-grid:before {
+	content: '\f180';
 }
 
 .filter {
@@ -948,6 +958,7 @@ ul.cat-checklist {
 .inline-edit-row fieldset ul.cat-checklist li,
 .inline-edit-row fieldset ul.cat-checklist input {
 	margin: 0;
+	position: relative; /* RTL fix, #WP27629 */
 }
 
 .inline-edit-row fieldset ul.cat-checklist label,
@@ -1124,7 +1135,7 @@ ul.cat-checklist {
 .plugins .active.update td,
 .plugins .active.update th,
 tr.active.update + tr.plugin-update-tr .plugin-update {
-	background-color: #fefaf7;
+	background-color: #fef7f1;
 }
 
 .plugins .active th.check-column {

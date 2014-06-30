@@ -46,10 +46,10 @@ class Tests_Query_Results extends WP_UnitTestCase {
 		$this->parent_one = $this->factory->post->create( array( 'post_title' => 'parent-one', 'post_date' => '2007-01-01 00:00:00' ) );
 		$this->parent_two = $this->factory->post->create( array( 'post_title' => 'parent-two', 'post_date' => '2007-01-01 00:00:00' ) );
 		$this->parent_three = $this->factory->post->create( array( 'post_title' => 'parent-three', 'post_date' => '2007-01-01 00:00:00' ) );
-		$this->factory->post->create( array( 'post_title' => 'child-one', 'post_parent' => $this->parent_one, 'post_date' => '2007-01-01 00:00:01' ) );
-		$this->factory->post->create( array( 'post_title' => 'child-two', 'post_parent' => $this->parent_one, 'post_date' => '2007-01-01 00:00:02' ) );
-		$this->factory->post->create( array( 'post_title' => 'child-three', 'post_parent' => $this->parent_two, 'post_date' => '2007-01-01 00:00:03' ) );
-		$this->factory->post->create( array( 'post_title' => 'child-four', 'post_parent' => $this->parent_two, 'post_date' => '2007-01-01 00:00:04' ) );
+		$this->child_one = $this->factory->post->create( array( 'post_title' => 'child-one', 'post_parent' => $this->parent_one, 'post_date' => '2007-01-01 00:00:01' ) );
+		$this->child_two = $this->factory->post->create( array( 'post_title' => 'child-two', 'post_parent' => $this->parent_one, 'post_date' => '2007-01-01 00:00:02' ) );
+		$this->child_three = $this->factory->post->create( array( 'post_title' => 'child-three', 'post_parent' => $this->parent_two, 'post_date' => '2007-01-01 00:00:03' ) );
+		$this->child_four = $this->factory->post->create( array( 'post_title' => 'child-four', 'post_parent' => $this->parent_two, 'post_date' => '2007-01-01 00:00:04' ) );
 
 		unset( $this->q );
 		$this->q = new WP_Query();
@@ -370,7 +370,54 @@ class Tests_Query_Results extends WP_UnitTestCase {
 		), wp_list_pluck( $posts, 'post_title' ) );
 	}
 
-	function test_exlude_from_search_empty() {
+	/**
+	 * @ticket 27252
+	 */
+	function test_query_fields_integers() {
+
+		$parents = array(
+			(int) $this->parent_one,
+			(int) $this->parent_two
+		);
+		$posts1 = $this->q->query( array(
+			'post__in'  => $parents,
+			'fields'    => 'ids',
+			'orderby'   => 'post__in',
+		) );
+
+		$this->assertSame( $parents, $posts1 );
+
+		$children = array(
+			(int) $this->child_one => (int) $this->parent_one,
+			(int) $this->child_two => (int) $this->parent_one
+		);
+
+		$posts2 = $this->q->query( array(
+			'post__in'  => array_keys( $children ),
+			'fields'    => 'id=>parent',
+			'orderby'   => 'post__in',
+		) );
+
+		$this->assertSame( $children, $posts2 );
+
+	}
+
+	/**
+	 * @ticket 28099
+	 */
+	function test_empty_post__in() {
+		$posts1 = $this->q->query( array() );
+		$this->assertNotEmpty( $posts1 );
+		$posts2 = $this->q->query( array( 'post__in' => array() ) );
+		$this->assertNotEmpty( $posts2 );
+		$posts3 = $this->q->query( array( 'post_parent__in' => array() ) );
+		$this->assertNotEmpty( $posts3 );
+	}
+
+	/**
+	 * @ticket 19198
+	 */
+	function test_exclude_from_search_empty() {
 		global $wp_post_types;
 		foreach ( array_keys( $wp_post_types ) as $slug )
 			$wp_post_types[$slug]->exclude_from_search = true;
@@ -389,6 +436,9 @@ class Tests_Query_Results extends WP_UnitTestCase {
 		$this->assertNotRegExp( '#AND 1=0#', $this->q->request );
 	}
 
+	/**
+	 * @ticket 16854
+	 */
 	function test_query_author_vars() {
 		$author_1 = $this->factory->user->create( array( 'user_login' => 'admin1', 'user_pass' => rand_str(), 'role' => 'author' ) );
 		$post_1 = $this->factory->post->create( array( 'post_title' => rand_str(), 'post_author' => $author_1, 'post_date' => '2007-01-01 00:00:00' ) );
@@ -471,6 +521,9 @@ class Tests_Query_Results extends WP_UnitTestCase {
 		) );
 		$author_ids = array_unique( wp_list_pluck( $posts, 'post_author' ) );
 		$this->assertEqualSets( array( $author_1, $author_2 ), $author_ids );
+
+		$posts = $this->q->query( array( 'author__in' => array() ) );
+		$this->assertNotEmpty( $posts );
 
 		$posts = $this->q->query( array(
 			'author__not_in' => array( $author_1, $author_2 ),
@@ -583,4 +636,19 @@ class Tests_Query_Results extends WP_UnitTestCase {
 		$result11 = $this->q->query( array_merge( $args, array( 'post_password' => 'burrito' ) ) );
 		$this->assertEqualSets( array( $two, $three ), $result11 );
 	}
+
+	/**
+	 * @ticket 28611
+	 */
+	function test_duplicate_slug_in_hierarchical_post_type() {
+		register_post_type( 'handbook', array( 'hierarchical' => true ) );
+
+		$post_1 = $this->factory->post->create( array( 'post_title' => 'Getting Started', 'post_type' => 'handbook' ) );
+		$post_2 = $this->factory->post->create( array( 'post_title' => 'Contributing to the WordPress Codex', 'post_type' => 'handbook' ) );
+		$post_3 = $this->factory->post->create( array( 'post_title' => 'Getting Started', 'post_parent' => $post_2, 'post_type' => 'handbook' ) );
+
+		$result = $this->q->query( array( 'handbook' => 'getting-started', 'post_type' => 'handbook' ) );
+		$this->assertCount( 1, $result );
+	}
+
 }

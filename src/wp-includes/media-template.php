@@ -8,6 +8,107 @@
  */
 
 /**
+ * Output the markup for a audio tag to be used in an Underscore template
+ * when data.model is passed.
+ *
+ * @since 3.9.0
+ */
+function wp_underscore_audio_template() {
+	$audio_types = wp_get_audio_extensions();
+?>
+<audio style="visibility: hidden"
+	controls
+	class="wp-audio-shortcode"
+	width="{{ _.isUndefined( data.model.width ) ? 400 : data.model.width }}"
+	preload="{{ _.isUndefined( data.model.preload ) ? 'none' : data.model.preload }}"
+	<#
+	<?php foreach ( array( 'autoplay', 'loop' ) as $attr ):
+	?>if ( ! _.isUndefined( data.model.<?php echo $attr ?> ) && data.model.<?php echo $attr ?> ) {
+		#> <?php echo $attr ?><#
+	}
+	<?php endforeach ?>#>
+>
+	<# if ( ! _.isEmpty( data.model.src ) ) { #>
+	<source src="{{ data.model.src }}" type="{{ wp.media.view.settings.embedMimes[ data.model.src.split('.').pop() ] }}" />
+	<# } #>
+
+	<?php foreach ( $audio_types as $type ):
+	?><# if ( ! _.isEmpty( data.model.<?php echo $type ?> ) ) { #>
+	<source src="{{ data.model.<?php echo $type ?> }}" type="{{ wp.media.view.settings.embedMimes[ '<?php echo $type ?>' ] }}" />
+	<# } #>
+	<?php endforeach;
+?></audio>
+<?php
+}
+
+/**
+ * Output the markup for a video tag to be used in an Underscore template
+ * when data.model is passed.
+ *
+ * @since 3.9.0
+ */
+function wp_underscore_video_template() {
+	$video_types = wp_get_video_extensions();
+?>
+<#  var w, h, settings = wp.media.view.settings,
+		isYouTube = ! _.isEmpty( data.model.src ) && data.model.src.match(/youtube|youtu\.be/);
+
+	if ( settings.contentWidth && data.model.width >= settings.contentWidth ) {
+		w = settings.contentWidth;
+	} else {
+		w = data.model.width;
+	}
+
+	if ( w !== data.model.width ) {
+		h = Math.ceil( ( data.model.height * w ) / data.model.width );
+	} else {
+		h = data.model.height;
+	}
+#>
+<div style="max-width: 100%; width: {{ w }}px">
+<video controls
+	class="wp-video-shortcode{{ isYouTube ? ' youtube-video' : '' }}"
+	width="{{ w }}"
+	height="{{ h }}"
+	<?php
+	$props = array( 'poster' => '', 'preload' => 'metadata' );
+	foreach ( $props as $key => $value ):
+		if ( empty( $value ) ) {
+		?><#
+		if ( ! _.isUndefined( data.model.<?php echo $key ?> ) && data.model.<?php echo $key ?> ) {
+			#> <?php echo $key ?>="{{ data.model.<?php echo $key ?> }}"<#
+		} #>
+		<?php } else {
+			echo $key ?>="{{ _.isUndefined( data.model.<?php echo $key ?> ) ? '<?php echo $value ?>' : data.model.<?php echo $key ?> }}"<?php
+		}
+	endforeach;
+	?><#
+	<?php foreach ( array( 'autoplay', 'loop' ) as $attr ):
+	?> if ( ! _.isUndefined( data.model.<?php echo $attr ?> ) && data.model.<?php echo $attr ?> ) {
+		#> <?php echo $attr ?><#
+	}
+	<?php endforeach ?>#>
+>
+	<# if ( ! _.isEmpty( data.model.src ) ) {
+		if ( isYouTube ) { #>
+		<source src="{{ data.model.src }}" type="video/youtube" />
+		<# } else { #>
+		<source src="{{ data.model.src }}" type="{{ settings.embedMimes[ data.model.src.split('.').pop() ] }}" />
+		<# }
+	} #>
+
+	<?php foreach ( $video_types as $type ):
+	?><# if ( data.model.<?php echo $type ?> ) { #>
+	<source src="{{ data.model.<?php echo $type ?> }}" type="{{ settings.embedMimes[ '<?php echo $type ?>' ] }}" />
+	<# } #>
+	<?php endforeach; ?>
+	{{{ data.model.content }}}
+</video>
+</div>
+<?php
+}
+
+/**
  * Prints the templates used in the media manager.
  *
  * @since 3.5.0
@@ -18,6 +119,16 @@ function wp_print_media_templates() {
 	if ( $is_IE && strpos($_SERVER['HTTP_USER_AGENT'], 'MSIE 7') !== false )
 		$class .= ' ie7';
 	?>
+	<!--[if lte IE 8]>
+	<style>
+		.attachment:focus {
+			outline: #1e8cbe solid;
+		}
+		.selected.attachment {
+			outline: #1e8cbe solid;
+		}
+	</style>
+	<![endif]-->
 	<script type="text/html" id="tmpl-media-frame">
 		<div class="media-frame-menu"></div>
 		<div class="media-frame-title"></div>
@@ -43,7 +154,7 @@ function wp_print_media_templates() {
 
 	<script type="text/html" id="tmpl-uploader-editor">
 		<div class="uploader-editor-content">
-			<h3><?php _e( 'Drop files to upload' ); ?></h3>
+			<div class="uploader-editor-title"><?php _e( 'Drop files to upload' ); ?></div>
 		</div>
 	</script>
 
@@ -85,25 +196,21 @@ function wp_print_media_templates() {
 					do_action( 'post-plupload-upload-ui' );
 				}
 
-				$upload_size_unit = $max_upload_size = wp_max_upload_size();
-				$byte_sizes = array( 'KB', 'MB', 'GB' );
-
-				for ( $u = -1; $upload_size_unit > 1024 && $u < count( $byte_sizes ) - 1; $u++ ) {
-					$upload_size_unit /= 1024;
+				$max_upload_size = wp_max_upload_size();
+				if ( ! $max_upload_size ) {
+					$max_upload_size = 0;
 				}
-
-				if ( $u < 0 ) {
-					$upload_size_unit = 0;
-					$u = 0;
-				} else {
-					$upload_size_unit = (int) $upload_size_unit;
-				}
-
 				?>
 
 				<p class="max-upload-size"><?php
-					printf( __( 'Maximum upload file size: %d%s.' ), esc_html($upload_size_unit), esc_html($byte_sizes[$u]) );
+					printf( __( 'Maximum upload file size: %s.' ), esc_html( size_format( $max_upload_size ) ) );
 				?></p>
+
+				<# if ( data.suggestedWidth && data.suggestedHeight ) { #>
+					<p class="suggested-dimensions">
+						<?php _e( 'Suggested image dimensions:' ); ?> {{data.suggestedWidth}} &times; {{data.suggestedHeight}}
+					</p>
+				<# } #>
 
 				<?php
 				/** This action is documented in wp-admin/includes/media.php */
@@ -141,7 +248,7 @@ function wp_print_media_templates() {
 			<# } else if ( 'image' === data.type ) { #>
 				<div class="thumbnail">
 					<div class="centered">
-						<img src="{{ data.size.url }}" draggable="false" />
+						<img src="{{ data.size.url }}" draggable="false" alt="" />
 					</div>
 				</div>
 			<# } else { #>
@@ -156,7 +263,7 @@ function wp_print_media_templates() {
 			<# } #>
 
 			<# if ( data.buttons.check ) { #>
-				<a class="check" href="#" title="<?php esc_attr_e('Deselect'); ?>"><div class="media-modal-icon"></div></a>
+				<a class="check" href="#" title="<?php esc_attr_e('Deselect'); ?>" tabindex="-1"><div class="media-modal-icon"></div></a>
 			<# } #>
 		</div>
 		<#
@@ -188,7 +295,7 @@ function wp_print_media_templates() {
 			</span>
 		</h3>
 		<div class="attachment-info">
-			<div class="thumbnail">
+			<div class="thumbnail thumbnail-{{ data.type }}">
 				<# if ( data.uploading ) { #>
 					<div class="media-progress-bar"><div></div></div>
 				<# } else if ( 'image' === data.type ) { #>
@@ -201,6 +308,7 @@ function wp_print_media_templates() {
 				<div class="filename">{{ data.filename }}</div>
 				<div class="uploaded">{{ data.dateFormatted }}</div>
 
+				<div class="file-size">{{ data.filesizeHumanReadable }}</div>
 				<# if ( 'image' === data.type && ! data.uploading ) { #>
 					<# if ( data.width && data.height ) { #>
 						<div class="dimensions">{{ data.width }} &times; {{ data.height }}</div>
@@ -232,25 +340,39 @@ function wp_print_media_templates() {
 			</div>
 		</div>
 
+		<label class="setting" data-setting="url">
+			<span class="name"><?php _e('URL'); ?></span>
+			<input type="text" value="{{ data.url }}" readonly />
+		</label>
 		<# var maybeReadOnly = data.can.save || data.allowLocalEdits ? '' : 'readonly'; #>
-			<label class="setting" data-setting="title">
-				<span><?php _e('Title'); ?></span>
-				<input type="text" value="{{ data.title }}" {{ maybeReadOnly }} />
-			</label>
-			<label class="setting" data-setting="caption">
-				<span><?php _e('Caption'); ?></span>
-				<textarea {{ maybeReadOnly }}>{{ data.caption }}</textarea>
-			</label>
+		<label class="setting" data-setting="title">
+			<span class="name"><?php _e('Title'); ?></span>
+			<input type="text" value="{{ data.title }}" {{ maybeReadOnly }} />
+		</label>
+		<label class="setting" data-setting="caption">
+			<span class="name"><?php _e('Caption'); ?></span>
+			<textarea {{ maybeReadOnly }}>{{ data.caption }}</textarea>
+		</label>
 		<# if ( 'image' === data.type ) { #>
 			<label class="setting" data-setting="alt">
-				<span><?php _e('Alt Text'); ?></span>
+				<span class="name"><?php _e('Alt Text'); ?></span>
 				<input type="text" value="{{ data.alt }}" {{ maybeReadOnly }} />
 			</label>
 		<# } #>
-			<label class="setting" data-setting="description">
-				<span><?php _e('Description'); ?></span>
-				<textarea {{ maybeReadOnly }}>{{ data.description }}</textarea>
+		<label class="setting" data-setting="description">
+			<span class="name"><?php _e('Description'); ?></span>
+			<textarea {{ maybeReadOnly }}>{{ data.description }}</textarea>
+		</label>
+		<label class="setting">
+				<span class="name"><?php _e( 'Uploaded By' ); ?></span>
+				<span class="value">{{ data.authorName }}</span>
 			</label>
+		<# if ( data.uploadedTo ) { #>
+			<label class="setting">
+				<span class="name"><?php _e('Uploaded To'); ?></span>
+				<span class="value"><a href="{{ data.uploadedToLink }}">{{ data.uploadedToTitle }}</a></span>
+			</label>
+		<# } #>
 	</script>
 
 	<script type="text/html" id="tmpl-media-selection">
@@ -417,60 +539,45 @@ function wp_print_media_templates() {
 	<script type="text/html" id="tmpl-playlist-settings">
 		<h3><?php _e( 'Playlist Settings' ); ?></h3>
 
-		<label class="setting">
-			<span><?php _e( 'Random Order' ); ?></span>
-			<input type="checkbox" data-setting="_orderbyRandom" />
-		</label>
+		<# var emptyModel = _.isEmpty( data.model ),
+			isVideo = 'video' === data.controller.get('library').props.get('type'); #>
 
 		<label class="setting">
-			<span><?php _e( 'Style' ); ?></span>
-			<select class="style" data-setting="style">
-				<option value="light">
-					<?php esc_attr_e( 'Light' ); ?>
-				</option>
-				<option value="dark">
-					<?php esc_attr_e( 'Dark' ); ?>
-				</option>
-			</select>
-		</label>
-
-		<#
-			var playlist = 'playlist-edit' === data.controller.id, emptyModel = _.isEmpty(data.model);
-		#>
-		<label class="setting">
+			<input type="checkbox" data-setting="tracklist" <# if ( emptyModel ) { #>
+				checked="checked"
+			<# } #> />
+			<# if ( isVideo ) { #>
+			<span><?php _e( 'Show Video List' ); ?></span>
+			<# } else { #>
 			<span><?php _e( 'Show Tracklist' ); ?></span>
-			<input type="checkbox" data-setting="tracklist" <# if ( playlist && emptyModel ) { #>
-				checked="checked"
-			<# } #> />
+			<# } #>
 		</label>
 
+		<# if ( ! isVideo ) { #>
 		<label class="setting">
-			<span><?php _e( 'Show Track Numbers' ); ?></span>
-			<input type="checkbox" data-setting="tracknumbers" <# if ( playlist && emptyModel ) { #>
+			<input type="checkbox" data-setting="artists" <# if ( emptyModel ) { #>
 				checked="checked"
 			<# } #> />
-		</label>
-
-		<label class="setting">
 			<span><?php _e( 'Show Artist Name in Tracklist' ); ?></span>
-			<input type="checkbox" data-setting="artists" <# if ( playlist && emptyModel ) { #>
-				checked="checked"
-			<# } #> />
 		</label>
+		<# } #>
 
 		<label class="setting">
-			<span><?php _e( 'Show Images' ); ?></span>
 			<input type="checkbox" data-setting="images" <# if ( emptyModel ) { #>
 				checked="checked"
 			<# } #> />
+			<span><?php _e( 'Show Images' ); ?></span>
 		</label>
 	</script>
 
 	<script type="text/html" id="tmpl-embed-link-settings">
-		<label class="setting">
-			<span><?php _e('Title'); ?></span>
+		<label class="setting title">
+			<span><?php _e( 'Title' ); ?></span>
 			<input type="text" class="alignment" data-setting="title" />
 		</label>
+		<div class="embed-container" style="display: none;">
+			<div class="embed-preview"></div>
+		</div>
 	</script>
 
 	<script type="text/html" id="tmpl-embed-image-settings">
@@ -557,356 +664,403 @@ function wp_print_media_templates() {
 	</script>
 
 	<script type="text/html" id="tmpl-image-details">
-		<?php // reusing .media-embed to pick up the styles for now ?>
 		<div class="media-embed">
 			<div class="embed-media-settings">
-				<div class="thumbnail">
-					<img src="{{ data.model.url }}" draggable="false" />
-				</div>
-				<# if ( data.attachment ) { #>
-					<input type="button" class="edit-attachment button" value="<?php esc_attr_e( 'Edit Image' ); ?>" />
-				<# } #>
+				<div class="column-image">
+					<div class="image">
+						<img src="{{ data.model.url }}" draggable="false" />
 
-				<div class="setting url">
-					<?php // might want to make the url editable if it isn't an attachment ?>
-					<input type="text" disabled="disabled" value="{{ data.model.url }}" />
+						<# if ( data.attachment && window.imageEdit ) { #>
+							<div class="actions">
+								<input type="button" class="edit-attachment button" value="<?php esc_attr_e( 'Edit Original' ); ?>" />
+								<input type="button" class="replace-attachment button" value="<?php esc_attr_e( 'Replace' ); ?>" />
+							</div>
+						<# } #>
+					</div>
 				</div>
+				<div class="column-settings">
+					<?php
+					/** This filter is documented in wp-admin/includes/media.php */
+					if ( ! apply_filters( 'disable_captions', '' ) ) : ?>
+						<label class="setting caption">
+							<span><?php _e('Caption'); ?></span>
+							<textarea data-setting="caption">{{ data.model.caption }}</textarea>
+						</label>
+					<?php endif; ?>
 
-				<?php
-				/** This filter is documented in wp-admin/includes/media.php */
-				if ( ! apply_filters( 'disable_captions', '' ) ) : ?>
-					<label class="setting caption">
-						<span><?php _e('Caption'); ?></span>
-						<textarea data-setting="caption">{{ data.model.caption }}</textarea>
+					<label class="setting alt-text">
+						<span><?php _e('Alternative Text'); ?></span>
+						<input type="text" data-setting="alt" value="{{ data.model.alt }}" />
 					</label>
-				<?php endif; ?>
 
-				<label class="setting alt-text">
-					<span><?php _e('Alt Text'); ?></span>
-					<input type="text" data-setting="alt" value="{{ data.model.alt }}" />
-				</label>
-
-				<div class="setting align">
-					<span><?php _e('Align'); ?></span>
-					<div class="button-group button-large" data-setting="align">
-						<button class="button" value="left">
-							<?php esc_attr_e('Left'); ?>
-						</button>
-						<button class="button" value="center">
-							<?php esc_attr_e('Center'); ?>
-						</button>
-						<button class="button" value="right">
-							<?php esc_attr_e('Right'); ?>
-						</button>
-						<button class="button active" value="none">
-							<?php esc_attr_e('None'); ?>
-						</button>
-					</div>
-				</div>
-				<div class="setting link-to">
-					<span><?php _e('Link To'); ?></span>
-					<div class="button-group button-large" data-setting="link">
-					<# if ( data.attachment ) { #>
-						<button class="button" value="file">
-							<?php esc_attr_e('Media File'); ?>
-						</button>
-						<button class="button" value="post">
-							<?php esc_attr_e('Attachment Page'); ?>
-						</button>
-					<# } else { #>
-						<button class="button" value="file">
-							<?php esc_attr_e('Image URL'); ?>
-						</button>
-					<# } #>
-						<button class="button" value="custom">
-							<?php esc_attr_e('Custom URL'); ?>
-						</button>
-						<button class="button active" value="none">
-							<?php esc_attr_e('None'); ?>
-						</button>
-					</div>
-					<input type="text" class="link-to-custom" data-setting="linkUrl" />
-				</div>
-
-				<# if ( data.attachment ) { #>
-					<div class="setting size">
-						<span><?php _e('Size'); ?></span>
-						<div class="button-group button-large" data-setting="size">
-						<?php
-							/** This filter is documented in wp-admin/includes/media.php */
-							$sizes = apply_filters( 'image_size_names_choose', array(
-								'thumbnail' => __('Thumbnail'),
-								'medium'    => __('Medium'),
-								'large'     => __('Large'),
-								'full'      => __('Full Size'),
-							) );
-
-							foreach ( $sizes as $value => $name ) : ?>
-								<# var size = data.attachment.sizes['<?php echo esc_js( $value ); ?>'];
-								if ( size ) { #>
-									<button class="button" value="<?php echo esc_attr( $value ); ?>">
-										<?php echo esc_html( $name ); ?>
-										</button>
-								<# } #>
-							<?php endforeach; ?>
+					<h3><?php _e( 'Display Settings' ); ?></h3>
+					<div class="setting align">
+						<span><?php _e('Align'); ?></span>
+						<div class="button-group button-large" data-setting="align">
+							<button class="button" value="left">
+								<?php esc_attr_e('Left'); ?>
+							</button>
+							<button class="button" value="center">
+								<?php esc_attr_e('Center'); ?>
+							</button>
+							<button class="button" value="right">
+								<?php esc_attr_e('Right'); ?>
+							</button>
+							<button class="button active" value="none">
+								<?php esc_attr_e('None'); ?>
+							</button>
 						</div>
 					</div>
-				<# } #>
+
+					<# if ( data.attachment ) { #>
+						<# if ( 'undefined' !== typeof data.attachment.sizes ) { #>
+							<label class="setting size">
+								<span><?php _e('Size'); ?></span>
+								<select class="size" name="size"
+									data-setting="size"
+									<# if ( data.userSettings ) { #>
+										data-user-setting="imgsize"
+									<# } #>>
+									<?php
+									/** This filter is documented in wp-admin/includes/media.php */
+									$sizes = apply_filters( 'image_size_names_choose', array(
+										'thumbnail' => __('Thumbnail'),
+										'medium'    => __('Medium'),
+										'large'     => __('Large'),
+										'full'      => __('Full Size'),
+									) );
+
+									foreach ( $sizes as $value => $name ) : ?>
+										<#
+										var size = data.sizes['<?php echo esc_js( $value ); ?>'];
+										if ( size ) { #>
+											<option value="<?php echo esc_attr( $value ); ?>">
+												<?php echo esc_html( $name ); ?> &ndash; {{ size.width }} &times; {{ size.height }}
+											</option>
+										<# } #>
+									<?php endforeach; ?>
+									<option value="<?php echo esc_attr( 'custom' ); ?>">
+										<?php _e( 'Custom Size' ); ?>
+									</option>
+								</select>
+							</label>
+						<# } #>
+							<div class="custom-size<# if ( data.model.size !== 'custom' ) { #> hidden<# } #>">
+								<label><span><?php _e( 'Width' ); ?> <small>(px)</small></span> <input data-setting="customWidth" type="number" step="1" value="{{ data.model.customWidth }}" /></label><span class="sep">&times;</span><label><span><?php _e( 'Height' ); ?> <small>(px)</small></span><input data-setting="customHeight" type="number" step="1" value="{{ data.model.customHeight }}" /></label>
+							</div>
+					<# } #>
+
+					<div class="setting link-to">
+						<span><?php _e('Link To'); ?></span>
+						<select data-setting="link">
+						<# if ( data.attachment ) { #>
+							<option value="file">
+								<?php esc_attr_e('Media File'); ?>
+							</option>
+							<option value="post">
+								<?php esc_attr_e('Attachment Page'); ?>
+							</option>
+						<# } else { #>
+							<option value="file">
+								<?php esc_attr_e('Image URL'); ?>
+							</option>
+						<# } #>
+							<option value="custom">
+								<?php esc_attr_e('Custom URL'); ?>
+							</option>
+							<option value="none">
+								<?php esc_attr_e('None'); ?>
+							</option>
+						</select>
+						<input type="text" class="link-to-custom" data-setting="linkUrl" />
+					</div>
+					<div class="advanced-section">
+						<h3><a class="advanced-toggle" href="#"><?php _e('Advanced Options'); ?></a></h3>
+						<div class="advanced-settings hidden">
+							<div class="advanced-image">
+								<label class="setting title-text">
+									<span><?php _e('Image Title Attribute'); ?></span>
+									<input type="text" data-setting="title" value="{{ data.model.title }}" />
+								</label>
+								<label class="setting extra-classes">
+									<span><?php _e('Image CSS Class'); ?></span>
+									<input type="text" data-setting="extraClasses" value="{{ data.model.extraClasses }}" />
+								</label>
+							</div>
+							<div class="advanced-link">
+								<div class="setting link-target">
+									<label><input type="checkbox" data-setting="linkTargetBlank" value="_blank" <# if ( data.model.linkTargetBlank ) { #>checked="checked"<# } #>><?php _e( 'Open link in a new window/tab' ); ?></label>
+								</div>
+								<label class="setting link-rel">
+									<span><?php _e('Link Rel'); ?></span>
+									<input type="text" data-setting="linkRel" value="{{ data.model.linkClassName }}" />
+								</label>
+								<label class="setting link-class-name">
+									<span><?php _e('Link CSS Class'); ?></span>
+									<input type="text" data-setting="linkClassName" value="{{ data.model.linkClassName }}" />
+								</label>
+							</div>
+						</div>
+					</div>
+				</div>
 			</div>
 		</div>
 	</script>
 
 	<script type="text/html" id="tmpl-image-editor">
-		<div id="media-head-{{{ data.id }}}"></div>
-		<div id="image-editor-{{{ data.id }}}"></div>
+		<div id="media-head-{{ data.id }}"></div>
+		<div id="image-editor-{{ data.id }}"></div>
 	</script>
 
 	<script type="text/html" id="tmpl-audio-details">
-		<?php // reusing .media-embed to pick up the styles for now
-		?><# var rendered = false; #>
-		<div class="media-embed">
+		<# var ext, html5types = {
+			mp3: wp.media.view.settings.embedMimes.mp3,
+			ogg: wp.media.view.settings.embedMimes.ogg
+		}; #>
+
+		<?php $audio_types = wp_get_audio_extensions(); ?>
+		<div class="media-embed media-embed-details">
 			<div class="embed-media-settings embed-audio-settings">
-				<# if ( data.model.src ) { #>
-					<audio controls
-						class="wp-audio-shortcode"
-						src="{{{ data.model.src }}}"
-						preload="{{{ _.isUndefined( data.model.preload ) ? 'none' : data.model.preload }}}"
-						<#
-						<?php foreach ( array( 'autoplay', 'loop' ) as $attr ):
-						?>if ( ! _.isUndefined( data.model.<?php echo $attr ?> ) && data.model.<?php echo $attr ?> ) {
-							#> <?php echo $attr ?><#
-						}
-						<?php endforeach ?>#>
-					/>
-					<# rendered = true; #>
+				<?php wp_underscore_audio_template() ?>
+
+				<# if ( ! _.isEmpty( data.model.src ) ) {
+					ext = data.model.src.split('.').pop();
+					if ( html5types[ ext ] ) {
+						delete html5types[ ext ];
+					}
+				#>
 				<label class="setting">
 					<span>SRC</span>
-					<input type="text" disabled="disabled" data-setting="src" value="{{{ data.model.src }}}" />
+					<input type="text" disabled="disabled" data-setting="src" value="{{ data.model.src }}" />
+					<a class="remove-setting"><?php _e( 'Remove' ); ?></a>
 				</label>
 				<# } #>
 				<?php
-				$default_types = wp_get_audio_extensions();
 
-				foreach ( $default_types as $type ):
-				?><# if ( data.model.<?php echo $type ?> ) { #>
-					<# if ( ! rendered ) { #>
-					<audio controls
-						class="wp-audio-shortcode"
-						src="{{{ data.model.<?php echo $type ?> }}}"
-						preload="{{{ _.isUndefined( data.model.preload ) ? 'none' : data.model.preload }}}"
-						<#
-						<?php foreach ( array( 'autoplay', 'loop' ) as $attr ):
-						?>if ( ! _.isUndefined( data.model.<?php echo $attr ?> ) && data.model.<?php echo $attr ?> ) {
-							#> <?php echo $attr ?><#
-						}
-						<?php endforeach ?>#>
-					/>
-					<# rendered = true;
-					} #>
+				foreach ( $audio_types as $type ):
+				?><# if ( ! _.isEmpty( data.model.<?php echo $type ?> ) ) {
+					if ( ! _.isUndefined( html5types.<?php echo $type ?> ) ) {
+						delete html5types.<?php echo $type ?>;
+					}
+				#>
 				<label class="setting">
 					<span><?php echo strtoupper( $type ) ?></span>
-					<input type="text" disabled="disabled" data-setting="<?php echo $type ?>" value="{{{ data.model.<?php echo $type ?> }}}" />
+					<input type="text" disabled="disabled" data-setting="<?php echo $type ?>" value="{{ data.model.<?php echo $type ?> }}" />
+					<a class="remove-setting"><?php _e( 'Remove' ); ?></a>
 				</label>
 				<# } #>
 				<?php endforeach ?>
 
+				<# if ( ! _.isEmpty( html5types ) ) { #>
+				<div class="setting">
+					<span><?php _e( 'Add alternate sources for maximum HTML5 playback:' ) ?></span>
+					<div class="button-large">
+					<# _.each( html5types, function (mime, type) { #>
+					<button class="button add-media-source" data-mime="{{ mime }}">{{ type }}</button>
+					<# } ) #>
+					</div>
+				</div>
+				<# } #>
+
 				<div class="setting preload">
 					<span><?php _e( 'Preload' ); ?></span>
 					<div class="button-group button-large" data-setting="preload">
-						<button class="button" value="auto"><?php _e( 'Auto' ); ?></button>
+						<button class="button" value="auto"><?php _ex( 'Auto', 'auto preload' ); ?></button>
 						<button class="button" value="metadata"><?php _e( 'Metadata' ); ?></button>
 						<button class="button active" value="none"><?php _e( 'None' ); ?></button>
 					</div>
 				</div>
 
 				<label class="setting checkbox-setting">
-					<span><?php _e( 'Autoplay' ); ?></span>
 					<input type="checkbox" data-setting="autoplay" />
+					<span><?php _e( 'Autoplay' ); ?></span>
 				</label>
 
 				<label class="setting checkbox-setting">
-					<span><?php _e( 'Loop' ); ?></span>
 					<input type="checkbox" data-setting="loop" />
+					<span><?php _e( 'Loop' ); ?></span>
 				</label>
-				<div class="clear"></div>
 			</div>
 		</div>
 	</script>
 
 	<script type="text/html" id="tmpl-video-details">
-		<?php // reusing .media-embed to pick up the styles for now
-		?><# var rendered = false; #>
-		<div class="media-embed">
+		<# var ext, html5types = {
+			mp4: wp.media.view.settings.embedMimes.mp4,
+			ogv: wp.media.view.settings.embedMimes.ogv,
+			webm: wp.media.view.settings.embedMimes.webm
+		}; #>
+
+		<?php $video_types = wp_get_video_extensions(); ?>
+		<div class="media-embed media-embed-details">
 			<div class="embed-media-settings embed-video-settings">
 				<div class="wp-video-holder">
 				<#
-				var w = ! data.model.width || data.model.width > 640 ? 640 : data.model.width,
+				var isYouTube = ! _.isEmpty( data.model.src ) && data.model.src.match(/youtube|youtu\.be/);
+					w = ! data.model.width || data.model.width > 640 ? 640 : data.model.width,
 					h = ! data.model.height ? 360 : data.model.height;
 
 				if ( data.model.width && w !== data.model.width ) {
 					h = Math.ceil( ( h * w ) / data.model.width );
 				}
+				#>
 
-				if ( data.model.src ) {
-					if ( data.model.src.match(/youtube|youtu\.be/) ) {
+				<?php wp_underscore_video_template() ?>
+
+				<# if ( ! _.isEmpty( data.model.src ) ) {
+					ext = data.model.src.split('.').pop();
+					if ( html5types[ ext ] ) {
+						delete html5types[ ext ];
+					}
 				#>
-					<video controls
-						class="wp-video-shortcode youtube-video"
-						width="{{{ w }}}"
-						height="{{{ h }}}"
-						<?php
-						$props = array( 'poster' => '', 'preload' => 'metadata' );
-						foreach ( $props as $key => $value ):
-							if ( empty( $value ) ) {
-							?><#
-							if ( ! _.isUndefined( data.model.<?php echo $key ?> ) && data.model.<?php echo $key ?> ) {
-								#> <?php echo $key ?>="{{{ data.model.<?php echo $key ?> }}}"<#
-							} #>
-							<?php } else {
-								echo $key ?>="{{{ _.isUndefined( data.model.<?php echo $key ?> ) ? '<?php echo $value ?>' : data.model.<?php echo $key ?> }}}"<?php
-							}
-						endforeach;
-						?><#
-						<?php foreach ( array( 'autoplay', 'loop' ) as $attr ):
-						?> if ( ! _.isUndefined( data.model.<?php echo $attr ?> ) && data.model.<?php echo $attr ?> ) {
-							#> <?php echo $attr ?><#
-						}
-						<?php endforeach ?>#>
-					>
-						<source type="video/youtube" src="{{{ data.model.src }}}" />
-					</video>
-				<#
-					} else {
-				#>
-					<video controls
-						class="wp-video-shortcode"
-						width="{{{ w }}}"
-						height="{{{ h }}}"
-						src="{{{ data.model.src }}}"
-						<?php
-						$props = array( 'poster' => '', 'preload' => 'metadata' );
-						foreach ( $props as $key => $value ):
-							if ( empty( $value ) ) {
-							?><#
-							if ( ! _.isUndefined( data.model.<?php echo $key ?> ) && data.model.<?php echo $key ?> ) {
-								#> <?php echo $key ?>="{{{ data.model.<?php echo $key ?> }}}"<#
-							} #>
-							<?php } else {
-								echo $key ?>="{{{ _.isUndefined( data.model.<?php echo $key ?> ) ? '<?php echo $value ?>' : data.model.<?php echo $key ?> }}}"<?php
-							}
-						endforeach;
-						?><#
-						<?php foreach ( array( 'autoplay', 'loop' ) as $attr ):
-						?> if ( ! _.isUndefined( data.model.<?php echo $attr ?> ) && data.model.<?php echo $attr ?> ) {
-							#> <?php echo $attr ?><#
-						}
-						<?php endforeach ?>#>
-					/>
 				<label class="setting">
 					<span>SRC</span>
-					<input type="text" disabled="disabled" data-setting="src" value="{{{ data.model.src }}}" />
+					<input type="text" disabled="disabled" data-setting="src" value="{{ data.model.src }}" />
+					<a class="remove-setting"><?php _e( 'Remove' ); ?></a>
 				</label>
-				<#	}
-					rendered = true;
-				} #>
-				<?php
-				$default_types = wp_get_video_extensions();
-
-				foreach ( $default_types as $type ):
-				?><# if ( data.model.<?php echo $type ?> ) {
-					if ( ! rendered ) { #>
-					<video controls
-						class="wp-video-shortcode"
-						width="{{{ w }}}"
-						height="{{{ h }}}"
-						src="{{{ data.model.<?php echo $type ?> }}}"
-						<?php
-						$props = array( 'poster' => '', 'preload' => 'metadata' );
-						foreach ( $props as $key => $value ):
-							echo $key ?>="{{{ _.isUndefined( data.model.<?php echo $key ?> ) ? '<?php echo $value ?>' : data.model.<?php echo $key ?> }}}"
-						<?php endforeach;
-						?><#
-						<?php foreach ( array( 'autoplay', 'loop' ) as $attr ):
-						?>if ( ! _.isUndefined( data.model.<?php echo $attr ?> ) && data.model.<?php echo $attr ?> ) {
-							#> <?php echo $attr ?><#
-						}
-						<?php endforeach ?>#>
-					/>
-					<# rendered = true;
-					} #>
+				<# } #>
+				<?php foreach ( $video_types as $type ):
+				?><# if ( ! _.isEmpty( data.model.<?php echo $type ?> ) ) {
+					if ( ! _.isUndefined( html5types.<?php echo $type ?> ) ) {
+						delete html5types.<?php echo $type ?>;
+					}
+				#>
 				<label class="setting">
 					<span><?php echo strtoupper( $type ) ?></span>
-					<input type="text" disabled="disabled" data-setting="<?php echo $type ?>" value="{{{ data.model.<?php echo $type ?> }}}" />
+					<input type="text" disabled="disabled" data-setting="<?php echo $type ?>" value="{{ data.model.<?php echo $type ?> }}" />
+					<a class="remove-setting"><?php _e( 'Remove' ); ?></a>
 				</label>
 				<# } #>
 				<?php endforeach ?>
 				</div>
+
+				<# if ( ! _.isEmpty( html5types ) ) { #>
+				<div class="setting">
+					<span><?php _e( 'Add alternate sources for maximum HTML5 playback:' ); ?></span>
+					<div class="button-large">
+					<# _.each( html5types, function (mime, type) { #>
+					<button class="button add-media-source" data-mime="{{ mime }}">{{ type }}</button>
+					<# } ) #>
+					</div>
+				</div>
+				<# } #>
+
+				<# if ( ! _.isEmpty( data.model.poster ) ) { #>
 				<label class="setting">
 					<span><?php _e( 'Poster Image' ); ?></span>
-					<input type="text" data-setting="poster" value="{{{ data.model.poster }}}" />
+					<input type="text" disabled="disabled" data-setting="poster" value="{{ data.model.poster }}" />
+					<a class="remove-setting"><?php _e( 'Remove' ); ?></a>
 				</label>
+				<# } #>
 				<div class="setting preload">
 					<span><?php _e( 'Preload' ); ?></span>
 					<div class="button-group button-large" data-setting="preload">
-						<button class="button" value="auto">
-							<?php esc_attr_e( 'Auto' ); ?>
-						</button>
-						<button class="button" value="metadata">
-							<?php esc_attr_e( 'Metadata' ); ?>
-						</button>
-						<button class="button active" value="none">
-							<?php esc_attr_e( 'None' ); ?>
-						</button>
+						<button class="button" value="auto"><?php _ex( 'Auto', 'auto preload' ); ?></button>
+						<button class="button" value="metadata"><?php _e( 'Metadata' ); ?></button>
+						<button class="button active" value="none"><?php _e( 'None' ); ?></button>
 					</div>
 				</div>
 
 				<label class="setting checkbox-setting">
-					<span><?php _e( 'Autoplay' ); ?></span>
 					<input type="checkbox" data-setting="autoplay" />
+					<span><?php _e( 'Autoplay' ); ?></span>
 				</label>
 
 				<label class="setting checkbox-setting">
-					<span><?php _e( 'Loop' ); ?></span>
 					<input type="checkbox" data-setting="loop" />
+					<span><?php _e( 'Loop' ); ?></span>
 				</label>
-				<div class="clear"></div>
+
+				<label class="setting" data-setting="content">
+					<span><?php _e( 'Tracks (subtitles, captions, descriptions, chapters, or metadata)' ); ?></span>
+					<#
+					var content = '';
+					if ( ! _.isEmpty( data.model.content ) ) {
+						var tracks = jQuery( data.model.content ).filter( 'track' );
+						_.each( tracks.toArray(), function (track) {
+							content += track.outerHTML; #>
+						<p>
+							<input class="content-track" type="text" value="{{ track.outerHTML }}" />
+							<a class="remove-setting remove-track"><?php _e( 'Remove' ); ?></a>
+						</p>
+						<# } ); #>
+					<# } else { #>
+					<em><?php _e( 'There are no associated subtitles.' ); ?></em>
+					<# } #>
+					<textarea class="hidden content-setting">{{ content }}</textarea>
+				</label>
 			</div>
 		</div>
 	</script>
-	<?php
-
-		//TODO: do we want to deal with the fact that the elements used for gallery items are filterable and can be overriden via shortcode attributes
-		// do we want to deal with the difference between display and edit context at all? (e.g. wptexturize() being applied to the caption.
-	?>
 
 	<script type="text/html" id="tmpl-editor-gallery">
-		<div class="toolbar">
-			<div class="dashicons dashicons-format-gallery edit"></div>
-			<div class="dashicons dashicons-no-alt remove"></div>
-		</div>
-		<div class="gallery gallery-columns-{{{ data.columns }}}">
-			<# _.each( data.attachments, function( attachment, index ) { #>
-				<dl class="gallery-item">
-					<dt class="gallery-icon">
-						<?php // TODO: need to figure out the best way to make sure that we have thumbnails ?>
-						<img src="{{{ attachment.sizes.thumbnail.url }}}" />
-					</dt>
-					<dd class="wp-caption-text gallery-caption">
-						{{ attachment.caption }}
-					</dd>
-				</dl>
-				<?php // this is kind silly, but copied from the gallery shortcode. Maybe it should be removed ?>
-				<# if ( index % data.columns === data.columns - 1 ) { #>
-					<br style="clear: both;">
-				<# } #>
-
-			<# } ); #>
-		</div>
+		<# if ( data.attachments ) { #>
+			<div class="gallery gallery-columns-{{ data.columns }}">
+				<# _.each( data.attachments, function( attachment, index ) { #>
+					<dl class="gallery-item">
+						<dt class="gallery-icon">
+							<# if ( attachment.thumbnail ) { #>
+								<img src="{{ attachment.thumbnail.url }}" width="{{ attachment.thumbnail.width }}" height="{{ attachment.thumbnail.height }}" />
+							<# } else { #>
+								<img src="{{ attachment.url }}" />
+							<# } #>
+						</dt>
+						<# if ( attachment.caption ) { #>
+							<dd class="wp-caption-text gallery-caption">
+								{{ attachment.caption }}
+							</dd>
+						<# } #>
+					</dl>
+					<# if ( index % data.columns === data.columns - 1 ) { #>
+						<br style="clear: both;">
+					<# } #>
+				<# } ); #>
+			</div>
+		<# } else { #>
+			<div class="wpview-error">
+				<div class="dashicons dashicons-format-gallery"></div><p><?php _e( 'No items found.' ); ?></p>
+			</div>
+		<# } #>
 	</script>
+
+	<script type="text/html" id="tmpl-editor-audio">
+		<?php wp_underscore_audio_template() ?>
+	</script>
+
+	<script type="text/html" id="tmpl-editor-video">
+		<?php wp_underscore_video_template() ?>
+	</script>
+
+	<?php wp_underscore_playlist_templates() ?>
+
+	<script type="text/html" id="tmpl-editor-playlist">
+		<# if ( data.tracks ) { #>
+			<div class="wp-playlist wp-{{ data.type }}-playlist wp-playlist-{{ data.style }}">
+				<# if ( 'audio' === data.type ){ #>
+				<div class="wp-playlist-current-item"></div>
+				<# } #>
+				<{{ data.type }} controls="controls" preload="none" <#
+					if ( data.width ) { #> width="{{ data.width }}"<# }
+					#><# if ( data.height ) { #> height="{{ data.height }}"<# } #>></{{ data.type }}>
+				<div class="wp-playlist-next"></div>
+				<div class="wp-playlist-prev"></div>
+			</div>
+		<# } else { #>
+			<div class="wpview-error">
+				<div class="dashicons dashicons-video-alt3"></div><p><?php _e( 'No items found.' ); ?></p>
+			</div>
+		<# } #>
+	</script>
+
+	<script type="text/html" id="tmpl-crop-content">
+		<img class="crop-image" src="{{ data.url }}">
+		<div class="upload-errors"></div>
+	</script>
+
 	<?php
 
 	/**
-	 * Prints the media manager custom media templates.
+	 * Fires when the custom Backbone media templates are printed.
 	 *
 	 * @since 3.5.0
 	 */

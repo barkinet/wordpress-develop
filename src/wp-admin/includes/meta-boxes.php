@@ -276,11 +276,6 @@ if ( !in_array( $post->post_status, array('publish', 'future', 'private') ) || 0
  * @param object $post
  */
 function attachment_submit_meta_box( $post ) {
-	global $action;
-
-	$post_type = $post->post_type;
-	$post_type_object = get_post_type_object($post_type);
-	$can_publish = current_user_can($post_type_object->cap->publish_posts);
 ?>
 <div class="submitbox" id="submitpost">
 
@@ -347,7 +342,15 @@ function attachment_submit_meta_box( $post ) {
  *
  * @since 3.1.0
  *
- * @param object $post
+ * @param WP_Post $post Post object.
+ * @param array   $box {
+ *     Post formats meta box arguments.
+ *
+ *     @type string   $id       Meta box ID.
+ *     @type string   $title    Meta box title.
+ *     @type callback $callback Meta box display callback.
+ *     @type array    $args     Extra meta box arguments.
+ * }
  */
 function post_format_meta_box( $post, $box ) {
 	if ( current_theme_supports( 'post-formats' ) && post_type_supports( $post->post_type, 'post-formats' ) ) :
@@ -375,17 +378,33 @@ function post_format_meta_box( $post, $box ) {
  *
  * @since 2.6.0
  *
- * @param object $post
+ * @todo Create taxonomy-agnostic wrapper for this.
+ *
+ * @param WP_Post $post Post object.
+ * @param array   $box {
+ *     Tags meta box arguments.
+ *
+ *     @type string   $id       Meta box ID.
+ *     @type string   $title    Meta box title.
+ *     @type callback $callback Meta box display callback.
+ *     @type array    $args {
+ *         Extra meta box arguments.
+ *
+ *         @type string $taxonomy Taxonomy. Default 'post_tag'.
+ *     }
+ * }
  */
-function post_tags_meta_box($post, $box) {
-	$defaults = array('taxonomy' => 'post_tag');
-	if ( !isset($box['args']) || !is_array($box['args']) )
+function post_tags_meta_box( $post, $box ) {
+	$defaults = array( 'taxonomy' => 'post_tag' );
+	if ( ! isset( $box['args'] ) || ! is_array( $box['args'] ) ) {
 		$args = array();
-	else
+	} else {
 		$args = $box['args'];
-	extract( wp_parse_args($args, $defaults), EXTR_SKIP );
-	$tax_name = esc_attr($taxonomy);
-	$taxonomy = get_taxonomy($taxonomy);
+	}
+	$r = wp_parse_args( $args, $defaults );
+	$tax = $r['taxonomy'];
+	$tax_name = esc_attr( $tax );
+	$taxonomy = get_taxonomy( $tax );
 	$user_can_assign_terms = current_user_can( $taxonomy->cap->assign_terms );
 	$comma = _x( ',', 'tag delimiter' );
 ?>
@@ -417,17 +436,32 @@ function post_tags_meta_box($post, $box) {
  *
  * @since 2.6.0
  *
- * @param object $post
+ * @todo Create taxonomy-agnostic wrapper for this.
+ *
+ * @param WP_Post $post Post object.
+ * @param array   $box {
+ *     Categories meta box arguments.
+ *
+ *     @type string   $id       Meta box ID.
+ *     @type string   $title    Meta box title.
+ *     @type callback $callback Meta box display callback.
+ *     @type array    $args {
+ *         Extra meta box arguments.
+ *
+ *         @type string $taxonomy Taxonomy. Default 'category'.
+ *     }
+ * }
  */
 function post_categories_meta_box( $post, $box ) {
-	$defaults = array('taxonomy' => 'category');
-	if ( !isset($box['args']) || !is_array($box['args']) )
+	$defaults = array( 'taxonomy' => 'category' );
+	if ( ! isset( $box['args'] ) || ! is_array( $box['args'] ) ) {
 		$args = array();
-	else
+	} else {
 		$args = $box['args'];
-	extract( wp_parse_args($args, $defaults), EXTR_SKIP );
-	$tax = get_taxonomy($taxonomy);
-
+	}
+	$r = wp_parse_args( $args, $defaults );
+	$taxonomy = $r['taxonomy'];
+	$tax = get_taxonomy( $taxonomy );
 	?>
 	<div id="taxonomy-<?php echo $taxonomy; ?>" class="categorydiv">
 		<ul id="<?php echo $taxonomy; ?>-tabs" class="category-tabs">
@@ -589,11 +623,9 @@ function post_comment_meta_box_thead($result) {
  * @param object $post
  */
 function post_comment_meta_box( $post ) {
-	global $wpdb;
-
 	wp_nonce_field( 'get-comments', 'add_comment_nonce', false );
 	?>
-	<p class="hide-if-no-js" id="add-new-comment"><a class="button" href="#commentstatusdiv" onclick="commentReply.addcomment(<?php echo $post->ID; ?>);return false;"><?php _e('Add comment'); ?></a></p>
+	<p class="hide-if-no-js" id="add-new-comment"><a class="button" href="#commentstatusdiv" onclick="window.commentReply && commentReply.addcomment(<?php echo $post->ID; ?>);return false;"><?php _e('Add comment'); ?></a></p>
 	<?php
 
 	$total = get_comments( array( 'post_id' => $post->ID, 'number' => 1, 'count' => true ) );
@@ -1056,4 +1088,30 @@ function link_advanced_meta_box($link) {
 function post_thumbnail_meta_box( $post ) {
 	$thumbnail_id = get_post_meta( $post->ID, '_thumbnail_id', true );
 	echo _wp_post_thumbnail_html( $thumbnail_id, $post->ID );
+}
+
+/**
+ * Display fields for ID3 data
+ *
+ * @since 3.9.0
+ *
+ * @param WP_Post $post
+ */
+function attachment_id3_data_meta_box( $post ) {
+	$meta = array();
+	if ( ! empty( $post->ID ) ) {
+		$meta = wp_get_attachment_metadata( $post->ID );
+	}
+
+	foreach ( wp_get_attachment_id3_keys( $post, 'edit' ) as $key => $label ) : ?>
+	<p>
+		<label for="title"><?php echo $label ?></label><br />
+		<input type="text" name="id3_<?php echo esc_attr( $key ) ?>" id="id3_<?php echo esc_attr( $key ) ?>" class="large-text" value="<?php
+			if ( ! empty( $meta[ $key ] ) ) {
+				echo esc_attr( $meta[ $key ] );
+			}
+		?>" />
+	</p>
+	<?php
+	endforeach;
 }

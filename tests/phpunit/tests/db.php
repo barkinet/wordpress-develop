@@ -109,6 +109,105 @@ class Tests_DB extends WP_UnitTestCase {
 	}
 
 	/**
+	 * @ticket 10041
+	 */
+	function test_esc_like() {
+		global $wpdb;
+
+		$inputs = array(
+			'howdy%', //Single Percent
+			'howdy_', //Single Underscore
+			'howdy\\', //Single slash
+			'howdy\\howdy%howdy_', //The works
+			'howdy\'"[[]*#[^howdy]!+)(*&$#@!~|}{=--`/.,<>?', //Plain text
+		);
+		$expected = array(
+			'howdy\\%',
+			'howdy\\_',
+			'howdy\\\\',
+			'howdy\\\\howdy\\%howdy\\_',
+			'howdy\'"[[]*#[^howdy]!+)(*&$#@!~|}{=--`/.,<>?',
+		);
+
+		foreach ($inputs as $key => $input) {
+			$this->assertEquals($expected[$key], $wpdb->esc_like($input));
+		}
+	}
+
+	/**
+	 * Test LIKE Queries
+	 *
+	 * Make sure $wpdb is fully compatible with esc_like() by testing the identity of various strings.
+	 * When escaped properly, a string literal is always LIKE itself (1)
+	 * and never LIKE any other string literal (0) no matter how crazy the SQL looks.
+	 *
+	 * @ticket 10041
+	 * @dataProvider data_like_query
+	 * @param $data string The haystack, raw.
+	 * @param $like string The like phrase, raw.
+         * @param $result string The expected comparison result; '1' = true, '0' = false
+	 */
+	function test_like_query( $data, $like, $result ) {
+		global $wpdb;
+		return $this->assertEquals( $result, $wpdb->get_var( $wpdb->prepare( "SELECT %s LIKE %s", $data, $wpdb->esc_like( $like ) ) ) );
+	}
+
+	function data_like_query() {
+		return array(
+			array(
+				'aaa',
+				'aaa',
+				'1',
+			),
+			array(
+				'a\\aa', // SELECT 'a\\aa'  # This represents a\aa in both languages.
+				'a\\aa', // LIKE 'a\\\\aa'
+				'1',
+			),
+			array(
+				'a%aa',
+				'a%aa',
+				'1',
+			),
+			array(
+				'aaaa',
+				'a%aa',
+				'0',
+			),
+			array(
+				'a\\%aa', // SELECT 'a\\%aa'
+				'a\\%aa', // LIKE 'a\\\\\\%aa' # The PHP literal would be "LIKE 'a\\\\\\\\\\\\%aa'".  This is why we need reliable escape functions!
+				'1',
+			),
+			array(
+				'a%aa',
+				'a\\%aa',
+				'0',
+			),
+			array(
+				'a\\%aa',
+				'a%aa',
+				'0',
+			),
+			array(
+				'a_aa',
+				'a_aa',
+				'1',
+			),
+			array(
+				'aaaa',
+				'a_aa',
+				'0',
+			),
+			array(
+				'howdy\'"[[]*#[^howdy]!+)(*&$#@!~|}{=--`/.,<>?',
+				'howdy\'"[[]*#[^howdy]!+)(*&$#@!~|}{=--`/.,<>?',
+				'1',
+			),
+		);
+	}
+
+	/**
 	 * @ticket 18510
 	 */
 	function test_wpdb_supposedly_protected_properties() {
@@ -225,5 +324,133 @@ class Tests_DB extends WP_UnitTestCase {
 		// This, obviously, is an incorrect prepare.
 		$prepared = $wpdb->prepare( "SELECT * FROM $wpdb->users WHERE id = $id", $id );
 		$this->assertEquals( "SELECT * FROM $wpdb->users WHERE id = 0", $prepared );
+	}
+
+	function test_db_version() {
+		global $wpdb;
+
+		$this->assertTrue( version_compare( $wpdb->db_version(), '5.0', '>=' ) );
+	}
+
+	function test_get_caller() {
+		global $wpdb;
+		$str = $wpdb->get_caller();
+		$calls = explode( ', ', $str );
+		$called = join( '->', array( __CLASS__, __FUNCTION__ ) );
+		$this->assertEquals( $called, end( $calls ) );
+	}
+
+	function test_has_cap() {
+		global $wpdb;
+		$this->assertTrue( $wpdb->has_cap( 'collation' ) );
+		$this->assertTrue( $wpdb->has_cap( 'group_concat' ) );
+		$this->assertTrue( $wpdb->has_cap( 'subqueries' ) );
+		$this->assertTrue( $wpdb->has_cap( 'COLLATION' ) );
+		$this->assertTrue( $wpdb->has_cap( 'GROUP_CONCAT' ) );
+		$this->assertTrue( $wpdb->has_cap( 'SUBQUERIES' ) );
+		$this->assertEquals(
+			version_compare( $wpdb->db_version(), '5.0.7', '>=' ),
+			$wpdb->has_cap( 'set_charset' )
+		);
+		$this->assertEquals(
+			version_compare( $wpdb->db_version(), '5.0.7', '>=' ),
+			$wpdb->has_cap( 'SET_CHARSET' )
+		);
+	}
+
+	/**
+	 * @expectedDeprecated supports_collation
+	 */
+	function test_supports_collation() {
+		global $wpdb;
+		$this->assertTrue( $wpdb->supports_collation() );
+	}
+
+	function test_check_database_version() {
+		global $wpdb;
+		$this->assertEmpty( $wpdb->check_database_version() );
+	}
+
+	/**
+	 * @expectedException WPDieException
+	 */
+	function test_bail() {
+		global $wpdb;
+		$wpdb->bail( 'Database is dead.' );
+	}
+
+	function test_timers() {
+		global $wpdb;
+
+		$wpdb->timer_start();
+		usleep( 5 );
+		$stop = $wpdb->timer_stop();
+
+		$this->assertNotEquals( $wpdb->time_start, $stop );
+		$this->assertGreaterThan( $stop, $wpdb->time_start );
+	}
+
+	function test_get_col_info() {
+		global $wpdb;
+
+		$wpdb->get_results( "SELECT ID FROM $wpdb->users" );
+
+		$this->assertEquals( array( 'ID' ), $wpdb->get_col_info() );
+		$this->assertEquals( array( $wpdb->users ), $wpdb->get_col_info( 'table' ) );
+		$this->assertEquals( $wpdb->users, $wpdb->get_col_info( 'table', 0 ) );
+	}
+
+	function test_query_and_delete() {
+		global $wpdb;
+		$rows = $wpdb->query( "INSERT INTO $wpdb->users (display_name) VALUES ('Walter Sobchak')" );
+		$this->assertEquals( 1, $rows );
+		$this->assertNotEmpty( $wpdb->insert_id );
+		$d_rows = $wpdb->delete( $wpdb->users, array( 'ID' => $wpdb->insert_id ) );
+		$this->assertEquals( 1, $d_rows );
+	}
+
+	function test_get_row() {
+		global $wpdb;
+		$rows = $wpdb->query( "INSERT INTO $wpdb->users (display_name) VALUES ('Walter Sobchak')" );
+		$this->assertEquals( 1, $rows );
+		$this->assertNotEmpty( $wpdb->insert_id );
+
+		$row = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM $wpdb->users WHERE ID = %d", $wpdb->insert_id ) );
+		$this->assertInternalType( 'object', $row );
+		$this->assertEquals( 'Walter Sobchak', $row->display_name );
+	}
+
+	function test_replace() {
+		global $wpdb;
+		$rows1 = $wpdb->insert( $wpdb->users, array( 'display_name' => 'Walter Sobchak' ) );
+		$this->assertEquals( 1, $rows1 );
+		$this->assertNotEmpty( $wpdb->insert_id );
+		$last = $wpdb->insert_id;
+
+		$rows2 = $wpdb->replace( $wpdb->users, array( 'ID' => $last, 'display_name' => 'Walter Replace Sobchak' ) );
+		$this->assertEquals( 2, $rows2 );
+		$this->assertNotEmpty( $wpdb->insert_id );
+
+		$this->assertEquals( $last, $wpdb->insert_id );
+
+		$row = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM $wpdb->users WHERE ID = %d", $last ) );
+		$this->assertEquals( 'Walter Replace Sobchak', $row->display_name );
+	}
+
+	/**
+	 *
+	 * @ticket 26106
+	 */
+	function test_empty_where() {
+		global $wpdb;
+		$wpdb->update( $wpdb->posts, array( 'post_name' => 'burrito' ), array() );
+
+		$expected1 = "UPDATE `{$wpdb->posts}` SET `post_name` = 'burrito'";
+		$this->assertEquals( $expected1, $wpdb->last_query );
+
+		$wpdb->update( $wpdb->posts, array( 'post_name' => 'burrito' ), array( 'post_status' => 'taco' ) );
+
+		$expected2 = "UPDATE `{$wpdb->posts}` SET `post_name` = 'burrito' WHERE `post_status` = 'taco'";
+		$this->assertEquals( $expected2, $wpdb->last_query );
 	}
 }

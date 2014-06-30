@@ -63,7 +63,7 @@ $body_class = 'wp-core-ui wp-customizer js';
 if ( wp_is_mobile() ) :
 	$body_class .= ' mobile';
 
-	?><meta name="viewport" id="viewport-meta" content="width=device-width, initial-scale=0.8, minimum-scale=0.5, maximum-scale=1.2"><?php
+	?><meta name="viewport" id="viewport-meta" content="width=device-width, initial-scale=0.8, minimum-scale=0.5, maximum-scale=1.2" /><?php
 endif;
 
 $is_ios = wp_is_mobile() && preg_match( '/iPad|iPod|iPhone/', $_SERVER['HTTP_USER_AGENT'] );
@@ -84,14 +84,14 @@ var ajaxurl = '<?php echo admin_url( 'admin-ajax.php', 'relative' ); ?>';
 
 <?php
 /**
- * Print Customizer control styles.
+ * Fires when Customizer control styles are printed.
  *
  * @since 3.4.0
  */
 do_action( 'customize_controls_print_styles' );
 
 /**
- * Print Customizer control scripts.
+ * Fires when Customizer control scripts are printed.
  *
  * @since 3.4.0
  */
@@ -118,6 +118,7 @@ do_action( 'customize_controls_print_scripts' );
 			$cannot_expand = ! ( $screenshot || $wp_customize->theme()->get('Description') );
 		?>
 
+		<div id="widgets-right"><!-- For Widget Customizer, many widgets try to look for instances under div#widgets-right, so we have to add that ID to a container div in the customizer for compat -->
 		<div class="wp-full-overlay-sidebar-content accordion-container" tabindex="-1">
 			<div id="customize-info" class="accordion-section <?php if ( $cannot_expand ) echo ' cannot-expand'; ?>">
 				<div class="accordion-section-title" aria-label="<?php esc_attr_e( 'Theme Customizer Options' ); ?>" tabindex="0">
@@ -141,10 +142,15 @@ do_action( 'customize_controls_print_scripts' );
 
 			<div id="customize-theme-controls"><ul>
 				<?php
-				foreach ( $wp_customize->sections() as $section )
+				foreach ( $wp_customize->panels() as $panel ) {
+					$panel->maybe_render();
+				}
+				foreach ( $wp_customize->sections() as $section ) {
 					$section->maybe_render();
+				}
 				?>
 			</ul></div>
+		</div>
 		</div>
 
 		<div id="customize-footer-actions" class="wp-full-overlay-footer">
@@ -208,15 +214,15 @@ do_action( 'customize_controls_print_scripts' );
 			'active'     => $wp_customize->is_theme_active(),
 		),
 		'url'      => array(
-			'preview'       => esc_url( $url ? $url : home_url( '/' ) ),
-			'parent'        => esc_url( admin_url() ),
-			'activated'     => admin_url( 'themes.php?activated=true&previewed' ),
-			'ajax'          => esc_url( admin_url( 'admin-ajax.php', 'relative' ) ),
-			'allowed'       => array_map( 'esc_url', $allowed_urls ),
+			'preview'       => esc_url_raw( $url ? $url : home_url( '/' ) ),
+			'parent'        => esc_url_raw( admin_url() ),
+			'activated'     => esc_url_raw( admin_url( 'themes.php?activated=true&previewed' ) ),
+			'ajax'          => esc_url_raw( admin_url( 'admin-ajax.php', 'relative' ) ),
+			'allowed'       => array_map( 'esc_url_raw', $allowed_urls ),
 			'isCrossDomain' => $cross_domain,
-			'fallback'      => $fallback_url,
-			'home'          => esc_url( home_url( '/' ) ),
-			'login'         => $login_url,
+			'fallback'      => esc_url_raw( $fallback_url ),
+			'home'          => esc_url_raw( home_url( '/' ) ),
+			'login'         => esc_url_raw( $login_url ),
 		),
 		'browser'  => array(
 			'mobile' => wp_is_mobile(),
@@ -225,9 +231,9 @@ do_action( 'customize_controls_print_scripts' );
 		'settings' => array(),
 		'controls' => array(),
 		'nonce'    => array(
- 			'save'    => wp_create_nonce( 'save-customize_' . $wp_customize->get_stylesheet() ),
- 			'preview' => wp_create_nonce( 'preview-customize_' . $wp_customize->get_stylesheet() )
- 		),
+			'save'    => wp_create_nonce( 'save-customize_' . $wp_customize->get_stylesheet() ),
+			'preview' => wp_create_nonce( 'preview-customize_' . $wp_customize->get_stylesheet() )
+		),
 	);
 
 	// Prepare Customize Setting objects to pass to Javascript.

@@ -5,7 +5,9 @@ module.exports = function(grunt) {
 		BUILD_DIR = 'build/';
 
 	// Load tasks.
-	require('matchdep').filterDev('grunt-*').forEach( grunt.loadNpmTasks );
+	require('matchdep').filterDev(['grunt-*', '!grunt-legacy-util']).forEach( grunt.loadNpmTasks );
+	// Load legacy utils
+	grunt.util = require('grunt-legacy-util');
 
 	// Project configuration.
 	grunt.initConfig({
@@ -56,6 +58,7 @@ module.exports = function(grunt) {
 							'!wp-includes/js/backbone.js',
 							'!wp-includes/js/underscore.js',
 							'!wp-includes/js/jquery/jquery.masonry.js',
+							'!wp-includes/js/tinymce/tinymce.js',
 							'!wp-includes/version.php' // Exclude version.php
 						],
 						dest: BUILD_DIR
@@ -78,7 +81,15 @@ module.exports = function(grunt) {
 			version: {
 				options: {
 					processContent: function( src ) {
-						return src.replace( /^(\$wp_version.+?)-src';/m, '$1\';' );
+						return src.replace( /^\$wp_version = '(.+?)';/m, function( str, version ) {
+							version = version.replace( /-src$/, '' );
+
+							// If the version includes an SVN commit (-12345), it's not a released alpha/beta. Append a date.
+							version = version.replace( /-[\d]{5}$/, '-' + grunt.template.today( 'yyyymmdd' ) );
+
+							/* jshint quotmark: true */
+							return "$wp_version = '" + version + "';";
+						});
 					}
 				},
 				src: SOURCE_DIR + 'wp-includes/version.php',
@@ -115,7 +126,7 @@ module.exports = function(grunt) {
 		},
 		cssmin: {
 			options: {
-				'wp-admin': ['wp-admin', 'color-picker', 'customize-controls', 'ie', 'install', 'login', 'deprecated-*']
+				'wp-admin': ['wp-admin', 'color-picker', 'customize-controls', 'customize-widgets', 'ie', 'install', 'login', 'deprecated-*']
 			},
 			core: {
 				expand: true,
@@ -191,7 +202,7 @@ module.exports = function(grunt) {
 			tests: {
 				src: [
 					'tests/qunit/**/*.js',
-					'!tests/qunit/vendor/qunit.js',
+					'!tests/qunit/vendor/*',
 					'!tests/qunit/editor/**'
 				],
 				options: grunt.file.readJSON('tests/qunit/.jshintrc')
@@ -235,8 +246,14 @@ module.exports = function(grunt) {
 					curly: false,
 					eqeqeq: false
 				},
-				// Limit JSHint's run to a single specified file
-				//     grunt jshint:core --file=filename.js
+				// Limit JSHint's run to a single specified file:
+				//
+				//    grunt jshint:core --file=filename.js
+				//
+				// Optionally, include the file path:
+				//
+				//    grunt jshint:core --file=path/to/filename.js
+				//
 				filter: function( filepath ) {
 					var index, file = grunt.option( 'file' );
 
@@ -251,6 +268,36 @@ module.exports = function(grunt) {
 
 					// Match only the filename passed from cli
 					if ( filepath === file || ( -1 !== index && index === filepath.length - ( file.length + 1 ) ) ) {
+						return true;
+					}
+
+					return false;
+				}
+			},
+			plugins: {
+				expand: true,
+				cwd: SOURCE_DIR + 'wp-content/plugins',
+				src: [
+					'**/*.js',
+					'!**/*.min.js'
+				],
+				// Limit JSHint's run to a single specified plugin directory:
+				//
+				//    grunt jshint:plugins --dir=foldername
+				//
+				filter: function( dirpath ) {
+					var index, dir = grunt.option( 'dir' );
+
+					// Don't filter when no target folder is specified
+					if ( ! dir ) {
+						return true;
+					}
+
+					dirpath = dirpath.replace( /\\/g, '/' );
+					index = dirpath.lastIndexOf( '/' + dir );
+
+					// Match only the folder name passed from cli
+					if ( -1 !== index ) {
 						return true;
 					}
 
@@ -402,9 +449,12 @@ module.exports = function(grunt) {
 	// Color schemes task.
 	grunt.registerTask('colors', ['sass:colors', 'autoprefixer:colors']);
 
+	// JSHint task.
+	grunt.registerTask('jshint:corejs', ['jshint:grunt', 'jshint:tests', 'jshint:themes', 'jshint:core']);
+
 	// Pre-commit task.
 	grunt.registerTask('precommit', 'Runs front-end dev/test tasks in preparation for a commit.',
-		['autoprefixer:core', 'imagemin:core', 'jshint', 'qunit:compiled']);
+		['autoprefixer:core', 'imagemin:core', 'jshint:corejs', 'qunit:compiled']);
 
 	// Copy task.
 	grunt.registerTask('copy:all', ['copy:files', 'copy:wp-admin-rtl', 'copy:version']);
@@ -426,7 +476,10 @@ module.exports = function(grunt) {
 		['build', 'copy:qunit', 'qunit']);
 
 	grunt.registerTask('test', 'Runs all QUnit and PHPUnit tasks.', ['qunit:compiled', 'phpunit']);
-	grunt.registerTask('travis', ['jshint', 'test']);
+
+	// Travis CI tasks.
+	grunt.registerTask('travis:js', 'Runs Javascript Travis CI tasks.', [ 'jshint:corejs', 'qunit:compiled' ]);
+	grunt.registerTask('travis:phpunit', 'Runs PHPUnit Travis CI tasks.', 'phpunit');
 
 	// Patch task.
 	grunt.renameTask('patch_wordpress', 'patch');

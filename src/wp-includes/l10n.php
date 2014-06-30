@@ -26,7 +26,7 @@
 function get_locale() {
 	global $locale;
 
-	if ( isset( $locale ) )
+	if ( isset( $locale ) ) {
 		/**
 		 * Filter WordPress install's locale ID.
 		 *
@@ -35,6 +35,7 @@ function get_locale() {
 		 * @param string $locale The locale ID.
 		 */
 		return apply_filters( 'locale', $locale );
+	}
 
 	// WPLANG is defined in wp-config.
 	if ( defined( 'WPLANG' ) )
@@ -48,12 +49,17 @@ function get_locale() {
 
 		if ( $ms_locale !== false )
 			$locale = $ms_locale;
+	} elseif ( ! defined( 'WP_INSTALLING' ) ) {
+		$db_locale = get_option( 'WPLANG' );
+		if ( $db_locale ) {
+			$locale = $db_locale;
+		}
 	}
 
 	if ( empty( $locale ) )
 		$locale = 'en_US';
 
-	// duplicate_hook
+	/** This filter is documented in wp-includes/l10n.php */
 	return apply_filters( 'locale', $locale );
 }
 
@@ -424,9 +430,9 @@ function load_textdomain( $domain, $mofile ) {
 	 *
 	 * @since 2.9.0
 	 *
-	 * @param boolean        Whether to override the text domain. Default false.
-	 * @param string $domain Text domain. Unique identifier for retrieving translated strings.
-	 * @param string $mofile Path to the MO file.
+	 * @param bool   $override Whether to override the text domain. Default false.
+	 * @param string $domain   Text domain. Unique identifier for retrieving translated strings.
+	 * @param string $mofile   Path to the MO file.
 	 */
 	$plugin_override = apply_filters( 'override_load_textdomain', false, $domain, $mofile );
 
@@ -479,12 +485,12 @@ function unload_textdomain( $domain ) {
 	global $l10n;
 
 	/**
-	 * Filter text text domain for loading translation.
+	 * Filter the text domain for loading translation.
 	 *
 	 * @since 3.0.0
 	 *
-	 * @param boolean        Whether to override unloading the text domain. Default false.
-	 * @param string $domain Text domain. Unique identifier for retrieving translated strings.
+	 * @param bool   $override Whether to override unloading the text domain. Default false.
+	 * @param string $domain   Text domain. Unique identifier for retrieving translated strings.
 	 */
 	$plugin_override = apply_filters( 'override_unload_textdomain', false, $domain );
 
@@ -548,6 +554,8 @@ function load_default_textdomain() {
  * @param string $domain          Unique identifier for retrieving translated strings
  * @param string $deprecated      Use the $plugin_rel_path parameter instead.
  * @param string $plugin_rel_path Optional. Relative path to WP_PLUGIN_DIR where the .mo file resides.
+ *                                Default false.
+ * @return bool True when textdomain is successfully loaded, false otherwise.
  */
 function load_plugin_textdomain( $domain, $deprecated = false, $plugin_rel_path = false ) {
 	$locale = get_locale();
@@ -591,7 +599,7 @@ function load_plugin_textdomain( $domain, $deprecated = false, $plugin_rel_path 
  * @return bool True when textdomain is successfully loaded, false otherwise.
  */
 function load_muplugin_textdomain( $domain, $mu_plugin_rel_path = '' ) {
-	// duplicate_hook
+	/** This filter is documented in wp-includes/l10n.php */
 	$locale = apply_filters( 'plugin_locale', get_locale(), $domain );
 	$path = trailingslashit( WPMU_PLUGIN_DIR . '/' . ltrim( $mu_plugin_rel_path, '/' ) );
 
@@ -656,6 +664,8 @@ function load_theme_textdomain( $domain, $path = false ) {
  * @since 2.9.0
  *
  * @param string $domain Text domain. Unique identifier for retrieving translated strings.
+ * @param string $path   Optional. Path to the directory containing the .mo file.
+ *                       Default false.
  * @return bool True when the theme textdomain is successfully loaded, false otherwise.
  */
 function load_child_theme_textdomain( $domain, $path = false ) {
