@@ -221,16 +221,52 @@ class WP_Comment_Query {
 	var $date_query = false;
 
 	/**
-	 * Execute the query
+	 * Query vars set by the user
 	 *
 	 * @since 3.1.0
-	 *
-	 * @param string|array $query_vars
-	 * @return int|array
+	 * @access public
+	 * @var array
 	 */
-	function query( $query_vars ) {
-		global $wpdb;
+	var $query_vars;
 
+	/**
+	 * List of comments.
+	 *
+	 * @since 3.7
+	 * @access public
+	 * @var array
+	 */
+	var $comments;
+
+	/**
+	 * Constructor.
+	 *
+	 * Sets up the comment query, if parameter is not empty.
+	 *
+	 * @since 3.7
+	 * @access public
+	 *
+	 * @param string $query URL query string.
+	 * @return WP_Comment_Query
+	 */
+	function __construct($query = '') {
+		if ( ! empty($query) ) {
+			$this->query($query);
+		}
+	}
+
+	/**
+	 * Parse a query string and set query type booleans.
+	 *
+	 * @since 1.5.0
+	 * @access public
+	 *
+	 * @param string|array $query Optional query.
+	 */
+	function parse_query( $query =  '' ) {
+		if ( empty( $query ) ) {
+			$query = $this->query_vars;
+		}
 		$defaults = array(
 			'author_email' => '',
 			'ID' => '',
@@ -258,9 +294,37 @@ class WP_Comment_Query {
 			'date_query' => null, // See WP_Date_Query
 		);
 
+		$this->query_vars = wp_parse_args( $query, $defaults );
+		do_action_ref_array('parse_comment_query', array(&$this));
+	}
+
+	/**
+	 * Sets up the WordPress query by parsing query string.
+	 *
+	 * @since 1.5.0
+	 * @access public
+	 *
+	 * @param string $query_vars URL query string.
+	 * @return array List of posts.
+	 */
+	function query( $query_vars ) {
+		$this->query_vars = wp_parse_args( $query_vars );
+		return $this->get_comments();
+	}
+
+	/**
+	 * Execute the query
+	 *
+	 * @since 3.7
+	 *
+	 * @return int|array
+	 */
+	function get_comments() {
+		global $wpdb;
+
 		$groupby = '';
 
-		$this->query_vars = wp_parse_args( $query_vars, $defaults );
+		$this->parse_query();
 
 		// Parse meta query
 		$this->meta_query = new WP_Meta_Query();
@@ -276,8 +340,8 @@ class WP_Comment_Query {
 		do_action_ref_array( 'pre_get_comments', array( &$this ) );
 		extract( $this->query_vars, EXTR_SKIP );
 
-		// $args can be whatever, only use the args defined in defaults to compute the key
-		$key = md5( serialize( compact(array_keys($defaults)) )  );
+		// $args can be whatever, only use the args defined in the query_vars to compute the key
+		$key = md5( serialize( compact(array_keys($this->query_vars)) )  );
 		$last_changed = wp_cache_get( 'last_changed', 'comment' );
 		if ( ! $last_changed ) {
 			$last_changed = microtime();
@@ -285,8 +349,10 @@ class WP_Comment_Query {
 		}
 		$cache_key = "get_comments:$key:$last_changed";
 
-		if ( $cache = wp_cache_get( $cache_key, 'comment' ) )
+		if ( $cache = wp_cache_get( $cache_key, 'comment' ) ) {
+			$this->comments = $cache;
 			return $cache;
+		}
 
 		$post_id = absint($post_id);
 
@@ -435,6 +501,7 @@ class WP_Comment_Query {
 		$comments = apply_filters_ref_array( 'the_comments', array( $comments, &$this ) );
 
 		wp_cache_add( $cache_key, $comments, 'comment' );
+		$this->comments = $comments;
 
 		return $comments;
 	}
