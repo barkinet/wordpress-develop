@@ -28,8 +28,7 @@ class Tests_Comment_Query extends WP_UnitTestCase {
 	 * @ticket 21101
 	 */
 	function test_get_comment_comment_approved_1() {
-		$comment_args = array( 'comment_post_ID' => $this->factory->post->create() );
-		$comment_id = $this->factory->comment->create( $comment_args );
+		$comment_id = $this->factory->comment->create( array( 'comment_post_ID' => $this->post_id ) );
 		$comments_approved_1 = get_comments( array( 'status' => 'approve' ) );
 
 		$this->assertEquals( 1, count( $comments_approved_1 ) );
@@ -84,10 +83,9 @@ class Tests_Comment_Query extends WP_UnitTestCase {
 	 * @ticket 21003
 	 */
 	function test_orderby_meta() {
-		$comment_args = array( 'comment_post_ID' => $this->factory->post->create() );
-		$comment_id = $this->factory->comment->create( $comment_args );
-		$comment_id2 = $this->factory->comment->create( $comment_args );
-		$comment_id3 = $this->factory->comment->create( $comment_args );
+		$comment_id = $this->factory->comment->create( array( 'comment_post_ID' => $this->post_id ) );
+		$comment_id2 = $this->factory->comment->create( array( 'comment_post_ID' => $this->post_id ) );
+		$comment_id3 = $this->factory->comment->create( array( 'comment_post_ID' => $this->post_id ) );
 
 		add_comment_meta( $comment_id, 'key', 'value1', true );
 		add_comment_meta( $comment_id, 'key1', 'value1', true );
@@ -181,5 +179,37 @@ class Tests_Comment_Query extends WP_UnitTestCase {
 		$this->assertEquals( $users[0], $comments[1]->user_id );
 		$this->assertEquals( $users[1], $comments[2]->user_id );
 
+	}
+
+	/**
+	 * Ticket @23931
+	 */
+	function test_wp_insert_comment_data_filter() {
+		$comment_args = array(
+			'comment_post_ID' => $this->factory->post->create(),
+			'comment_content' => 'not-filtered',
+		);
+		$filter = function ( $comment_data ) {
+			$comment_data['comment_content'] = 'filtered';
+			return $comment_data;
+		};
+		add_filter( 'wp_insert_comment_data', $filter );
+		$comment_id = $this->factory->comment->create( $comment_args );
+		remove_filter( 'wp_insert_comment_data', $filter );
+		$comment = get_comment( $comment_id );
+		$this->assertEquals( 'filtered', $comment->comment_content );
+	}
+
+	/**
+	 * Ticket @23931
+	 */
+	function test_error_when_not_supplying_comment_post_id() {
+		$r = $this->factory->comment->create( array() );
+		$this->assertInstanceOf( 'WP_Error', $r );
+		$this->assertEquals( 'invalid_comment_post_id', $r->get_error_code() );
+
+		$post_id = $this->factory->post->create();
+		$r = $this->factory->comment->create( array( 'comment_post_ID' => $post_id ) );
+		$this->assertInternalType( 'int', $r );
 	}
 }
