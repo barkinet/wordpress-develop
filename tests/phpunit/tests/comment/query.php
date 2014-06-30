@@ -180,4 +180,24 @@ class Tests_Comment_Query extends WP_UnitTestCase {
 		$this->assertEquals( $users[1], $comments[2]->user_id );
 
 	}
+
+	/**
+	 * Ticket 24826
+	 */
+	function test_comment_query_object() {
+		$comment_id = $this->factory->comment->create();
+
+		$query1 = new WP_Comment_Query();
+		$this->assertNull( $query1->query_vars );
+		$this->assertEmpty( $query1->comments );
+		$comments = $query1->query( array( 'status' => 'all' ) );
+		$this->assertInternalType( 'array', $query1->query_vars );
+		$this->assertNotEmpty( $query1->comments );
+		$this->assertInternalType( 'array', $query1->comments );
+
+		$query2 = new WP_Comment_Query( array( 'status' => 'all' ) );
+		$this->assertNotEmpty( $query2->query_vars );
+		$this->assertNotEmpty( $query2->comments );
+		$this->assertEquals( $query2->comments, $query1->get_comments() );
+	}
 }
