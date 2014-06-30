@@ -28,7 +28,8 @@ class Tests_Comment_Query extends WP_UnitTestCase {
 	 * @ticket 21101
 	 */
 	function test_get_comment_comment_approved_1() {
-		$comment_id = $this->factory->comment->create( array( 'comment_post_ID' => $this->post_id ) );
+		$comment_args = array( 'comment_post_ID' => $this->factory->post->create() );
+		$comment_id = $this->factory->comment->create( $comment_args );
 		$comments_approved_1 = get_comments( array( 'status' => 'approve' ) );
 
 		$this->assertEquals( 1, count( $comments_approved_1 ) );
@@ -83,9 +84,10 @@ class Tests_Comment_Query extends WP_UnitTestCase {
 	 * @ticket 21003
 	 */
 	function test_orderby_meta() {
-		$comment_id = $this->factory->comment->create( array( 'comment_post_ID' => $this->post_id ) );
-		$comment_id2 = $this->factory->comment->create( array( 'comment_post_ID' => $this->post_id ) );
-		$comment_id3 = $this->factory->comment->create( array( 'comment_post_ID' => $this->post_id ) );
+		$comment_args = array( 'comment_post_ID' => $this->factory->post->create() );
+		$comment_id = $this->factory->comment->create( $comment_args );
+		$comment_id2 = $this->factory->comment->create( $comment_args );
+		$comment_id3 = $this->factory->comment->create( $comment_args );
 
 		add_comment_meta( $comment_id, 'key', 'value1', true );
 		add_comment_meta( $comment_id, 'key1', 'value1', true );
