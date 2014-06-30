@@ -25,10 +25,9 @@ if ( force_ssl_admin() && ! is_ssl() ) {
 /**
  * Output the login page header.
  *
- * @param string $title    Optional. WordPress Log In Page title to display in <title/> element. Default 'Log In'.
- * @param string $message  Optional. Message to display in header. Default empty.
- * @param string $wp_error Optional. The error to pass. Default empty.
- * @param WP_Error $wp_error Optional. WordPress Error Object
+ * @param string   $title    Optional. WordPress Log In Page title to display in <title> element. Default 'Log In'.
+ * @param string   $message  Optional. Message to display in header. Default empty.
+ * @param WP_Error $wp_error Optional. The error to pass. Default empty.
  */
 function login_header( $title = 'Log In', $message = '', $wp_error = '' ) {
 	global $error, $interim_login, $action;
@@ -131,6 +130,7 @@ function login_header( $title = 'Log In', $message = '', $wp_error = '' ) {
 		if ( 'success' ===  $interim_login )
 			$classes[] = 'interim-login-success';
 	}
+	$classes[] =' locale-' . sanitize_html_class( strtolower( str_replace( '_', '-', get_locale() ) ) );
 
 	/**
 	 * Filter the login page body classes.
@@ -146,7 +146,7 @@ function login_header( $title = 'Log In', $message = '', $wp_error = '' ) {
 	</head>
 	<body class="login <?php echo esc_attr( implode( ' ', $classes ) ); ?>">
 	<div id="login">
-		<h1><a href="<?php echo esc_url( $login_header_url ); ?>" title="<?php echo esc_attr( $login_header_title ); ?>"><?php bloginfo( 'name' ); ?></a></h1>
+		<h1><a href="<?php echo esc_url( $login_header_url ); ?>" title="<?php echo esc_attr( $login_header_title ); ?>" tabindex="-1"><?php bloginfo( 'name' ); ?></a></h1>
 	<?php
 
 	unset( $login_header_url, $login_header_title );
@@ -172,12 +172,12 @@ function login_header( $title = 'Log In', $message = '', $wp_error = '' ) {
 		$errors = '';
 		$messages = '';
 		foreach ( $wp_error->get_error_codes() as $code ) {
-			$severity = $wp_error->get_error_data($code);
-			foreach ( $wp_error->get_error_messages($code) as $error ) {
+			$severity = $wp_error->get_error_data( $code );
+			foreach ( $wp_error->get_error_messages( $code ) as $error_message ) {
 				if ( 'message' == $severity )
-					$messages .= '	' . $error . "<br />\n";
+					$messages .= '	' . $error_message . "<br />\n";
 				else
-					$errors .= '	' . $error . "<br />\n";
+					$errors .= '	' . $error_message . "<br />\n";
 			}
 		}
 		if ( ! empty( $errors ) ) {
@@ -348,7 +348,7 @@ function retrieve_password() {
 
 	// Now insert the key, hashed, into the DB.
 	if ( empty( $wp_hasher ) ) {
-		require_once ABSPATH . 'wp-includes/class-phpass.php';
+		require_once ABSPATH . WPINC . '/class-phpass.php';
 		$wp_hasher = new PasswordHash( 8, true );
 	}
 	$hashed = $wp_hasher->HashPassword( $key );
@@ -388,7 +388,7 @@ function retrieve_password() {
 	 */
 	$message = apply_filters( 'retrieve_password_message', $message, $key );
 
-	if ( $message && !wp_mail($user_email, $title, $message) )
+	if ( $message && !wp_mail( $user_email, wp_specialchars_decode( $title ), $message ) )
 		wp_die( __('The e-mail could not be sent.') . "<br />\n" . __('Possible reason: your host may have disabled the mail() function.') );
 
 	return true;
@@ -422,9 +422,10 @@ if ( defined( 'RELOCATE' ) && RELOCATE ) { // Move flag is set
 }
 
 //Set a cookie now to see if they are supported by the browser.
-setcookie(TEST_COOKIE, 'WP Cookie check', 0, COOKIEPATH, COOKIE_DOMAIN);
+$secure = ( is_https_url( home_url() ) && is_https_url( site_url() ) );
+setcookie( TEST_COOKIE, 'WP Cookie check', 0, COOKIEPATH, COOKIE_DOMAIN, $secure );
 if ( SITECOOKIEPATH != COOKIEPATH )
-	setcookie(TEST_COOKIE, 'WP Cookie check', 0, SITECOOKIEPATH, COOKIE_DOMAIN);
+	setcookie( TEST_COOKIE, 'WP Cookie check', 0, SITECOOKIEPATH, COOKIE_DOMAIN, $secure );
 
 /**
  * Fires when the login form is initialized.
@@ -449,7 +450,7 @@ $interim_login = isset($_REQUEST['interim-login']);
 switch ($action) {
 
 case 'postpass' :
-	require_once ABSPATH . 'wp-includes/class-phpass.php';
+	require_once ABSPATH . WPINC . '/class-phpass.php';
 	$hasher = new PasswordHash( 8, true );
 
 	/**
@@ -463,12 +464,11 @@ case 'postpass' :
 	 * @param int $expires The expiry time, as passed to setcookie().
 	 */
 	$expire = apply_filters( 'post_password_expires', time() + 10 * DAY_IN_SECONDS );
-	setcookie( 'wp-postpass_' . COOKIEHASH, $hasher->HashPassword( wp_unslash( $_POST['post_password'] ) ), $expire, COOKIEPATH );
+	$secure = is_https_url( home_url() );
+	setcookie( 'wp-postpass_' . COOKIEHASH, $hasher->HashPassword( wp_unslash( $_POST['post_password'] ) ), $expire, COOKIEPATH, COOKIE_DOMAIN, $secure );
 
 	wp_safe_redirect( wp_get_referer() );
 	exit();
-
-break;
 
 case 'logout' :
 	check_admin_referer('log-out');
@@ -477,8 +477,6 @@ case 'logout' :
 	$redirect_to = !empty( $_REQUEST['redirect_to'] ) ? $_REQUEST['redirect_to'] : 'wp-login.php?loggedout=true';
 	wp_safe_redirect( $redirect_to );
 	exit();
-
-break;
 
 case 'lostpassword' :
 case 'retrievepassword' :
@@ -543,13 +541,8 @@ case 'retrievepassword' :
 <?php
 if ( get_option( 'users_can_register' ) ) :
 	$registration_url = sprintf( '<a href="%s">%s</a>', esc_url( wp_registration_url() ), __( 'Register' ) );
-	/**
-	 * Filter the registration URL below the login form.
-	 *
-	 * @since 1.5.0
-	 *
-	 * @param string $registration_url Registration URL.
-	 */
+
+	/** This filter is documented in wp-includes/general-template.php */
 	echo ' | ' . apply_filters( 'register', $registration_url );
 endif;
 ?>
@@ -622,7 +615,7 @@ case 'rp' :
 	 *
 	 * @since 3.9.0
 	 *
-	 * @param WP_User $user User undergoing the password reset.
+	 * @param WP_User $user User object of the user whose password is being reset.
 	 */
 	do_action( 'resetpass_form', $user );
 	?>
@@ -634,7 +627,8 @@ case 'rp' :
 <?php
 if ( get_option( 'users_can_register' ) ) :
 	$registration_url = sprintf( '<a href="%s">%s</a>', esc_url( wp_registration_url() ), __( 'Register' ) );
-	/** This filter is documented in wp-login.php */
+
+	/** This filter is documented in wp-includes/general-template.php */
 	echo ' | ' . apply_filters( 'register', $registration_url );
 endif;
 ?>
@@ -646,7 +640,6 @@ break;
 
 case 'register' :
 	if ( is_multisite() ) {
-		$sign_up_url = network_site_url( 'wp-signup.php' );
 		/**
 		 * Filter the Multisite sign up URL.
 		 *
@@ -654,7 +647,7 @@ case 'register' :
 		 *
 		 * @param string $sign_up_url The sign up URL.
 		 */
-		wp_redirect( apply_filters( 'wp_signup_location', $sign_up_url ) );
+		wp_redirect( apply_filters( 'wp_signup_location', network_site_url( 'wp-signup.php' ) ) );
 		exit;
 	}
 
@@ -749,17 +742,18 @@ default:
 
 	$reauth = empty($_REQUEST['reauth']) ? false : true;
 
-	// If the user was redirected to a secure login form from a non-secure admin page, and secure login is required but secure admin is not, then don't use a secure
-	// cookie and redirect back to the referring non-secure admin page. This allows logins to always be POSTed over SSL while allowing the user to choose visiting
-	// the admin via http or https.
-	if ( !$secure_cookie && is_ssl() && force_ssl_login() && !force_ssl_admin() && ( 0 !== strpos($redirect_to, 'https') ) && ( 0 === strpos($redirect_to, 'http') ) )
-		$secure_cookie = false;
+	$user = wp_signon( '', $secure_cookie );
 
-	// If cookies are disabled we can't log in even with a valid user+pass
-	if ( isset($_POST['testcookie']) && empty($_COOKIE[TEST_COOKIE]) )
-		$user = new WP_Error('test_cookie', __("<strong>ERROR</strong>: Cookies are blocked or not supported by your browser. You must <a href='http://www.google.com/cookies.html'>enable cookies</a> to use WordPress."));
-	else
-		$user = wp_signon('', $secure_cookie);
+	if ( empty( $_COOKIE[ LOGGED_IN_COOKIE ] ) ) {
+		if ( headers_sent() ) {
+			$user = new WP_Error( 'test_cookie', sprintf( __( '<strong>ERROR</strong>: Cookies are blocked due to unexpected output. For help, please see <a href="%1$s">this documentation</a> or try the <a href="%2$s">support forums</a>.' ),
+				__( 'http://codex.wordpress.org/Cookies' ), __( 'https://wordpress.org/support/' ) ) );
+		} elseif ( isset( $_POST['testcookie'] ) && empty( $_COOKIE[ TEST_COOKIE ] ) ) {
+			// If cookies are disabled we can't log in even with a valid user+pass
+			$user = new WP_Error( 'test_cookie', sprintf( __( '<strong>ERROR</strong>: Cookies are blocked or not supported by your browser. You must <a href="%s">enable cookies</a> to use WordPress.' ),
+				__( 'http://codex.wordpress.org/Cookies' ) ) );
+		}
+	}
 
 	$requested_redirect_to = isset( $_REQUEST['redirect_to'] ) ? $_REQUEST['redirect_to'] : '';
 	/**
@@ -884,7 +878,8 @@ default:
 <?php if ( ! isset( $_GET['checkemail'] ) || ! in_array( $_GET['checkemail'], array( 'confirm', 'newpass' ) ) ) :
 	if ( get_option( 'users_can_register' ) ) :
 		$registration_url = sprintf( '<a href="%s">%s</a>', esc_url( wp_registration_url() ), __( 'Register' ) );
-		/** This filter is documented in wp-login.php */
+
+		/** This filter is documented in wp-includes/general-template.php */
 		echo apply_filters( 'register', $registration_url ) . ' | ';
 	endif;
 	?>

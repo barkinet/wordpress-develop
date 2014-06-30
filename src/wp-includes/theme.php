@@ -128,7 +128,7 @@ function wp_clean_themes_cache( $clear_update_cache = true ) {
  * @return bool true if a child theme is in use, false otherwise.
  **/
 function is_child_theme() {
-	return ( TEMPLATEPATH !== STYLESHEETPATH );
+	return get_template_directory() !== get_stylesheet_directory();
 }
 
 /**
@@ -187,7 +187,7 @@ function get_stylesheet_directory() {
  * @return string
  */
 function get_stylesheet_directory_uri() {
-	$stylesheet = get_stylesheet();
+	$stylesheet = str_replace( '%2F', '/', rawurlencode( get_stylesheet() ) );
 	$theme_root_uri = get_theme_root_uri( $stylesheet );
 	$stylesheet_dir_uri = "$theme_root_uri/$stylesheet";
 
@@ -318,7 +318,7 @@ function get_template_directory() {
  * @return string Template directory URI.
  */
 function get_template_directory_uri() {
-	$template = get_template();
+	$template = str_replace( '%2F', '/', rawurlencode( get_template() ) );
 	$theme_root_uri = get_theme_root_uri( $template );
 	$template_dir_uri = "$theme_root_uri/$template";
 
@@ -752,10 +752,18 @@ function preview_theme_ob_filter_callback( $matches ) {
  * @param string $stylesheet Stylesheet name
  */
 function switch_theme( $stylesheet ) {
-	global $wp_theme_directories, $sidebars_widgets;
+	global $wp_theme_directories, $wp_customize, $sidebars_widgets;
 
-	if ( is_array( $sidebars_widgets ) )
-		set_theme_mod( 'sidebars_widgets', array( 'time' => time(), 'data' => $sidebars_widgets ) );
+	$_sidebars_widgets = null;
+	if ( 'wp_ajax_customize_save' === current_action() ) {
+		$_sidebars_widgets = $wp_customize->post_value( $wp_customize->get_setting( 'old_sidebars_widgets_data' ) );
+	} elseif ( is_array( $sidebars_widgets ) ) {
+		$_sidebars_widgets = $sidebars_widgets;
+	}
+
+	if ( is_array( $_sidebars_widgets ) ) {
+		set_theme_mod( 'sidebars_widgets', array( 'time' => time(), 'data' => $_sidebars_widgets ) );
+	}
 
 	$old_theme  = wp_get_theme();
 	$new_theme = wp_get_theme( $stylesheet );
@@ -782,9 +790,19 @@ function switch_theme( $stylesheet ) {
 
 	update_option( 'current_theme', $new_name );
 
+	// Migrate from the old mods_{name} option to theme_mods_{slug}.
 	if ( is_admin() && false === get_option( 'theme_mods_' . $stylesheet ) ) {
 		$default_theme_mods = (array) get_option( 'mods_' . $new_name );
 		add_option( "theme_mods_$stylesheet", $default_theme_mods );
+	} else {
+		/*
+		 * Since retrieve_widgets() is called when initializing the customizer theme,
+		 * we need to to remove the theme mods to avoid overwriting changes made via
+		 * the widget customizer when accessing wp-admin/widgets.php.
+		 */
+		if ( 'wp_ajax_customize_save' === current_action() ) {
+			remove_theme_mod( 'sidebars_widgets' );
+		}
 	}
 
 	update_option( 'theme_switched', $old_theme->get_stylesheet() );
@@ -1217,7 +1235,8 @@ function register_default_headers( $headers ) {
  * @since 3.0.0
  *
  * @param string|array $header The header string id (key of array) to remove, or an array thereof.
- * @return True on success, false on failure.
+ * @return bool|void A single header returns true on success, false on failure.
+ *                   There is currently no return value for multiple headers.
  */
 function unregister_default_headers( $header ) {
 	global $_wp_default_headers;
@@ -1283,7 +1302,11 @@ function _custom_background_cb() {
 
 	// $color is the saved custom color.
 	// A default has to be specified in style.css. It will not be printed here.
-	$color = get_theme_mod( 'background_color' );
+	$color = get_background_color();
+
+	if ( $color === get_theme_support( 'custom-background', 'default-color' ) ) {
+		$color = false;
+	}
 
 	if ( ! $background && ! $color )
 		return;
@@ -1379,7 +1402,9 @@ function remove_editor_styles() {
  * The init hook may be too late for some features.
  *
  * @since 2.9.0
- * @param string $feature the feature being added
+ *
+ * @param string $feature The feature being added.
+ * @return void|bool False on failure, void otherwise.
  */
 function add_theme_support( $feature ) {
 	global $_wp_theme_features;
@@ -1398,6 +1423,7 @@ function add_theme_support( $feature ) {
 		case 'html5' :
 			// You can't just pass 'html5', you need to pass an array of types.
 			if ( empty( $args[0] ) ) {
+				// Build an array of types for back-compat.
 				$args = array( 0 => array( 'comment-list', 'comment-form', 'search-form' ) );
 			} elseif ( ! is_array( $args[0] ) ) {
 				_doing_it_wrong( "add_theme_support( 'html5' )", 'You need to pass an array of types.', '3.6.1' );
@@ -1411,7 +1437,6 @@ function add_theme_support( $feature ) {
 
 		case 'custom-header-uploads' :
 			return add_theme_support( 'custom-header', array( 'uploads' => true ) );
-			break;
 
 		case 'custom-header' :
 			if ( ! is_array( $args ) )
@@ -1592,10 +1617,9 @@ function get_theme_support( $feature ) {
 			if ( isset( $_wp_theme_features[ $feature ][0][ $args[0] ] ) )
 				return $_wp_theme_features[ $feature ][0][ $args[0] ];
 			return false;
-			break;
+
 		default :
 			return $_wp_theme_features[ $feature ];
-			break;
 	}
 }
 
@@ -1694,7 +1718,6 @@ function current_theme_supports( $feature ) {
 				return true;
 			$content_type = $args[0];
 			return in_array( $content_type, $_wp_theme_features[$feature][0] );
-			break;
 
 		case 'html5':
 		case 'post-formats':
@@ -1705,7 +1728,6 @@ function current_theme_supports( $feature ) {
 
 			$type = $args[0];
 			return in_array( $type, $_wp_theme_features[$feature][0] );
-			break;
 
 		case 'custom-header':
 		case 'custom-background' :
@@ -1713,7 +1735,6 @@ function current_theme_supports( $feature ) {
 			// an array to add_theme_support()
 			$header_support = $args[0];
 			return ( isset( $_wp_theme_features[$feature][0][$header_support] ) && $_wp_theme_features[$feature][0][$header_support] );
-			break;
 	}
 
 	/**
@@ -1782,6 +1803,12 @@ add_action( 'delete_attachment', '_delete_attachment_theme_mod' );
 function check_theme_switched() {
 	if ( $stylesheet = get_option( 'theme_switched' ) ) {
 		$old_theme = wp_get_theme( $stylesheet );
+
+		// Prevent retrieve_widgets() from running since Customizer already called it up front
+		if ( get_option( 'theme_switched_via_customizer' ) ) {
+			remove_action( 'after_switch_theme', '_wp_sidebars_changed' );
+			update_option( 'theme_switched_via_customizer', false );
+		}
 
 		if ( $old_theme->exists() ) {
 			/**

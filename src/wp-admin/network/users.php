@@ -28,7 +28,7 @@ function confirm_delete_users( $users ) {
 	<?php
 	wp_nonce_field( 'ms-users-delete' );
 	$site_admins = get_super_admins();
-	$admin_out = "<option value='$current_user->ID'>$current_user->user_login</option>";
+	$admin_out = '<option value="' . $current_user->ID . '">' . $current_user->user_login . '</option>';
 
 	foreach ( ( $allusers = (array) $_POST['allusers'] ) as $key => $val ) {
 		if ( $val != '' && $val != '0' ) {
@@ -45,7 +45,7 @@ function confirm_delete_users( $users ) {
 
 			if ( !empty( $blogs ) ) {
 				?>
-				<br /><fieldset><p><legend><?php printf( __( "What should be done with content owned by <em>%s</em>?" ), $delete_user->user_login ); ?></legend></p>
+				<br /><fieldset><p><legend><?php printf( __( "What should be done with content owned by %s?" ), '<em>' . $delete_user->user_login . '</em>' ); ?></legend></p>
 				<?php
 				foreach ( (array) $blogs as $key => $details ) {
 					$blog_users = get_users( array( 'blog_id' => $details->userblog_id, 'fields' => array( 'ID', 'user_login' ) ) );
@@ -76,6 +76,9 @@ function confirm_delete_users( $users ) {
 			}
 		}
 	}
+
+	/** This action is documented in wp-admin/users.php */
+	do_action( 'delete_user_form', $current_user );
 
 	submit_button( __('Confirm Deletion'), 'delete' );
 	?>
@@ -109,7 +112,6 @@ if ( isset( $_GET['action'] ) ) {
 				wp_redirect( network_admin_url( 'users.php' ) );
 			}
 			exit();
-		break;
 
 		case 'allusers':
 			if ( !current_user_can( 'manage_network_users' ) )
@@ -135,7 +137,6 @@ if ( isset( $_GET['action'] ) ) {
 								echo '</div>';
 								require_once( ABSPATH . 'wp-admin/admin-footer.php' );
 								exit();
-							break;
 
 							case 'spam':
 								$user = get_userdata( $val );
@@ -172,7 +173,6 @@ if ( isset( $_GET['action'] ) ) {
 				wp_redirect( $location );
 			}
 			exit();
-		break;
 
 		case 'dodelete':
 			check_admin_referer( 'ms-users-delete' );
@@ -208,7 +208,6 @@ if ( isset( $_GET['action'] ) ) {
 
 			wp_redirect( add_query_arg( array( 'updated' => 'true', 'action' => $deletefunction ), network_admin_url( 'users.php' ) ) );
 			exit();
-		break;
 	}
 }
 
@@ -289,7 +288,7 @@ if ( isset( $_REQUEST['updated'] ) && $_REQUEST['updated'] == 'true' && ! empty(
 		<?php $wp_list_table->search_box( __( 'Search Users' ), 'all-user' ); ?>
 	</form>
 
-	<form id="form-user-list" action='users.php?action=allusers' method='post'>
+	<form id="form-user-list" action="users.php?action=allusers" method="post">
 		<?php $wp_list_table->display(); ?>
 	</form>
 </div>

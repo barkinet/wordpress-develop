@@ -252,16 +252,22 @@ a:active {
 
 a:focus {
 	color: #124964;
+    -webkit-box-shadow:
+    	0 0 0 1px #5b9dd9,
+		0 0 2px 1px rgba(30, 140, 190, .8);
+    box-shadow:
+    	0 0 0 1px #5b9dd9,
+		0 0 2px 1px rgba(30, 140, 190, .8);
 }
 
-a:focus,
-a:active {
-	outline: thin dotted;
+.ie8 a:focus {
+	outline: #5b9dd9 solid 1px;
 }
 
 #adminmenu a:focus,
-#adminmenu a:active,
 .screen-reader-text:focus {
+	-webkit-box-shadow: none;
+	box-shadow: none;
 	outline: none;
 }
 
@@ -372,6 +378,11 @@ ul.ul-disc > li,
 ul.ul-square > li,
 ol.ol-decimal > li {
 	margin: 0 0 0.5em;
+}
+
+/* @noflip */
+.ltr {
+	direction: ltr;
 }
 
 /* @noflip */
@@ -793,9 +804,9 @@ hr {
 	border-bottom: 1px solid #fafafa;
 }
 
-table.widefat span.delete a,
-table.widefat span.trash a,
-table.widefat span.spam a,
+.row-actions span.delete a,
+.row-actions span.trash a,
+.row-actions span.spam a,
 .plugins a.delete,
 #all-plugins-table .plugins a.delete,
 #search-plugins-table .plugins a.delete,
@@ -809,9 +820,9 @@ table.widefat span.spam a,
 abbr.required,
 .file-error,
 .widget-control-remove:hover,
-table.widefat .delete a:hover,
-table.widefat .trash a:hover,
-table.widefat .spam a:hover,
+.row-actions .delete a:hover,
+.row-actions .trash a:hover,
+.row-actions .spam a:hover,
 .plugins a.delete:hover,
 #all-plugins-table .plugins a.delete:hover,
 #search-plugins-table .plugins a.delete:hover,
@@ -1423,27 +1434,6 @@ html.wp-toolbar {
 	padding: 0 5px;
 }
 
-#TB_window {
-	border: 1px solid #333;
-}
-
-#TB_window #TB_title {
-	background-color: #222;
-	color: #cfcfcf;
-}
-
-#TB_window #TB_title a.tb-theme-preview-link,
-#TB_window #TB_title a.tb-theme-preview-link:visited {
-	color: #999;
-	font-weight: 600;
-	text-decoration: none;
-}
-
-#TB_window #TB_title a.tb-theme-preview-link:hover,
-#TB_window #TB_title a.tb-theme-preview-link:focus {
-	color: #ccc;
-}
-
 /* @todo: what is this doing here */
 #dashboard_right_now .versions .b,
 #post-status-display,
@@ -1522,7 +1512,7 @@ html.wp-toolbar {
 .nav-tab-active,
 .nav-tab-active:hover {
 	border-bottom: 1px solid #f1f1f1;
-	background: none;
+	background: #f1f1f1;
 	color: #000;
 }
 
@@ -1544,6 +1534,19 @@ h2 .nav-tab {
 /*------------------------------------------------------------------------------
   26.0 - Misc
 ------------------------------------------------------------------------------*/
+
+.spinner {
+	background: url(../images/spinner.gif) no-repeat;
+	-webkit-background-size: 20px 20px;
+	background-size: 20px 20px;
+	display: none;
+	float: right;
+	opacity: 0.7;
+	filter: alpha(opacity=70);
+	width: 20px;
+	height: 20px;
+	margin: 2px 5px 0;
+}
 
 #template div {
 	margin-right: 190px;
@@ -1652,6 +1655,10 @@ td.media-icon {
 td.media-icon img {
 	max-width: 80px;
 	max-height: 60px;
+}
+
+td.image-icon img {
+	border: 1px solid rgba(0, 0, 0, 0.07);
 }
 
 #howto {
@@ -1796,58 +1803,117 @@ div.action-links {
 	margin: 6px 0 0;
 }
 
-/* Header on thickbox */
-#plugin-information-header {
-	margin: 0;
-	padding: 0 5px;
-	font-weight: 600;
-	position: relative;
-	border-bottom: 1px solid #dfdfdf;
-	height: 2.5em;
-	background-color: #f9f9f9;
-}
-#plugin-information ul#sidemenu {
-	font-weight: normal;
-	margin: 0 5px;
-	position: absolute;
-	left: 0;
-	bottom: -1px;
-}
-
-/* Install sidemenu */
+/* Plugin install thickbox */
 #plugin-information {
+	background: #fcfcfc;
+	position: fixed;
+	top: 0;
+	right: 0;
+	bottom: 0;
+	left: 0;
 	height: auto;
+	padding: 0;
 }
 
-#plugin-information p.action-button {
-	width: 100%;
-	padding-bottom: 0;
-	margin-bottom: 0;
-	margin-top: 10px;
-	-webkit-border-top-left-radius: 3px;
-	border-top-left-radius: 3px;
-	-webkit-border-bottom-left-radius: 3px;
-	border-bottom-left-radius: 3px;
-}
-
-#plugin-information .action-button a {
-	background-color: #2ea2cc;
-	color: #fff;
-	text-align: center;
+#plugin-information-title {
+	padding: 0 76px 0 20px;
+	font-size: 22px;
 	font-weight: 600;
-	text-decoration: none;
-	display: block;
-	line-height: 2em;
+	line-height: 56px;
+	top: 0;
+	right: 0;
+	left: 0;
+	height: 56px;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
 }
 
-#plugin-information h2 {
-	clear: none !important;
-	margin-right: 200px;
+#plugin-information-tabs {
+	padding: 0 16px;
+	position: absolute;
+	top: 56px;
+	right: 0;
+	left: 0;
+	height: 36px;
+	z-index: 1;
+}
+
+#plugin-information-tabs a {
+	position: relative;
+	float: left;
+	padding: 8px 10px 9px;
+	margin: 0;
+	height: 18px;
+	line-height: 18px;
+	font-size: 14px;
+	text-decoration: none;
+	-webkit-transition: none;
+	transition: none;
+}
+
+#plugin-information-tabs a.current {
+	margin: -1px -1px 0;
+	background: #fff;
+	border: 1px solid #ddd;
+	border-bottom: none;
+	color: #333;
+}
+
+#plugin-information-tabs a:active,
+#plugin-information-tabs a:focus {
+	outline: none;
+}
+
+#plugin-information-content {
+	background: #fff;
+	border-top: 1px solid #ddd;
+	border-bottom: 1px solid #ddd;
+	position: absolute;
+	top: 90px;
+	right: 0;
+	bottom: 58px;
+	left: 0;
+}
+
+#section-holder {
+	margin: 0;
+	padding: 10px 26px;
+	position: absolute;
+	top: 0;
+	right: 250px;
+	bottom: 0;
+	left: 0;
+	overflow: auto;
+}
+
+#section-holder .updated {
+	margin: 16px 0;
 }
 
 #plugin-information .fyi {
-	margin: 0 10px 50px;
-	width: 210px;
+	background: #f3f3f3;
+	border-left: 1px solid #ddd;
+	color: #666;
+	padding: 16px;
+	position: absolute;
+	top: 0;
+	right: 0;
+	bottom: 0;
+	width: 217px;
+	overflow: auto;
+}
+
+#plugin-information .fyi strong {
+	color: #464646;
+}
+
+#plugin-information .fyi h3 {
+	font-weight: bold;
+	text-transform: uppercase;
+	font-size: 12px;
+	color: #666;
+	margin: 24px 0 8px;
 }
 
 #plugin-information .fyi h2 {
@@ -1856,35 +1922,35 @@ div.action-links {
 	margin-right: 0;
 }
 
-#plugin-information .fyi h2.mainheader {
-	padding: 5px;
-	-webkit-border-top-left-radius: 3px;
-	border-top-left-radius: 3px;
-	background-color: #cee1ef;
-}
-
 #plugin-information .fyi ul {
-	padding: 10px 5px 10px 7px;
+	padding: 0;
 	margin: 0;
 	list-style: none;
-	-webkit-border-bottom-left-radius: 3px;
-	border-bottom-left-radius: 3px;
-	background-color: #eaf3fa;
 }
 
 #plugin-information .fyi li {
-	margin-right: 0;
+	margin: 0 0 10px;
 }
 
-#plugin-information #section-holder {
-	padding: 10px;
+#plugin-information-footer {
+	padding: 15px 16px;
+	position: absolute;
+	right: 0;
+	bottom: 0;
+	left: 0;
+	height: 28px;
 }
 
 #plugin-information .section ul,
 #plugin-information .section ol {
-	margin-left: 16px;
-	list-style-type: square;
-	list-style-image: none;
+	list-style-type: disc;
+	margin-left: 24px;
+}
+
+#plugin-information .section,
+#plugin-information .section p {
+	font-size: 14px;
+	line-height: 1.7;
 }
 
 #plugin-information #section-screenshots ol {
@@ -1894,21 +1960,17 @@ div.action-links {
 
 #plugin-information #section-screenshots li img {
 	vertical-align: text-top;
+	margin-top: 16px;
 	max-width: 100%;
 	width: auto;
 	height: auto;
+	-webkit-box-shadow: 0 1px 2px rgba( 0, 0, 0, 0.3 );
+	box-shadow: 0 1px 2px rgba( 0, 0, 0, 0.3 );
 }
 
 #plugin-information #section-screenshots li p {
 	font-style: italic;
 	padding-left: 20px;
-	padding-bottom: 2em;
-}
-
-#plugin-information #section-screenshots ol,
-#plugin-information .updated,
-#plugin-information pre {
-	margin-right: 215px;
 }
 
 #plugin-information pre {
@@ -1917,13 +1979,96 @@ div.action-links {
 	border: 1px solid #ccc;
 }
 
-#plugin-information pre,
-#plugin-information code {
-	background-color: #ededff;
-}
-
 .plugin-version-author-uri {
 	font-size: 13px;
+}
+
+@media screen and ( max-width: 782px ) {
+	#plugin-information-content {
+		overflow: auto;
+		bottom: 58px;
+	}
+
+	#plugin-information .fyi {
+		border: 1px solid #ddd;
+		position: static;
+		width: auto;
+		margin: 26px 26px 16px;
+	}
+
+	#section-holder {
+		position: static;
+	}
+
+	#plugin-information .fyi h3,
+	#plugin-information .fyi small {
+		display: none;
+	}
+
+	#plugin-information-footer {
+		padding: 12px 16px 0;
+		height: 46px;
+	}
+}
+
+/* Thickbox for Plugin Install screen */
+body.plugin-install-php #TB_window,
+body.import-php #TB_window,
+body.plugins-php #TB_window,
+body.update-core-php #TB_window,
+body.index-php #TB_window {
+	background: #fcfcfc url( ../images/spinner.gif ) no-repeat center;
+}
+
+@media print,
+	(-o-min-device-pixel-ratio: 5/4),
+	(-webkit-min-device-pixel-ratio: 1.25),
+	(min-resolution: 120dpi) {
+
+	body.plugin-install-php #TB_window,
+	body.import-php #TB_window,
+	body.plugins-php #TB_window,
+	body.update-core-php #TB_window,
+	body.index-php #TB_window {
+		background: #fcfcfc url( ../images/spinner-2x.gif ) no-repeat center;
+		-webkit-background-size: 20px 20px;
+		background-size: 20px 20px;
+	}
+}
+
+body.plugin-install-php #TB_title,
+body.import-php #TB_title,
+body.plugins-php #TB_title,
+body.update-core-php #TB_title,
+body.index-php #TB_title {
+	float: left;
+	height: 1px;
+}
+
+body.plugin-install-php #TB_ajaxWindowTitle,
+body.import-php #TB_ajaxWindowTitle,
+body.plugins-php #TB_ajaxWindowTitle,
+body.update-core-php #TB_ajaxWindowTitle,
+body.index-php #TB_ajaxWindowTitle {
+	display: none;
+}
+
+body.plugin-install-php .tb-close-icon,
+body.import-php .tb-close-icon,
+body.plugins-php .tb-close-icon,
+body.update-core-php .tb-close-icon,
+body.index-php .tb-close-icon {
+	line-height: 48px;
+	width: 48px;
+	height: 48px;
+}
+
+body.plugin-install-php .tb-close-icon:before,
+body.import-php .tb-close-icon:before,
+body.plugins-php .tb-close-icon:before,
+body.update-core-php .tb-close-icon:before,
+body.index-php .tb-close-icon:before {
+	line-height: 48px;
 }
 
 /* @todo: move this. */
@@ -1979,17 +2124,6 @@ img {
 .js .widgets-holder-wrap.closed .sidebar-name-arrow:before,
 .js .meta-box-sortables .postbox.closed .handlediv:before {
 	content: '\f140';
-}
-
-#TB_ajaxContent #options {
-	position: absolute;
-	top: 20px;
-	right: 25px;
-	padding: 5px;
-}
-
-#TB_ajaxContent h3 {
-	margin-bottom: .25em;
 }
 
 .error a {
@@ -2146,7 +2280,8 @@ img {
 
 .control-section.open .accordion-section-title:after,
 #customize-info.open .accordion-section-title:after,
-.nav-menus-php .menu-item-edit-active .item-edit:before {
+.nav-menus-php .menu-item-edit-active .item-edit:before,
+.widget.open .widget-top a.widget-action:after {
 	content: '\f142';
 }
 
@@ -2257,15 +2392,6 @@ img {
 .control-section.open .accordion-section-title {
 	/* When expanded */
 	border-bottom: 1px solid #dfdfdf;
-}
-
-/* @todo: these seem misplaced */
-.sticky-menu #TB_window {
-	background: #f1f1f1;
-}
-
-.sticky-menu #TB_window .updated {
-	margin: 16px 0 0;
 }
 
 /* =Media Queries

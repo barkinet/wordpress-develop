@@ -164,7 +164,7 @@ class Tests_Post_getPages extends WP_UnitTestCase {
 	 * @ticket 22389
 	 */
 	function test_wp_dropdown_pages() {
-		$posts = $this->factory->post->create_many( 5, array( 'post_type' => 'page' ) );
+		$this->factory->post->create_many( 5, array( 'post_type' => 'page' ) );
 
 		preg_match_all( '#<option#', wp_dropdown_pages( 'echo=0' ), $matches );
 
@@ -210,5 +210,62 @@ class Tests_Post_getPages extends WP_UnitTestCase {
 		 */
 
 		$this->assertEqualSets( array( $page_1, $page_2, $page_4, $page_3 ), wp_list_pluck( $pages, 'ID' ) );
+	}
+
+	function test_wp_list_pages_classes() {
+		$type = 'taco';
+		register_post_type( $type, array( 'hierarchical' => true, 'public' => true ) );
+
+		$posts = $this->factory->post->create_many( 2, array( 'post_type' => $type ) );
+		$post_id = reset( $posts );
+
+		$this->go_to( "/?p=$post_id&post_type=$type" );
+
+		$this->assertEquals( $post_id, get_queried_object_id() );
+
+		$output = wp_list_pages( array(
+			'echo' => false,
+			'title_li' => '',
+			'post_type' => $type
+		) );
+
+		$this->assertNotEmpty( $output );
+		$this->assertEquals( 2, substr_count( $output, 'class="page_item ' ) );
+		$this->assertContains( 'current_page_item', $output );
+		$this->assertEquals( 1, substr_count( $output, 'current_page_item' ) );
+
+		_unregister_post_type( $type );
+	}
+
+	function test_exclude_tree() {
+		$post_id1 = $this->factory->post->create( array( 'post_type' => 'page' ) );
+		$post_id2 = $this->factory->post->create( array( 'post_type' => 'page', 'post_parent' => $post_id1 ) );
+		$post_id3 = $this->factory->post->create( array( 'post_type' => 'page' ) );
+		$post_id4 = $this->factory->post->create( array( 'post_type' => 'page', 'post_parent' => $post_id3 ) );
+
+		$all = get_pages();
+
+		$this->assertCount( 4, $all );
+
+		$exclude1 = get_pages( "exclude_tree=$post_id1" );
+		$this->assertCount( 2, $exclude1 );
+
+		$exclude2 = get_pages( array( 'exclude_tree' => $post_id1 ) );
+		$this->assertCount( 2, $exclude2 );
+
+		$exclude3 = get_pages( array( 'exclude_tree' => array( $post_id1 ) ) );
+		$this->assertCount( 2, $exclude3 );
+
+		$exclude4 = get_pages( array( 'exclude_tree' => array( $post_id1, $post_id2 ) ) );
+		$this->assertCount( 2, $exclude4 );
+
+		$exclude5 = get_pages( array( 'exclude_tree' => array( $post_id1, $post_id3 ) ) );
+		$this->assertCount( 0, $exclude5 );
+
+		$post_id5 = $this->factory->post->create( array( 'post_type' => 'page' ) );
+		$post_id6 = $this->factory->post->create( array( 'post_type' => 'page', 'post_parent' => $post_id5 ) );
+
+		$exclude6 = get_pages( array( 'exclude_tree' => array( $post_id1, $post_id3 ) ) );
+		$this->assertCount( 2, $exclude6 );
 	}
 }

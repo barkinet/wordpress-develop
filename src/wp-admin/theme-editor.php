@@ -92,7 +92,6 @@ case 'update':
 	}
 	wp_redirect( $location );
 	exit;
-break;
 
 default:
 
@@ -122,8 +121,7 @@ default:
 		$content = esc_textarea( $content );
 	}
 
-	?>
-<?php if ( isset( $_GET['updated'] ) ) : ?>
+	if ( isset( $_GET['updated'] ) ) : ?>
  <div id="message" class="updated"><p><?php _e( 'File edited successfully.' ) ?></p></div>
 <?php endif;
 

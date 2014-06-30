@@ -1,5 +1,4 @@
 <?php
-
 /**
  * just make sure the test framework is working
  *
@@ -27,6 +26,13 @@ class Tests_Basic extends WP_UnitTestCase {
 		preg_match( '#<br /> Version (.*)#', $readme, $matches );
 		list( $version ) = explode( '-', $GLOBALS['wp_version'] );
 		$this->assertEquals( $version, trim( $matches[1] ), "readme.html's version needs to be updated to $version." );
+	}
+
+	function test_license() {
+		$license = file_get_contents( ABSPATH . 'license.txt' );
+		preg_match( '#Copyright (\d+) by the contributors#', $license, $matches );
+		$this_year = date( 'Y' );
+		$this->assertEquals( $this_year, trim( $matches[1] ), "license.txt's year needs to be updated to $this_year." );
 	}
 
 	function test_package_json() {
@@ -114,5 +120,61 @@ EOF;
 		$empty_array[$page][$field] = 'foo';
 
 		unset( $empty_array[$page]['bar']['baz'] );
+	}
+
+	function test_magic_getter() {
+		$basic = new Basic_Object();
+
+		$this->assertEquals( 'bar', $basic->foo );
+	}
+
+	function test_subclass_magic_getter() {
+		$basic = new Basic_Subclass();
+
+		$this->assertEquals( 'bar', $basic->foo );
+	}
+
+	function test_call_method() {
+		$basic = new Basic_Object();
+
+		$this->assertEquals( 'maybe', $basic->callMe() );
+	}
+
+	function test_subclass_call_method() {
+		$basic = new Basic_Subclass();
+
+		$this->assertEquals( 'maybe', $basic->callMe() );
+	}
+
+	function test_subclass_isset() {
+		$basic = new Basic_Subclass();
+
+		$this->assertTrue( isset( $basic->foo ) );
+	}
+
+	function test_subclass_unset() {
+		$basic = new Basic_Subclass();
+
+		unset( $basic->foo );
+
+		$this->assertFalse( isset( $basic->foo ) );
+	}
+
+	function test_switch_order() {
+		$return = $this->_switch_order_helper( 1 );
+		$this->assertEquals( 'match', $return );
+	}
+
+	function _switch_order_helper( $var ) {
+		$return = 'no match';
+		switch ( $var ) {
+		default:
+			break;
+		case 1:
+			$return = 'match';
+			break;
+		}
+
+		return $return;
 	}
 }

@@ -92,7 +92,7 @@ function ms_site_check() {
 		if ( file_exists( WP_CONTENT_DIR . '/blog-deleted.php' ) )
 			return WP_CONTENT_DIR . '/blog-deleted.php';
 		else
-			wp_die( __( 'This user has elected to delete their account and the content is no longer available.' ), '', array( 'response' => 410 ) );
+			wp_die( __( 'This site is no longer available.' ), '', array( 'response' => 410 ) );
 	}
 
 	if ( '2' == $blog->deleted ) {
@@ -117,19 +117,21 @@ function ms_site_check() {
  *
  * @since 3.9.0
  *
- * @param string $domain   Domain to check.
- * @param string $path     Path to check.
- * @param int    $segments Path segments to use. Defaults to null, or the full path.
+ * @param string   $domain   Domain to check.
+ * @param string   $path     Path to check.
+ * @param int|null $segments Path segments to use. Defaults to null, or the full path.
  * @return object|bool Network object if successful. False when no network is found.
  */
 function get_network_by_path( $domain, $path, $segments = null ) {
 	global $wpdb;
 
-	$domains = $exact_domains = array( $domain );
+	$domains = array( $domain );
 	$pieces = explode( '.', $domain );
 
-	// It's possible one domain to search is 'com', but it might as well
-	// be 'localhost' or some other locally mapped domain.
+	/*
+	 * It's possible one domain to search is 'com', but it might as well
+	 * be 'localhost' or some other locally mapped domain.
+	 */
 	while ( array_shift( $pieces ) ) {
 		if ( $pieces ) {
 			$domains[] = implode( '.', $pieces );
@@ -163,11 +165,11 @@ function get_network_by_path( $domain, $path, $segments = null ) {
 		 *
 		 * @since 3.9.0
 		 *
-		 * @param mixed  $segments The number of path segments to consider. WordPress by default looks at
-		 *                         one path segment. The function default of null only makes sense when you
-		 *                         know the requested path should match a network.
-		 * @param string $domain   The requested domain.
-		 * @param string $path     The requested path, in full.
+		 * @param int|null $segments The number of path segments to consider. WordPress by default looks at
+		 *                           one path segment. The function default of null only makes sense when you
+		 *                           know the requested path should match a network.
+		 * @param string   $domain   The requested domain.
+		 * @param string   $path     The requested path, in full.
 		 */
 		$segments = apply_filters( 'network_by_path_segments_count', $segments, $domain, $path );
 
@@ -195,11 +197,12 @@ function get_network_by_path( $domain, $path, $segments = null ) {
 	 *
 	 * @since 3.9.0
 	 *
-	 * @param string $domain   The requested domain.
-	 * @param string $path     The requested path, in full.
-	 * @param mixed  $segments The suggested number of paths to consult.
-	 *                         Default null, meaning the entire path was to be consulted.
-	 * @param array  $paths    The paths to search for, based on $path and $segments.
+	 * @param null|bool|object $network  Network value to return by path.
+	 * @param string           $domain   The requested domain.
+	 * @param string           $path     The requested path, in full.
+	 * @param int|null         $segments The suggested number of paths to consult.
+	 *                                   Default null, meaning the entire path was to be consulted.
+	 * @param array            $paths    The paths to search for, based on $path and $segments.
 	 */
 	$pre = apply_filters( 'pre_get_network_by_path', null, $domain, $path, $segments, $paths );
 	if ( null !== $pre ) {
@@ -257,7 +260,7 @@ function get_network_by_path( $domain, $path, $segments = null ) {
  *
  * @since 3.9.0
  *
- * @param object|int $network The network's DB row or ID.
+ * @param object|int $network The network's database row or ID.
  * @return object|bool Object containing network information if found, false if not.
  */
 function wp_get_network( $network ) {
@@ -274,19 +277,13 @@ function wp_get_network( $network ) {
 }
 
 /**
- * @todo deprecate
- */
-function wpmu_current_site() {
-}
-
-/**
  * Retrieve a site object by its domain and path.
  *
  * @since 3.9.0
  *
- * @param string $domain   Domain to check.
- * @param string $path     Path to check.
- * @param int    $segments Path segments to use. Defaults to null, or the full path.
+ * @param string   $domain   Domain to check.
+ * @param string   $path     Path to check.
+ * @param int|null $segments Path segments to use. Defaults to null, or the full path.
  * @return object|bool Site object if successful. False when no site is found.
  */
 function get_site_by_path( $domain, $path, $segments = null ) {
@@ -299,11 +296,11 @@ function get_site_by_path( $domain, $path, $segments = null ) {
 	 *
 	 * @since 3.9.0
 	 *
-	 * @param mixed  $segments The number of path segments to consider. WordPress by default looks at
-	 *                         one path segment following the network path. The function default of
-	 *                         null only makes sense when you know the requested path should match a site.
-	 * @param string $domain   The requested domain.
-	 * @param string $path     The requested path, in full.
+	 * @param int|null $segments The number of path segments to consider. WordPress by default looks at
+	 *                           one path segment following the network path. The function default of
+	 *                           null only makes sense when you know the requested path should match a site.
+	 * @param string   $domain   The requested domain.
+	 * @param string   $path     The requested path, in full.
 	 */
 	$segments = apply_filters( 'site_by_path_segments_count', $segments, $domain, $path );
 
@@ -330,31 +327,51 @@ function get_site_by_path( $domain, $path, $segments = null ) {
 	 *
 	 * @since 3.9.0
 	 *
-	 * @param string $domain   The requested domain.
-	 * @param string $path     The requested path, in full.
-	 * @param mixed  $segments The suggested number of paths to consult.
-	 *                         Default null, meaning the entire path was to be consulted.
-	 * @param array  $paths    The paths to search for, based on $path and $segments.
+	 * @param null|bool|object $site     Site value to return by path.
+	 * @param string           $domain   The requested domain.
+	 * @param string           $path     The requested path, in full.
+	 * @param int|null         $segments The suggested number of paths to consult.
+	 *                                   Default null, meaning the entire path was to be consulted.
+	 * @param array            $paths    The paths to search for, based on $path and $segments.
 	 */
 	$pre = apply_filters( 'pre_get_site_by_path', null, $domain, $path, $segments, $paths );
 	if ( null !== $pre ) {
 		return $pre;
 	}
 
-	// @todo
-	// get_blog_details(), caching, etc. Consider alternative optimization routes,
-	// perhaps as an opt-in for plugins, rather than using the pre_* filter.
-	// For example: The segments filter can expand or ignore paths.
-	// If persistent caching is enabled, we could query the DB for a path <> '/'
-	// then cache whether we can just always ignore paths.
+	/*
+	 * @todo
+	 * get_blog_details(), caching, etc. Consider alternative optimization routes,
+	 * perhaps as an opt-in for plugins, rather than using the pre_* filter.
+	 * For example: The segments filter can expand or ignore paths.
+	 * If persistent caching is enabled, we could query the DB for a path <> '/'
+	 * then cache whether we can just always ignore paths.
+	 */
+
+	// Either www or non-www is supported, not both. If a www domain is requested,
+	// query for both to provide the proper redirect.
+	$domains = array( $domain );
+	if ( 'www.' === substr( $domain, 0, 4 ) ) {
+		$domains[] = substr( $domain, 4 );
+		$search_domains = "'" . implode( "', '", $wpdb->_escape( $domains ) ) . "'";
+	}
 
 	if ( count( $paths ) > 1 ) {
-		$paths = "'" . implode( "', '", $wpdb->_escape( $paths ) ) . "'";
-		$sql = $wpdb->prepare( "SELECT * FROM $wpdb->blogs WHERE domain = %s", $domain );
-		$sql .= " AND path IN ($paths) ORDER BY CHAR_LENGTH(path) DESC LIMIT 1";
+		$search_paths = "'" . implode( "', '", $wpdb->_escape( $paths ) ) . "'";
+	}
+
+	if ( count( $domains ) > 1 && count( $paths ) > 1 ) {
+		$site = $wpdb->get_row( "SELECT * FROM $wpdb->blogs WHERE domain IN ($search_domains) AND path IN ($search_paths) ORDER BY CHAR_LENGTH(domain) DESC, CHAR_LENGTH(path) DESC LIMIT 1" );
+	} elseif ( count( $domains ) > 1 ) {
+		$sql = $wpdb->prepare( "SELECT * FROM $wpdb->blogs WHERE path = %s", $paths[0] );
+		$sql .= " AND domain IN ($search_domains) ORDER BY CHAR_LENGTH(domain) DESC LIMIT 1";
+		$site = $wpdb->get_row( $sql );
+	} elseif ( count( $paths ) > 1 ) {
+		$sql = $wpdb->prepare( "SELECT * FROM $wpdb->blogs WHERE domain = %s", $domains[0] );
+		$sql .= " AND path IN ($search_paths) ORDER BY CHAR_LENGTH(path) DESC LIMIT 1";
 		$site = $wpdb->get_row( $sql );
 	} else {
-		$site = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM $wpdb->blogs WHERE domain = %s and path = %s", $domain, $paths[0] ) );
+		$site = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM $wpdb->blogs WHERE domain = %s AND path = %s", $domains[0], $paths[0] ) );
 	}
 
 	if ( $site ) {
@@ -380,14 +397,17 @@ function ms_not_installed() {
 
 	$title = __( 'Error establishing a database connection' );
 	$msg  = '<h1>' . $title . '</h1>';
-	if ( ! is_admin() )
+	if ( ! is_admin() ) {
 		die( $msg );
+	}
 	$msg .= '<p>' . __( 'If your site does not display, please contact the owner of this network.' ) . '';
 	$msg .= ' ' . __( 'If you are the owner of this network please check that MySQL is running properly and all tables are error free.' ) . '</p>';
-	if ( ! $wpdb->get_var( "SHOW TABLES LIKE '$wpdb->site'" ) )
+	$query = $wpdb->prepare( "SHOW TABLES LIKE %s", $wpdb->esc_like( $wpdb->site ) );
+	if ( ! $wpdb->get_var( $query ) ) {
 		$msg .= '<p>' . sprintf( __( '<strong>Database tables are missing.</strong> This means that MySQL is not running, WordPress was not installed properly, or someone deleted <code>%s</code>. You really should look at your database now.' ), $wpdb->site ) . '</p>';
-	else
+	} else {
 		$msg .= '<p>' . sprintf( __( '<strong>Could not find site <code>%1$s</code>.</strong> Searched for table <code>%2$s</code> in database <code>%3$s</code>. Is that right?' ), rtrim( $domain . $path, '/' ), $wpdb->blogs, DB_NAME ) . '</p>';
+	}
 	$msg .= '<p><strong>' . __( 'What do I do now?' ) . '</strong> ';
 	$msg .= __( 'Read the <a target="_blank" href="http://codex.wordpress.org/Debugging_a_WordPress_Network">bug report</a> page. Some of the guidelines there may help you figure out what went wrong.' );
 	$msg .= ' ' . __( 'If you&#8217;re still stuck with this message, then check that your database contains the following tables:' ) . '</p><ul>';
@@ -409,12 +429,30 @@ function ms_not_installed() {
  *
  * @access private
  * @since 3.0.0
- * @deprecated 3.9.0
+ * @deprecated 3.9.0 Use get_current_site() instead.
  *
  * @param object $current_site
  * @return object
  */
 function get_current_site_name( $current_site ) {
+	_deprecated_function( __FUNCTION__, '3.9', 'get_current_site()' );
+	return $current_site;
+}
+
+/**
+ * This deprecated function managed much of the site and network loading in multisite.
+ *
+ * The current bootstrap code is now responsible for parsing the site and network load as
+ * well as setting the global $current_site object.
+ *
+ * @access private
+ * @since 3.0.0
+ * @deprecated 3.9.0
+ *
+ * @return object
+ */
+function wpmu_current_site() {
+	global $current_site;
 	_deprecated_function( __FUNCTION__, '3.9' );
 	return $current_site;
 }

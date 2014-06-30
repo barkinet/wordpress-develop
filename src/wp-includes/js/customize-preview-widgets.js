@@ -1,86 +1,100 @@
-/*global jQuery, WidgetCustomizerPreview_exports */
-/*exported WidgetCustomizerPreview */
-var WidgetCustomizerPreview = (function ($) {
-	'use strict';
+(function( wp, $ ){
 
-	var OldPreview, self = {
-		rendered_sidebars: {}, // @todo Make rendered a property of the Backbone model
-		rendered_widgets: {}, // @todo Make rendered a property of the Backbone model
-		registered_sidebars: [], // @todo Make a Backbone collection
-		registered_widgets: {}, // @todo Make array, Backbone collection
-		widget_selectors: [],
-		render_widget_ajax_action: null,
-		render_widget_nonce_value: null,
-		render_widget_nonce_post_key: null,
+	if ( ! wp || ! wp.customize ) { return; }
+
+	var api = wp.customize,
+		OldPreview;
+
+	/**
+	 * wp.customize.WidgetCustomizerPreview
+	 *
+	 */
+	api.WidgetCustomizerPreview = {
+		renderedSidebars: {}, // @todo Make rendered a property of the Backbone model
+		renderedWidgets: {}, // @todo Make rendered a property of the Backbone model
+		registeredSidebars: [], // @todo Make a Backbone collection
+		registeredWidgets: {}, // @todo Make array, Backbone collection
+		widgetSelectors: [],
 		preview: null,
-		i18n: {},
+		l10n: {},
 
 		init: function () {
+			var self = this;
 			this.buildWidgetSelectors();
 			this.highlightControls();
 
-			self.preview.bind( 'active', function() {
-				self.preview.send( 'rendered-sidebars', self.rendered_sidebars ); // @todo Only send array of IDs
-				self.preview.send( 'rendered-widgets', self.rendered_widgets ); // @todo Only send array of IDs
+			this.preview.bind( 'active', function() {
+				self.preview.send( 'rendered-sidebars', self.renderedSidebars ); // @todo Only send array of IDs
+				self.preview.send( 'rendered-widgets', self.renderedWidgets ); // @todo Only send array of IDs
 			} );
+
+			this.preview.bind( 'highlight-widget', self.highlightWidget );
 		},
 
 		/**
 		 * Calculate the selector for the sidebar's widgets based on the registered sidebar's info
 		 */
 		buildWidgetSelectors: function () {
-			$.each( self.registered_sidebars, function ( i, sidebar ) {
-				var widget_tpl = [
+			var self = this;
+
+			$.each( this.registeredSidebars, function ( i, sidebar ) {
+				var widgetTpl = [
 						sidebar.before_widget.replace('%1$s', '').replace('%2$s', ''),
 						sidebar.before_title,
 						sidebar.after_title,
 						sidebar.after_widget
 					].join(''),
-					empty_widget,
-					widget_selector,
-					widget_classes;
+					emptyWidget,
+					widgetSelector,
+					widgetClasses;
 
-				empty_widget = $(widget_tpl);
-				widget_selector = empty_widget.prop('tagName');
-				widget_classes = empty_widget.prop('className').replace(/^\s+|\s+$/g, '');
+				emptyWidget = $(widgetTpl);
+				widgetSelector = emptyWidget.prop('tagName');
+				widgetClasses = emptyWidget.prop('className');
 
-				if ( widget_classes ) {
-					widget_selector += '.' + widget_classes.split(/\s+/).join('.');
+				// Prevent a rare case when before_widget, before_title, after_title and after_widget is empty.
+				if ( ! widgetClasses ) {
+					return;
 				}
-				self.widget_selectors.push(widget_selector);
+
+				widgetClasses = widgetClasses.replace(/^\s+|\s+$/g, '');
+
+				if ( widgetClasses ) {
+					widgetSelector += '.' + widgetClasses.split(/\s+/).join('.');
+				}
+				self.widgetSelectors.push(widgetSelector);
 			});
 		},
 
 		/**
-		 * Obtain a widget instance if it was added to the provided sidebar
-		 * This addresses a race condition where a widget is moved between sidebars
-		 * We cannot use ID selector because jQuery will only return the first one
-		 * that matches. We have to resort to an [id] attribute selector
+		 * Highlight the widget on widget updates or widget control mouse overs.
 		 *
-		 * @param {String} sidebar_id
-		 * @param {String} widget_id
-		 * @return {jQuery}
+		 * @param  {string} widgetId ID of the widget.
 		 */
-		getSidebarWidgetElement: function ( sidebar_id, widget_id ) {
-			return $( '[id=' + widget_id + ']' ).filter( function () {
-				return $( this ).data( 'widget_customizer_sidebar_id' ) === sidebar_id;
-			} );
+		highlightWidget: function( widgetId ) {
+			var $body = $( document.body ),
+				$widget = $( '#' + widgetId );
+
+			$body.find( '.widget-customizer-highlighted-widget' ).removeClass( 'widget-customizer-highlighted-widget' );
+
+			$widget.addClass( 'widget-customizer-highlighted-widget' );
+			setTimeout( function () {
+				$widget.removeClass( 'widget-customizer-highlighted-widget' );
+			}, 500 );
 		},
 
 		/**
-		 *
+		 * Show a title and highlight widgets on hover. On shift+clicking
+		 * focus the widget control.
 		 */
 		highlightControls: function() {
+			var self = this,
+				selector = this.widgetSelectors.join(',');
 
-			var selector = this.widget_selectors.join(',');
-
-			$(selector).attr( 'title', self.i18n.widget_tooltip );
+			$(selector).attr( 'title', this.l10n.widgetTooltip );
 
 			$(document).on( 'mouseenter', selector, function () {
-				var control = parent.WidgetCustomizer.getWidgetFormControlForWidget( $(this).prop('id') );
-				if ( control ) {
-					control.highlightSectionAndControl();
-				}
+				self.preview.send( 'highlight-widget-control', $( this ).prop( 'id' ) );
 			});
 
 			// Open expand the widget control when shift+clicking the widget element
@@ -89,32 +103,32 @@ var WidgetCustomizerPreview = (function ($) {
 					return;
 				}
 				e.preventDefault();
-				var control = parent.WidgetCustomizer.getWidgetFormControlForWidget( $(this).prop('id') );
-				if ( control ) {
-					control.focus();
-				}
+
+				self.preview.send( 'focus-widget-control', $( this ).prop( 'id' ) );
 			});
 		}
-
 	};
-
-	$.extend(self, WidgetCustomizerPreview_exports);
 
 	/**
 	 * Capture the instance of the Preview since it is private
 	 */
-	OldPreview = wp.customize.Preview;
-	wp.customize.Preview = OldPreview.extend( {
+	OldPreview = api.Preview;
+	api.Preview = OldPreview.extend( {
 		initialize: function( params, options ) {
-			self.preview = this;
+			api.WidgetCustomizerPreview.preview = this;
 			OldPreview.prototype.initialize.call( this, params, options );
 		}
 	} );
 
-	// @todo on customize ready?
 	$(function () {
-		self.init();
+		var settings = window._wpWidgetCustomizerPreviewSettings;
+		if ( ! settings ) {
+			return;
+		}
+
+		$.extend( api.WidgetCustomizerPreview, settings );
+
+		api.WidgetCustomizerPreview.init();
 	});
 
-	return self;
-}( jQuery ));
+})( window.wp, jQuery );

@@ -65,6 +65,8 @@ html:lang(he-il) .rtl #wpadminbar *  {
 #wpadminbar select,
 #wpadminbar textarea,
 #wpadminbar div {
+	-webkit-box-shadow: none;
+	box-shadow: none;
 	outline: none;
 }
 
@@ -509,6 +511,10 @@ html:lang(he-il) .rtl #wpadminbar *  {
 }
 
 #wpadminbar #wp-admin-bar-site-name > .ab-item:before {
+	content: "\f226";
+}
+
+.wp-admin #wpadminbar #wp-admin-bar-site-name > .ab-item:before {
 	content: "\f102";
 }
 

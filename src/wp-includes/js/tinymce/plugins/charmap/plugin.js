@@ -309,8 +309,13 @@ tinymce.PluginManager.add('charmap', function(editor) {
 			html: gridHtml,
 			onclick: function(e) {
 				var target = e.target;
-				if (/^(TD|DIV)$/.test(target.nodeName)) {
-					editor.execCommand('mceInsertContent', false, tinymce.trim(target.innerText || target.textContent));
+
+				if (target.tagName == 'TD') {
+					target = target.firstChild;
+				}
+
+				if (target.tagName == 'DIV') {
+					editor.execCommand('mceInsertContent', false, target.firstChild.data);
 
 					if (!e.ctrlKey) {
 						win.close();
@@ -342,7 +347,11 @@ tinymce.PluginManager.add('charmap', function(editor) {
 					minHeight: 80
 				}
 			],
-			buttons: [] // WP, see #27107
+			buttons: [
+				{text: "Close", onclick: function() {
+					win.close();
+				}}
+			]
 		});
 	}
 

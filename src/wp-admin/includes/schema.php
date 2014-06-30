@@ -302,8 +302,8 @@ CREATE TABLE $wpdb->signups (
 		case 'ms_global' :
 			$queries = $ms_global_tables;
 			break;
-		default:
 		case 'all' :
+		default:
 			$queries = $global_tables . $blog_tables;
 			if ( $is_multisite )
 				$queries .= $ms_global_tables;
@@ -364,6 +364,7 @@ function populate_options() {
 
 	$options = array(
 	'siteurl' => $guessurl,
+	'home' => $guessurl,
 	'blogname' => __('My Site'),
 	/* translators: blog tagline */
 	'blogdescription' => __('Just another WordPress site'),
@@ -392,9 +393,6 @@ function populate_options() {
 	'time_format' => __('g:i a'),
 	/* translators: links last updated date format, see http://php.net/date */
 	'links_updated_date_format' => __('F j, Y g:i a'),
-	'links_recently_updated_prepend' => '<em>',
-	'links_recently_updated_append' => '</em>',
-	'links_recently_updated_time' => 120,
 	'comment_moderation' => 0,
 	'moderation_notify' => 1,
 	'permalink_structure' => '',
@@ -403,7 +401,6 @@ function populate_options() {
 	'blog_charset' => 'UTF-8',
 	'moderation_keys' => '',
 	'active_plugins' => array(),
-	'home' => $guessurl,
 	'category_base' => '',
 	'ping_sites' => 'http://rpc.pingomatic.com/',
 	'advanced_edit' => 0,
@@ -537,6 +534,7 @@ function populate_options() {
 		'links_rating_ignore_zero', 'links_rating_single_image', 'links_rating_image0', 'links_rating_image1',
 		'links_rating_image2', 'links_rating_image3', 'links_rating_image4', 'links_rating_image5',
 		'links_rating_image6', 'links_rating_image7', 'links_rating_image8', 'links_rating_image9',
+		'links_recently_updated_time', 'links_recently_updated_prepend', 'links_recently_updated_append',
 		'weblogs_cacheminutes', 'comment_allowed_tags', 'search_engine_friendly_urls', 'default_geourl_lat',
 		'default_geourl_lon', 'use_default_geourl', 'weblogs_xml_url', 'new_users_can_blog', '_wpnonce',
 		'_wp_http_referer', 'Update', 'action', 'rich_editing', 'autosave_interval', 'deactivated_plugins',
@@ -555,19 +553,21 @@ function populate_options() {
 	// The multi-table delete syntax is used to delete the transient record from table a,
 	// and the corresponding transient_timeout record from table b.
 	$time = time();
-	$wpdb->query("DELETE a, b FROM $wpdb->options a, $wpdb->options b WHERE
-	        a.option_name LIKE '\_transient\_%' AND
-	        a.option_name NOT LIKE '\_transient\_timeout\_%' AND
-	        b.option_name = CONCAT( '_transient_timeout_', SUBSTRING( a.option_name, 12 ) )
-	        AND b.option_value < $time");
+	$sql = "DELETE a, b FROM $wpdb->options a, $wpdb->options b
+		WHERE a.option_name LIKE %s
+		AND a.option_name NOT LIKE %s
+		AND b.option_name = CONCAT( '_transient_timeout_', SUBSTRING( a.option_name, 12 ) )
+		AND b.option_value < %d";
+	$wpdb->query( $wpdb->prepare( $sql, $wpdb->esc_like( '_transient_' ) . '%', $wpdb->esc_like( '_transient_timeout_' ) . '%', $time ) );
 
 	if ( is_main_site() && is_main_network() ) {
-		$wpdb->query("DELETE a, b FROM $wpdb->options a, $wpdb->options b WHERE
-			a.option_name LIKE '\_site\_transient\_%' AND
-			a.option_name NOT LIKE '\_site\_transient\_timeout\_%' AND
-			b.option_name = CONCAT( '_site_transient_timeout_', SUBSTRING( a.option_name, 17 ) )
-			AND b.option_value < $time");
-    }
+		$sql = "DELETE a, b FROM $wpdb->options a, $wpdb->options b
+			WHERE a.option_name LIKE %s
+			AND a.option_name NOT LIKE %s
+			AND b.option_name = CONCAT( '_site_transient_timeout_', SUBSTRING( a.option_name, 17 ) )
+			AND b.option_value < %d";
+		$wpdb->query( $wpdb->prepare( $sql, $wpdb->esc_like( '_site_transient_' ) . '%', $wpdb->esc_like( '_site_transient_timeout_' ) . '%', $time ) );
+	}
 }
 
 /**
@@ -918,12 +918,26 @@ We hope you enjoy your new site. Thanks!
 
 --The Team @ SITE_NAME' );
 
+	$misc_exts = array(
+		// images
+		'jpg', 'jpeg', 'png', 'gif',
+		// video
+		'mov', 'avi', 'mpg', '3gp', '3g2',
+		// "audio"
+		'midi', 'mid',
+		// misc
+		'pdf', 'doc', 'ppt', 'odt', 'pptx', 'docx', 'pps', 'ppsx', 'xls', 'xlsx', 'key',
+	);
+	$audio_exts = wp_get_audio_extensions();
+	$video_exts = wp_get_video_extensions();
+	$upload_filetypes = array_unique( array_merge( $misc_exts, $audio_exts, $video_exts ) );
+
 	$sitemeta = array(
 		'site_name' => $site_name,
 		'admin_email' => $site_user->user_email,
 		'admin_user_id' => $site_user->ID,
 		'registration' => 'none',
-		'upload_filetypes' => 'jpg jpeg png gif mp3 mov avi wmv midi mid pdf',
+		'upload_filetypes' => implode( ' ', $upload_filetypes ),
 		'blog_upload_space' => 100,
 		'fileupload_maxk' => 1500,
 		'site_admins' => $site_admins,

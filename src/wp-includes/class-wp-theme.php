@@ -535,7 +535,7 @@ final class WP_Theme implements ArrayAccess {
 	 * @since 3.4.0
 	 *
 	 * @param string $header Theme header. Name, Description, Author, Version, ThemeURI, AuthorURI, Status, Tags.
-	 * @return string String on success, false on failure.
+	 * @return string|bool String on success, false on failure.
 	 */
 	public function get( $header ) {
 		if ( ! isset( $this->headers[ $header ] ) )
@@ -571,10 +571,13 @@ final class WP_Theme implements ArrayAccess {
 	 * @param string $header Theme header. Name, Description, Author, Version, ThemeURI, AuthorURI, Status, Tags.
 	 * @param bool $markup Optional. Whether to mark up the header. Defaults to true.
 	 * @param bool $translate Optional. Whether to translate the header. Defaults to true.
-	 * @return string Processed header, false on failure.
+	 * @return string|bool Processed header, false on failure.
 	 */
 	public function display( $header, $markup = true, $translate = true ) {
 		$value = $this->get( $header );
+		if ( false === $value ) {
+			return false;
+		}
 
 		if ( $translate && ( empty( $value ) || ! $this->load_textdomain() ) )
 			$translate = false;
@@ -659,10 +662,7 @@ final class WP_Theme implements ArrayAccess {
 				break;
 			case 'Author' :
 				if ( $this->get('AuthorURI') ) {
-					static $attr = null;
-					if ( ! isset( $attr ) )
-						$attr = esc_attr__( 'Visit author homepage' );
-					$value = sprintf( '<a href="%1$s" title="%2$s">%3$s</a>', $this->display( 'AuthorURI', true, $translate ), $attr, $value );
+					$value = sprintf( '<a href="%1$s">%2$s</a>', $this->display( 'AuthorURI', true, $translate ), $value );
 				} elseif ( ! $value ) {
 					$value = __( 'Anonymous' );
 				}
@@ -723,7 +723,7 @@ final class WP_Theme implements ArrayAccess {
 				}
 
 				return $value;
-				break;
+
 			default :
 				$value = translate( $value, $this->get('TextDomain') );
 		}
@@ -965,7 +965,7 @@ final class WP_Theme implements ArrayAccess {
 			$page_templates += $this->parent()->get_page_templates( $post );
 
 		/**
-		 * Remove or rename page templates for a theme.
+		 * Filter list of page templates for a theme.
 		 *
 		 * This filter does not currently allow for page templates to be added.
 		 *
@@ -977,6 +977,7 @@ final class WP_Theme implements ArrayAccess {
 		 * @param WP_Post|null $post           The post being edited, provided for context, or null.
 		 */
 		$return = apply_filters( 'theme_page_templates', $page_templates, $this, $post );
+
 		return array_intersect_assoc( $return, $page_templates );
 	}
 

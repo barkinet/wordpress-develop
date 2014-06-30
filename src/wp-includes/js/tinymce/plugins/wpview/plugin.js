@@ -73,21 +73,28 @@ tinymce.PluginManager.add( 'wpview', function( editor ) {
 
 		deselect();
 		selected = viewNode;
-		dom.addClass( viewNode, 'selected' );
+		dom.setAttrib( viewNode, 'data-mce-selected', 1 );
 
 		clipboard = dom.create( 'div', {
 			'class': 'wpview-clipboard',
 			'contenteditable': 'true'
 		}, getViewText( viewNode ) );
 
-		viewNode.appendChild( clipboard );
+		// Prepend inside the wrapper
+		viewNode.insertBefore( clipboard, viewNode.firstChild );
 
 		// Both of the following are necessary to prevent manipulating the selection/focus
-		editor.dom.bind( clipboard, 'beforedeactivate focusin focusout', _stop );
-		editor.dom.bind( selected, 'beforedeactivate focusin focusout', _stop );
+		dom.bind( clipboard, 'beforedeactivate focusin focusout', _stop );
+		dom.bind( selected, 'beforedeactivate focusin focusout', _stop );
+
+		// Make sure that the editor is focused.
+		// It is possible that the editor is not focused when the mouse event fires
+		// without focus, the selection will not work properly.
+		editor.getBody().focus();
 
 		// select the hidden div
 		editor.selection.select( clipboard, true );
+		editor.nodeChanged();
 	}
 
 	/**
@@ -103,14 +110,31 @@ tinymce.PluginManager.add( 'wpview', function( editor ) {
 			dom.remove( clipboard );
 
 			dom.unbind( selected, 'beforedeactivate focusin focusout click mouseup', _stop );
-			dom.removeClass( selected, 'selected' );
-
-			editor.selection.select( selected.nextSibling );
-			editor.selection.collapse();
-
+			dom.setAttrib( selected, 'data-mce-selected', null );
 		}
 
 		selected = null;
+	}
+
+	function selectSiblingView( node, direction ) {
+		var body = editor.getBody(),
+			sibling = direction === 'previous' ? 'previousSibling' : 'nextSibling';
+
+		while ( node && node.parentNode !== body ) {
+			if ( node[sibling] ) {
+				// The caret will be in another element
+				return false;
+			}
+
+			node = node.parentNode;
+		}
+
+		if ( isView( node[sibling] ) ) {
+			select( node[sibling] );
+			return true;
+		}
+
+		return false;
 	}
 
 	// Check if the `wp.mce` API exists.
@@ -118,8 +142,14 @@ tinymce.PluginManager.add( 'wpview', function( editor ) {
 		return;
 	}
 
+	// Remove the content of view wrappers from HTML string
+	function emptyViews( content ) {
+		return content.replace(/(<div[^>]+wpview-wrap[^>]+>)[\s\S]+?data-wpview-end[^>]*><\/ins><\/div>/g, '$1</div>' );
+	}
+
+	// Prevent adding undo levels on changes inside a view wrapper
 	editor.on( 'BeforeAddUndo', function( event ) {
-		if ( selected && ! toRemove ) {
+		if ( event.lastLevel && emptyViews( event.level.content ) === emptyViews( event.lastLevel.content ) ) {
 			event.preventDefault();
 		}
 	});
@@ -127,12 +157,26 @@ tinymce.PluginManager.add( 'wpview', function( editor ) {
 	// When the editor's content changes, scan the new content for
 	// matching view patterns, and transform the matches into
 	// view wrappers.
-	editor.on( 'BeforeSetContent', function( e ) {
-		if ( ! e.content ) {
+	editor.on( 'BeforeSetContent', function( event ) {
+		var node;
+
+		if ( ! event.content ) {
 			return;
 		}
 
-		e.content = wp.mce.views.toViews( e.content );
+		if ( ! event.initial ) {
+			wp.mce.views.unbind( editor );
+		}
+
+		node = editor.selection.getNode();
+
+		// When a url is pasted, only try to embed it when pasted in an empty paragrapgh.
+		if ( event.content.match( /^\s*(https?:\/\/[^\s"]+)\s*$/i ) &&
+			( node.nodeName !== 'P' || node.parentNode !== editor.getBody() || ! editor.dom.isEmpty( node ) ) ) {
+			return;
+		}
+
+		event.content = wp.mce.views.toViews( event.content );
 	});
 
 	// When the editor's content has been updated and the DOM has been
@@ -149,11 +193,12 @@ tinymce.PluginManager.add( 'wpview', function( editor ) {
 			if ( isView( body.lastChild ) ) {
 				padNode = createPadNode();
 				body.appendChild( padNode );
-				editor.selection.setCursorLocation( padNode, 0 );
+
+				if ( ! event.initial ) {
+					editor.selection.setCursorLocation( padNode, 0 );
+				}
 			}
 		}
-
-	//	refreshEmptyContentNode();
 	});
 
 	// Detect mouse down events that are adjacent to a view when a view is the first view or the last view
@@ -169,21 +214,25 @@ tinymce.PluginManager.add( 'wpview', function( editor ) {
 			x = event.clientX;
 			y = event.clientY;
 
+			// Detect clicks above or to the left if the first node is a wpview
 			if ( isView( firstNode ) && ( ( x < firstNode.offsetLeft && y < ( firstNode.offsetHeight - scrollTop ) ) ||
 				y < firstNode.offsetTop ) ) {
-				// detect events above or to the left of the first view
 
 				padNode = createPadNode();
 				body.insertBefore( padNode, firstNode );
+
+			// Detect clicks to the right and below the last view
 			} else if ( isView( lastNode ) && ( x > ( lastNode.offsetLeft + lastNode.offsetWidth ) ||
 				( ( scrollTop + y ) - ( lastNode.offsetTop + lastNode.offsetHeight ) ) > 0 ) ) {
-				// detect events to the right and below the last view
 
 				padNode = createPadNode();
 				body.appendChild( padNode );
 			}
 
 			if ( padNode ) {
+				// Make sure that a selected view is deselected so that focus and selection are handled properly
+				deselect();
+				editor.getBody().focus();
 				editor.selection.setCursorLocation( padNode, 0 );
 			}
 		}
@@ -236,33 +285,46 @@ tinymce.PluginManager.add( 'wpview', function( editor ) {
 			node.innerHTML = wp.mce.views.toViews( node.innerHTML );
 		});
 
-		editor.dom.bind( editor.getBody(), 'mousedown mouseup click', function( event ) {
-			var view = getParentView( event.target );
+		editor.dom.bind( editor.getBody().parentNode, 'mousedown mouseup click', function( event ) {
+			var view = getParentView( event.target ),
+				deselectEventType;
 
 			// Contain clicks inside the view wrapper
 			if ( view ) {
 				event.stopPropagation();
 
-				if ( event.type === 'click' ) {
-					if ( ! event.metaKey && ! event.ctrlKey ) {
-						if ( editor.dom.hasClass( event.target, 'edit' ) ) {
-							wp.mce.views.edit( view );
-						} else if ( editor.dom.hasClass( event.target, 'remove' ) ) {
-							editor.dom.remove( view );
-						}
+				// Hack to try and keep the block resize handles from appearing. They will show on mousedown and then be removed on mouseup.
+				if ( tinymce.Env.ie <= 10 ) {
+					deselect();
+				}
+
+				select( view );
+
+				if ( event.type === 'click' && ! event.metaKey && ! event.ctrlKey ) {
+					if ( editor.dom.hasClass( event.target, 'edit' ) ) {
+						wp.mce.views.edit( view );
+					} else if ( editor.dom.hasClass( event.target, 'remove' ) ) {
+						editor.dom.remove( view );
 					}
 				}
-				select( view );
-				// returning false stops the ugly bars from appearing in IE11 and stops the view being selected as a range in FF
-				// unfortunately, it also inhibits the dragging fo views to a new location
+				// Returning false stops the ugly bars from appearing in IE11 and stops the view being selected as a range in FF.
+				// Unfortunately, it also inhibits the dragging of views to a new location.
 				return false;
 			} else {
-				if ( event.type === 'click' ) {
+
+				// Fix issue with deselecting a view in IE8. Without this hack, clicking content above the view wouldn't actually deselect it
+				// and the caret wouldn't be placed at the mouse location
+				if ( tinymce.Env.ie && tinymce.Env.ie <= 8 ) {
+					deselectEventType = 'mouseup';
+				} else {
+					deselectEventType = 'mousedown';
+				}
+
+				if ( event.type === deselectEventType ) {
 					deselect();
 				}
 			}
 		});
-
 	});
 
 	editor.on( 'PreProcess', function( event ) {
@@ -281,20 +343,28 @@ tinymce.PluginManager.add( 'wpview', function( editor ) {
 		tinymce.each( dom.select( 'div[data-wpview-text]', event.node ), function( node ) {
 			// Empty the wrap node
 			if ( 'textContent' in node ) {
-				node.textContent = '';
+				node.textContent = '\u00a0';
 			} else {
-				node.innerText = '';
+				node.innerText = '\u00a0';
 			}
-
-			// TODO: that makes all views into block tags (as we use <div>).
-			// Can use 'PostProcess' and a regex instead.
-			dom.replace( dom.create( 'p', null, window.decodeURIComponent( dom.getAttrib( node, 'data-wpview-text' ) ) ), node );
 		});
     });
 
+    editor.on( 'PostProcess', function( event ) {
+		if ( event.content ) {
+			event.content = event.content.replace( /<div [^>]*?data-wpview-text="([^"]*)"[^>]*>[\s\S]*?<\/div>/g, function( match, shortcode ) {
+				if ( shortcode ) {
+					return '<p>' + window.decodeURIComponent( shortcode ) + '</p>';
+				}
+				return ''; // If error, remove the view wrapper
+			});
+		}
+	});
+
 	editor.on( 'keydown', function( event ) {
 		var keyCode = event.keyCode,
-			view;
+			body = editor.getBody(),
+			view, padNode;
 
 		// If a view isn't selected, let the event go on its merry way.
 		if ( ! selected ) {
@@ -310,21 +380,107 @@ tinymce.PluginManager.add( 'wpview', function( editor ) {
 			return;
 		}
 
-		// If the caret is not within the selected view, deselect the
-		// view and bail.
 		view = getParentView( editor.selection.getNode() );
 
+		// If the caret is not within the selected view, deselect the
+		// view and bail.
 		if ( view !== selected ) {
 			deselect();
 			return;
 		}
 
-		// If delete or backspace is pressed, delete the view.
-		if ( keyCode === VK.DELETE || keyCode === VK.BACKSPACE ) {
+		// Deselect views with the arrow keys
+		if ( keyCode === VK.LEFT || keyCode === VK.UP ) {
+			deselect();
+			// Handle case where two views are stacked on top of one another
+			if ( isView( view.previousSibling ) ) {
+				select( view.previousSibling );
+			// Handle case where view is the first node
+			} else if ( ! view.previousSibling ) {
+				padNode = createPadNode();
+				body.insertBefore( padNode, body.firstChild );
+				editor.selection.setCursorLocation( body.firstChild, 0 );
+			// Handle default case
+			} else {
+				editor.selection.select( view.previousSibling, true );
+				editor.selection.collapse();
+			}
+		} else if ( keyCode === VK.RIGHT || keyCode === VK.DOWN ) {
+			deselect();
+			// Handle case where the next node is another wpview
+			if ( isView( view.nextSibling ) ) {
+				select( view.nextSibling );
+			// Handle case were the view is that last node
+			} else if ( ! view.nextSibling ) {
+				padNode = createPadNode();
+				body.appendChild( padNode );
+				editor.selection.setCursorLocation( body.lastChild, 0 );
+			// Handle default case where the next node is a non-wpview
+			} else {
+				editor.selection.setCursorLocation( view.nextSibling, 0 );
+			}
+		} else if ( keyCode === VK.DELETE || keyCode === VK.BACKSPACE ) {
+			// If delete or backspace is pressed, delete the view.
 			editor.dom.remove( selected );
 		}
 
 		event.preventDefault();
+	});
+
+	// Select views when arrow keys are used to navigate the content of the editor.
+	editor.on( 'keydown', function( event ) {
+		var keyCode = event.keyCode,
+			dom = editor.dom,
+			range = editor.selection.getRng(),
+			startNode = range.startContainer,
+			body = editor.getBody(),
+			node, container;
+
+		if ( ! startNode || startNode === body || event.metaKey || event.ctrlKey ) {
+			return;
+		}
+
+		if ( keyCode === VK.UP || keyCode === VK.LEFT ) {
+			if ( keyCode === VK.LEFT && ( ! range.collapsed || range.startOffset !== 0 ) ) {
+				// Not at the beginning of the current range
+				return;
+			}
+
+			if ( ! ( node = dom.getParent( startNode, dom.isBlock ) ) ) {
+				return;
+			}
+
+			if ( selectSiblingView( node, 'previous' ) ) {
+				event.preventDefault();
+			}
+		} else if ( keyCode === VK.DOWN || keyCode === VK.RIGHT ) {
+			if ( ! ( node = dom.getParent( startNode, dom.isBlock ) ) ) {
+				return;
+			}
+
+			if ( keyCode === VK.RIGHT ) {
+				container = range.endContainer;
+
+				if ( ! range.collapsed || ( range.startOffset === 0 && container.length ) ||
+					container.nextSibling ||
+					( container.nodeType === 3 && range.startOffset !== container.length ) ) { // Not at the end of the current range
+
+					return;
+				}
+
+				// In a child element
+				while ( container && container !== node && container !== body ) {
+					if ( container.nextSibling ) {
+						return;
+					}
+					container = container.parentNode;
+				}
+			}
+
+			if ( selectSiblingView( node, 'next' ) ) {
+				event.preventDefault();
+			}
+		}
 	});
 
 	editor.on( 'keyup', function( event ) {
