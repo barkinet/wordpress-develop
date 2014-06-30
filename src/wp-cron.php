@@ -11,6 +11,10 @@
 
 ignore_user_abort( true );
 
+if ( defined( 'DOING_AJAX' ) || defined( 'DOING_CRON' ) ) {
+	die( 'doing_ajax_or_doing_cron' );
+}
+
 /**
  * Tell WordPress we are doing the CRON task.
  *
@@ -60,8 +64,8 @@ function wp_cron_default_exit_handler( $code ) {
  */
 $wp_cron_exit_handler = apply_filters( 'wp_cron_exit_handler', 'wp_cron_default_exit_handler' );
 
-if ( ! empty( $_POST ) || defined( 'DOING_AJAX' ) || defined( 'DOING_CRON' ) ) {
-	$wp_cron_exit_handler( 'bad_post_request_or_doing_ajax_or_doing_cron' );
+if ( ! empty( $_POST ) ) {
+	$wp_cron_exit_handler( 'bad_post_request' );
 }
 
 // Uncached doing_cron transient fetch
