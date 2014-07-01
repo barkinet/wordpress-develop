@@ -63,6 +63,12 @@ window.wp = window.wp || {};
 				Loader.close();
 		},
 
+		beforeunload: function () {
+			if ( ! Loader.saved() ) {
+				return Loader.settings.l10n.saveAlert;
+			}
+		},
+
 		open: function( src ) {
 			var hash;
 
@@ -101,6 +107,9 @@ window.wp = window.wp || {};
 				else
 					Loader.close();
 			});
+
+			// Prompt AYS dialog when navigating away
+			$( window ).on( 'beforeunload', this.beforeunload );
 
 			this.messenger.bind( 'activated', function( location ) {
 				if ( location )
@@ -148,6 +157,7 @@ window.wp = window.wp || {};
 			Loader.messenger = null;
 			Loader.saved     = null;
 			Loader.body.removeClass( 'customize-active full-overlay-active' ).removeClass( 'customize-loading' );
+			$( window ).off( 'beforeunload', Loader.beforeunload );
 		},
 
 		loaded: function() {
