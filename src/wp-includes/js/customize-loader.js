@@ -69,6 +69,8 @@ window.wp = window.wp || {};
 			if ( this.active )
 				return;
 
+			this.saved = new api.Value( true );
+
 			// Load the full page on mobile devices.
 			if ( Loader.settings.browser.mobile )
 				return window.location = src;
@@ -105,6 +107,13 @@ window.wp = window.wp || {};
 					window.location = location;
 			});
 
+			this.messenger.bind( 'saved', function () {
+				Loader.saved( true );
+			} );
+			this.messenger.bind( 'change', function () {
+				Loader.saved( false );
+			} );
+
 			hash = src.split('?')[1];
 
 			// Ensure we don't call pushState if the user hit the forward button.
@@ -137,6 +146,7 @@ window.wp = window.wp || {};
 			Loader.messenger.destroy();
 			Loader.iframe    = null;
 			Loader.messenger = null;
+			Loader.saved     = null;
 			Loader.body.removeClass( 'customize-active full-overlay-active' ).removeClass( 'customize-loading' );
 		},
 
