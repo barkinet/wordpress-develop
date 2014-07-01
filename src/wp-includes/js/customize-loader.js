@@ -1,4 +1,4 @@
-/* global _wpCustomizeLoaderSettings */
+/* global _wpCustomizeLoaderSettings, confirm */
 window.wp = window.wp || {};
 
 (function( exports, $ ){
@@ -139,8 +139,17 @@ window.wp = window.wp || {};
 		},
 
 		close: function() {
-			if ( ! this.active )
+			if ( ! this.active ) {
 				return;
+			}
+
+			// Display AYS dialog if customizer is dirty
+			if ( ! this.saved() && ! confirm( Loader.settings.l10n.saveAlert ) ) {
+				// Go forward since Customizer is exited by history.back()
+				history.forward();
+				return;
+			}
+
 			this.active = false;
 
 			this.trigger( 'close' );
