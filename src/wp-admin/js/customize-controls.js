@@ -1136,9 +1136,11 @@
 		} );
 
 		// Pass events through to the parent.
-		api.bind( 'saved', function() {
-			parent.send( 'saved' );
-		});
+		$.each( [ 'saved', 'change' ], function ( i, event ) {
+			api.bind( event, function() {
+				parent.send( event );
+			});
+		} );
 
 		// When activated, let the loader handle redirecting the page.
 		// If no loader exists, redirect the page ourselves (if a url exists).
