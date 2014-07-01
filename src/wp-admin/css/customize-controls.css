@@ -147,6 +147,10 @@ body {
 	content: "\f139";
 }
 
+.rtl .control-section.control-panel > .accordion-section-title:after {
+	content: "\f141";
+}
+
 .accordion-sub-container.control-panel-content {
 	display: none;
 	position: absolute;
@@ -199,6 +203,10 @@ body {
 	position: relative;
 	top: 9px;
 	left: 9px;
+}
+
+.rtl .control-panel-back:before {
+	content: "\f344";
 }
 
 .current-panel .control-panel-back {
@@ -275,6 +283,10 @@ body {
 	line-height: 24px;
 }
 
+p.customize-section-description {
+	font-style: normal;
+}
+
 .customize-control {
 	width: 100%;
 	float: left;
@@ -283,16 +295,26 @@ body {
 }
 
 .customize-control select,
-.customize-control input[type="text"],
 .customize-control input[type="radio"],
 .customize-control input[type="checkbox"] {
 	line-height: 28px;
 }
 
-.customize-control input[type="text"] {
+.customize-control input[type="text"],
+.customize-control input[type="password"],
+.customize-control input[type="email"],
+.customize-control input[type="number"],
+.customize-control input[type="search"],
+.customize-control input[type="tel"],
+.customize-control input[type="url"] {
 	width: 98%;
 	line-height: 18px;
 	margin: 0;
+}
+
+.customize-control-textarea textarea {
+	width: 100%;
+	resize: vertical;
 }
 
 .customize-control select {
@@ -314,6 +336,13 @@ body {
 	margin-bottom: 5px;
 }
 
+.customize-control-description {
+	display: block;
+	font-style: italic;
+	line-height: 18px;
+	margin-bottom: 5px;
+}
+
 .customize-control-color .color-picker,
 .customize-control-checkbox label,
 .customize-control-upload div {
@@ -331,6 +360,10 @@ body {
 .customize-control-radio .customize-control-title {
 	margin-bottom: 0;
 	line-height: 22px;
+}
+
+.customize-control-radio .customize-control-title + .customize-control-description {
+	margin-top: 7px;
 }
 
 .customize-control-radio label {
