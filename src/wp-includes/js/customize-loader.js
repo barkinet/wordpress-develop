@@ -86,7 +86,6 @@ window.wp = window.wp || {};
 
 			this.active = true;
 			this.body.addClass('customize-loading');
-			this.confirmClose = true;
 
 			// Dirty state of customizer in iframe
 			this.saved = new api.Value( true );
@@ -107,9 +106,6 @@ window.wp = window.wp || {};
 			});
 
 			this.messenger.bind( 'close', function() {
-				// close event indicates user-elected closing, so AYS dialog shouldn't be shown
-				Loader.confirmClose = false;
-
 				if ( $.support.history ) {
 					history.back();
 				} else if ( $.support.hashchange ) {
@@ -162,7 +158,7 @@ window.wp = window.wp || {};
 			}
 
 			// Display AYS dialog if customizer is dirty
-			if ( ! this.saved() && this.confirmClose && ! confirm( Loader.settings.l10n.saveAlert ) ) {
+			if ( ! this.saved() && ! confirm( Loader.settings.l10n.saveAlert ) ) {
 				// Go forward since Customizer is exited by history.back()
 				history.forward();
 				return;

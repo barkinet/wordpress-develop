@@ -917,8 +917,7 @@
 			body = $( document.body ),
 			overlay = body.children( '.wp-full-overlay' ),
 			backBtn = $( '.back' ),
-			saveBtn = $( '#save' ),
-			confirmClose = true;
+			saveBtn = $( '#save' );
 
 		// Prevent the form from saving when enter is pressed on an input or select element.
 		$('#customize-controls').on( 'keydown', function( e ) {
@@ -1128,14 +1127,9 @@
 			});
 		});
 
-		// Prevent AYS dialog when user manually clicks back button
-		backBtn.on( 'click', function () {
-			confirmClose = false;
-		} );
-
 		// Prompt user with AYS dialog if leaving the Customizer with unsaved changes
 		$( window ).on( 'beforeunload', function () {
-			if ( confirmClose && ! api.state( 'saved' )() ) {
+			if ( ! api.state( 'saved' )() ) {
 				return api.l10n.saveAlert;
 			}
 		} );
