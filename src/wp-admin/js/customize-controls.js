@@ -81,22 +81,28 @@
 				});
 			});
 
-			if ( false === control.active() ) {
-				control.container.hide();
-			} else {
-				control.container.show();
-			}
-
 			control.active.bind( function ( active ) {
-				if ( active ) {
-					control.container.slideDown();
-				} else {
-					control.container.slideUp();
-				}
+				control.toggle( active );
 			} );
+			control.toggle( control.active() );
 		},
 
 		ready: function() {},
+
+		/**
+		 * Callback for change to the control's active state.
+		 *
+		 * Override function for custom behavior for the control being active/inactive.
+		 *
+		 * @param {Boolean} active
+		 */
+		toggle: function ( active ) {
+			if ( active ) {
+				this.container.slideDown();
+			} else {
+				this.container.slideUp();
+			}
+		},
 
 		dropdownInit: function() {
 			var control      = this,
@@ -582,6 +588,14 @@
 				if ( ! data || ! data.activeControls ) {
 					return;
 				}
+
+				// Any controls not even registered on the previewed URL are not active either
+				api.control.each( function ( control ) {
+					if ( typeof data.activeControls[ control.id ] === 'undefined' ) {
+						data.activeControls[ control.id ] = false;
+					}
+				} );
+
 				$.each( data.activeControls, function ( id, active ) {
 					var control = api.control( id );
 					if ( control ) {
