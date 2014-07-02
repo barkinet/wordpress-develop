@@ -1068,11 +1068,24 @@ final class WP_Customize_Widgets {
 	 * @param array $widget Rendered widget to tally.
 	 */
 	public function tally_rendered_widgets( $widget ) {
-		$this->rendered_widgets[$widget['id']] = true;
+		$this->rendered_widgets[ $widget['id'] ] = true;
 	}
 
 	/**
-	 * Determine if a is present on the page.
+	 * Determine if a widget is rendered on the page.
+	 *
+	 * @since 4.0.0
+	 * @access public
+	 *
+	 * @param string $widget_id
+	 * @return bool
+	 */
+	public function is_widget_rendered( $widget_id ) {
+		return in_array( $widget_id, $this->rendered_widgets );
+	}
+
+	/**
+	 * Determine if a sidebar is rendered on the page.
 	 *
 	 * @since 4.0.0
 	 * @access public

@@ -1064,6 +1064,13 @@ class WP_Widget_Form_Customize_Control extends WP_Customize_Control {
 	public $height;
 	public $is_wide = false;
 
+	function __construct( $manager, $id, $args = array() ) {
+		if ( empty( $args['active_callback'] ) ) {
+			$args['active_callback'] = array( $this, 'active_callback' );
+		}
+		parent::__construct( $manager, $id, $args );
+	}
+
 	public function to_json() {
 		parent::to_json();
 		$exported_properties = array( 'widget_id', 'widget_id_base', 'sidebar_id', 'width', 'height', 'is_wide' );
@@ -1088,6 +1095,13 @@ class WP_Widget_Form_Customize_Control extends WP_Customize_Control {
 
 		$args = wp_list_widget_controls_dynamic_sidebar( array( 0 => $args, 1 => $widget['params'][0] ) );
 		echo $this->manager->widgets->get_widget_control( $args );
+	}
+
+	/**
+	 * @return bool
+	 */
+	function active_callback() {
+		return $this->manager->widgets->is_widget_rendered( $this->widget_id );
 	}
 }
 
