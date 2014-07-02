@@ -96,9 +96,8 @@ class WP_Customize_Control {
 	 *                WP_Customize_Control, and returns bool to indicate whether
 	 *                the control is active (such as it relates to the URL
 	 *                currently being previewed).
-	 * @todo Should this instead default to a method on this class instance? This would allow it to be overridden by subclass easily.
 	 */
-	public $active_callback = '__return_true';
+	public $active_callback = '';
 
 	/**
 	 * Constructor.
@@ -123,6 +122,9 @@ class WP_Customize_Control {
 
 		$this->manager = $manager;
 		$this->id = $id;
+		if ( empty( $this->active_callback ) ) {
+			$this->active_callback = array( $this, 'active_callback' );
+		}
 
 		// Process settings.
 		if ( empty( $this->settings ) ) {
@@ -170,6 +172,18 @@ class WP_Customize_Control {
 		$active = apply_filters( 'customize_control_active', $active, $control );
 
 		return $active;
+	}
+
+	/**
+	 * Default callback used when invoking WP_Customize_Control::active().
+	 *
+	 * Subclasses can override this with their specific logic, or they may
+	 * provide an 'active_callback' argument to the constructor.
+	 *
+	 * @return bool
+	 */
+	public function active_callback() {
+		return true;
 	}
 
 	/**
@@ -1016,13 +1030,6 @@ class WP_Widget_Area_Customize_Control extends WP_Customize_Control {
 	public $type = 'sidebar_widgets';
 	public $sidebar_id;
 
-	public function __construct( $manager, $id, $args = array() ) {
-		if ( empty( $args['active_callback'] ) ) {
-			$args['active_callback'] = array( $this, 'active_callback' );
-		}
-		parent::__construct( $manager, $id, $args );
-	}
-
 	public function to_json() {
 		parent::to_json();
 		$exported_properties = array( 'sidebar_id' );
@@ -1064,13 +1071,6 @@ class WP_Widget_Form_Customize_Control extends WP_Customize_Control {
 	public $width;
 	public $height;
 	public $is_wide = false;
-
-	function __construct( $manager, $id, $args = array() ) {
-		if ( empty( $args['active_callback'] ) ) {
-			$args['active_callback'] = array( $this, 'active_callback' );
-		}
-		parent::__construct( $manager, $id, $args );
-	}
 
 	public function to_json() {
 		parent::to_json();
