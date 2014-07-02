@@ -477,7 +477,7 @@ final class WP_Customize_Manager {
 			$settings['values'][ $id ] = $setting->js_value();
 		}
 		foreach ( $this->controls as $id => $control ) {
-			$settings['activeControls'][ $id ] = $control->is_active();
+			$settings['activeControls'][ $id ] = $control->active();
 		}
 
 		?>

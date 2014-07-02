@@ -91,11 +91,12 @@ class WP_Customize_Control {
 	 * @since 4.0.0
 	 *
 	 * @access public
-	 * @see WP_Customize_Control::is_active()
+	 * @see WP_Customize_Control::active()
 	 * @var callable  Callback is called with one argument, the instance of
 	 *                WP_Customize_Control, and returns bool to indicate whether
 	 *                the control is active (such as it relates to the URL
 	 *                currently being previewed).
+	 * @todo Should this instead default to a method on this class instance? This would allow it to be overridden by subclass easily.
 	 */
 	public $active_callback = '__return_true';
 
@@ -154,12 +155,12 @@ class WP_Customize_Control {
 	 *
 	 * @return bool
 	 */
-	public function is_active() {
+	public final function active() {
 		$control = $this;
 		$active = call_user_func( $this->active_callback, $this );
 
 		/**
-		 * Filter response of WP_Customize_Control::is_active().
+		 * Filter response of WP_Customize_Control::active().
 		 *
 		 * @since 4.0.0
 		 *
@@ -198,7 +199,7 @@ class WP_Customize_Control {
 		}
 
 		$this->json['type'] = $this->type;
-		$this->json['active'] = $this->is_active();
+		$this->json['active'] = $this->active();
 	}
 
 	/**
@@ -296,7 +297,7 @@ class WP_Customize_Control {
 		echo $this->get_link( $setting_key );
 	}
 
- 	/**
+	/**
 	 * Render the custom attributes for the control's input element.
 	 *
 	 * @since 4.0.0
