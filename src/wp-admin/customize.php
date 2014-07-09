@@ -24,7 +24,13 @@ if ( $return ) {
 	$return = wp_validate_redirect( $return );
 }
 if ( ! $return ) {
-	$return = $url;
+	if ( $url ) {
+		$return = $url;
+	} elseif ( current_user_can( 'edit_theme_options' ) ) {
+		$return = admin_url( 'themes.php' );
+	} else {
+		$return = admin_url();
+	}
 }
 
 global $wp_scripts, $wp_customize;
@@ -112,7 +118,7 @@ do_action( 'customize_controls_print_scripts' );
 				submit_button( $save_text, 'primary save', 'save', false );
 			?>
 			<span class="spinner"></span>
-			<a class="customize-controls-close" href="<?php echo esc_url( $return ? $return : admin_url( 'themes.php' ) ); ?>">
+			<a class="customize-controls-close" href="<?php echo esc_url( $return ); ?>">
 				<span class="screen-reader-text"><?php _e( 'Cancel' ); ?></span>
 			</a>
 		</div>
