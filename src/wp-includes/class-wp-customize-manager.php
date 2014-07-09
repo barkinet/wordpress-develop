@@ -149,15 +149,17 @@ final class WP_Customize_Manager {
 	public function setup_theme() {
 		send_origin_headers();
 
-		if ( is_admin() && ! $this->doing_ajax() )
-		    auth_redirect();
-		elseif ( $this->doing_ajax() && ! is_user_logged_in() )
-		    $this->wp_die( 0 );
+		if ( is_admin() && ! $this->doing_ajax() ) {
+			auth_redirect();
+		} elseif ( $this->doing_ajax() && ! is_user_logged_in() ) {
+			$this->wp_die( 0 );
+		}
 
 		show_admin_bar( false );
 
-		if ( ! current_user_can( 'edit_theme_options' ) )
+		if ( ! current_user_can( 'customize' ) ) {
 			$this->wp_die( -1 );
+		}
 
 		$this->original_stylesheet = get_stylesheet();
 
