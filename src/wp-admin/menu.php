@@ -144,11 +144,18 @@ $menu[59] = array( '', 'read', 'separator2', '', 'wp-menu-separator' );
 
 $appearance_cap = current_user_can( 'switch_themes') ? 'switch_themes' : 'edit_theme_options';
 
-$menu[60] = array( __('Appearance'), $appearance_cap, 'themes.php', '', 'menu-top menu-icon-appearance', 'menu-appearance', 'dashicons-admin-appearance' );
+if ( current_user_can( $appearance_cap) ) {
+	$menu[60] = array( __( 'Appearance' ), $appearance_cap, 'themes.php', '', 'menu-top menu-icon-appearance', 'menu-appearance', 'dashicons-admin-appearance' );
 	$submenu['themes.php'][5] = array( __( 'Themes' ), $appearance_cap, 'themes.php' );
 	$submenu['themes.php'][6] = array( __( 'Customize' ), 'customize', 'customize.php', 'hide-if-no-customize' );
-	if ( current_theme_supports( 'menus' ) || current_theme_supports( 'widgets' ) )
+	if ( current_theme_supports( 'menus' ) || current_theme_supports( 'widgets' ) ) {
 		$submenu['themes.php'][10] = array(__( 'Menus' ), 'edit_theme_options', 'nav-menus.php');
+	}
+} else {
+	$menu[60] = array( __( 'Customize' ), 'customize', 'customize.php', '', 'menu-top menu-icon-appearance hide-if-no-customize', 'menu-appearance', 'dashicons-admin-appearance' );
+}
+
+
 
 unset( $appearance_cap );
 
