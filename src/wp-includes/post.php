@@ -1243,8 +1243,10 @@ function register_post_type( $post_type, $args = array() ) {
 	$post_type = sanitize_key( $post_type );
 	$args->name = $post_type;
 
-	if ( strlen( $post_type ) > 20 )
+	if ( strlen( $post_type ) > 20 ) {
+		_doing_it_wrong( __FUNCTION__, __( 'Post types cannot exceed 20 characters in length' ), '4.0' );
 		return new WP_Error( 'post_type_too_long', __( 'Post types cannot exceed 20 characters in length' ) );
+	}
 
 	// If not set, default to the setting for public.
 	if ( null === $args->publicly_queryable )
@@ -1809,11 +1811,12 @@ function delete_post_meta($post_id, $meta_key, $meta_value = '') {
  * @since 1.5.0
  * @link http://codex.wordpress.org/Function_Reference/get_post_meta
  *
- * @param int $post_id Post ID.
- * @param string $key Optional. The meta key to retrieve. By default, returns data for all keys.
- * @param bool $single Whether to return a single value.
- * @return mixed Will be an array if $single is false. Will be value of meta data field if $single
- *  is true.
+ * @param int    $post_id Post ID.
+ * @param string $key     Optional. The meta key to retrieve. By default, returns
+ *                        data for all keys.
+ * @param bool   $single  Optional. Whether to return a single value. Default false.
+ * @return mixed Will be an array if $single is false. Will be value of meta data
+ *               field if $single is true.
  */
 function get_post_meta($post_id, $key = '', $single = false) {
 	return get_metadata('post', $post_id, $key, $single);
@@ -1865,7 +1868,7 @@ function delete_post_meta_by_key($post_meta_key) {
  * @since 1.2.0
  * @link http://codex.wordpress.org/Function_Reference/get_post_custom
  *
- * @param int $post_id Optional. Post ID. Default is ID of the global `$post`.
+ * @param int $post_id Optional. Post ID. Default is ID of the global $post.
  * @return array Post meta for the given post.
  */
 function get_post_custom( $post_id = 0 ) {
@@ -1884,7 +1887,7 @@ function get_post_custom( $post_id = 0 ) {
  * @since 1.2.0
  * @link http://codex.wordpress.org/Function_Reference/get_post_custom_keys
  *
- * @param int $post_id Optional. Post ID. Default is ID of the global `$post`.
+ * @param int $post_id Optional. Post ID. Default is ID of the global $post.
  * @return array|null Either array of the keys, or null if keys could not be retrieved.
  */
 function get_post_custom_keys( $post_id = 0 ) {
@@ -1907,7 +1910,7 @@ function get_post_custom_keys( $post_id = 0 ) {
  * @link http://codex.wordpress.org/Function_Reference/get_post_custom_values
  *
  * @param string $key Meta field key.
- * @param int $post_id Optional. Post ID. Default is ID of the global `$post`.
+ * @param int $post_id Optional. Post ID. Default is ID of the global $post.
  * @return array Meta field values.
  */
 function get_post_custom_values( $key = '', $post_id = 0 ) {
@@ -1927,7 +1930,7 @@ function get_post_custom_values( $key = '', $post_id = 0 ) {
  *
  * @since 2.7.0
  *
- * @param int $post_id Optional. Post ID. Default is ID of the global `$post`.
+ * @param int $post_id Optional. Post ID. Default is ID of the global $post.
  * @return bool Whether post is sticky.
  */
 function is_sticky( $post_id = 0 ) {
@@ -2621,7 +2624,7 @@ function wp_trash_post($post_id = 0) {
  *
  * @since 2.9.0
  *
- * @param int $post_id Optional. Post ID. Default is ID of the global `$post`.
+ * @param int $post_id Optional. Post ID. Default is ID of the global $post.
  * @return mixed False on failure
  */
 function wp_untrash_post( $post_id = 0 ) {
@@ -2785,7 +2788,7 @@ function wp_untrash_post_comments($post = null) {
  *
  * @uses wp_get_object_terms() Retrieves the categories. Args details can be found here.
  *
- * @param int $post_id Optional. The Post ID. Does not default to the ID of the global `$post`.
+ * @param int $post_id Optional. The Post ID. Does not default to the ID of the global $post.
  * @param array $args Optional. Overwrite the defaults.
  * @return array
  */
@@ -2810,7 +2813,7 @@ function wp_get_post_categories( $post_id = 0, $args = array() ) {
  *
  * @uses wp_get_object_terms() Gets the tags for returning. Args can be found here
  *
- * @param int $post_id Optional. The Post ID. Does not default to the ID of the global `$post`.
+ * @param int $post_id Optional. The Post ID. Does not default to the ID of the global $post.
  * @param array $args Optional. Overwrite the defaults
  * @return array List of post tags.
  */
@@ -2829,7 +2832,7 @@ function wp_get_post_tags( $post_id = 0, $args = array() ) {
  *
  * @uses wp_get_object_terms() Gets the tags for returning. Args can be found here
  *
- * @param int    $post_id  Optional. The Post ID. Does not default to the ID of the global `$post`.
+ * @param int    $post_id  Optional. The Post ID. Does not default to the ID of the global $post.
  * @param string $taxonomy The taxonomy for which to retrieve terms. Defaults to post_tag.
  * @param array  $args     Optional. {@link wp_get_object_terms()} arguments.
  * @return array List of post tags.
@@ -3643,7 +3646,7 @@ function _truncate_post_slug( $slug, $length = 200 ) {
  *
  * @since 2.3.0
  *
- * @param int $post_id Optional. The Post ID. Does not default to the ID of the global `$post`.
+ * @param int $post_id Optional. The Post ID. Does not default to the ID of the global $post.
  * @param string $tags The tags to set for the post, separated by commas.
  * @return bool|null Will return false if $post_id is not an integer or is 0. Will return null otherwise
  */
@@ -3657,7 +3660,7 @@ function wp_add_post_tags( $post_id = 0, $tags = '' ) {
  * @since 2.3.0
  * @uses wp_set_object_terms() Sets the tags for the post.
  *
- * @param int $post_id Optional. The Post ID. Does not default to the ID of the global `$post`.
+ * @param int $post_id Optional. The Post ID. Does not default to the ID of the global $post.
  * @param string $tags The tags to set for the post, separated by commas.
  * @param bool $append If true, don't delete existing tags, just add on. If false, replace the tags with the new tags.
  * @return mixed Array of affected term IDs. WP_Error or false on failure.
@@ -3672,7 +3675,7 @@ function wp_set_post_tags( $post_id = 0, $tags = '', $append = false ) {
  * @since 2.8.0
  * @uses wp_set_object_terms() Sets the tags for the post.
  *
- * @param int    $post_id  Optional. The Post ID. Does not default to the ID of the global `$post`.
+ * @param int    $post_id  Optional. The Post ID. Does not default to the ID of the global $post.
  * @param string $tags     The tags to set for the post, separated by commas.
  * @param string $taxonomy Taxonomy name. Defaults to 'post_tag'.
  * @param bool   $append   If true, don't delete existing tags, just add on. If false, replace the tags with the new tags.
@@ -3711,7 +3714,7 @@ function wp_set_post_terms( $post_id = 0, $tags = '', $taxonomy = 'post_tag', $a
  *
  * @since 2.1.0
  *
- * @param int $post_ID Optional. The Post ID. Does not default to the ID of the global `$post`.
+ * @param int $post_ID Optional. The Post ID. Does not default to the ID of the global $post.
  * @param array|int $post_categories Optional. List of categories or ID of category.
  * @param bool $append If true, don't delete existing categories, just add on. If false, replace the categories with the new categories.
  * @return bool|mixed
@@ -5257,9 +5260,6 @@ function clean_post_cache( $post ) {
 	 * @param WP_Post $post    Post object.
 	 */
 	do_action( 'clean_post_cache', $post->ID, $post );
-
-	if ( is_post_type_hierarchical( $post->post_type ) )
-		wp_cache_delete( 'get_pages', 'posts' );
 
 	if ( 'page' == $post->post_type ) {
 		wp_cache_delete( 'all_page_ids', 'posts' );

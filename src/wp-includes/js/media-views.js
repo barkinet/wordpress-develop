@@ -337,16 +337,11 @@
 	});
 
 	/**
-	 * wp.media.controller.State
-	 *
-	 * A state is a step in a workflow that when set will trigger the controllers
-	 * for the regions to be updated as specified in the frame. This is the base
-	 * class that the various states used in wp.media extend.
-	 *
-	 * @constructor
-	 * @augments Backbone.Model
+	 * A more abstracted state, because media.controller.State expects
+	 * specific regions (menu, title, etc.) to exist on the frame, which do not
+	 * exist in media.view.Frame.EditAttachment.
 	 */
-	media.controller.State = Backbone.Model.extend({
+	media.controller._State = Backbone.Model.extend({
 		constructor: function() {
 			this.on( 'activate', this._preActivate, this );
 			this.on( 'activate', this.activate, this );
@@ -354,13 +349,11 @@
 			this.on( 'deactivate', this._deactivate, this );
 			this.on( 'deactivate', this.deactivate, this );
 			this.on( 'reset', this.reset, this );
-			this.on( 'ready', this._ready, this );
 			this.on( 'ready', this.ready, this );
 			/**
 			 * Call parent constructor with passed arguments
 			 */
 			Backbone.Model.apply( this, arguments );
-			this.on( 'change:menu', this._updateMenu, this );
 		},
 
 		/**
@@ -382,15 +375,55 @@
 		/**
 		 * @access private
 		 */
-		_ready: function() {
-			this._updateMenu();
+		_preActivate: function() {
+			this.active = true;
 		},
 		/**
 		 * @access private
 		 */
-		_preActivate: function() {
-			this.active = true;
+		_postActivate: function() {},
+		/**
+		 * @access private
+		 */
+		_deactivate: function() {
+			this.active = false;
+		}
+	});
+
+	/**
+	 * wp.media.controller.State
+	 *
+	 * A state is a step in a workflow that when set will trigger the controllers
+	 * for the regions to be updated as specified in the frame. This is the base
+	 * class that the various states used in wp.media extend.
+	 *
+	 * @constructor
+	 * @augments Backbone.Model
+	 */
+	media.controller.State = media.controller._State.extend({
+		constructor: function() {
+			this.on( 'activate', this._preActivate, this );
+			this.on( 'activate', this.activate, this );
+			this.on( 'activate', this._postActivate, this );
+			this.on( 'deactivate', this._deactivate, this );
+			this.on( 'deactivate', this.deactivate, this );
+			this.on( 'reset', this.reset, this );
+			this.on( 'ready', this._ready, this );
+			this.on( 'ready', this.ready, this );
+			/**
+			 * Call parent constructor with passed arguments
+			 */
+			Backbone.Model.apply( this, arguments );
+			this.on( 'change:menu', this._updateMenu, this );
 		},
+
+		/**
+		 * @access private
+		 */
+		_ready: function() {
+			this._updateMenu();
+		},
+
 		/**
 		 * @access private
 		 */
@@ -1758,7 +1791,8 @@
 			_.defaults( this.options, {
 				title:    '',
 				modal:    true,
-				uploader: true
+				uploader: true,
+				mode:     ['select']
 			});
 
 			// Ensure core UI is enabled.
@@ -1955,160 +1989,6 @@
 	});
 
 	/**
-	 * wp.media.view.MediaFrame.Manage
-	 *
-	 * A generic management frame workflow.
-	 *
-	 * Used in the media grid view.
-	 *
-	 * @constructor
-	 * @augments wp.media.view.MediaFrame
-	 * @augments wp.media.view.Frame
-	 * @augments wp.media.View
-	 * @augments wp.Backbone.View
-	 * @augments Backbone.View
-	 * @mixes wp.media.controller.StateMachine
-	 */
-	media.view.MediaFrame.Manage = media.view.MediaFrame.extend({
-		/**
-		 * @global wp.Uploader
-		 */
-		initialize: function() {
-			_.defaults( this.options, {
-				title:     l10n.mediaLibraryTitle,
-				modal:     false,
-				selection: [],
-				library:   {},
-				multiple:  false,
-				state:     'library',
-				uploader:  true
-			});
-
-			// Ensure core and media grid view UI is enabled.
-			this.$el.addClass('wp-core-ui media-grid-view');
-
-			// Force the uploader off if the upload limit has been exceeded or
-			// if the browser isn't supported.
-			if ( wp.Uploader.limitExceeded || ! wp.Uploader.browser.supported ) {
-				this.options.uploader = false;
-			}
-
-			// Initialize a window-wide uploader.
-			if ( this.options.uploader ) {
-				this.uploader = new media.view.UploaderWindow({
-					controller: this,
-					uploader: {
-						dropzone:  $('body'),
-						container: $('body')
-					}
-				}).render();
-				this.uploader.ready();
-				$('body').append( this.uploader.el );
-
-				this.options.uploader = false;
-			}
-
-			/**
-			 * call 'initialize' directly on the parent class
-			 */
-			media.view.MediaFrame.prototype.initialize.apply( this, arguments );
-
-			// Since we're not using the default modal built into
-			// a media frame, append our $element to the supplied container.
-			this.$el.appendTo( this.options.container );
-
-			this.createSelection();
-			this.createStates();
-			this.bindHandlers();
-			this.render();
-		},
-
-		createSelection: function() {
-			var selection = this.options.selection;
-
-			if ( ! (selection instanceof media.model.Selection) ) {
-				this.options.selection = new media.model.Selection( selection, {
-					multiple: this.options.multiple
-				});
-			}
-
-			this._selection = {
-				attachments: new media.model.Attachments(),
-				difference: []
-			};
-		},
-
-		createStates: function() {
-			var options = this.options;
-
-			if ( this.options.states ) {
-				return;
-			}
-
-			// Add the default states.
-			this.states.add([
-				new media.controller.Library({
-					library:    media.query( options.library ),
-					multiple:   options.multiple,
-					title:      options.title,
-					priority:   20,
-					toolbar:    false,
-					router:     false,
-					content:    'browse',
-					filterable: 'mime-types'
-				}),
-
-				new media.controller.EditImage( { model: options.editImage } )
-			]);
-		},
-
-		bindHandlers: function() {
-			this.on( 'content:create:browse', this.browseContent, this );
-			this.on( 'content:render:edit-image', this.editImageContent, this );
-		},
-
-		/**
-		 * Content
-		 *
-		 * @param {Object} content
-		 * @this wp.media.controller.Region
-		 */
-		browseContent: function( content ) {
-			var state = this.state();
-
-			// Browse our library of attachments.
-			content.view = new media.view.AttachmentsBrowser({
-				controller: this,
-				collection: state.get('library'),
-				selection:  state.get('selection'),
-				model:      state,
-				sortable:   state.get('sortable'),
-				search:     state.get('searchable'),
-				filters:    state.get('filterable'),
-				display:    state.get('displaySettings'),
-				dragInfo:   state.get('dragInfo'),
-				bulkEdit:   true,
-
-				suggestedWidth:  state.get('suggestedWidth'),
-				suggestedHeight: state.get('suggestedHeight'),
-
-				AttachmentView: state.get('AttachmentView')
-			});
-		},
-
-		editImageContent: function() {
-			var image = this.state().get('image'),
-				view = new media.view.EditImage( { model: image, controller: this } ).render();
-
-			this.content.set( view );
-
-			// after creating the wrapper view, load the actual editor via an ajax call
-			view.loadEditor();
-
-		}
-	});
-
-	/**
 	 * wp.media.view.MediaFrame.Select
 	 *
 	 * Type of media frame that is used to select an item or items from the media library
@@ -2140,6 +2020,15 @@
 			this.bindHandlers();
 		},
 
+		/**
+		 * Attach a selection collection to the frame.
+		 *
+		 * A selection is a collection of attachments used for a specific purpose
+		 * by a media frame. e.g. Selecting an attachment (or many) to insert into
+		 * post content.
+		 *
+		 * @see media.model.Selection
+		 */
 		createSelection: function() {
 			var selection = this.options.selection;
 
@@ -2155,6 +2044,9 @@
 			};
 		},
 
+		/**
+		 * Create the default states on the frame.
+		 */
 		createStates: function() {
 			var options = this.options;
 
@@ -2174,6 +2066,11 @@
 			]);
 		},
 
+		/**
+		 * Bind region mode event callbacks.
+		 *
+		 * @see media.controller.Region.render
+		 */
 		bindHandlers: function() {
 			this.on( 'router:create:browse', this.createRouter, this );
 			this.on( 'router:render:browse', this.browseRouter, this );
@@ -2182,9 +2079,13 @@
 			this.on( 'toolbar:create:select', this.createSelectToolbar, this );
 		},
 
-		// Routers
-		browseRouter: function( view ) {
-			view.set({
+		/**
+		 * Render callback for the router region in the `browse` mode.
+		 *
+		 * @param {wp.media.view.Router} routerView
+		 */
+		browseRouter: function( routerView ) {
+			routerView.set({
 				upload: {
 					text:     l10n.uploadFilesTitle,
 					priority: 20
@@ -2197,18 +2098,17 @@
 		},
 
 		/**
-		 * Content
+		 * Render callback for the content region in the `browse` mode.
 		 *
-		 * @param {Object} content
-		 * @this wp.media.controller.Region
+		 * @param {wp.media.controller.Region} contentRegion
 		 */
-		browseContent: function( content ) {
+		browseContent: function( contentRegion ) {
 			var state = this.state();
 
 			this.$el.removeClass('hide-toolbar');
 
 			// Browse our library of attachments.
-			content.view = new media.view.AttachmentsBrowser({
+			contentRegion.view = new media.view.AttachmentsBrowser({
 				controller: this,
 				collection: state.get('library'),
 				selection:  state.get('selection'),
@@ -2227,11 +2127,10 @@
 		},
 
 		/**
-		 *
-		 * @this wp.media.controller.Region
+		 * Render callback for the content region in the `upload` mode.
 		 */
 		uploadContent: function() {
-			this.$el.removeClass('hide-toolbar');
+			this.$el.removeClass( 'hide-toolbar' );
 			this.content.set( new media.view.UploaderInline({
 				controller: this
 			}) );
@@ -3492,6 +3391,13 @@
 					$el.hide();
 				}
 			});
+
+			// https://core.trac.wordpress.org/ticket/27341
+			_.delay( function() {
+				if ( '0' === $el.css('opacity') && $el.is(':visible') ) {
+					$el.hide();
+				}
+			}, 500 );
 		}
 	});
 
@@ -4658,7 +4564,7 @@
 			var selection = this.options.selection;
 
 			this.$el.attr('aria-label', this.model.attributes.title).attr('aria-checked', false);
-			this.model.on( 'change:sizes change:uploading', this.render, this );
+			this.model.on( 'change', this.render, this );
 			this.model.on( 'change:title', this._syncTitle, this );
 			this.model.on( 'change:caption', this._syncCaption, this );
 			this.model.on( 'change:percent', this.progress, this );
@@ -4711,7 +4617,7 @@
 					compat:        false,
 					alt:           '',
 					description:   ''
-				});
+				}, this.options );
 
 			options.buttons  = this.buttons;
 			options.describe = this.controller.state().get('describe');
@@ -4761,11 +4667,17 @@
 		 */
 		toggleSelectionHandler: function( event ) {
 			var method;
-
 			// Catch enter and space events
 			if ( 'keydown' === event.type && 13 !== event.keyCode && 32 !== event.keyCode ) {
 				return;
 			}
+
+			// In the grid view, bubble up an edit:attachment event to the controller.
+			if ( _.contains( this.controller.options.mode, 'grid' ) ) {
+				this.controller.trigger( 'edit:attachment', this.model );
+				return;
+			}
+
 			if ( event.shiftKey ) {
 				method = 'between';
 			} else if ( event.ctrlKey || event.metaKey ) {
@@ -5296,10 +5208,11 @@
 		 */
 		createAttachmentView: function( attachment ) {
 			var view = new this.options.AttachmentView({
-				controller: this.controller,
-				model:      attachment,
-				collection: this.collection,
-				selection:  this.options.selection
+				controller:           this.controller,
+				model:                attachment,
+				collection:           this.collection,
+				selection:            this.options.selection,
+				showAttachmentFields: this.options.showAttachmentFields
 			});
 
 			return this._viewsByCid[ attachment.cid ] = view;
@@ -5366,6 +5279,7 @@
 	media.view.Search = media.View.extend({
 		tagName:   'input',
 		className: 'search',
+		id:        'media-search-input',
 
 		attributes: {
 			type:        'search',
@@ -5407,6 +5321,7 @@
 	media.view.AttachmentFilters = media.View.extend({
 		tagName:   'select',
 		className: 'attachment-filters',
+		id:        'media-attachment-filters',
 
 		events: {
 			change: 'change'
@@ -5594,7 +5509,6 @@
 		}
 	});
 
-
 	/**
 	 * wp.media.view.AttachmentsBrowser
 	 *
@@ -5612,13 +5526,18 @@
 				filters: false,
 				search:  true,
 				display: false,
-
+				sidebar: true,
+				showAttachmentFields: getUserSetting( 'showAttachmentFields', [ 'title', 'uploadedTo', 'dateFormatted', 'mime' ] ),
 				AttachmentView: media.view.Attachment.Library
 			});
 
 			this.createToolbar();
 			this.updateContent();
-			this.createSidebar();
+			if ( this.options.sidebar ) {
+				this.createSidebar();
+			} else {
+				this.$el.addClass( 'hide-sidebar' );
+			}
 
 			this.collection.on( 'add remove reset', this.updateContent, this );
 		},
@@ -5632,7 +5551,10 @@
 		},
 
 		createToolbar: function() {
-			var filters, FiltersConstructor;
+			var filters,
+				LibraryViewSwitcher,
+				FiltersConstructor,
+				screenReaderText;
 
 			/**
 			 * @member {wp.media.view.Toolbar}
@@ -5642,6 +5564,25 @@
 			});
 
 			this.views.add( this.toolbar );
+
+			// Feels odd to bring the global media library switcher into the Attachment
+			// browser view. Is this a use case for doAction( 'add:toolbar-items:attachments-browser', this.toolbar );
+			// which the controller can tap into and add this view?
+			if ( _.contains( this.controller.options.mode, 'grid' ) ) {
+				LibraryViewSwitcher = media.View.extend({
+					className: 'view-switch media-grid-view-switch',
+					template: media.template( 'media-library-view-switcher')
+				});
+				this.toolbar.set( 'libraryViewSwitcher', new LibraryViewSwitcher({
+					controller: this.controller,
+					priority: -90
+				}).render() );
+
+				this.toolbar.set( 'gridFieldOptions', new media.view.GridFieldOptions({
+					controller: this.controller,
+					priority: -50
+				}).render() );
+			}
 
 			filters = this.options.filters;
 			if ( 'uploaded' === filters ) {
@@ -5658,6 +5599,9 @@
 					model:      this.collection.props,
 					priority:   -80
 				}).render() );
+
+				screenReaderText = $( '<label class="screen-reader-text" for="media-attachment-filters">' + l10n.select + '</label>' );
+				this.toolbar.get( 'filters' ).$el.before( screenReaderText );
 			}
 
 			this.toolbar.set( 'spinner', new media.view.Spinner({
@@ -5670,6 +5614,8 @@
 					model:      this.collection.props,
 					priority:   60
 				}).render() );
+				screenReaderText = $( '<label class="screen-reader-text" for="media-search-input">' + l10n.search + '</label>' );
+				this.toolbar.get( 'search' ).$el.before( screenReaderText );
 			}
 
 			if ( this.options.dragInfo ) {
@@ -5732,11 +5678,12 @@
 			this.removeContent();
 
 			this.attachments = new media.view.Attachments({
-				controller: this.controller,
-				collection: this.collection,
-				selection:  this.options.selection,
-				model:      this.model,
-				sortable:   this.options.sortable,
+				controller:           this.controller,
+				collection:           this.collection,
+				selection:            this.options.selection,
+				model:                this.model,
+				sortable:             this.options.sortable,
+				showAttachmentFields: this.options.showAttachmentFields,
 
 				// The single `Attachment` view to be used in the `Attachments` view.
 				AttachmentView: this.options.AttachmentView
@@ -6541,7 +6488,7 @@
 			wp.ajax.send( 'parse-embed', {
 				data : {
 					post_ID: media.view.settings.post.id,
-					content: '[embed]' + this.model.get('url') + '[/embed]'
+					shortcode: '[embed]' + this.model.get('url') + '[/embed]'
 				}
 			} ).done( _.bind( this.renderoEmbed, this ) );
 		},

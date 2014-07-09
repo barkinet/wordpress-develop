@@ -514,6 +514,9 @@ document.body.className = document.body.className.replace('no-js', 'js');
  * @param string $editor_id
  */
 function media_buttons($editor_id = 'content') {
+	static $instance = 0;
+	$instance++;
+
 	$post = get_post();
 	if ( ! $post && ! empty( $GLOBALS['post_ID'] ) )
 		$post = $GLOBALS['post_ID'];
@@ -524,8 +527,12 @@ function media_buttons($editor_id = 'content') {
 
 	$img = '<span class="wp-media-buttons-icon"></span> ';
 
-	echo '<a href="#" id="insert-media-button" class="button insert-media add_media" data-editor="' . esc_attr( $editor_id ) . '" title="' . esc_attr__( 'Add Media' ) . '">' . $img . __( 'Add Media' ) . '</a>';
-
+	printf( '<a href="#" id="insert-media-button-%d" class="button insert-media add_media" data-editor="%s" title="%s">%s</a>',
+		$instance,
+		esc_attr( $editor_id ),
+		esc_attr__( 'Add Media' ),
+		$img . __( 'Add Media' )
+	);
 	/**
 	 * Filter the legacy (pre-3.5.0) media buttons.
 	 *
@@ -766,18 +773,16 @@ function wp_media_upload_handler() {
 		return media_send_to_editor($html);
 	}
 
-	if ( !empty($_POST) ) {
+	if ( isset( $_POST['save'] ) ) {
+		$errors['upload_notice'] = __('Saved.');
+		return media_upload_gallery();
+	} elseif ( ! empty( $_POST ) ) {
 		$return = media_upload_form_handler();
 
 		if ( is_string($return) )
 			return $return;
 		if ( is_array($return) )
 			$errors = $return;
-	}
-
-	if ( isset($_POST['save']) ) {
-		$errors['upload_notice'] = __('Saved.');
-		return media_upload_gallery();
 	}
 
 	if ( isset($_GET['tab']) && $_GET['tab'] == 'type_url' ) {
@@ -1765,11 +1770,6 @@ $plupload_init = array(
 	'multipart_params'    => $post_params,
 );
 
-// Multi-file uploading doesn't currently work in iOS Safari,
-// single-file allows the built-in camera to be used as source for images
-if ( wp_is_mobile() )
-	$plupload_init['multi_selection'] = false;
-
 /**
  * Filter the default Plupload settings.
  *
@@ -2640,6 +2640,11 @@ function edit_form_image_editor( $post ) {
 		if ( ! empty( $w ) && ! empty( $h ) ) {
 			$attr['width'] = $w;
 			$attr['height'] = $h;
+		}
+
+		$thumb_id = get_post_thumbnail_id( $attachment_id );
+		if ( ! empty( $thumb_id ) ) {
+			$attr['poster'] = wp_get_attachment_url( $thumb_id );
 		}
 
 		echo wp_video_shortcode( $attr );

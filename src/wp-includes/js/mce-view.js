@@ -36,56 +36,69 @@ window.wp = window.wp || {};
 
 	_.extend( wp.mce.View.prototype, {
 		initialize: function() {},
-		getHtml: function() {},
+		getHtml: function() {
+			return '';
+		},
+		loadingPlaceholder: function() {
+			return '' +
+				'<div class="loading-placeholder">' +
+					'<div class="dashicons dashicons-admin-media"></div>' +
+					'<div class="wpview-loading"><ins></ins></div>' +
+				'</div>';
+		},
 		render: function() {
+			var html = this.getHtml() || this.loadingPlaceholder();
+
 			this.setContent(
-				'<div class="toolbar">' +
-					( _.isFunction( views[ this.type ].edit ) ? '<div class="dashicons dashicons-edit edit"></div>' : '' ) +
-					'<div class="dashicons dashicons-no-alt remove"></div>' +
+				'<p class="wpview-selection-before">\u00a0</p>' +
+				'<div class="wpview-body" contenteditable="false">' +
+					'<div class="toolbar">' +
+						( _.isFunction( views[ this.type ].edit ) ? '<div class="dashicons dashicons-edit edit"></div>' : '' ) +
+						'<div class="dashicons dashicons-no-alt remove"></div>' +
+					'</div>' +
+					'<div class="wpview-content wpview-type-' + this.type + '">' +
+						html +
+					'</div>' +
+					( this.overlay ? '<div class="wpview-overlay"></div>' : '' ) +
 				'</div>' +
-				'<div class="wpview-content">' +
-					this.getHtml() +
-				'</div>' +
-				( this.overlay ? '<div class="wpview-overlay"></div>' : '' ) +
-				// The <ins> is used to mark the end of the wrapper div (has to be the last child node).
-				// Needed when comparing the content as string for preventing extra undo levels.
-				'<ins data-wpview-end="1"></ins>',
+				'<p class="wpview-selection-after">\u00a0</p>',
 				function( self, editor, node ) {
 					$( self ).trigger( 'ready', [ editor, node ] );
-				}
+				},
+				'wrap'
 			);
 		},
 		unbind: function() {},
-		setContent: function( html, callback, replace ) {
+		setContent: function( html, callback, option ) {
 			_.each( tinymce.editors, function( editor ) {
 				var self = this;
 				if ( editor.plugins.wpview ) {
 					$( editor.getBody() )
 					.find( '[data-wpview-text="' + this.encodedText + '"]' )
 					.each( function ( i, element ) {
-						var contentWrap = $( element ).children( '.wpview-content' ),
+						var contentWrap = $( element ).find( '.wpview-content' ),
 							wrap = element;
 
-						if ( contentWrap.length ) {
+						if ( contentWrap.length && option !== 'wrap' ) {
 							element = contentWrap = contentWrap[0];
 						}
 
 						if ( _.isString( html ) ) {
-							if ( replace ) {
+							if ( option === 'replace' ) {
 								element = editor.dom.replace( editor.dom.createFragment( html ), wrap );
 							} else {
 								editor.dom.setHTML( element, html );
 							}
 						} else {
-							if ( replace ) {
+							if ( option === 'replace' ) {
 								element = editor.dom.replace( html, wrap );
 							} else {
-								element.appendChild( html );
+								$( element ).empty().append( html );
 							}
 						}
 
 						if ( _.isFunction( callback ) ) {
-							callback( self, editor, $( element ).children( '.wpview-content' )[0] );
+							callback( self, editor, $( element ).find( '.wpview-content' )[0] );
 						}
 					} );
 				}
@@ -267,10 +280,9 @@ window.wp = window.wp || {};
 				tag: 'div',
 
 				attrs: {
-					'class': 'wpview-wrap wpview-type-' + viewType,
+					'class': 'wpview-wrap',
 					'data-wpview-text': encodedText,
-					'data-wpview-type': viewType,
-					'contenteditable': 'false'
+					'data-wpview-type': viewType
 				},
 
 				content: '\u00a0'
@@ -358,7 +370,7 @@ window.wp = window.wp || {};
 
 				// Don't render errors while still fetching attachments
 				if ( this.dfd && 'pending' === this.dfd.state() && ! this.attachments.length ) {
-					return;
+					return '';
 				}
 
 				if ( this.attachments.length ) {
@@ -377,7 +389,7 @@ window.wp = window.wp || {};
 
 				options = {
 					attachments: attachments,
-					columns: attrs.columns ? parseInt( attrs.columns, 10 ) : 3
+					columns: attrs.columns ? parseInt( attrs.columns, 10 ) : wp.media.galleryDefaults.columns
 				};
 
 				return this.template( options );
@@ -604,7 +616,7 @@ window.wp = window.wp || {};
 
 				// Don't render errors while still fetching attachments
 				if ( this.dfd && 'pending' === this.dfd.state() && ! this.attachments.length ) {
-					return;
+					return '';
 				}
 
 				_.each( model.defaults, function( value, key ) {
@@ -737,10 +749,12 @@ window.wp = window.wp || {};
 			} )
 			.fail( function( response ) {
 				if ( response && response.message ) {
-					if ( self.type === 'embed' ) {
+					if ( ( response.type === 'not-embeddable' && self.type === 'embed' ) ||
+						response.type === 'not-ssl' ) {
+
 						self.setError( response.message, 'admin-media' );
 					} else {
-						self.setContent( '<p>' + self.original + '</p>', null, true );
+						self.setContent( '<p>' + self.original + '</p>', null, 'replace' );
 					}
 				} else if ( response && response.statusText ) {
 					self.setError( response.statusText, 'admin-media' );
@@ -810,9 +824,6 @@ window.wp = window.wp || {};
 			$( '.wp-audio-shortcode, .wp-video-shortcode', this.node ).each( function ( i, element ) {
 				self.players.push( new MediaElementPlayer( element, self.mejsSettings ) );
 			} );
-		},
-		getHtml: function() {
-			return '';
 		}
 	} );
 

@@ -26,6 +26,17 @@
 			}
 		},
 
+		removeAllPlayers: function() {
+			var p;
+
+			if ( window.mejs && window.mejs.players ) {
+				for ( p in window.mejs.players ) {
+					window.mejs.players[p].pause();
+					this.removePlayer( window.mejs.players[p] );
+				}
+			}
+		},
+
 		/**
 		 * Pauses the current object's instances of MediaElementPlayer
 		 */
@@ -47,7 +58,7 @@
 						passes = ua.match(/MSIE [6-8]/gi) !== null;
 					break;
 					case 'ie':
-						passes = ua.match(/MSIE/gi) !== null;
+						passes = /MSIE /.test( ua ) || ( /Trident\//.test( ua ) && /rv:\d/.test( ua ) ); // IE11
 					break;
 					case 'ff':
 						passes = ua.match(/firefox/gi) !== null;
@@ -681,10 +692,23 @@
 
 		renderSelectPosterImageToolbar: function() {
 			this.setPrimaryButton( l10n.videoSelectPosterImageTitle, function( controller, state ) {
-				var attachment = state.get( 'selection' ).single();
+				var urls = [], attachment = state.get( 'selection' ).single();
 
 				controller.media.set( 'poster', attachment.get( 'url' ) );
 				state.trigger( 'set-poster-image', controller.media.toJSON() );
+
+				_.each( wp.media.view.settings.embedExts, function (ext) {
+					if ( controller.media.get( ext ) ) {
+						urls.push( controller.media.get( ext ) );
+					}
+				} );
+
+				wp.ajax.send( 'set-attachment-thumbnail', {
+					data : {
+						urls: urls,
+						thumbnail_id: attachment.get( 'id' )
+					}
+				} );
 			} );
 		},
 

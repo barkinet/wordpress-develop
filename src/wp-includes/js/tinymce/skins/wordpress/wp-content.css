@@ -17,6 +17,13 @@ body {
 	margin: 10px;
 }
 
+/* When font-weight is different than the default browser style,
+Chrome and Safari replace <strong> and <b> with spans with inline styles on pasting?! */
+body.webkit strong,
+body.webkit b {
+	font-weight: bold !important;
+}
+
 /* DFW mode */
 html.wp-fullscreen,
 html.wp-fullscreen body {
@@ -203,7 +210,8 @@ audio {
 }
 
 /* hide the shortcode content, but allow the content to still be selected */
-.wpview-wrap .wpview-clipboard {
+.wpview-wrap .wpview-clipboard,
+.wpview-wrap > p {
 	position: absolute;
 	top: 0;
 	left: 0;
@@ -218,12 +226,45 @@ audio {
 	height: 1px;
 }
 
+/* An ugly box will appear when this is focussed in IE, so we'll move it outside the window. */
+.wpview-wrap.wpview-selection-before > p,
+.wpview-wrap.wpview-selection-after > p {
+	left: -10000px;
+}
+
 .wpview-wrap .wpview-clipboard,
-.wpview-wrap .wpview-clipboard * {
+.wpview-wrap .wpview-clipboard *,
+.wpview-wrap > p {
 	-moz-user-select: text;
 	-webkit-user-select: text;
 	-ms-user-select: text;
 	user-select: text;
+}
+
+.has-focus .wpview-wrap.wpview-selection-before:before,
+.has-focus .wpview-wrap.wpview-selection-after:before {
+	content: '';
+	margin: 0;
+	padding: 0;
+	position: absolute;
+	top: -2px;
+	left: -3px;
+	bottom: -2px;
+	width: 1px;
+	background-color: black;
+	-webkit-transition: opacity 0.15s ease-out;
+	-moz-transition: opacity 0.15s ease-out;
+	transition: opacity 0.15s ease-out;
+	opacity: 1;
+}
+
+.has-focus .wpview-wrap.wpview-selection-after:before {
+	left: auto;
+	right: -3px;
+}
+
+.has-focus .wpview-wrap.wpview-cursor-hide:before {
+	opacity: 0;
 }
 
 /**
@@ -268,6 +309,52 @@ audio {
 
 .wpview-wrap[data-mce-selected] .toolbar {
 	display: block;
+}
+
+.wpview-wrap .loading-placeholder {
+	border: 1px dashed #ccc;
+	padding: 10px;
+}
+
+.wpview-wrap[data-mce-selected] .loading-placeholder {
+	border-color: transparent;
+}
+
+/* A little "loading" animation, not showing in IE < 10 */
+.wpview-wrap .wpview-loading {
+	width: 60px;
+	height: 5px;
+	overflow: hidden;
+	background-color: transparent;
+	margin: 10px auto 0;
+}
+
+.wpview-wrap .wpview-loading ins {
+	background-color: #333;
+	margin: 0 0 0 -60px;
+	width: 60px;
+	height: 5px;
+	display: block;
+	-webkit-animation: wpview-loading 1.3s infinite 1s linear;
+	animation: wpview-loading 1.3s infinite 1s linear;
+}
+
+@-webkit-keyframes wpview-loading {
+	0% {
+		margin-left: -60px;
+	}
+	100% {
+		margin-left: 60px;
+	}
+}
+
+@keyframes wpview-loading {
+	0% {
+		margin-left: -60px;
+	}
+	100% {
+		margin-left: 60px;
+	}
 }
 
 #wp-image-toolbar {
@@ -319,7 +406,8 @@ audio {
 	border-color: transparent;
 }
 
-.wpview-error .dashicons {
+.wpview-error .dashicons,
+.loading-placeholder .dashicons {
 	display: block;
 	margin: 0 auto;
 	width: 32px;
@@ -341,16 +429,16 @@ audio {
 }
 
 /* Audio player is short; therefore let's put the toolbar above */
-.wpview-type-audio .toolbar {
+.wpview-wrap[data-wpview-type="audio"] .toolbar {
 	top: auto;
 	bottom: -34px;
 }
 
-.wpview-type-audio .toolbar div {
+.wpview-wrap[data-wpview-type="audio"] .toolbar div {
 	margin-top: 0;
 }
 
-.wpview-type-audio .toolbar div:first-child {
+.wpview-wrap[data-wpview-type="audio"] .toolbar div:first-child {
 	margin-left: 0;
 }
 

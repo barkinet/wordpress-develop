@@ -913,9 +913,12 @@
 		if ( ! $.support.postMessage || ( ! $.support.cors && api.settings.isCrossDomain ) )
 			return window.location = api.settings.url.fallback;
 
-		var previewer, parent, topFocus,
+		var parent, topFocus,
 			body = $( document.body ),
-			overlay = body.children('.wp-full-overlay');
+			overlay = body.children( '.wp-full-overlay' ),
+			title = $( '#customize-info .theme-name.site-title' ),
+			closeBtn = $( '.customize-controls-close' ),
+			saveBtn = $( '#save' );
 
 		// Prevent the form from saving when enter is pressed on an input or select element.
 		$('#customize-controls').on( 'keydown', function( e ) {
@@ -928,7 +931,7 @@
 		});
 
 		// Initialize Previewer
-		previewer = new api.Previewer({
+		api.previewer = new api.Previewer({
 			container:   '#customize-preview',
 			form:        '#customize-controls',
 			previewUrl:  api.settings.url.preview,
@@ -1005,14 +1008,14 @@
 		});
 
 		// Refresh the nonces if the preview sends updated nonces over.
-		previewer.bind( 'nonce', function( nonce ) {
+		api.previewer.bind( 'nonce', function( nonce ) {
 			$.extend( this.nonce, nonce );
 		});
 
 		$.each( api.settings.settings, function( id, data ) {
 			api.create( id, id, data.value, {
 				transport: data.transport,
-				previewer: previewer
+				previewer: api.previewer
 			} );
 		});
 
@@ -1022,15 +1025,16 @@
 
 			control = api.control.add( id, new constructor( id, {
 				params: data,
-				previewer: previewer
+				previewer: api.previewer
 			} ) );
 		});
 
 		// Check if preview url is valid and load the preview frame.
-		if ( previewer.previewUrl() )
-			previewer.refresh();
-		else
-			previewer.previewUrl( api.settings.url.home );
+		if ( api.previewer.previewUrl() ) {
+			api.previewer.refresh();
+		} else {
+			api.previewer.previewUrl( api.settings.url.home );
+		}
 
 		// Save and activated states
 		(function() {
@@ -1040,20 +1044,17 @@
 				processing = state.create( 'processing' );
 
 			state.bind( 'change', function() {
-				var save = $('#save'),
-					back = $('.back');
-
 				if ( ! activated() ) {
-					save.val( api.l10n.activate ).prop( 'disabled', false );
-					back.text( api.l10n.cancel );
+					saveBtn.val( api.l10n.activate ).prop( 'disabled', false );
+					closeBtn.find( '.screen-reader-text' ).text( api.l10n.cancel );
 
 				} else if ( saved() ) {
-					save.val( api.l10n.saved ).prop( 'disabled', true );
-					back.text( api.l10n.close );
+					saveBtn.val( api.l10n.saved ).prop( 'disabled', true );
+					closeBtn.find( '.screen-reader-text' ).text( api.l10n.close );
 
 				} else {
-					save.val( api.l10n.save ).prop( 'disabled', false );
-					back.text( api.l10n.cancel );
+					saveBtn.val( api.l10n.save ).prop( 'disabled', false );
+					closeBtn.find( '.screen-reader-text' ).text( api.l10n.cancel );
 				}
 			});
 
@@ -1081,18 +1082,18 @@
 		}());
 
 		// Button bindings.
-		$('#save').click( function( event ) {
-			previewer.save();
+		saveBtn.click( function( event ) {
+			api.previewer.save();
 			event.preventDefault();
 		}).keydown( function( event ) {
 			if ( 9 === event.which ) // tab
 				return;
 			if ( 13 === event.which ) // enter
-				previewer.save();
+				api.previewer.save();
 			event.preventDefault();
 		});
 
-		$('.back').keydown( function( event ) {
+		closeBtn.keydown( function( event ) {
 			if ( 9 === event.which ) // tab
 				return;
 			if ( 13 === event.which ) // enter
@@ -1113,6 +1114,13 @@
 			event.preventDefault();
 		});
 
+		// Bind site title display to the corresponding field.
+		if ( title.length ) {
+			$( '#customize-control-blogname input' ).on( 'input', function() {
+				title.text(  this.value );
+			} );
+		}
+
 		// Create a potential postMessage connection with the parent frame.
 		parent = new api.Messenger({
 			url: api.settings.url.parent,
@@ -1122,16 +1130,25 @@
 		// If we receive a 'back' event, we're inside an iframe.
 		// Send any clicks to the 'Return' link to the parent page.
 		parent.bind( 'back', function() {
-			$('.back').on( 'click.back', function( event ) {
+			closeBtn.on( 'click.customize-controls-close', function( event ) {
 				event.preventDefault();
 				parent.send( 'close' );
 			});
 		});
 
+		// Prompt user with AYS dialog if leaving the Customizer with unsaved changes
+		$( window ).on( 'beforeunload', function () {
+			if ( ! api.state( 'saved' )() ) {
+				return api.l10n.saveAlert;
+			}
+		} );
+
 		// Pass events through to the parent.
-		api.bind( 'saved', function() {
-			parent.send( 'saved' );
-		});
+		$.each( [ 'saved', 'change' ], function ( i, event ) {
+			api.bind( event, function() {
+				parent.send( event );
+			});
+		} );
 
 		// When activated, let the loader handle redirecting the page.
 		// If no loader exists, redirect the page ourselves (if a url exists).
@@ -1198,7 +1215,7 @@
 		api.trigger( 'ready' );
 
 		// Make sure left column gets focus
-		topFocus = $('.back');
+		topFocus = closeBtn;
 		topFocus.focus();
 		setTimeout(function () {
 			topFocus.focus();

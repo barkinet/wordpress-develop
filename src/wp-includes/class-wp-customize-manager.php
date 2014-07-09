@@ -45,6 +45,7 @@ final class WP_Customize_Manager {
 	public $widgets;
 
 	protected $settings = array();
+	protected $panels   = array();
 	protected $sections = array();
 	protected $controls = array();
 
@@ -317,6 +318,17 @@ final class WP_Customize_Manager {
 	}
 
 	/**
+	 * Get the registered panels.
+	 *
+	 * @since 4.0.0
+	 *
+	 * @return array
+	 */
+	public function panels() {
+		return $this->panels;
+	}
+
+	/**
 	 * Checks if the current theme is active.
 	 *
 	 * @since 3.4.0
@@ -396,6 +408,7 @@ final class WP_Customize_Manager {
 		$this->prepare_controls();
 
 		wp_enqueue_script( 'customize-preview' );
+		add_action( 'wp', array( $this, 'customize_preview_override_404_status' ) );
 		add_action( 'wp_head', array( $this, 'customize_preview_base' ) );
 		add_action( 'wp_head', array( $this, 'customize_preview_html5' ) );
 		add_action( 'wp_footer', array( $this, 'customize_preview_settings' ), 20 );
@@ -415,6 +428,18 @@ final class WP_Customize_Manager {
 		 * @param WP_Customize_Manager $this WP_Customize_Manager instance.
 		 */
 		do_action( 'customize_preview_init', $this );
+	}
+
+	/**
+	 * Prevent sending a 404 status when returning the response for the customize
+	 * preview, since it causes the jQuery Ajax to fail. Send 200 instead.
+	 *
+	 * @since 4.0.0
+	 */
+	public function customize_preview_override_404_status() {
+		if ( is_404() ) {
+			status_header( 200 );
+		}
 	}
 
 	/**
@@ -650,6 +675,50 @@ final class WP_Customize_Manager {
 	}
 
 	/**
+	 * Add a customize panel.
+	 *
+	 * @since 4.0.0
+	 *
+	 * @param WP_Customize_Panel|string $id   Customize Panel object, or Panel ID.
+	 * @param array                     $args Panel arguments.
+	 */
+	public function add_panel( $id, $args = array() ) {
+		if ( is_a( $id, 'WP_Customize_Panel' ) ) {
+			$panel = $id;
+		}
+		else {
+			$panel = new WP_Customize_Panel( $this, $id, $args );
+		}
+
+		$this->panels[ $panel->id ] = $panel;
+	}
+
+	/**
+	 * Retrieve a customize panel.
+	 *
+	 * @since 4.0.0
+	 *
+	 * @param string $id Panel ID.
+	 * @return WP_Customize_Panel
+	 */
+	public function get_panel( $id ) {
+		if ( isset( $this->panels[ $id ] ) ) {
+			return $this->panels[ $id ];
+		}
+	}
+
+	/**
+	 * Remove a customize panel.
+	 *
+	 * @since 4.0.0
+	 *
+	 * @param string $id Panel ID.
+	 */
+	public function remove_panel( $id ) {
+		unset( $this->panels[ $id ] );
+	}
+
+	/**
 	 * Add a customize section.
 	 *
 	 * @since 3.4.0
@@ -751,7 +820,7 @@ final class WP_Customize_Manager {
 	}
 
 	/**
-	 * Prepare settings and sections.
+	 * Prepare panels, sections, and controls.
 	 *
 	 * For each, check if required related components exist,
 	 * whether the user has the necessary capabilities,
@@ -765,8 +834,9 @@ final class WP_Customize_Manager {
 		$controls = array();
 
 		foreach ( $this->controls as $id => $control ) {
-			if ( ! isset( $this->sections[ $control->section ] ) || ! $control->check_capabilities() )
+			if ( ! isset( $this->sections[ $control->section ] ) || ! $control->check_capabilities() ) {
 				continue;
+			}
 
 			$this->sections[ $control->section ]->controls[] = $control;
 			$controls[ $id ] = $control;
@@ -780,13 +850,39 @@ final class WP_Customize_Manager {
 		$sections = array();
 
 		foreach ( $this->sections as $section ) {
-			if ( ! $section->check_capabilities() || ! $section->controls )
+			if ( ! $section->check_capabilities() || ! $section->controls ) {
 				continue;
+			}
 
 			usort( $section->controls, array( $this, '_cmp_priority' ) );
-			$sections[] = $section;
+
+			if ( ! $section->panel ) {
+				// Top-level section.
+				$sections[] = $section;
+			} else {
+				// This section belongs to a panel.
+				if ( isset( $this->panels [ $section->panel ] ) ) {
+					$this->panels[ $section->panel ]->sections[] = $section;
+				}
+			}
 		}
 		$this->sections = $sections;
+
+		// Prepare panels.
+		// Reversing makes uasort sort by time added when conflicts occur.
+		$this->panels = array_reverse( $this->panels );
+		uasort( $this->panels, array( $this, '_cmp_priority' ) );
+		$panels = array();
+
+		foreach ( $this->panels as $panel ) {
+			if ( ! $panel->check_capabilities() || ! $panel->sections ) {
+				continue;
+			}
+
+			usort( $panel->sections, array( $this, '_cmp_priority' ) );
+			$panels[] = $panel;
+		}
+		$this->panels = $panels;
 	}
 
 	/**

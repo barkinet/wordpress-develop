@@ -39,31 +39,9 @@ require_once( dirname( dirname( __FILE__ ) ) . '/wp-load.php' );
 require_once( ABSPATH . 'wp-admin/includes/upgrade.php' );
 
 /** Load wpdb */
-require_once( ABSPATH . 'wp-includes/wp-db.php' );
+require_once( ABSPATH . WPINC . '/wp-db.php' );
 
 $step = isset( $_GET['step'] ) ? (int) $_GET['step'] : 0;
-
-/**
- * @todo rename, move
- */
-function wp_get_available_translations() {
-	$url = 'http://api.wordpress.org/translations/core/1.0/';
-	if ( wp_http_supports( array( 'ssl' ) ) ) {
-		$url = set_url_scheme( $url, 'https' );
-	}
-
-	$options = array(
-		'timeout' => 3,
-		'body' => array( 'version' => $GLOBALS['wp_version'] ),
-	);
-
-	$response = wp_remote_post( $url, $options );
-	$body = wp_remote_retrieve_body( $response );
-	if ( $body && $body = json_decode( $body, true ) ) {
-		return $body;
-	}
-	return false;
-}
 
 /**
  * Display install header.
@@ -90,7 +68,7 @@ function display_header( $body_classes = '' ) {
 	?>
 </head>
 <body class="wp-core-ui<?php echo $body_classes ?>">
-<h1 id="logo"><a href="<?php echo esc_url( __( 'https://wordpress.org/' ) ); ?>"><?php _e( 'WordPress' ); ?></a></h1>
+<h1 id="logo"><a href="<?php echo esc_url( __( 'https://wordpress.org/' ) ); ?>" tabindex="-1"><?php _e( 'WordPress' ); ?></a></h1>
 
 <?php
 } // end display_header()
@@ -120,7 +98,7 @@ function display_setup_form( $error = null ) {
 ?>
 <p class="message"><?php echo $error; ?></p>
 <?php } ?>
-<form id="setup" method="post" action="install.php?step=2">
+<form id="setup" method="post" action="install.php?step=2" novalidate="novalidate">
 	<table class="form-table">
 		<tr>
 			<th scope="row"><label for="weblog_title"><?php _e( 'Site Title' ); ?></label></th>
@@ -156,7 +134,7 @@ function display_setup_form( $error = null ) {
 		<?php endif; ?>
 		<tr>
 			<th scope="row"><label for="admin_email"><?php _e( 'Your E-mail' ); ?></label></th>
-			<td><input name="admin_email" type="text" id="admin_email" size="25" value="<?php echo esc_attr( $admin_email ); ?>" />
+			<td><input name="admin_email" type="email" id="admin_email" size="25" value="<?php echo esc_attr( $admin_email ); ?>" />
 			<p><?php _e( 'Double-check your email address before continuing.' ); ?></p></td>
 		</tr>
 		<tr>
@@ -165,7 +143,7 @@ function display_setup_form( $error = null ) {
 		</tr>
 	</table>
 	<p class="step"><input type="submit" name="Submit" value="<?php esc_attr_e( 'Install WordPress' ); ?>" class="button button-large" /></p>
-	<input type="hidden" name="language" value="<?php echo isset( $_POST['language'] ) ? esc_attr( $_POST['language'] ) : ''; ?>" />
+	<input type="hidden" name="language" value="<?php echo isset( $_REQUEST['language'] ) ? esc_attr( $_REQUEST['language'] ) : ''; ?>" />
 </form>
 <?php
 } // end display_setup_form()
@@ -200,44 +178,22 @@ if ( ! is_string( $wpdb->base_prefix ) || '' === $wpdb->base_prefix ) {
 
 switch($step) {
 	case 0: // Step 0
-		if ( $body = wp_get_available_translations() ) {
-			display_header( 'language-chooser' );
 
-			echo '<form id="setup" method="post" action="install.php?step=1">';
-			echo '<select name="language" id="language-chooser" size="15">';
-			echo '<option selected="selected" value="">English (United States)</option>';
-			foreach ( $body['languages'] as $language ) {
-				echo '<option value="' . esc_attr( $language['language'] ) . '">' . esc_html( $language['native_name'] ) . "</option>\n";
-			}
-			echo "</select>\n";
-			echo '<p class="step"><input type="submit" class="button button-primary button-hero" value="&raquo;" /></p>';
+		if ( empty( $_GET['language'] ) && ( $languages = wp_get_available_translations_from_api() ) ) {
+			display_header( 'language-chooser' );
+			echo '<form id="setup" method="post" action="?step=1">';
+			wp_install_language_form( $languages );
 			echo '</form>';
 			break;
 		}
+
 		// Deliberately fall through if we can't reach the translations API.
 
 	case 1: // Step 1, direct link or from language chooser.
-		if ( ! empty( $_POST['language'] ) ) {
-			$body = wp_get_available_translations();
-			foreach ( $body['languages'] as $language ) {
-				if ( $language['language'] === $_POST['language'] ) {
-					$loading_language = $_POST['language'];
-					break;
-				}
-			}
-			if ( ! empty( $loading_language ) ) {
-				require ABSPATH . 'wp-admin/includes/class-wp-upgrader.php';
-				$skin = new Automatic_Upgrader_Skin;
-				$upgrader = new Language_Pack_Upgrader( $skin );
-				$options = array( 'clear_update_cache' => false );
-				$language['type'] = 'core';
-				$language = (object) $language;
-				/**
-				 * @todo failures (such as non-direct FS)
-				 */
-				$upgrader->upgrade( $language, array( 'clear_update_cache' => false ) );
-				load_textdomain( 'default', WP_LANG_DIR . "/{$loading_language}.mo" );
-				load_textdomain( 'default', WP_LANG_DIR . "/admin-{$loading_language}.mo" );
+		if ( ! empty( $_REQUEST['language'] ) ) {
+			$loaded_language = wp_install_download_language_pack( $_REQUEST['language'] );
+			if ( $loaded_language ) {
+				wp_install_load_language( $loaded_language );
 			}
 		}
 
@@ -253,15 +209,7 @@ switch($step) {
 		display_setup_form();
 		break;
 	case 2:
-		$loading_language = '';
-		if ( ! empty( $_POST['language'] ) ) {
-			$available_languages = get_available_languages();
-			if ( in_array( $_POST['language'], $available_languages ) ) {
-				$loading_language = $_POST['language'];
-				load_textdomain( 'default', WP_LANG_DIR . "/{$loading_language}.mo" );
-				load_textdomain( 'default', WP_LANG_DIR . "/admin-{$loading_language}.mo" );
-			}
-		}
+		$loaded_language = wp_install_load_language( $_REQUEST['language'] );
 
 		if ( ! empty( $wpdb->error ) )
 			wp_die( $wpdb->error->get_error_message() );
@@ -299,7 +247,7 @@ switch($step) {
 
 		if ( $error === false ) {
 			$wpdb->show_errors();
-			$result = wp_install( $weblog_title, $user_name, $admin_email, $public, '', wp_slash( $admin_password ), $loading_language );
+			$result = wp_install( $weblog_title, $user_name, $admin_email, $public, '', wp_slash( $admin_password ), $loaded_language );
 ?>
 
 <h1><?php _e( 'Success!' ); ?></h1>
@@ -330,8 +278,9 @@ switch($step) {
 }
 if ( !wp_is_mobile() ) {
 ?>
-<script type="text/javascript">var t = document.getElementById('weblog_title') || document.getElementById('language-chooser'); if (t){ t.focus(); }</script>
+<script type="text/javascript">var t = document.getElementById('weblog_title'); if (t){ t.focus(); }</script>
 <?php } ?>
 <?php wp_print_scripts( 'user-profile' ); ?>
+<?php wp_print_scripts( 'language-chooser' ); ?>
 </body>
 </html>

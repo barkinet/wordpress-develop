@@ -98,7 +98,12 @@ class WP_Posts_List_Table extends WP_List_Table {
 		else
 			$total_pages = $wp_query->max_num_pages;
 
-		$mode = empty( $_REQUEST['mode'] ) ? 'list' : $_REQUEST['mode'];
+		if ( ! empty( $_REQUEST['mode'] ) ) {
+			$mode = $_REQUEST['mode'] == 'excerpt' ? 'excerpt' : 'list';
+			set_user_setting ( 'posts_list_mode', $mode );
+		} else {
+			$mode = get_user_setting ( 'posts_list_mode', 'list' );
+		}
 
 		$this->is_trash = isset( $_REQUEST['post_status'] ) && $_REQUEST['post_status'] == 'trash';
 
@@ -228,7 +233,7 @@ class WP_Posts_List_Table extends WP_List_Table {
 			 */
 			do_action( 'restrict_manage_posts' );
 
-			submit_button( __( 'Filter' ), 'button', false, false, array( 'id' => 'post-query-submit' ) );
+			submit_button( __( 'Filter' ), 'button', 'filter_action', false, array( 'id' => 'post-query-submit' ) );
 		}
 
 		if ( $this->is_trash && current_user_can( get_post_type_object( $this->screen->post_type )->cap->edit_others_posts ) ) {
@@ -656,9 +661,10 @@ class WP_Posts_List_Table extends WP_List_Table {
 				if ( $post_type_object->public ) {
 					if ( in_array( $post->post_status, array( 'pending', 'draft', 'future' ) ) ) {
 						if ( $can_edit_post ) {
-
+							$preview_link = set_url_scheme( get_permalink( $post->ID ) );
 							/** This filter is documented in wp-admin/includes/meta-boxes.php */
-							$actions['view'] = '<a href="' . esc_url( apply_filters( 'preview_post_link', set_url_scheme( add_query_arg( 'preview', 'true', get_permalink( $post->ID ) ) ) ) ) . '" title="' . esc_attr( sprintf( __( 'Preview &#8220;%s&#8221;' ), $title ) ) . '" rel="permalink">' . __( 'Preview' ) . '</a>';
+							$preview_link = apply_filters( 'preview_post_link', add_query_arg( 'preview', 'true', $preview_link ), $post );
+							$actions['view'] = '<a href="' . esc_url( $preview_link ) . '" title="' . esc_attr( sprintf( __( 'Preview &#8220;%s&#8221;' ), $title ) ) . '" rel="permalink">' . __( 'Preview' ) . '</a>';
 						}
 					} elseif ( 'trash' != $post->post_status ) {
 						$actions['view'] = '<a href="' . get_permalink( $post->ID ) . '" title="' . esc_attr( sprintf( __( 'View &#8220;%s&#8221;' ), $title ) ) . '" rel="permalink">' . __( 'View' ) . '</a>';

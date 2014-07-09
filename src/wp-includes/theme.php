@@ -128,7 +128,7 @@ function wp_clean_themes_cache( $clear_update_cache = true ) {
  * @return bool true if a child theme is in use, false otherwise.
  **/
 function is_child_theme() {
-	return get_template_directory() !== get_stylesheet_directory();
+	return ( TEMPLATEPATH !== STYLESHEETPATH );
 }
 
 /**
@@ -1874,6 +1874,9 @@ function _wp_customize_loader_settings() {
 		'url'           => esc_url( admin_url( 'customize.php' ) ),
 		'isCrossDomain' => $cross_domain,
 		'browser'       => $browser,
+		'l10n'          => array(
+			'saveAlert' => __( 'The changes you made will be lost if you navigate away from this page.' ),
+		),
 	);
 
 	$script = 'var _wpCustomizeLoaderSettings = ' . json_encode( $settings ) . ';';
@@ -1937,4 +1940,17 @@ function wp_customize_support_script() {
 		}());
 	</script>
 	<?php
+}
+
+/**
+ * Whether the site is being previewed in the Customizer.
+ *
+ * @since 4.0.0
+ *
+ * @return bool True if the site is being previewed in the Customizer, false otherwise.
+ */
+function is_customize_preview() {
+	global $wp_customize;
+
+	return is_a( $wp_customize, 'WP_Customize_Manager' ) && $wp_customize->is_preview();
 }

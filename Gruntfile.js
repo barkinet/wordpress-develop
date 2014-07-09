@@ -5,7 +5,9 @@ module.exports = function(grunt) {
 		BUILD_DIR = 'build/';
 
 	// Load tasks.
-	require('matchdep').filterDev('grunt-*').forEach( grunt.loadNpmTasks );
+	require('matchdep').filterDev(['grunt-*', '!grunt-legacy-util']).forEach( grunt.loadNpmTasks );
+	// Load legacy utils
+	grunt.util = require('grunt-legacy-util');
 
 	// Project configuration.
 	grunt.initConfig({
@@ -271,6 +273,36 @@ module.exports = function(grunt) {
 
 					return false;
 				}
+			},
+			plugins: {
+				expand: true,
+				cwd: SOURCE_DIR + 'wp-content/plugins',
+				src: [
+					'**/*.js',
+					'!**/*.min.js'
+				],
+				// Limit JSHint's run to a single specified plugin directory:
+				//
+				//    grunt jshint:plugins --dir=foldername
+				//
+				filter: function( dirpath ) {
+					var index, dir = grunt.option( 'dir' );
+
+					// Don't filter when no target folder is specified
+					if ( ! dir ) {
+						return true;
+					}
+
+					dirpath = dirpath.replace( /\\/g, '/' );
+					index = dirpath.lastIndexOf( '/' + dir );
+
+					// Match only the folder name passed from cli
+					if ( -1 !== index ) {
+						return true;
+					}
+
+					return false;
+				}
 			}
 		},
 		qunit: {
@@ -417,9 +449,12 @@ module.exports = function(grunt) {
 	// Color schemes task.
 	grunt.registerTask('colors', ['sass:colors', 'autoprefixer:colors']);
 
+	// JSHint task.
+	grunt.registerTask('jshint:corejs', ['jshint:grunt', 'jshint:tests', 'jshint:themes', 'jshint:core']);
+
 	// Pre-commit task.
 	grunt.registerTask('precommit', 'Runs front-end dev/test tasks in preparation for a commit.',
-		['autoprefixer:core', 'imagemin:core', 'jshint', 'qunit:compiled']);
+		['autoprefixer:core', 'imagemin:core', 'jshint:corejs', 'qunit:compiled']);
 
 	// Copy task.
 	grunt.registerTask('copy:all', ['copy:files', 'copy:wp-admin-rtl', 'copy:version']);
@@ -441,7 +476,10 @@ module.exports = function(grunt) {
 		['build', 'copy:qunit', 'qunit']);
 
 	grunt.registerTask('test', 'Runs all QUnit and PHPUnit tasks.', ['qunit:compiled', 'phpunit']);
-	grunt.registerTask('travis', ['jshint', 'test']);
+
+	// Travis CI tasks.
+	grunt.registerTask('travis:js', 'Runs Javascript Travis CI tasks.', [ 'jshint:corejs', 'qunit:compiled' ]);
+	grunt.registerTask('travis:phpunit', 'Runs PHPUnit Travis CI tasks.', 'phpunit');
 
 	// Patch task.
 	grunt.renameTask('patch_wordpress', 'patch');

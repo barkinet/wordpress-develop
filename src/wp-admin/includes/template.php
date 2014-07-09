@@ -1472,7 +1472,7 @@ function the_post_password() {
  *
  * @since 2.7.0
  *
- * @param int|WP_Post $post Optional. Post ID or WP_Post object. Default is global `$post`.
+ * @param int|WP_Post $post Optional. Post ID or WP_Post object. Default is global $post.
  * @return string The post title if set.
  */
 function _draft_or_post_title( $post = 0 ) {
@@ -1992,7 +1992,7 @@ final class WP_Internal_Pointers {
 
 		self::print_js( 'wp360_revisions', '.misc-pub-section.misc-pub-revisions', array(
 			'content' => $content,
-			'position' => array( 'edge' => is_rtl() ? 'left' : 'right', 'align' => 'center', 'my' => is_rtl() ? 'left' : 'right-14px' ),
+			'position' => array( 'edge' => is_rtl() ? 'left' : 'right', 'align' => 'center' ),
 		) );
 	}
 
@@ -2020,7 +2020,7 @@ final class WP_Internal_Pointers {
 
 		if ( 'themes' === get_current_screen()->id ) {
 			$selector = '.theme.active .customize';
-			$position = array( 'edge' => is_rtl() ? 'right' : 'left', 'align' => 'center', 'my' => is_rtl() ? 'right-13px' : '' );
+			$position = array( 'edge' => is_rtl() ? 'right' : 'left', 'align' => 'center' );
 		} else {
 			$selector = 'a[href="customize.php"]';
 			if ( is_rtl() ) {

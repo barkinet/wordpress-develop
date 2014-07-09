@@ -146,7 +146,7 @@ function login_header( $title = 'Log In', $message = '', $wp_error = '' ) {
 	</head>
 	<body class="login <?php echo esc_attr( implode( ' ', $classes ) ); ?>">
 	<div id="login">
-		<h1><a href="<?php echo esc_url( $login_header_url ); ?>" title="<?php echo esc_attr( $login_header_title ); ?>"><?php bloginfo( 'name' ); ?></a></h1>
+		<h1><a href="<?php echo esc_url( $login_header_url ); ?>" title="<?php echo esc_attr( $login_header_title ); ?>" tabindex="-1"><?php bloginfo( 'name' ); ?></a></h1>
 	<?php
 
 	unset( $login_header_url, $login_header_title );
@@ -172,12 +172,12 @@ function login_header( $title = 'Log In', $message = '', $wp_error = '' ) {
 		$errors = '';
 		$messages = '';
 		foreach ( $wp_error->get_error_codes() as $code ) {
-			$severity = $wp_error->get_error_data($code);
-			foreach ( $wp_error->get_error_messages($code) as $error ) {
+			$severity = $wp_error->get_error_data( $code );
+			foreach ( $wp_error->get_error_messages( $code ) as $error_message ) {
 				if ( 'message' == $severity )
-					$messages .= '	' . $error . "<br />\n";
+					$messages .= '	' . $error_message . "<br />\n";
 				else
-					$errors .= '	' . $error . "<br />\n";
+					$errors .= '	' . $error_message . "<br />\n";
 			}
 		}
 		if ( ! empty( $errors ) ) {
@@ -348,7 +348,7 @@ function retrieve_password() {
 
 	// Now insert the key, hashed, into the DB.
 	if ( empty( $wp_hasher ) ) {
-		require_once ABSPATH . 'wp-includes/class-phpass.php';
+		require_once ABSPATH . WPINC . '/class-phpass.php';
 		$wp_hasher = new PasswordHash( 8, true );
 	}
 	$hashed = $wp_hasher->HashPassword( $key );
@@ -422,9 +422,10 @@ if ( defined( 'RELOCATE' ) && RELOCATE ) { // Move flag is set
 }
 
 //Set a cookie now to see if they are supported by the browser.
-setcookie(TEST_COOKIE, 'WP Cookie check', 0, COOKIEPATH, COOKIE_DOMAIN);
+$secure = ( is_https_url( home_url() ) && is_https_url( site_url() ) );
+setcookie( TEST_COOKIE, 'WP Cookie check', 0, COOKIEPATH, COOKIE_DOMAIN, $secure );
 if ( SITECOOKIEPATH != COOKIEPATH )
-	setcookie(TEST_COOKIE, 'WP Cookie check', 0, SITECOOKIEPATH, COOKIE_DOMAIN);
+	setcookie( TEST_COOKIE, 'WP Cookie check', 0, SITECOOKIEPATH, COOKIE_DOMAIN, $secure );
 
 /**
  * Fires when the login form is initialized.
@@ -449,7 +450,7 @@ $interim_login = isset($_REQUEST['interim-login']);
 switch ($action) {
 
 case 'postpass' :
-	require_once ABSPATH . 'wp-includes/class-phpass.php';
+	require_once ABSPATH . WPINC . '/class-phpass.php';
 	$hasher = new PasswordHash( 8, true );
 
 	/**
@@ -463,7 +464,8 @@ case 'postpass' :
 	 * @param int $expires The expiry time, as passed to setcookie().
 	 */
 	$expire = apply_filters( 'post_password_expires', time() + 10 * DAY_IN_SECONDS );
-	setcookie( 'wp-postpass_' . COOKIEHASH, $hasher->HashPassword( wp_unslash( $_POST['post_password'] ) ), $expire, COOKIEPATH );
+	$secure = is_https_url( home_url() );
+	setcookie( 'wp-postpass_' . COOKIEHASH, $hasher->HashPassword( wp_unslash( $_POST['post_password'] ) ), $expire, COOKIEPATH, COOKIE_DOMAIN, $secure );
 
 	wp_safe_redirect( wp_get_referer() );
 	exit();
@@ -679,14 +681,14 @@ case 'register' :
 	login_header(__('Registration Form'), '<p class="message register">' . __('Register For This Site') . '</p>', $errors);
 ?>
 
-<form name="registerform" id="registerform" action="<?php echo esc_url( site_url('wp-login.php?action=register', 'login_post') ); ?>" method="post">
+<form name="registerform" id="registerform" action="<?php echo esc_url( site_url('wp-login.php?action=register', 'login_post') ); ?>" method="post" novalidate="novalidate">
 	<p>
 		<label for="user_login"><?php _e('Username') ?><br />
 		<input type="text" name="user_login" id="user_login" class="input" value="<?php echo esc_attr(wp_unslash($user_login)); ?>" size="20" /></label>
 	</p>
 	<p>
 		<label for="user_email"><?php _e('E-mail') ?><br />
-		<input type="text" name="user_email" id="user_email" class="input" value="<?php echo esc_attr(wp_unslash($user_email)); ?>" size="25" /></label>
+		<input type="email" name="user_email" id="user_email" class="input" value="<?php echo esc_attr( wp_unslash( $user_email ) ); ?>" size="25" /></label>
 	</p>
 	<?php
 	/**

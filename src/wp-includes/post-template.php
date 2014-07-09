@@ -23,10 +23,11 @@ function the_ID() {
  * @since 2.1.0
  * @uses $post
  *
- * @return int
+ * @return int|bool The ID of the current item in the WordPress Loop. False if $post is not set.
  */
 function get_the_ID() {
-	return get_post()->ID;
+	$post = get_post();
+	return ! empty( $post ) ? $post->ID : false;
 }
 
 /**
@@ -104,7 +105,7 @@ function the_title_attribute( $args = '' ) {
  *
  * @since 0.71
  *
- * @param int|WP_Post $post Optional. Post ID or WP_Post object. Default is global `$post`.
+ * @param int|WP_Post $post Optional. Post ID or WP_Post object. Default is global $post.
  * @return string
  */
 function get_the_title( $post = 0 ) {
@@ -144,6 +145,21 @@ function get_the_title( $post = 0 ) {
 			 */
 			$private_title_format = apply_filters( 'private_title_format', __( 'Private: %s' ), $post );
 			$title = sprintf( $private_title_format, $title );
+		} else if ( isset( $post->post_status ) && 'draft' == $post->post_status ) {
+
+			/**
+			 * Filter the text prepended to the post title of draft posts.
+			 *
+			 * The filter is only applied on the front end.
+			 *
+			 * @since 4.0.0
+			 *
+			 * @param string  $prepend Text displayed before the post title.
+			 *                         Default 'Draft: %s'.
+			 * @param WP_Post $post    Current post object.
+			 */
+			$draft_title_format = apply_filters( 'draft_title_format', __( 'Draft: %s' ), $post );
+			$title = sprintf( $draft_title_format, $title );
 		}
 	}
 
@@ -340,6 +356,9 @@ function get_the_excerpt( $deprecated = '' ) {
 		_deprecated_argument( __FUNCTION__, '2.3' );
 
 	$post = get_post();
+	if ( empty( $post ) ) {
+		return '';
+	}
 
 	if ( post_password_required() ) {
 		return __( 'There is no excerpt because this is a protected post.' );
@@ -432,8 +451,13 @@ function get_post_class( $class = '', $post_id = null ) {
 	}
 
 	// sticky for Sticky Posts
-	if ( is_sticky($post->ID) && is_home() && !is_paged() )
-		$classes[] = 'sticky';
+	if ( is_sticky( $post->ID ) ) {
+		if ( is_home() && ! is_paged() ) {
+			$classes[] = 'sticky';
+		} elseif ( is_admin() ) {
+			$classes[] = 'status-sticky';
+		}
+	}
 
 	// hentry for hAtom compliance
 	$classes[] = 'hentry';
@@ -533,6 +557,7 @@ function get_body_class( $class = '' ) {
 		if ( isset( $post->post_type ) ) {
 			$classes[] = 'single-' . sanitize_html_class($post->post_type, $post_id);
 			$classes[] = 'postid-' . $post_id;
+			$classes[] = 'single-status-' . sanitize_html_class( $post->post_status );
 
 			// Post Format
 			if ( post_type_supports( $post->post_type, 'post-formats' ) ) {
@@ -690,7 +715,7 @@ function post_password_required( $post = null ) {
 	if ( ! isset( $_COOKIE['wp-postpass_' . COOKIEHASH] ) )
 		return true;
 
-	require_once ABSPATH . 'wp-includes/class-phpass.php';
+	require_once ABSPATH . WPINC . '/class-phpass.php';
 	$hasher = new PasswordHash( 8, true );
 
 	$hash = wp_unslash( $_COOKIE[ 'wp-postpass_' . COOKIEHASH ] );
@@ -710,33 +735,27 @@ function post_password_required( $post = null ) {
  * Displays page links for paginated posts (i.e. includes the <!--nextpage-->.
  * Quicktag one or more times). This tag must be within The Loop.
  *
- * The defaults for overwriting are:
- * 'before' - Default is '<p> Pages:' (string). The html or text to prepend to
- *      each bookmarks.
- * 'after' - Default is '</p>' (string). The html or text to append to each
- *      bookmarks.
- * 'link_before' - Default is '' (string). The html or text to prepend to each
- *      Pages link inside the <a> tag. Also prepended to the current item, which
- *      is not linked.
- * 'link_after' - Default is '' (string). The html or text to append to each
- *      Pages link inside the <a> tag. Also appended to the current item, which
- *      is not linked.
- * 'next_or_number' - Default is 'number' (string). Indicates whether page
- *      numbers should be used. Valid values are number and next.
- * 'separator' - Default is ' ' (string). Text used between pagination links.
- * 'nextpagelink' - Default is 'Next Page' (string). Text for link to next page.
- *      of the bookmark.
- * 'previouspagelink' - Default is 'Previous Page' (string). Text for link to
- *      previous page, if available.
- * 'pagelink' - Default is '%' (String).Format string for page numbers. The % in
- *      the parameter string will be replaced with the page number, so Page %
- *      generates "Page 1", "Page 2", etc. Defaults to %, just the page number.
- * 'echo' - Default is 1 (integer). When not 0, this triggers the HTML to be
- *      echoed and then returned.
- *
  * @since 1.2.0
  *
- * @param string|array $args Optional. Overwrite the defaults.
+ * @param string|array $args {
+ *     Optional. Array or string of default arguments.
+ *
+ *     @type string       $before           HTML or text to prepend to each link. Default is '<p> Pages:'.
+ *     @type string       $after            HTML or text to append to each link. Default is '</p>'.
+ *     @type string       $link_before      HTML or text to prepend to each link, inside the <a> tag.
+ *                                          Also prepended to the current item, which is not linked. Default empty.
+ *     @type string       $link_after       HTML or text to append to each Pages link inside the <a> tag.
+ *                                          Also appended to the current item, which is not linked. Default empty.
+ *     @type string       $next_or_number   Indicates whether page numbers should be used. Valid values are number
+ *                                          and next. Default is 'number'.
+ *     @type string       $separator        Text between pagination links. Default is ' '.
+ *     @type string       $nextpagelink     Link text for the next page link, if available. Default is 'Next Page'.
+ *     @type string       $previouspagelink Link text for the previous page link, if available. Default is 'Previous Page'.
+ *     @type string       $pagelink         Format string for page numbers. The % in the parameter string will be
+ *                                          replaced with the page number, so 'Page %' generates "Page 1", "Page 2", etc.
+ *                                          Defaults to '%', just the page number.
+ *     @type int|bool     $echo             Whether to echo or not. Accepts 1|true or 0|false. Default 1|true.
+ * }
  * @return string Formatted output in HTML.
  */
 function wp_link_pages( $args = '' ) {
@@ -1551,7 +1570,7 @@ function prepend_attachment($content) {
  *
  * @since 1.0.0
  *
- * @param int|WP_Post $post Optional. Post ID or WP_Post object. Default is global `$post`.
+ * @param int|WP_Post $post Optional. Post ID or WP_Post object. Default is global $post.
  * @return string HTML content for password form for password protected post.
  */
 function get_the_password_form( $post = 0 ) {
@@ -1724,7 +1743,7 @@ function wp_post_revision_title_expanded( $revision, $link = true ) {
  * @uses get_edit_post_link()
  * @uses get_the_author_meta()
  *
- * @param int|WP_Post $post_id Optional. Post ID or WP_Post object. Default is global `$post`.
+ * @param int|WP_Post $post_id Optional. Post ID or WP_Post object. Default is global $post.
  * @param string $type 'all' (default), 'revision' or 'autosave'
  * @return null
  */

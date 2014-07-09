@@ -17,12 +17,15 @@ if ( ! current_user_can( 'customize' ) ) {
 }
 
 wp_reset_vars( array( 'url', 'return' ) );
-$url = urldecode( $url );
+$url = wp_unslash( $url );
 $url = wp_validate_redirect( $url, home_url( '/' ) );
-if ( $return )
-	$return = wp_validate_redirect( urldecode( $return ) );
-if ( ! $return )
+if ( $return ) {
+	$return = wp_unslash( $return );
+	$return = wp_validate_redirect( $return );
+}
+if ( ! $return ) {
 	$return = $url;
+}
 
 global $wp_scripts, $wp_customize;
 
@@ -109,14 +112,14 @@ do_action( 'customize_controls_print_scripts' );
 				submit_button( $save_text, 'primary save', 'save', false );
 			?>
 			<span class="spinner"></span>
-			<a class="back button" href="<?php echo esc_url( $return ? $return : admin_url( 'themes.php' ) ); ?>">
-				<?php _e( 'Cancel' ); ?>
+			<a class="customize-controls-close" href="<?php echo esc_url( $return ? $return : admin_url( 'themes.php' ) ); ?>">
+				<span class="screen-reader-text"><?php _e( 'Cancel' ); ?></span>
 			</a>
 		</div>
 
 		<?php
 			$screenshot = $wp_customize->theme()->get_screenshot();
-			$cannot_expand = ! ( $screenshot || $wp_customize->theme()->get('Description') );
+			$cannot_expand = ! ( $wp_customize->is_theme_active() || $screenshot || $wp_customize->theme()->get('Description') );
 		?>
 
 		<div id="widgets-right"><!-- For Widget Customizer, many widgets try to look for instances under div#widgets-right, so we have to add that ID to a container div in the customizer for compat -->
@@ -124,27 +127,40 @@ do_action( 'customize_controls_print_scripts' );
 			<div id="customize-info" class="accordion-section <?php if ( $cannot_expand ) echo ' cannot-expand'; ?>">
 				<div class="accordion-section-title" aria-label="<?php esc_attr_e( 'Theme Customizer Options' ); ?>" tabindex="0">
 					<span class="preview-notice"><?php
-						/* translators: %s is the theme name in the Customize/Live Preview pane */
-						echo sprintf( __( 'You are previewing %s' ), '<strong class="theme-name">' . $wp_customize->theme()->display('Name') . '</strong>' );
+						if ( ! $wp_customize->is_theme_active() ) {
+							/* translators: %s is the theme name in the Customize/Live Preview pane */
+							echo sprintf( __( 'You are previewing %s' ), '<strong class="theme-name">' . $wp_customize->theme()->display('Name') . '</strong>' );
+						} else {
+							/* translators: %s is the site title in the Customize pane */
+							echo sprintf( __( 'You are customizing %s' ), '<strong class="theme-name site-title">' . get_bloginfo( 'name' ) . '</strong>' );
+						}
 					?></span>
 				</div>
 				<?php if ( ! $cannot_expand ) : ?>
 				<div class="accordion-section-content">
-					<?php if ( $screenshot ) : ?>
-						<img class="theme-screenshot" src="<?php echo esc_url( $screenshot ); ?>" />
-					<?php endif; ?>
+					<?php if ( ! $wp_customize->is_theme_active() ) :
+						if ( $screenshot ) : ?>
+							<img class="theme-screenshot" src="<?php echo esc_url( $screenshot ); ?>" />
+						<?php endif; ?>
 
-					<?php if ( $wp_customize->theme()->get('Description') ): ?>
-						<div class="theme-description"><?php echo $wp_customize->theme()->display('Description'); ?></div>
-					<?php endif; ?>
+						<?php if ( $wp_customize->theme()->get('Description') ): ?>
+							<div class="theme-description"><?php echo $wp_customize->theme()->display('Description'); ?></div>
+						<?php endif;
+					else:
+						echo __( 'The Customizer allows you to preview changes to your site before publishing them. You can also navigate to different pages on your site to preview them.' );
+					endif; ?>
 				</div>
 				<?php endif; ?>
 			</div>
 
 			<div id="customize-theme-controls"><ul>
 				<?php
-				foreach ( $wp_customize->sections() as $section )
+				foreach ( $wp_customize->panels() as $panel ) {
+					$panel->maybe_render();
+				}
+				foreach ( $wp_customize->sections() as $section ) {
 					$section->maybe_render();
+				}
 				?>
 			</ul></div>
 		</div>

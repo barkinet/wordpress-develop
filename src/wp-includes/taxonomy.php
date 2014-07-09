@@ -346,8 +346,10 @@ function register_taxonomy( $taxonomy, $object_type, $args = array() ) {
 	);
 	$args = wp_parse_args( $args, $defaults );
 
-	if ( strlen( $taxonomy ) > 32 )
+	if ( strlen( $taxonomy ) > 32 ) {
+		_doing_it_wrong( __FUNCTION__, __( 'Taxonomies cannot exceed 32 characters in length' ), '4.0' );
 		return new WP_Error( 'taxonomy_too_long', __( 'Taxonomies cannot exceed 32 characters in length' ) );
+	}
 
 	if ( false !== $args['query_var'] && ! empty( $wp ) ) {
 		if ( true === $args['query_var'] )
@@ -2615,14 +2617,14 @@ function wp_insert_term( $term, $taxonomy, $args = array() ) {
  * @since 2.3.0
  * @uses wp_remove_object_terms()
  *
- * @param int $object_id The object to relate to.
- * @param array|int|string $terms The slug or id of the term, will replace all existing
- * related terms in this taxonomy.
- * @param array|string $taxonomy The context in which to relate the term to the object.
- * @param bool $append If false will delete difference of terms.
- * @return array|WP_Error Affected Term IDs
+ * @param int              $object_id The object to relate to.
+ * @param array|int|string $terms     A single term slug, single term id, or array of either term slugs or ids.
+ *                                    Will replace all existing related terms in this taxonomy.
+ * @param array|string     $taxonomy  The context in which to relate the term to the object.
+ * @param bool             $append    Optional. If false will delete difference of terms. Default false.
+ * @return array|WP_Error Affected Term IDs.
  */
-function wp_set_object_terms($object_id, $terms, $taxonomy, $append = false) {
+function wp_set_object_terms( $object_id, $terms, $taxonomy, $append = false ) {
 	global $wpdb;
 
 	$object_id = (int) $object_id;
@@ -3759,7 +3761,8 @@ function the_taxonomies( $args = array() ) {
 		'before' => '',
 		'sep' => ' ',
 		'after' => '',
-		'template' => '%s: %l.'
+		/* translators: %s: taxonomy label, %l: list of term links */
+		'template' => __( '%s: %l.' )
 	);
 
 	$r = wp_parse_args( $args, $defaults );
@@ -3775,7 +3778,7 @@ function the_taxonomies( $args = array() ) {
  *
  * @since 2.5.0
  *
- * @param int|WP_Post $post Optional. Post ID or WP_Post object. Default is global `$post`.
+ * @param int|WP_Post $post Optional. Post ID or WP_Post object. Default is global $post.
  * @param array $args Override the defaults.
  * @return array List of taxonomies.
  */
@@ -3783,7 +3786,8 @@ function get_the_taxonomies( $post = 0, $args = array() ) {
 	$post = get_post( $post );
 
 	$args = wp_parse_args( $args, array(
-		'template' => '%s: %l.',
+		/* translators: %s: taxonomy label, %l: list of term links */
+		'template' => __( '%s: %l.' ),
 	) );
 
 	$taxonomies = array();
@@ -3827,7 +3831,7 @@ function get_the_taxonomies( $post = 0, $args = array() ) {
  *
  * @uses get_object_taxonomies()
  *
- * @param int|WP_Post $post Optional. Post ID or WP_Post object. Default is global `$post`.
+ * @param int|WP_Post $post Optional. Post ID or WP_Post object. Default is global $post.
  * @return array
  */
 function get_post_taxonomies( $post = 0 ) {

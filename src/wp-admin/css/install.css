@@ -68,19 +68,19 @@ abbr {
 #logo a {
 	background-image: url(../images/w-logo-blue.png?ver=20131202);
 	background-image: none, url(../images/wordpress-logo.svg?ver=20131107);
-	-webkit-background-size: 80px 80px;
-	background-size: 80px 80px;
+	-webkit-background-size: 84px;
+	background-size: 84px;
 	background-position: center top;
 	background-repeat: no-repeat;
 	color: #999;
-	height: 80px;
+	height: 84px;
 	font-size: 20px;
 	font-weight: normal;
 	line-height: 1.3em;
 	margin: -130px auto 25px;
 	padding: 0;
 	text-decoration: none;
-	width: 80px;
+	width: 84px;
 	text-indent: -9999px;
 	outline: none;
 	overflow: hidden;
@@ -152,6 +152,8 @@ submit {
 }
 
 .form-table input[type=text],
+.form-table input[type=email],
+.form-table input[type=url],
 .form-table input[type=password] {
 	width: 206px;
 }
@@ -295,6 +297,8 @@ body.rtl,
 	}
 
 	.form-table td input[type="text"],
+	.form-table td input[type="email"],
+	.form-table td input[type="url"],
 	.form-table td input[type="password"],
 	.form-table td select,
 	.form-table td textarea,
@@ -313,13 +317,12 @@ body.rtl,
 }
 
 body.language-chooser {
-	max-width: 450px;
+	max-width: 300px;
 }
 
-.language-chooser select {
+.language-chooser fieldset {
 	margin: 1px;
 	padding: 8px;
-	width: 100%;
 	display: block;
 	border: 1px solid #ddd;
 	-webkit-border-radius: 0;
@@ -334,9 +337,11 @@ body.language-chooser {
 	font-size: 16px;
 	font-family: inherit;
 	font-weight: inherit;
+	overflow-y: scroll;
+	height: 250px;
 }
 
-.language-chooser select:focus {
+.language-chooser fieldset.focus {
 	border-color: #5b9dd9;
 	-webkit-box-shadow: 0 0 2px rgba(30,140,190,0.8);
 	box-shadow: 0 0 2px rgba(30,140,190,0.8);
@@ -349,4 +354,64 @@ body.language-chooser {
 
 .language-chooser p {
 	text-align: right;
+}
+
+.language-chooser input:checked + label{
+	  color:white;
+	  background: #777;
+}
+
+.language-chooser .focus input:checked + label{
+	  background: #0074A2;
+}
+
+.language-chooser label:hover {
+	  background: #eee;
+}
+
+.language-chooser label{
+	display:block;
+}
+
+.screen-reader-input,
+.screen-reader-text {
+	position: absolute;
+	margin: -1px;
+	padding: 0;
+	height: 1px;
+	width: 1px;
+	overflow: hidden;
+	clip: rect(0 0 0 0);
+	border: 0;
+}
+
+.spinner {
+	background: url(../images/spinner.gif) no-repeat;
+	-webkit-background-size: 20px 20px;
+	background-size: 20px 20px;
+	visibility: hidden;
+	opacity: 0.7;
+	filter: alpha(opacity=70);
+	width: 20px;
+	height: 20px;
+	margin: 2px 5px 0;
+}
+
+.step .spinner {
+	display: inline-block;
+	margin-right: 15px;
+}
+
+/**
+ * HiDPI Displays
+ */
+@media print,
+  (-o-min-device-pixel-ratio: 5/4),
+  (-webkit-min-device-pixel-ratio: 1.25),
+  (min-resolution: 120dpi) {
+
+	.spinner {
+		background-image: url(../images/spinner-2x.gif);
+	}
+
 }
