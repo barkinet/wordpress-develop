@@ -12,6 +12,10 @@ if ( !defined('ABSPATH') )
 
 wp_enqueue_script('post');
 
+if ( post_type_supports( $post_type, 'editor' ) ) {
+	wp_enqueue_script('editor-expand');
+}
+
 if ( wp_is_mobile() )
 	wp_enqueue_script( 'jquery-touch-punch' );
 
@@ -492,6 +496,7 @@ if ( post_type_supports($post_type, 'editor') ) {
 	'editor_height' => 360,
 	'tinymce' => array(
 		'resize' => false,
+		'wp_autoresize_on' => true,
 		'add_unload_trigger' => false,
 	),
 ) ); ?>

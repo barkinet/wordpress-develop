@@ -228,7 +228,6 @@
 .media-toolbar-secondary > .media-button,
 .media-toolbar-secondary > .media-button-group {
 	margin-right: 10px;
-	float: left;
 	margin-top: 15px;
 }
 
@@ -881,6 +880,7 @@
 	height: 24px;
 	width: 24px;
 	position: absolute;
+	z-index: 10;
 	top: -6px;
 	right: -6px;
 	outline: none;
@@ -904,14 +904,16 @@
 	display: block;
 }
 
-.attachment.details {
+.attachment.details,
+.media-grid-view .selected.attachment {
 	-webkit-box-shadow: 0 0 0 1px #fff,
 				0 0 0 5px #1e8cbe;
 	box-shadow: 0 0 0 1px #fff,
 				0 0 0 5px #1e8cbe;
 }
 
-.attachment.details .check {
+.attachment.details .check,
+.media-grid-view .attachment .check {
 	background-color: #1e8cbe;
 	-webkit-box-shadow: 0 0 0 1px #fff,
 				0 0 0 2px #1e8cbe;
@@ -919,11 +921,13 @@
 				0 0 0 2px #1e8cbe;
 }
 
-.attachment.details .check div {
+.attachment.details .check div,
+.media-grid-view .attachment .check div {
 	background-position: -21px 0;
 }
 
-.attachment.details .check:hover div {
+.attachment.details .check:hover div,
+.media-grid-view .attachment .check:hover div {
 	background-position: -60px 0;
 }
 
@@ -996,6 +1000,46 @@
 	bottom: 0;
 	overflow: auto;
 	outline: none;
+	-webkit-transition: 1s ease-in-out;
+    transition: 1s ease-in-out;
+}
+
+.attachments-browser .uploader-inline:not(.hidden) + .attachments {
+	-webkit-transform: translateY( 300px );
+	-ms-transform: translateY( 300px );
+	transform: translateY( 300px );
+}
+
+.attachments-browser .uploader-inline.hidden {
+	display: block;
+	-webkit-transform: translateY( -100% );
+	-ms-transform: translateY( -100% );
+	transform: translateY( -100% );
+}
+
+.attachments-browser .uploader-inline-content {
+	top: 0;
+}
+
+.uploader-inline .close {
+	background-color: transparent;
+	border: 0;
+	cursor: pointer;
+	height: 48px;
+	position: absolute;
+	right: 20px;
+	text-align: center;
+	top: 20px;
+	width: 50px;
+	z-index: 1;
+}
+
+.uploader-inline .close:before {
+	font: normal 30px/50px 'dashicons' !important;
+	color: #777;
+	display: inline-block;
+	content: '\f335';
+	font-weight: 300;
 }
 
 .inline-toolbar {
@@ -1081,7 +1125,8 @@ video#inline-media-node {
 	left: 0;
 }
 
-.attachments-browser.hide-sidebar .attachments {
+.attachments-browser.hide-sidebar .attachments,
+.attachments-browser.hide-sidebar .uploader-inline {
 	right: 0;
 	margin-right: 0;
 }
@@ -1093,6 +1138,10 @@ video#inline-media-node {
 	font-size: 13px;
 	color: #666;
 	margin-right: 0.5em;
+}
+
+.attachments-browser .no-media {
+	padding: 2em 0 0 2em;
 }
 
 /**
@@ -1528,6 +1577,11 @@ video#inline-media-node {
 	word-wrap: break-word;
 }
 
+.edit-attachment-frame .attachment-info .filename {
+	font-weight: normal;
+	color: #666;
+}
+
 .attachment-info .thumbnail {
 	position: relative;
 	float: left;
@@ -1536,6 +1590,10 @@ video#inline-media-node {
 	margin-top: 5px;
 	margin-right: 10px;
 	margin-bottom: 5px;
+}
+
+.edit-attachment-frame .attachment-info .thumbnail {
+	margin-bottom: 12px;
 }
 
 .uploading .attachment-info .thumbnail {
@@ -1634,18 +1692,18 @@ video#inline-media-node {
  * Image Editor
  */
 
-.media-frame .imgedit-wrap {
+.media-modal .imgedit-wrap {
 	position: static;
 }
 
-.media-frame .imgedit-wait {
+.media-modal .imgedit-wait {
 	height: auto !important;
 	right: 0;
 	bottom: 0;
 	left: 0;
 }
 
-.media-frame .imgedit-wrap .imgedit-panel-content {
+.media-modal .imgedit-wrap .imgedit-panel-content {
 	padding: 16px;
 	position: absolute;
 	top: 0;
@@ -1655,7 +1713,7 @@ video#inline-media-node {
 	overflow: auto;
 }
 
-.media-frame .imgedit-wrap .imgedit-settings {
+.media-modal .imgedit-wrap .imgedit-settings {
 	background: #f3f3f3;
 	border-left: 1px solid #ddd;
 	padding: 0 16px 16px;
@@ -1667,7 +1725,7 @@ video#inline-media-node {
 	overflow: auto;
 }
 
-.media-frame .imgedit-group {
+.media-modal .imgedit-group {
 	background: none;
 	border: none;
 	border-bottom: 1px solid #ddd;
@@ -1679,13 +1737,13 @@ video#inline-media-node {
 	padding-bottom: 16px;
 }
 
-.media-frame .imgedit-group:last-of-type {
+.media-modal .imgedit-group:last-of-type {
 	border: none;
 	margin: 0;
 	padding: 0;
 }
 
-.media-frame .imgedit-group-top h3 {
+.media-modal .imgedit-group-top h3 {
 	text-transform: uppercase;
 	font-size: 12px;
 	color: #666;
@@ -1693,26 +1751,26 @@ video#inline-media-node {
 	margin-top: 24px;
 }
 
-.media-frame .imgedit-group-top h3 a {
+.media-modal .imgedit-group-top h3 a {
 	text-decoration: none;
 	color: #666;
 }
 
-.media-frame .imgedit-help-toggle {
+.media-modal .imgedit-help-toggle {
 	margin-top: -2px;
 	cursor: pointer;
 	color: #666;
 }
 
-.media-frame .imgedit-help-toggled span.dashicons:before {
+.media-modal .imgedit-help-toggled span.dashicons:before {
 	content: '\f142';
 }
 
-.media-frame .imgedit-group img {
+.media-modal .imgedit-group img {
 	margin-top: 5px;
 }
 
-.media-frame .imgedit-wrap div.updated {
+.media-modal .imgedit-wrap div.updated {
 	margin: 0;
 	margin-bottom: 16px;
 }
@@ -2531,20 +2589,11 @@ video#inline-media-node {
 	line-height: 29px;
 }
 
-.media-grid-view .view-switch,
-.media-grid-field-options {
+.media-grid-view .view-switch {
 	display: inline-block;
 	float: none;
 	margin-top: 13px;
 	vertical-align: middle;
-}
-
-.media-grid-field-options span {
-	padding-right: 5px;
-}
-
-.media-grid-field-options label {
-	margin-right: 10px;
 }
 
 /**
@@ -2552,12 +2601,20 @@ video#inline-media-node {
  * area of the screen.
  */
 .media-grid-view {
+	z-index: 1;
 	position: fixed;
 	bottom: 0;
 	left: 160px;
 	right: 0;
 	top: 32px;
+	-webkit-transition: 200ms ease-in-out;
+	transition: 200ms ease-in-out;
 }
+
+.media-grid-view-options {
+	top: 120px;
+}
+
 @media screen and (max-width: 900px) {
 	.auto-fold .media-grid-view {
 		left: 36px;
@@ -2624,6 +2681,9 @@ video#inline-media-node {
 	font-weight: 300;
 }
 
+.media-frame.mode-bulk-edit .attachment:hover .inline-toolbar {
+	display: none;
+}
 
 .edit-attachment-frame .edit-media-header .left:before {
 	content: '\f340';
@@ -2657,6 +2717,11 @@ video#inline-media-node {
 	left: 0;
 }
 
+.edit-attachment-frame .media-frame-content {
+	border-bottom: none;
+	bottom: 0;
+}
+
 /* Hiding this for the moment instead of removing it from the template. */
 .edit-attachment-frame h3 {
 	display: none;
@@ -2678,14 +2743,17 @@ video#inline-media-node {
 	position: absolute;
 	top: 0;
 	left: 0;
-	margin-bottom: 0;
-	padding: 2% 4%;
 	right: 50%;
+	margin-bottom: 0;
+	padding: 2% 4% 0;
+	height: 98%; /* 100% - padding percentage above */
 }
 
 .edit-attachment-frame .attachment-info .thumbnail {
+	float: none;
 	max-width: none;
-	max-height: none;
+	max-height: 70%;
+	margin-right: 0;
 }
 
 .edit-attachment-frame .attachment-info .thumbnail-image img {
@@ -2698,8 +2766,8 @@ video#inline-media-node {
 }
 
 .edit-attachment-frame .attachment-info .thumbnail img {
-	max-width: none;
-	max-height: 50%;
+	max-width: 100%;
+	max-height: 100%;
 }
 
 .edit-attachment-frame .attachment-info .details {
@@ -2707,7 +2775,7 @@ video#inline-media-node {
 }
 
 .edit-attachment-frame .wp-media-wrapper {
-	margin-top: 20px;
+	margin-bottom: 12px;
 }
 
 .edit-attachment-frame .attachment-fields {

@@ -337,11 +337,16 @@
 	});
 
 	/**
-	 * A more abstracted state, because media.controller.State expects
-	 * specific regions (menu, title, etc.) to exist on the frame, which do not
-	 * exist in media.view.Frame.EditAttachment.
+	 * wp.media.controller.State
+	 *
+	 * A state is a step in a workflow that when set will trigger the controllers
+	 * for the regions to be updated as specified in the frame. This is the base
+	 * class that the various states used in wp.media extend.
+	 *
+	 * @constructor
+	 * @augments Backbone.Model
 	 */
-	media.controller._State = Backbone.Model.extend({
+	media.controller.State = Backbone.Model.extend({
 		constructor: function() {
 			this.on( 'activate', this._preActivate, this );
 			this.on( 'activate', this.activate, this );
@@ -349,13 +354,14 @@
 			this.on( 'deactivate', this._deactivate, this );
 			this.on( 'deactivate', this.deactivate, this );
 			this.on( 'reset', this.reset, this );
+			this.on( 'ready', this._ready, this );
 			this.on( 'ready', this.ready, this );
 			/**
 			 * Call parent constructor with passed arguments
 			 */
 			Backbone.Model.apply( this, arguments );
+			this.on( 'change:menu', this._updateMenu, this );
 		},
-
 		/**
 		 * @abstract
 		 */
@@ -375,55 +381,15 @@
 		/**
 		 * @access private
 		 */
-		_preActivate: function() {
-			this.active = true;
-		},
-		/**
-		 * @access private
-		 */
-		_postActivate: function() {},
-		/**
-		 * @access private
-		 */
-		_deactivate: function() {
-			this.active = false;
-		}
-	});
-
-	/**
-	 * wp.media.controller.State
-	 *
-	 * A state is a step in a workflow that when set will trigger the controllers
-	 * for the regions to be updated as specified in the frame. This is the base
-	 * class that the various states used in wp.media extend.
-	 *
-	 * @constructor
-	 * @augments Backbone.Model
-	 */
-	media.controller.State = media.controller._State.extend({
-		constructor: function() {
-			this.on( 'activate', this._preActivate, this );
-			this.on( 'activate', this.activate, this );
-			this.on( 'activate', this._postActivate, this );
-			this.on( 'deactivate', this._deactivate, this );
-			this.on( 'deactivate', this.deactivate, this );
-			this.on( 'reset', this.reset, this );
-			this.on( 'ready', this._ready, this );
-			this.on( 'ready', this.ready, this );
-			/**
-			 * Call parent constructor with passed arguments
-			 */
-			Backbone.Model.apply( this, arguments );
-			this.on( 'change:menu', this._updateMenu, this );
-		},
-
-		/**
-		 * @access private
-		 */
 		_ready: function() {
 			this._updateMenu();
 		},
-
+		/**
+		 * @access private
+		*/
+		_preActivate: function() {
+			this.active = true;
+		},
 		/**
 		 * @access private
 		 */
@@ -665,7 +631,7 @@
 			}
 
 			if ( ! this.get('edge') ) {
-				this.set( 'edge', 120 );
+				this.set( 'edge', 150 );
 			}
 
 			if ( ! this.get('gutter') ) {
@@ -1785,14 +1751,13 @@
 		 * @global wp.Uploader
 		 */
 		initialize: function() {
-
 			media.view.Frame.prototype.initialize.apply( this, arguments );
 
 			_.defaults( this.options, {
 				title:    '',
 				modal:    true,
 				uploader: true,
-				mode:     ['select']
+				mode:     [ 'select' ]
 			});
 
 			// Ensure core UI is enabled.
@@ -1807,6 +1772,14 @@
 
 				this.modal.content( this );
 			}
+
+			// Store active "modes" that the frame is in. Unrelated to region modes.
+			this.activeModes = new Backbone.Collection();
+			this.activeModes.on( 'add remove reset', _.bind( this.triggerModeEvents, this ) );
+
+			_.each( this.options.mode, function( mode ) {
+				this.activateMode( mode );
+			}, this );
 
 			// Force the uploader off if the upload limit has been exceeded or
 			// if the browser isn't supported.
@@ -1972,6 +1945,85 @@
 
 			window.tb_remove = this._tb_remove;
 			delete this._tb_remove;
+		},
+
+		/**
+		 * Map activeMode collection events to the frame.
+		 */
+		triggerModeEvents: function( model, collection, options ) {
+			var collectionEvent,
+				modeEventMap = {
+					add: 'activate',
+					remove: 'deactivate'
+				},
+				eventToTrigger;
+			// Probably a better way to do this.
+			_.each( options, function( value, key ) {
+				if ( value ) {
+					collectionEvent = key;
+				}
+			} );
+
+			if ( ! _.has( modeEventMap, collectionEvent ) )
+				return;
+
+			eventToTrigger = model.get('id') + ':' + modeEventMap[collectionEvent];
+			this.trigger( eventToTrigger );
+		},
+		/**
+		 * Activate a mode on the frame.
+		 *
+		 * @param string mode Mode ID.
+		 * @returns {this} Returns itself to allow chaining.
+		 */
+		activateMode: function( mode ) {
+			// Bail if the mode is already active.
+			if ( this.isModeActive( mode ) ) {
+				return;
+			}
+			this.activeModes.add( [ { id: mode } ] );
+			// Add a css class to the frame for anything that needs to be styled
+			// for the mode.
+			this.$el.addClass( 'mode-' + mode );
+			/**
+			 * Frame mode activation event.
+			 *
+			 * @event this#{mode}:activate
+			 */
+			this.trigger( mode + ':activate' );
+
+			return this;
+		},
+		/**
+		 * Deactivate a mode on the frame.
+		 *
+		 * @param string mode Mode ID.
+		 * @returns {this} Returns itself to allow chaining.
+		 */
+		deactivateMode: function( mode ) {
+			// Bail if the mode isn't active.
+			if ( ! this.isModeActive( mode ) ) {
+				return;
+			}
+			this.activeModes.remove( this.activeModes.where( { id: mode } ) );
+			this.$el.removeClass( 'mode-' + mode );
+			/**
+			 * Frame mode deactivation event.
+			 *
+			 * @event this#{mode}:deactivate
+			 */
+			this.trigger( mode + ':deactivate' );
+
+			return this;
+		},
+		/**
+		 * Check if a mode is enabled on the frame.
+		 *
+		 * @param  string mode Mode ID.
+		 * @return bool
+		 */
+		isModeActive: function( mode ) {
+			return Boolean( this.activeModes.where( { id: mode } ).length );
 		}
 	});
 
@@ -3602,10 +3654,15 @@
 		className: 'uploader-inline',
 		template:  media.template('uploader-inline'),
 
+		events: {
+			'click .close': 'hide'
+		},
+
 		initialize: function() {
 			_.defaults( this.options, {
 				message: '',
-				status:  true
+				status:  true,
+				canClose: false
 			});
 
 			if ( ! this.options.$browser && this.controller.uploader ) {
@@ -3625,14 +3682,16 @@
 
 		prepare: function() {
 			var suggestedWidth = this.controller.state().get('suggestedWidth'),
-				suggestedHeight = this.controller.state().get('suggestedHeight');
+				suggestedHeight = this.controller.state().get('suggestedHeight'),
+				data = {};
+
+			data.canClose = this.options.canClose;
 
 			if ( suggestedWidth && suggestedHeight ) {
-				return {
-					suggestedWidth: suggestedWidth,
-					suggestedHeight: suggestedHeight
-				};
+				data.suggestedWidth = suggestedWidth;
+				data.suggestedHeight = suggestedHeight;
 			}
+			return data;
 		},
 		/**
 		 * @returns {wp.media.view.UploaderInline} Returns itself to allow chaining
@@ -3693,7 +3752,14 @@
 
 			this.refresh();
 			return this;
+		},
+		show: function() {
+			this.$el.removeClass( 'hidden' );
+		},
+		hide: function() {
+			this.$el.addClass( 'hidden' );
 		}
+
 	});
 
 	/**
@@ -4547,7 +4613,7 @@
 		},
 
 		events: {
-			'click .attachment-preview':      'toggleSelectionHandler',
+			'click .js--select-attachment':   'toggleSelectionHandler',
 			'change [data-setting]':          'updateSetting',
 			'change [data-setting] input':    'updateSetting',
 			'change [data-setting] select':   'updateSetting',
@@ -4673,7 +4739,7 @@
 			}
 
 			// In the grid view, bubble up an edit:attachment event to the controller.
-			if ( _.contains( this.controller.options.mode, 'grid' ) ) {
+			if ( this.controller.activeModes.where( { id: 'edit' } ).length ) {
 				this.controller.trigger( 'edit:attachment', this.model );
 				return;
 			}
@@ -4811,8 +4877,12 @@
 				return;
 			}
 
-			details = selection.single();
-			this.$el.toggleClass( 'details', details === this.model );
+			// In bulk edit mode (in media grid), attachments don't open the "details"
+			// pane, so a `details` class is unnecessary on the attachment view.
+			if ( ! this.controller.isModeActive( 'bulk-edit' ) ) {
+				details = selection.single();
+				this.$el.toggleClass( 'details', details === this.model );
+			}
 		},
 		/**
 		 * @param {Object} event
@@ -5081,7 +5151,10 @@
 			if ( this.options.resize ) {
 				$(window).on( 'resize.attachments', this._resizeCss );
 			}
-			this.css();
+
+			// Call this.css() after this view has been rendered in the DOM so
+			// attachments get proper width applied.
+			_.defer( this.css, this );
 		},
 
 		dispose: function() {
@@ -5211,8 +5284,7 @@
 				controller:           this.controller,
 				model:                attachment,
 				collection:           this.collection,
-				selection:            this.options.selection,
-				showAttachmentFields: this.options.showAttachmentFields
+				selection:            this.options.selection
 			});
 
 			return this._viewsByCid[ attachment.cid ] = view;
@@ -5527,11 +5599,14 @@
 				search:  true,
 				display: false,
 				sidebar: true,
-				showAttachmentFields: getUserSetting( 'showAttachmentFields', [ 'title', 'uploadedTo', 'dateFormatted', 'mime' ] ),
 				AttachmentView: media.view.Attachment.Library
 			});
 
+			this.listenTo( this.controller, 'toggle:upload:attachment', _.bind( this.toggleUploader, this ) );
+
 			this.createToolbar();
+			this.createUploader();
+			this.createAttachments();
 			this.updateContent();
 			if ( this.options.sidebar ) {
 				this.createSidebar();
@@ -5568,7 +5643,7 @@
 			// Feels odd to bring the global media library switcher into the Attachment
 			// browser view. Is this a use case for doAction( 'add:toolbar-items:attachments-browser', this.toolbar );
 			// which the controller can tap into and add this view?
-			if ( _.contains( this.controller.options.mode, 'grid' ) ) {
+			if ( this.controller.activeModes.where( { id: 'grid' } ).length ) {
 				LibraryViewSwitcher = media.View.extend({
 					className: 'view-switch media-grid-view-switch',
 					template: media.template( 'media-library-view-switcher')
@@ -5578,9 +5653,16 @@
 					priority: -90
 				}).render() );
 
-				this.toolbar.set( 'gridFieldOptions', new media.view.GridFieldOptions({
+				this.toolbar.set( 'bulkSelectionToggleButton', new media.view.BulkSelectionToggleButton({
+					text: 'Bulk Edit',
 					controller: this.controller,
-					priority: -50
+					priority: -70
+				}).render() );
+
+				this.toolbar.set( 'BulkDeleteButton', new media.view.BulkDeleteButton({
+					text: 'Bulk Delete',
+					controller: this.controller,
+					priority: -69
 				}).render() );
 			}
 
@@ -5635,61 +5717,66 @@
 
 		updateContent: function() {
 			var view = this;
-
-			if( ! this.attachments ) {
-				this.createAttachments();
-			}
-
 			if ( ! this.collection.length ) {
 				this.toolbar.get( 'spinner' ).show();
 				this.collection.more().done(function() {
 					if ( ! view.collection.length ) {
-						view.createUploader();
+						view.attachmentsNoResults.$el.removeClass( 'hidden' );
+					} else {
+						view.attachmentsNoResults.$el.addClass( 'hidden' );
 					}
 					view.toolbar.get( 'spinner' ).hide();
 				});
 			} else {
+				this.attachmentsNoResults.$el.addClass( 'hidden' );
 				view.toolbar.get( 'spinner' ).hide();
 			}
 		},
 
-		removeContent: function() {
-			_.each(['attachments','uploader'], function( key ) {
-				if ( this[ key ] ) {
-					this[ key ].remove();
-					delete this[ key ];
-				}
-			}, this );
-		},
-
 		createUploader: function() {
-			this.removeContent();
-
 			this.uploader = new media.view.UploaderInline({
 				controller: this.controller,
 				status:     false,
-				message:    l10n.noItemsFound
+				message:    l10n.noItemsFound,
+				canClose:   this.controller.isModeActive( 'grid' )
 			});
 
+			this.uploader.$el.addClass( 'hidden' );
 			this.views.add( this.uploader );
 		},
 
-		createAttachments: function() {
-			this.removeContent();
+		toggleUploader: function() {
+			if ( this.uploader.$el.hasClass( 'hidden' ) ) {
+				this.uploader.show();
+			} else {
+				this.uploader.hide();
+			}
+		},
 
+		createAttachments: function() {
 			this.attachments = new media.view.Attachments({
 				controller:           this.controller,
 				collection:           this.collection,
 				selection:            this.options.selection,
 				model:                this.model,
 				sortable:             this.options.sortable,
-				showAttachmentFields: this.options.showAttachmentFields,
 
 				// The single `Attachment` view to be used in the `Attachments` view.
 				AttachmentView: this.options.AttachmentView
 			});
 
 			this.views.add( this.attachments );
+
+			this.attachmentsNoResults = new media.View({
+				controller: this.controller
+			});
+
+			this.attachmentsNoResults.$el.addClass( 'hidden no-media' );
+			this.attachmentsNoResults.$el.html( 'No media found.' );
+
+			this.views.add( this.attachmentsNoResults );
+
+
 		},
 
 		createSidebar: function() {

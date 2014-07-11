@@ -1,4 +1,4 @@
-/* global _wpMediaViewsL10n, setUserSetting, deleteUserSetting, MediaElementPlayer */
+/* global _wpMediaViewsL10n, MediaElementPlayer, mediaGridSettings*/
 (function($, _, Backbone, wp) {
 	var media = wp.media, l10n;
 
@@ -17,7 +17,7 @@
 	 * @augments wp.media.controller.State
 	 * @augments Backbone.Model
 	 */
-	media.controller.EditImageNoFrame = media.controller._State.extend({
+	media.controller.EditImageNoFrame = media.controller.State.extend({
 		defaults: {
 			id:      'edit-attachment',
 			title:   l10n.editImage,
@@ -25,50 +25,19 @@
 			menu:    false,
 			router:  'edit-metadata',
 			content: 'edit-metadata',
-			toolbar: 'toolbar',
 
 			url:     ''
 		},
 
-		initialize: function() {
-			media.controller._State.prototype.initialize.apply( this, arguments );
-		},
+		_ready: function() {},
 
-		activate: function() {
-			this.listenTo( this.frame, 'toolbar:render:edit-image', this.toolbar );
-		},
-
+		/**
+		 * Override media.controller.State._postActivate, since this state doesn't
+		 * include the regions expected there.
+		 */
 		_postActivate: function() {
 			this._content();
 			this._router();
-		},
-
-		deactivate: function() {
-			this.stopListening( this.frame );
-		},
-
-		toolbar: function() {
-			var frame = this.frame,
-				lastState = frame.lastState(),
-				previous = lastState && lastState.id;
-
-			frame.toolbar.set( new media.view.Toolbar({
-				controller: frame,
-				items: {
-					back: {
-						style: 'primary',
-						text:     l10n.back,
-						priority: 20,
-						click:    function() {
-							if ( previous ) {
-								frame.setState( previous );
-							} else {
-								frame.close();
-							}
-						}
-					}
-				}
-			}) );
 		},
 
 		/**
@@ -120,16 +89,21 @@
 		 * @global wp.Uploader
 		 */
 		initialize: function() {
+			var self = this;
 			_.defaults( this.options, {
 				title:     l10n.mediaLibraryTitle,
 				modal:     false,
 				selection: [],
 				library:   {},
-				multiple:  false,
+				multiple:  'add',
 				state:     'library',
 				uploader:  true,
 				mode:      [ 'grid', 'edit' ]
 			});
+
+			$(document).on( 'click', '.add-new-h2', _.bind( this.addNewClickHandler, this ) );
+			$(document).on( 'screen:options:open', _.bind( this.screenOptionsOpen, this ) );
+			$(document).on( 'screen:options:close', _.bind( this.screenOptionsClose, this ) );
 
 			// Ensure core and media grid view UI is enabled.
 			this.$el.addClass('wp-core-ui media-grid-view');
@@ -168,6 +142,37 @@
 			this.createStates();
 			this.bindHandlers();
 			this.render();
+
+			// Update the URL when entering search string (at most once per second)
+			$( '#media-search-input' ).on( 'input', _.debounce( function(e) {
+				var val = $( e.currentTarget ).val(), url = '';
+				if ( val ) {
+					url += '?search=' + val;
+				}
+				self.gridRouter.navigate( self.gridRouter.baseUrl( url ) );
+			}, 1000 ) );
+
+			_.delay( _.bind( this.createRouter, this ), 1000 );
+		},
+
+		screenOptionsOpen: function() {
+			this.$el.addClass( 'media-grid-view-options' );
+		},
+
+		screenOptionsClose: function() {
+			this.$el.removeClass( 'media-grid-view-options' );
+		},
+
+		createRouter: function() {
+			this.gridRouter = new media.view.MediaFrame.Manage.Router();
+
+			// Verify pushState support and activate
+			if ( window.history && window.history.pushState ) {
+				Backbone.history.start({
+					root: mediaGridSettings.adminUrl,
+					pushState: true
+				});
+			}
 		},
 
 		createSelection: function() {
@@ -186,24 +191,33 @@
 		},
 
 		createStates: function() {
-			var options = this.options;
+			var options = this.options,
+				libraryState;
 
 			if ( this.options.states ) {
 				return;
 			}
 
+			libraryState = new media.controller.Library({
+				library:    media.query( options.library ),
+				multiple:   options.multiple,
+				title:      options.title,
+				priority:   20,
+				toolbar:    false,
+				router:     false,
+				content:    'browse',
+				filterable: 'mime-types'
+			});
+
+			libraryState._renderTitle = function( view ) {
+				var text = this.get('title') || '';
+				view.$el.addClass( 'wrap' );
+				text += '<a class="add-new-h2">Add New</a>';
+				view.$el.html( text );
+			};
 			// Add the default states.
 			this.states.add([
-				new media.controller.Library({
-					library:    media.query( options.library ),
-					multiple:   options.multiple,
-					title:      options.title,
-					priority:   20,
-					toolbar:    false,
-					router:     false,
-					content:    'browse',
-					filterable: 'mime-types'
-				})
+				libraryState
 			]);
 		},
 
@@ -213,46 +227,23 @@
 
 			// Handle a frame-level event for editing an attachment.
 			this.on( 'edit:attachment', this.editAttachment, this );
-			this.on( 'edit:attachment:next', this.editNextAttachment, this );
-			this.on( 'edit:attachment:previous', this.editPreviousAttachment, this );
 		},
 
-		editPreviousAttachment: function( currentModel ) {
-			var library = this.state().get('library'),
-				currentModelIndex = library.indexOf( currentModel );
-			this.trigger( 'edit:attachment', library.at( currentModelIndex - 1 ) );
-		},
-
-		editNextAttachment: function( currentModel ) {
-			var library = this.state().get('library'),
-				currentModelIndex = library.indexOf( currentModel );
-			this.trigger( 'edit:attachment', library.at( currentModelIndex + 1 ) );
+		addNewClickHandler: function() {
+			this.trigger( 'toggle:upload:attachment' );
 		},
 
 		/**
 		 * Open the Edit Attachment modal.
 		 */
 		editAttachment: function( model ) {
-			var library = this.state().get('library'), hasPrevious, hasNext;
-			if ( library.indexOf( model ) > 0 ) {
-				hasPrevious = true;
-			}
-			else {
-				hasPrevious = false;
-			}
-			if ( library.indexOf( model ) < library.length - 1 ) {
-				hasNext = true;
-			}
-			else {
-				hasNext = false;
-			}
-
-			new media.view.Frame.EditAttachment({
-				hasPrevious:    hasPrevious,
-				hasNext:        hasNext,
-				model:          model,
-				gridController: this
-			});
+			// Create a new EditAttachment frame, passing along the library and the attachment model.
+			wp.media( {
+				frame:       'edit-attachments',
+				gridRouter:  this.gridRouter,
+				library:     this.state().get('library'),
+				model:       model
+			} );
 		},
 
 		/**
@@ -301,7 +292,12 @@
 		template: wp.template( 'attachment-details-two-column' ),
 
 		initialize: function() {
-			this.$el.attr('aria-label', this.model.attributes.title).attr('aria-checked', false);
+			if ( ! this.model ) {
+				return;
+			}
+
+			this.$el.attr('aria-label', this.model.get( 'title' ) ).attr( 'aria-checked', false );
+
 			this.model.on( 'change:sizes change:uploading', this.render, this );
 			this.model.on( 'change:title', this._syncTitle, this );
 			this.model.on( 'change:caption', this._syncCaption, this );
@@ -310,6 +306,43 @@
 			// Update the selection.
 			this.model.on( 'add', this.select, this );
 			this.model.on( 'remove', this.deselect, this );
+			this.model.on( 'sync', this.afterDelete, this );
+		},
+
+		preDestroy: function( event ) {
+			event.preventDefault();
+
+			this.lastIndex = this.controller.getCurrentIndex();
+			this.hasNext = this.controller.hasNext();
+		},
+
+		trashAttachment: function( event ) {
+			this.preDestroy( event );
+			media.view.Attachment.Details.prototype.trashAttachment.apply( this, arguments );
+		},
+
+		deleteAttachment: function( event ) {
+			this.preDestroy( event );
+			media.view.Attachment.Details.prototype.deleteAttachment.apply( this, arguments );
+		},
+
+		afterDelete: function( model ) {
+			if ( ! model.destroyed ) {
+				return;
+			}
+
+			var frame = this.controller, index = this.lastIndex;
+
+			if ( ! frame.library.length ) {
+				media.frame.modal.close();
+				return;
+			}
+
+			if ( this.hasNext ) {
+				index -= 1;
+			}
+			frame.model = frame.library.at( index );
+			frame.nextMediaItem();
 		},
 
 		render: function() {
@@ -324,13 +357,59 @@
 	});
 
 	/**
+	 * A router for handling the browser history and application state
+	 */
+	media.view.MediaFrame.Manage.Router = Backbone.Router.extend({
+		routes: {
+			'upload.php?item=:slug':    'showitem',
+			'upload.php?search=:query': 'search',
+			':default':                 'defaultRoute'
+		},
+
+		// Map routes against the page URL
+		baseUrl: function( url ) {
+			return 'upload.php' + url;
+		},
+
+		// Respond to the search route by filling the search field and trigggering the input event
+		search: function( query ) {
+			// Ensure modal closed, see back button
+			this.closeModal();
+			$( '#media-search-input' ).val( query ).trigger( 'input' );
+		},
+
+		// Show the modal with a specific item
+		showitem: function( query ) {
+			var library = media.frame.state().get('library');
+
+			// Remove existing modal if present
+			this.closeModal();
+			// Trigger the media frame to open the correct item
+			media.frame.trigger( 'edit:attachment', library.findWhere( { id: parseInt( query, 10 ) } ) );
+		},
+
+		// Close the modal if set up
+		closeModal: function() {
+			if ( media.frame.modal ) {
+				media.frame.modal.close();
+			}
+		},
+
+		// Default route: make sure the modal and search are reset
+		defaultRoute: function() {
+			this.closeModal();
+			$( '#media-search-input' ).val( '' ).trigger( 'input' );
+		}
+	});
+
+	/**
 	 * A frame for editing the details of a specific media item.
 	 *
 	 * Opens in a modal by default.
 	 *
 	 * Requires an attachment model to be passed in the options hash under `model`.
 	 */
-	media.view.Frame.EditAttachment = media.view.Frame.extend({
+	media.view.MediaFrame.EditAttachments = media.view.Frame.extend({
 
 		className: 'edit-attachment-frame',
 		template: media.template( 'edit-attachment-frame' ),
@@ -352,16 +431,27 @@
 				state: 'edit-attachment'
 			});
 
+			this.gridRouter = this.options.gridRouter;
+			this.library = this.options.library;
+			if ( this.options.model ) {
+				this.model = this.options.model;
+			} else {
+				this.model = this.library.at( 0 );
+			}
+
 			this.createStates();
 
 			this.on( 'content:render:edit-metadata', this.editMetadataContent, this );
 			this.on( 'content:render:edit-image', this.editImageContentUgh, this );
 
 			// Only need a tab to Edit Image for images.
-			if ( this.model.get( 'type' ) === 'image' ) {
+			if ( 'undefined' !== typeof this.model && this.model.get( 'type' ) === 'image' ) {
 				this.on( 'router:create', this.createRouter, this );
 				this.on( 'router:render', this.browseRouter, this );
 			}
+
+			this.options.hasPrevious = this.hasPrevious();
+			this.options.hasNext = this.hasNext();
 
 			// Initialize modal container view.
 			if ( this.options.modal ) {
@@ -370,9 +460,16 @@
 					title:      this.options.title
 				});
 
+				this.modal.on( 'open', function () {
+					$( 'body' ).on( 'keydown.media-modal', _.bind( self.keyEvent, self ) );
+				} );
+
 				// Completely destroy the modal DOM element when closing it.
 				this.modal.close = function() {
 					self.modal.remove();
+					$( 'body' ).off( 'keydown.media-modal' ); /* remove the keydown event */
+
+					self.resetRoute();
 				};
 
 				this.modal.content( this );
@@ -412,6 +509,12 @@
 				model:      this.model
 			});
 			this.content.set( view );
+			// Update browser url when navigating media details
+			if ( this.model ) {
+				this.gridRouter.navigate( this.gridRouter.baseUrl( '?item=' + this.model.id ) );
+			} else {
+				this.resetRoute();
+			}
 		},
 
 		/**
@@ -464,52 +567,126 @@
 			});
 		},
 
+		resetContent: function() {
+			this.modal.close();
+			wp.media( {
+				frame:       'edit-attachments',
+				gridRouter:  this.gridRouter,
+				library:     this.library,
+				model:       this.model
+			} );
+		},
+
 		/**
 		 * Click handler to switch to the previous media item.
 		 */
 		previousMediaItem: function() {
-			if ( ! this.options.hasPrevious )
+			if ( ! this.hasPrevious() ) {
 				return;
-			this.modal.close();
-			this.options.gridController.trigger( 'edit:attachment:previous', this.model );
+			}
+			this.model = this.library.at( this.getCurrentIndex() - 1 );
+			this.resetContent();
 		},
 
 		/**
 		 * Click handler to switch to the next media item.
 		 */
 		nextMediaItem: function() {
-			if ( ! this.options.hasNext )
+			if ( ! this.hasNext() ) {
 				return;
-			this.modal.close();
-			this.options.gridController.trigger( 'edit:attachment:next', this.model );
-		}
-
-	});
-
-	media.view.GridFieldOptions = media.View.extend({
-		className: 'media-grid-field-options',
-		template: media.template( 'media-grid-field-options' ),
-
-		events: {
-			'change input': 'toggleFields'
+			}
+			this.model = this.library.at( this.getCurrentIndex() + 1 );
+			this.resetContent();
 		},
 
-		toggleFields: function(e) {
-			var $el = $( e.currentTarget ), fields, setting;
-			setting = $el.data( 'setting' );
-			fields = $( '.data-' + setting, '.data-fields' );
-			if ( $el.is( ':checked' ) ) {
-				fields.show();
-				deleteUserSetting( 'hidegrid' + setting );
-			} else {
-				fields.hide();
-				setUserSetting( 'hidegrid' + setting, 1 );
-			}
+		getCurrentIndex: function() {
+			return this.library.indexOf( this.model );
+		},
 
-			if ( $( ':checked', this.$el ).length ) {
-				fields.parent().show();
+		hasNext: function() {
+			return ( this.getCurrentIndex() + 1 ) < this.library.length;
+		},
+
+		hasPrevious: function() {
+			return ( this.getCurrentIndex() - 1 ) > -1;
+		},
+		/**
+		 * Respond to the keyboard events: right arrow, left arrow, escape.
+		 */
+		keyEvent: function( event ) {
+			var $target = $( event.target );
+			// Pressing the escape key routes back to main url
+			if ( event.keyCode === 27 ) {
+				this.resetRoute();
+				return event;
+			}
+			//Don't go left/right if we are in a textarea or input field
+			if ( $target.is( 'input' ) || $target.is( 'textarea' ) ) {
+				return event;
+			}
+			// The right arrow key
+			if ( event.keyCode === 39 ) {
+				this.nextMediaItem();
+			}
+			// The left arrow key
+			if ( event.keyCode === 37 ) {
+				this.previousMediaItem();
+			}
+		},
+
+		resetRoute: function() {
+			this.gridRouter.navigate( this.gridRouter.baseUrl( '' ) );
+		}
+	});
+
+	media.view.BulkSelectionToggleButton = media.view.Button.extend({
+		initialize: function() {
+			media.view.Button.prototype.initialize.apply( this, arguments );
+			this.listenTo( this.controller, 'bulk-edit:activate bulk-edit:deactivate', _.bind( this.toggleBulkEditHandler, this ) );
+		},
+
+		click: function() {
+			var bulkEditActive = this.controller.activeModes.where( { id: 'bulk-edit' } ).length;
+			media.view.Button.prototype.click.apply( this, arguments );
+
+			if ( bulkEditActive ) {
+				this.controller.deactivateMode( 'bulk-edit' ).activateMode( 'edit' );
 			} else {
-				fields.parent().hide();
+				this.controller.deactivateMode( 'edit' ).activateMode( 'bulk-edit' );
+			}
+		},
+
+		toggleBulkEditHandler: function() {
+			var bulkEditActive = this.controller.activeModes.where( { id: 'bulk-edit' } ).length;
+			if ( bulkEditActive ) {
+				this.$el.addClass( 'button-primary' );
+			} else {
+				this.$el.removeClass( 'button-primary' );
+				this.controller.state().get('selection').reset();
+			}
+		}
+	});
+
+	media.view.BulkDeleteButton = media.view.Button.extend({
+		initialize: function() {
+			media.view.Button.prototype.initialize.apply( this, arguments );
+			this.$el.hide();
+			this.listenTo( this.controller, 'bulk-edit:activate bulk-edit:deactivate', _.bind( this.visibility, this ) );
+		},
+
+		click: function() {
+			media.view.Button.prototype.click.apply( this, arguments );
+			while (this.controller.state().get('selection').length > 0) {
+				this.controller.state().get('selection').at(0).destroy();
+			}
+		},
+
+		visibility: function() {
+			var bulkEditActive = this.controller.activeModes.where( { id: 'bulk-edit' } ).length;
+			if ( bulkEditActive ) {
+				this.$el.show();
+			} else {
+				this.$el.hide();
 			}
 		}
 	});

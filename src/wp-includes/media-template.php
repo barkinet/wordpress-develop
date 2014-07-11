@@ -160,6 +160,9 @@ function wp_print_media_templates() {
 
 	<script type="text/html" id="tmpl-uploader-inline">
 		<# var messageClass = data.message ? 'has-upload-message' : 'no-upload-message'; #>
+		<# if ( data.canClose ) { #>
+		<button class="close dashicons dashicons-no"><span class="screen-reader-text">Close overlay</span></button>
+		<# } #>
 		<div class="uploader-inline-content {{ messageClass }}">
 		<# if ( data.message ) { #>
 			<h3 class="upload-message">{{ data.message }}</h3>
@@ -229,25 +232,6 @@ function wp_print_media_templates() {
 		</a>
 	</script>
 
-	<script type="text/html" id="tmpl-media-grid-field-options">
-		<label class="setting">
-			<span><?php _e( 'Name' ); ?></span>
-			<input type="checkbox" data-setting="title" {{ '' === getUserSetting( 'hidegridtitle' ) && 'checked' }} />
-		</label>
-		<label class="setting">
-			<span><?php _e( 'Uploaded to' ); ?></span>
-			<input type="checkbox" data-setting="uploadedTo" {{ '' === getUserSetting( 'hidegriduploadedTo' ) && 'checked' }} />
-		</label>
-		<label class="setting">
-			<span><?php _e( 'Date' ); ?></span>
-			<input type="checkbox" data-setting="dateFormatted" {{ '' === getUserSetting( 'hidegriddateFormatted' ) && 'checked' }} />
-		</label>
-		<label class="setting">
-			<span><?php _e( 'Mime-type' ); ?></span>
-			<input type="checkbox" data-setting="mime" {{ '' === getUserSetting( 'hidegridmime' ) && 'checked' }} />
-		</label>
-	</script>
-
 	<script type="text/html" id="tmpl-uploader-status">
 		<h3><?php _e( 'Uploading' ); ?></h3>
 		<a class="upload-dismiss-errors" href="#"><?php _e('Dismiss Errors'); ?></a>
@@ -276,7 +260,6 @@ function wp_print_media_templates() {
 		</div>
 		<div class="media-frame-router"></div>
 		<div class="media-frame-content"></div>
-		<div class="media-frame-toolbar"></div>
 	</script>
 
 	<script type="text/html" id="tmpl-attachment-details-two-column">
@@ -294,43 +277,9 @@ function wp_print_media_templates() {
 					<div class="media-progress-bar"><div></div></div>
 				<# } else if ( 'image' === data.type ) { #>
 					<img src="{{ data.sizes.full.url }}" draggable="false" />
-				<# } else { #>
+				<# } else if ( -1 === jQuery.inArray( data.type, [ 'audio', 'video' ] ) ) { #>
 					<img src="{{ data.icon }}" class="icon" draggable="false" />
 				<# } #>
-			</div>
-			<div class="details">
-				<div class="filename">{{ data.filename }}</div>
-				<div class="uploaded">{{ data.dateFormatted }}</div>
-
-				<div class="file-size">{{ data.filesizeHumanReadable }}</div>
-				<# if ( 'image' === data.type && ! data.uploading ) { #>
-					<# if ( data.width && data.height ) { #>
-						<div class="dimensions">{{ data.width }} &times; {{ data.height }}</div>
-					<# } #>
-
-					<# if ( data.can.save ) { #>
-						<a class="edit-attachment" href="{{ data.editLink }}&amp;image-editor" target="_blank"><?php _e( 'Edit Image' ); ?></a>
-						<a class="refresh-attachment" href="#"><?php _e( 'Refresh' ); ?></a>
-					<# } #>
-				<# } #>
-
-				<# if ( data.fileLength ) { #>
-					<div class="file-length"><?php _e( 'Length:' ); ?> {{ data.fileLength }}</div>
-				<# } #>
-
-				<# if ( ! data.uploading && data.can.remove ) { #>
-					<?php if ( MEDIA_TRASH ): ?>
-						<a class="trash-attachment" href="#"><?php _e( 'Trash' ); ?></a>
-					<?php else: ?>
-						<a class="delete-attachment" href="#"><?php _e( 'Delete Permanently' ); ?></a>
-					<?php endif; ?>
-				<# } #>
-
-				<div class="compat-meta">
-					<# if ( data.compat && data.compat.meta ) { #>
-						{{{ data.compat.meta }}}
-					<# } #>
-				</div>
 			</div>
 			<# if ( 'audio' === data.type ) { #>
 			<div class="wp-media-wrapper">
@@ -347,6 +296,36 @@ function wp_print_media_templates() {
 				</video>
 			</div>
 			<# } #>
+			<div class="details">
+				<div class="filename"><strong><?php _e( 'File name:' ); ?></strong> {{ data.filename }}</div>
+				<div class="filename"><strong><?php _e( 'File type:' ); ?></strong> {{ data.mime }}</div>
+				<div class="uploaded"><strong><?php _e( 'Uploaded on:' ); ?></strong> {{ data.dateFormatted }}</div>
+
+				<div class="file-size"><strong><?php _e( 'File size:' ); ?></strong> {{ data.filesizeHumanReadable }}</div>
+				<# if ( 'image' === data.type && ! data.uploading ) { #>
+					<# if ( data.width && data.height ) { #>
+						<div class="dimensions"><strong><?php _e( 'Dimensions:' ); ?></strong> {{ data.width }} &times; {{ data.height }}</div>
+					<# } #>
+				<# } #>
+
+				<# if ( data.fileLength ) { #>
+					<div class="file-length"><strong><?php _e( 'Length:' ); ?></strong> {{ data.fileLength }}</div>
+				<# } #>
+
+				<# if ( ! data.uploading && data.can.remove ) { #>
+					<?php if ( MEDIA_TRASH ): ?>
+						<a class="trash-attachment" href="#"><?php _e( 'Trash' ); ?></a>
+					<?php else: ?>
+						<a class="delete-attachment" href="#"><?php _e( 'Delete Permanently' ); ?></a>
+					<?php endif; ?>
+				<# } #>
+
+				<div class="compat-meta">
+					<# if ( data.compat && data.compat.meta ) { #>
+						{{{ data.compat.meta }}}
+					<# } #>
+				</div>
+			</div>
 		</div>
 		<div class="attachment-fields">
 			<label class="setting" data-setting="url">
@@ -387,11 +366,11 @@ function wp_print_media_templates() {
 
 	<script type="text/html" id="tmpl-attachment">
 		<# if ( _.contains( data.controller.options.mode, 'grid' ) ) { #>
-		<div class="inline-toolbar">
+		<div class="inline-toolbar js--select-attachment">
 			<div class="dashicons dashicons-edit edit edit-media"></div>
 		</div>
 		<# } #>
-		<div class="attachment-preview type-{{ data.type }} subtype-{{ data.subtype }} {{ data.orientation }}">
+		<div class="attachment-preview js--select-attachment type-{{ data.type }} subtype-{{ data.subtype }} {{ data.orientation }}">
 			<# if ( data.uploading ) { #>
 				<div class="media-progress-bar"><div></div></div>
 			<# } else if ( 'image' === data.type ) { #>
@@ -438,26 +417,30 @@ function wp_print_media_templates() {
 
 		if ( _.contains( data.controller.options.mode, 'grid' ) ) { #>
 		<div class="data-fields">
-		<# _.each( data.showAttachmentFields, function( field ) {
-			var className = 'data-field data-hidden';
-			if ( '' === getUserSetting( 'hidegrid' + field ) ) {
-				className = 'data-field data-visible';
-			}
-		#>
-			<div class="{{ className }} data-{{ field }}"><#
-				if ( 'uploadedTo' === field ) {
-					if ( data[ field ] ) {
-					#><?php _e( 'Uploaded To: ' ) ?>{{ data.uploadedToTitle }}<#
+		<?php
+		$option = get_user_option( 'manageuploadgridcolumnshidden' );
+		$hidden = array();
+		if ( ! empty( $option ) ) {
+			$hidden = $option;
+		}
+		$fields = array( 'title', 'uploadedTo', 'dateFormatted', 'mime' );
+		foreach ( $fields as $field ):
+			$class_name = in_array( $field, $hidden ) ? 'data-field data-hidden' : 'data-field data-visible';
+		?>
+			<div class="<?php echo $class_name ?> data-<?php echo $field ?>"><#
+				if ( 'uploadedTo' === '<?php echo $field ?>' ) {
+					if ( data[ '<?php echo $field ?>' ] ) {
+					#><?php _e( 'Uploaded To: ' ) ?><a href="{{ data.uploadedToLink }}">{{ data.uploadedToTitle }}</a><#
 					} else {
 					#><?php _e( 'Unattached' ) ?><#
 					}
-				} else if ( 'title' === field && ! data[ field ] ) {
+				} else if ( 'title' === '<?php echo $field ?>' && ! data[ '<?php echo $field ?>' ] ) {
 				#><?php _e( '(No title)' ) ?><#
-				} else if ( data[ field ] ) {
-				#>{{ data[ field ] }}<#
+				} else if ( data[ '<?php echo $field ?>' ] ) {
+				#>{{ data[ '<?php echo $field ?>' ] }}<#
 				}
 			#></div>
-		<# }); #>
+		<?php endforeach ?>
 		</div>
 		<# } #>
 
