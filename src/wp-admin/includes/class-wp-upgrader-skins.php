@@ -596,7 +596,7 @@ class Theme_Upgrader_Skin extends WP_Upgrader_Skin {
 			$activate_link = wp_nonce_url( $activate_link, 'switch-theme_' . $stylesheet );
 
 			if ( get_stylesheet() == $stylesheet ) {
-				if ( current_user_can( 'customize' ) ) {
+				if ( current_user_can( 'edit_theme_options' ) && current_user_can( 'customize' ) ) {
 					$update_actions['preview']  = '<a href="' . wp_customize_url( $stylesheet ) . '" class="hide-if-no-customize load-customize" title="' . esc_attr( sprintf( __('Customize &#8220;%s&#8221;'), $name ) ) . '">' . __('Customize') . '</a>';
 				}
 			} elseif ( current_user_can( 'switch_themes' ) ) {
