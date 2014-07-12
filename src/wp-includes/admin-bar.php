@@ -654,10 +654,11 @@ function wp_admin_bar_comments_menu( $wp_admin_bar ) {
 function wp_admin_bar_appearance_menu( $wp_admin_bar ) {
 	$wp_admin_bar->add_group( array( 'parent' => 'site-name', 'id' => 'appearance' ) );
 
-	if ( current_user_can( 'switch_themes' ) || current_user_can( 'edit_theme_options' ) )
+	if ( current_user_can( 'switch_themes' ) || current_user_can( 'edit_theme_options' ) ) {
 		$wp_admin_bar->add_menu( array( 'parent' => 'appearance', 'id' => 'themes', 'title' => __('Themes'), 'href' => admin_url('themes.php') ) );
+	}
 
-	if ( current_user_can( 'customize' ) ) {
+	if ( current_user_can( 'edit_theme_options' ) && current_user_can( 'customize' ) ) {
 		$current_url = ( is_ssl() ? 'https://' : 'http://' ) . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'];
 		$wp_admin_bar->add_menu( array(
 			'parent' => 'appearance',

@@ -144,8 +144,7 @@ $menu[59] = array( '', 'read', 'separator2', '', 'wp-menu-separator' );
 
 $appearance_cap = current_user_can( 'switch_themes') ? 'switch_themes' : 'edit_theme_options';
 
-$customize_url = add_query_arg( 'return', urlencode( wp_unslash( $_SERVER['REQUEST_URI'] ) ), 'customize.php' );
-if ( current_user_can( $appearance_cap) ) {
+if ( current_user_can( $appearance_cap ) ) {
 	$menu[60] = array( __( 'Appearance' ), $appearance_cap, 'themes.php', '', 'menu-top menu-icon-appearance', 'menu-appearance', 'dashicons-admin-appearance' );
 	$submenu['themes.php'][5] = array( __( 'Themes' ), $appearance_cap, 'themes.php' );
 
@@ -155,10 +154,8 @@ if ( current_user_can( $appearance_cap) ) {
 	if ( current_theme_supports( 'menus' ) || current_theme_supports( 'widgets' ) ) {
 		$submenu['themes.php'][10] = array(__( 'Menus' ), 'edit_theme_options', 'nav-menus.php');
 	}
-} else {
-	$menu[60] = array( __( 'Customize' ), 'customize', $customize_url, '', 'menu-top menu-icon-appearance hide-if-no-customize', 'menu-appearance', 'dashicons-admin-appearance' );
 }
-unset( $customize_url, $appearance_cap );
+unset( $appearance_cap );
 
 // Add 'Editor' to the bottom of the Appearance menu.
 if ( ! is_multisite() )
