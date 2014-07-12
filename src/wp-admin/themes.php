@@ -212,12 +212,12 @@ foreach ( $themes as $theme ) :
 	<div class="theme-actions">
 
 	<?php if ( $theme['active'] ) { ?>
-		<?php if ( $theme['actions']['customize'] && current_user_can( 'customize' ) ) { ?>
+		<?php if ( $theme['actions']['customize'] && current_user_can( 'edit_theme_options' ) && current_user_can( 'customize' ) ) { ?>
 			<a class="button button-primary customize load-customize hide-if-no-customize" href="<?php echo $theme['actions']['customize']; ?>"><?php _e( 'Customize' ); ?></a>
 		<?php } ?>
 	<?php } else { ?>
 		<a class="button button-primary activate" href="<?php echo $theme['actions']['activate']; ?>"><?php _e( 'Activate' ); ?></a>
-		<?php if ( current_user_can( 'customize' ) ) { ?>
+		<?php if ( current_user_can( 'edit_theme_options' ) && current_user_can( 'customize' ) ) { ?>
 			<a class="button button-secondary load-customize hide-if-no-customize" href="<?php echo $theme['actions']['customize']; ?>"><?php _e( 'Live Preview' ); ?></a>
 			<a class="button button-secondary hide-if-customize" href="<?php echo $theme['actions']['preview']; ?>"><?php _e( 'Preview' ); ?></a>
 		<?php } ?>
