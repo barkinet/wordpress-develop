@@ -177,8 +177,9 @@ $admin_body_class .= ' no-customize-support no-svg';
 
 <?php
 // Make sure the customize body classes are correct as early as possible.
-if ( current_user_can( 'customize' ) )
+if ( current_user_can( 'customize' ) ) {
 	wp_customize_support_script();
+}
 ?>
 
 <div id="wpwrap">
