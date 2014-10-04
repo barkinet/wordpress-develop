@@ -878,11 +878,11 @@ final class WP_Customize_Manager {
 
 			if ( ! $section->panel ) {
 				// Top-level section.
-				$sections[] = $section;
+				$sections[ $section->id ] = $section;
 			} else {
 				// This section belongs to a panel.
 				if ( isset( $this->panels [ $section->panel ] ) ) {
-					$this->panels[ $section->panel ]->sections[] = $section;
+					$this->panels[ $section->panel ]->sections[ $section->id ] = $section;
 				}
 			}
 		}
@@ -899,8 +899,8 @@ final class WP_Customize_Manager {
 				continue;
 			}
 
-			usort( $panel->sections, array( $this, '_cmp_priority' ) );
-			$panels[] = $panel;
+			uasort( $panel->sections, array( $this, '_cmp_priority' ) );
+			$panels[ $panel->id ] = $panel;
 		}
 		$this->panels = $panels;
 

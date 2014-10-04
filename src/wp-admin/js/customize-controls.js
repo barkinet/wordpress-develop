@@ -34,6 +34,98 @@
 	 * @constructor
 	 * @augments wp.customize.Class
 	 */
+	api.Section = api.Class.extend({
+
+		/**
+		 * @param {String} id
+		 * @param {Array} options
+		 */
+		initialize: function ( id, options ) {
+			this.id = id;
+			this.params = {};
+			$.extend( this, options || {} );
+			this.panel = new api.Value( this.params.panel );
+			this.priority = new api.Value( this.params.priority || 100 );
+		},
+
+		/**
+		 * Get the controls that are associated with this section.
+		 *
+		 * @returns {Array}
+		 */
+		controls: function () {
+			var controls = [];
+			api.control.each( function ( id, control ) {
+				if ( control.section.get() === id ) {
+					controls.push( control );
+				}
+			} );
+			// @todo Sort by priority
+			return controls;
+		},
+
+		/**
+		 * Expand the accordion section (and collapse all others).
+		 */
+		expand: function () {
+			throw new Error( 'Not implemented' ); // @todo
+		},
+
+		/**
+		 * Collapse the accordion section.
+		 */
+		collapse: function () {
+			throw new Error( 'Not implemented' ); // @todo
+		}
+	});
+
+	/**
+	 * @constructor
+	 * @augments wp.customize.Class
+	 */
+	api.Panel = api.Class.extend({
+		initialize: function ( id, options ) {
+			this.id = id;
+			this.params = {};
+			$.extend( this, options || {} );
+			this.priority = new api.Value( this.params.priority || 160 );
+		},
+
+		/**
+		 * Get the controls that are associated with this section.
+		 *
+		 * @returns {Array}
+		 */
+		sections: function () {
+			var sections = [];
+			api.section.each( function ( id, section ) {
+				if ( section.panel.get() === id ) {
+					sections.push( section );
+				}
+			} );
+			// @todo Sort by priority
+			return sections;
+		},
+
+		/**
+		 * Expand the accordion section (and collapse all others).
+		 */
+		expand: function () {
+			throw new Error( 'Not implemented' ); // @todo
+		},
+
+		/**
+		 * Collapse the accordion section.
+		 */
+		collapse: function () {
+			throw new Error( 'Not implemented' ); // @todo
+		}
+	});
+
+	/**
+	 * @constructor
+	 * @augments wp.customize.Class
+	 */
 	api.Control = api.Class.extend({
 		initialize: function( id, options ) {
 			var control = this,
@@ -45,6 +137,10 @@
 			this.id = id;
 			this.selector = '#customize-control-' + id.replace( /\]/g, '' ).replace( /\[/g, '-' );
 			this.container = $( this.selector );
+			// @todo Allow template to be supplied instead of assuming the element is already in the DOM
+
+			this.section = new api.Value( this.params.section );
+			this.priority = new api.Value( this.params.priority || 10 );
 			this.active = new api.Value( this.params.active );
 
 			settings = $.map( this.params.settings, function( value ) {
@@ -74,8 +170,9 @@
 
 				if ( node.is(':radio') ) {
 					name = node.prop('name');
-					if ( radios[ name ] )
+					if ( radios[ name ] ) {
 						return;
+					}
 
 					radios[ name ] = true;
 					node = nodes.filter( '[name="' + name + '"]' );
@@ -575,6 +672,8 @@
 
 	// Create the collection of Control objects.
 	api.control = new api.Values({ defaultConstructor: api.Control });
+	api.section = new api.Values({ defaultConstructor: api.Section });
+	api.panel = new api.Values({ defaultConstructor: api.Panel });
 
 	/**
 	 * @constructor
@@ -1091,6 +1190,7 @@
 			$.extend( this.nonce, nonce );
 		});
 
+		//
 		$.each( api.settings.settings, function( id, data ) {
 			api.create( id, id, data.value, {
 				transport: data.transport,
@@ -1098,14 +1198,30 @@
 			} );
 		});
 
+		$.each( api.settings.panels, function ( id, data ) {
+			var panel = new api.Panel( id, {
+				params: data
+			} );
+			api.panel.add( id, panel );
+		});
+
+		$.each( api.settings.sections, function ( id, data ) {
+			var section = new api.Section( id, {
+				params: data
+			} );
+			api.section.add( id, section );
+		});
+
+		// @todo Extract this out
 		$.each( api.settings.controls, function( id, data ) {
 			var constructor = api.controlConstructor[ data.type ] || api.Control,
 				control;
 
-			control = api.control.add( id, new constructor( id, {
+			control = new constructor( id, {
 				params: data,
 				previewer: api.previewer
-			} ) );
+			} );
+			api.control.add( id, control );
 		});
 
 		// Check if preview url is valid and load the preview frame.

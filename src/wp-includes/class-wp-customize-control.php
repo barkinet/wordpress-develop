@@ -74,6 +74,7 @@ class WP_Customize_Control {
 	public $input_attrs = array();
 
 	/**
+	 * @deprecated It is better to just call the json() method
 	 * @access public
 	 * @var array
 	 */
@@ -219,6 +220,18 @@ class WP_Customize_Control {
 
 		$this->json['type'] = $this->type;
 		$this->json['active'] = $this->active();
+	}
+
+	/**
+	 * Get the data to export to the client via JSON.
+	 *
+	 * @since 4.1.0
+	 *
+	 * @return array
+	 */
+	public function json() {
+		$this->to_json();
+		return $this->json;
 	}
 
 	/**

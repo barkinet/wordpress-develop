@@ -249,6 +249,8 @@ do_action( 'customize_controls_print_scripts' );
 		),
 		'settings' => array(),
 		'controls' => array(),
+		'panels'   => array(),
+		'sections' => array(),
 		'nonce'    => array(
 			'save'    => wp_create_nonce( 'save-customize_' . $wp_customize->get_stylesheet() ),
 			'preview' => wp_create_nonce( 'preview-customize_' . $wp_customize->get_stylesheet() )
@@ -263,10 +265,22 @@ do_action( 'customize_controls_print_scripts' );
 		);
 	}
 
-	// Prepare Customize Control objects to pass to Javascript.
+	// Prepare Customize Control objects to pass to JavaScript.
 	foreach ( $wp_customize->controls() as $id => $control ) {
-		$control->to_json();
-		$settings['controls'][ $id ] = $control->json;
+		$settings['controls'][ $id ] = $control->json();
+	}
+
+	// Prepare Customize Section objects to pass to JavaScript.
+	foreach ( $wp_customize->sections() as $id => $section ) {
+		$settings['sections'][ $id ] = $section->json();
+	}
+
+	// Prepare Customize Panel objects to pass to JavaScript.
+	foreach ( $wp_customize->panels() as $id => $panel ) {
+		$settings['panels'][ $id ] = $panel->json();
+		foreach ( $panel->sections as $section_id => $section ) {
+			$settings['sections'][ $section_id ] = $section->json();
+		}
 	}
 
 	?>

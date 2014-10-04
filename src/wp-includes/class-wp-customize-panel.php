@@ -110,6 +110,18 @@ class WP_Customize_Panel {
 	}
 
 	/**
+	 * Gather the parameters passed to client JavaScript via JSON.
+	 *
+	 * @since 4.1.0
+	 *
+	 * @return array The array to be exported to the client as JSON
+	 */
+	public function json() {
+		$array = wp_array_slice_assoc( (array) $this, array( 'title', 'description', 'priority' ) );
+		return $array;
+	}
+
+	/**
 	 * Checks required user capabilities and whether the theme has the
 	 * feature support required by the panel.
 	 *
