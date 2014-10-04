@@ -1469,9 +1469,10 @@ Your new SITE_NAME site has been successfully set up at:
 BLOG_URL
 
 You can log in to the administrator account with the following information:
+
+Log in here: BLOG_URLwp-login.php
 Username: USERNAME
 Password: PASSWORD
-Log in here: BLOG_URLwp-login.php
 
 We hope you enjoy your new site. Thanks!
 
@@ -1745,7 +1746,8 @@ function recurse_dirsize( $directory ) {
  * @return array
  */
 function check_upload_mimes( $mimes ) {
-	$site_exts = explode( ' ', get_site_option( 'upload_filetypes' ) );
+	$site_exts = explode( ' ', get_site_option( 'upload_filetypes', 'jpg jpeg png gif' ) );
+	$site_mimes = array();
 	foreach ( $site_exts as $ext ) {
 		foreach ( $mimes as $ext_pattern => $mime ) {
 			if ( $ext != '' && strpos( $ext_pattern, $ext ) !== false )
@@ -1761,7 +1763,7 @@ function check_upload_mimes( $mimes ) {
  * WordPress MS stores a blog's post count as an option so as
  * to avoid extraneous COUNTs when a blog's details are fetched
  * with get_blog_details(). This function is called when posts
- * are published to make sure the count stays current.
+ * are published or unpublished to make sure the count stays current.
  *
  * @since MU
  */

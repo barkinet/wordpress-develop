@@ -48,6 +48,9 @@ class WP_Date_Query {
 	/**
 	 * Constructor.
 	 *
+	 * @since 3.7.0
+	 * @since 4.0.0 The $inclusive logic was updated to include all times within the date range.
+	 *
 	 * @param array $date_query {
 	 *     One or more associative arrays of date query parameters.
 	 *
@@ -81,7 +84,7 @@ class WP_Date_Query {
 	 *                                     Default (string:empty)|(array:last day of month). Accepts numbers 1-31.
 	 *             }
 	 *             @type string       $column    Optional. Used to add a clause comparing a column other than the column
-	 *                                           specified in the top-level $column paramater.  Default is the value
+	 *                                           specified in the top-level $column parameter.  Default is the value
 	 *                                           of top-level $column. Accepts 'post_date', 'post_date_gmt',
 	 *                                           'post_modified', 'post_modified_gmt', 'comment_date', 'comment_date_gmt'.
 	 *             @type string       $compare   Optional. The comparison operator. Default '='. Accepts '=', '!=',
@@ -235,19 +238,23 @@ class WP_Date_Query {
 
 		$compare = $this->get_compare( $query );
 
+		$inclusive = ! empty( $query['inclusive'] );
+
+		// Assign greater- and less-than values.
 		$lt = '<';
 		$gt = '>';
-		if ( ! empty( $query['inclusive'] ) ) {
+
+		if ( $inclusive ) {
 			$lt .= '=';
 			$gt .= '=';
 		}
 
 		// Range queries
 		if ( ! empty( $query['after'] ) )
-			$where_parts[] = $wpdb->prepare( "$column $gt %s", $this->build_mysql_datetime( $query['after'], true ) );
+			$where_parts[] = $wpdb->prepare( "$column $gt %s", $this->build_mysql_datetime( $query['after'], ! $inclusive ) );
 
 		if ( ! empty( $query['before'] ) )
-			$where_parts[] = $wpdb->prepare( "$column $lt %s", $this->build_mysql_datetime( $query['before'], false ) );
+			$where_parts[] = $wpdb->prepare( "$column $lt %s", $this->build_mysql_datetime( $query['before'], $inclusive ) );
 
 		// Specific value queries
 
@@ -306,18 +313,41 @@ class WP_Date_Query {
 		switch ( $compare ) {
 			case 'IN':
 			case 'NOT IN':
-				return '(' . implode( ',', array_map( 'intval', (array) $value ) ) . ')';
+				$value = (array) $value;
+
+				// Remove non-numeric values.
+				$value = array_filter( $value, 'is_numeric' );
+
+				if ( empty( $value ) ) {
+					return false;
+				}
+
+				return '(' . implode( ',', array_map( 'intval', $value ) ) . ')';
 
 			case 'BETWEEN':
 			case 'NOT BETWEEN':
-				if ( ! is_array( $value ) || 2 != count( $value ) || ! isset( $value[0] ) || ! isset( $value[1] ) )
+				if ( ! is_array( $value ) || 2 != count( $value ) ) {
 					$value = array( $value, $value );
+				} else {
+					$value = array_values( $value );
+				}
+
+				// If either value is non-numeric, bail.
+				foreach ( $value as $v ) {
+					if ( ! is_numeric( $v ) ) {
+						return false;
+					}
+				}
 
 				$value = array_map( 'intval', $value );
 
 				return $value[0] . ' AND ' . $value[1];
 
 			default;
+				if ( ! is_numeric( $value ) ) {
+					return false;
+				}
+
 				return (int) $value;
 		}
 	}

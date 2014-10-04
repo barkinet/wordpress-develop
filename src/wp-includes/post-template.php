@@ -23,10 +23,11 @@ function the_ID() {
  * @since 2.1.0
  * @uses $post
  *
- * @return int
+ * @return int|bool The ID of the current item in the WordPress Loop. False if $post is not set.
  */
 function get_the_ID() {
-	return get_post()->ID;
+	$post = get_post();
+	return ! empty( $post ) ? $post->ID : false;
 }
 
 /**
@@ -104,7 +105,7 @@ function the_title_attribute( $args = '' ) {
  *
  * @since 0.71
  *
- * @param int|WP_Post $post Optional. Post ID or WP_Post object. Default is global `$post`.
+ * @param int|WP_Post $post Optional. Post ID or WP_Post object. Default is global $post.
  * @return string
  */
 function get_the_title( $post = 0 ) {
@@ -340,6 +341,9 @@ function get_the_excerpt( $deprecated = '' ) {
 		_deprecated_argument( __FUNCTION__, '2.3' );
 
 	$post = get_post();
+	if ( empty( $post ) ) {
+		return '';
+	}
 
 	if ( post_password_required() ) {
 		return __( 'There is no excerpt because this is a protected post.' );
@@ -432,8 +436,13 @@ function get_post_class( $class = '', $post_id = null ) {
 	}
 
 	// sticky for Sticky Posts
-	if ( is_sticky($post->ID) && is_home() && !is_paged() )
-		$classes[] = 'sticky';
+	if ( is_sticky( $post->ID ) ) {
+		if ( is_home() && ! is_paged() ) {
+			$classes[] = 'sticky';
+		} elseif ( is_admin() ) {
+			$classes[] = 'status-sticky';
+		}
+	}
 
 	// hentry for hAtom compliance
 	$classes[] = 'hentry';
@@ -473,7 +482,9 @@ function get_post_class( $class = '', $post_id = null ) {
 	 * @param string $class   A comma-separated list of additional classes added to the post.
 	 * @param int    $post_id The post ID.
 	 */
-	return apply_filters( 'post_class', $classes, $class, $post->ID );
+	$classes = apply_filters( 'post_class', $classes, $class, $post->ID );
+
+	return array_unique( $classes );
 }
 
 /**
@@ -666,7 +677,9 @@ function get_body_class( $class = '' ) {
 	 * @param array  $classes An array of body classes.
 	 * @param string $class   A comma-separated list of additional classes added to the body.
 	 */
-	return apply_filters( 'body_class', $classes, $class );
+	$classes = apply_filters( 'body_class', $classes, $class );
+
+	return array_unique( $classes );
 }
 
 /**
@@ -686,7 +699,7 @@ function post_password_required( $post = null ) {
 	if ( ! isset( $_COOKIE['wp-postpass_' . COOKIEHASH] ) )
 		return true;
 
-	require_once ABSPATH . 'wp-includes/class-phpass.php';
+	require_once ABSPATH . WPINC . '/class-phpass.php';
 	$hasher = new PasswordHash( 8, true );
 
 	$hash = wp_unslash( $_COOKIE[ 'wp-postpass_' . COOKIEHASH ] );
@@ -706,33 +719,27 @@ function post_password_required( $post = null ) {
  * Displays page links for paginated posts (i.e. includes the <!--nextpage-->.
  * Quicktag one or more times). This tag must be within The Loop.
  *
- * The defaults for overwriting are:
- * 'before' - Default is '<p> Pages:' (string). The html or text to prepend to
- *      each bookmarks.
- * 'after' - Default is '</p>' (string). The html or text to append to each
- *      bookmarks.
- * 'link_before' - Default is '' (string). The html or text to prepend to each
- *      Pages link inside the <a> tag. Also prepended to the current item, which
- *      is not linked.
- * 'link_after' - Default is '' (string). The html or text to append to each
- *      Pages link inside the <a> tag. Also appended to the current item, which
- *      is not linked.
- * 'next_or_number' - Default is 'number' (string). Indicates whether page
- *      numbers should be used. Valid values are number and next.
- * 'separator' - Default is ' ' (string). Text used between pagination links.
- * 'nextpagelink' - Default is 'Next Page' (string). Text for link to next page.
- *      of the bookmark.
- * 'previouspagelink' - Default is 'Previous Page' (string). Text for link to
- *      previous page, if available.
- * 'pagelink' - Default is '%' (String).Format string for page numbers. The % in
- *      the parameter string will be replaced with the page number, so Page %
- *      generates "Page 1", "Page 2", etc. Defaults to %, just the page number.
- * 'echo' - Default is 1 (integer). When not 0, this triggers the HTML to be
- *      echoed and then returned.
- *
  * @since 1.2.0
  *
- * @param string|array $args Optional. Overwrite the defaults.
+ * @param string|array $args {
+ *     Optional. Array or string of default arguments.
+ *
+ *     @type string       $before           HTML or text to prepend to each link. Default is '<p> Pages:'.
+ *     @type string       $after            HTML or text to append to each link. Default is '</p>'.
+ *     @type string       $link_before      HTML or text to prepend to each link, inside the <a> tag.
+ *                                          Also prepended to the current item, which is not linked. Default empty.
+ *     @type string       $link_after       HTML or text to append to each Pages link inside the <a> tag.
+ *                                          Also appended to the current item, which is not linked. Default empty.
+ *     @type string       $next_or_number   Indicates whether page numbers should be used. Valid values are number
+ *                                          and next. Default is 'number'.
+ *     @type string       $separator        Text between pagination links. Default is ' '.
+ *     @type string       $nextpagelink     Link text for the next page link, if available. Default is 'Next Page'.
+ *     @type string       $previouspagelink Link text for the previous page link, if available. Default is 'Previous Page'.
+ *     @type string       $pagelink         Format string for page numbers. The % in the parameter string will be
+ *                                          replaced with the page number, so 'Page %' generates "Page 1", "Page 2", etc.
+ *                                          Defaults to '%', just the page number.
+ *     @type int|bool     $echo             Whether to echo or not. Accepts 1|true or 0|false. Default 1|true.
+ * }
  * @return string Formatted output in HTML.
  */
 function wp_link_pages( $args = '' ) {
@@ -1089,23 +1096,22 @@ function wp_list_pages( $args = '' ) {
  * wp_list_pages()} function. Check that function for more info on those
  * arguments.
  *
- * <ul>
- * <li><strong>sort_column</strong> - How to sort the list of pages. Defaults
- * to 'menu_order, post_title'. Use column for posts table.</li>
- * <li><strong>menu_class</strong> - Class to use for the div ID which contains
- * the page list. Defaults to 'menu'.</li>
- * <li><strong>echo</strong> - Whether to echo list or return it. Defaults to
- * echo.</li>
- * <li><strong>link_before</strong> - Text before show_home argument text.</li>
- * <li><strong>link_after</strong> - Text after show_home argument text.</li>
- * <li><strong>show_home</strong> - If you set this argument, then it will
- * display the link to the home page. The show_home argument really just needs
- * to be set to the value of the text of the link.</li>
- * </ul>
- *
  * @since 2.7.0
  *
- * @param array|string $args
+ * @param array|string $args {
+ *     Optional. Arguments to generate a page menu. {@see wp_list_pages()}
+ *     for additional arguments.
+ *
+ * @type string     $sort_column How to short the list of pages. Accepts post column names.
+ *                               Default 'menu_order, post_title'.
+ * @type string     $menu_class  Class to use for the div ID containing the page list. Default 'menu'.
+ * @type bool       $echo        Whether to echo the list or return it. Accepts true (echo) or false (return).
+ *                               Default true.
+ * @type string     $link_before The HTML or text to prepend to $show_home text. Default empty.
+ * @type string     $link_after  The HTML or text to append to $show_home text. Default empty.
+ * @type int|string $show_home   Whether to display the link to the home page. Can just enter the text
+ *                               you'd like shown for the home link. 1|true defaults to 'Home'.
+ * }
  * @return string html menu
  */
 function wp_page_menu( $args = array() ) {
@@ -1514,6 +1520,9 @@ function prepend_attachment($content) {
 			$atts['width'] = (int) $meta['width'];
 			$atts['height'] = (int) $meta['height'];
 		}
+		if ( has_post_thumbnail() ) {
+			$atts['poster'] = wp_get_attachment_url( get_post_thumbnail_id() );
+		}
 		$p = wp_video_shortcode( $atts );
 	} elseif ( 0 === strpos( $post->post_mime_type, 'audio' ) ) {
 		$p = wp_audio_shortcode( array( 'src' => wp_get_attachment_url() ) );
@@ -1547,7 +1556,7 @@ function prepend_attachment($content) {
  *
  * @since 1.0.0
  *
- * @param int|WP_Post $post Optional. Post ID or WP_Post object. Default is global `$post`.
+ * @param int|WP_Post $post Optional. Post ID or WP_Post object. Default is global $post.
  * @return string HTML content for password form for password protected post.
  */
 function get_the_password_form( $post = 0 ) {
@@ -1720,7 +1729,7 @@ function wp_post_revision_title_expanded( $revision, $link = true ) {
  * @uses get_edit_post_link()
  * @uses get_the_author_meta()
  *
- * @param int|WP_Post $post_id Optional. Post ID or WP_Post object. Default is global `$post`.
+ * @param int|WP_Post $post_id Optional. Post ID or WP_Post object. Default is global $post.
  * @param string $type 'all' (default), 'revision' or 'autosave'
  * @return null
  */

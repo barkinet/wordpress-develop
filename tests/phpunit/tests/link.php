@@ -4,6 +4,12 @@
  */
 class Tests_Link extends WP_UnitTestCase {
 
+	function tearDown() {
+		global $wp_rewrite;
+		parent::tearDown();
+		$wp_rewrite->init();
+	}
+
 	function _get_pagenum_link_cb( $url ) {
 		return $url . '/WooHoo';
 	}
@@ -29,8 +35,14 @@ class Tests_Link extends WP_UnitTestCase {
 	}
 
 	function test_wp_get_shortlink() {
+		global $wp_rewrite;
+
 		$post_id = $this->factory->post->create();
 		$post_id2 = $this->factory->post->create();
+
+		$wp_rewrite->init();
+		$wp_rewrite->set_permalink_structure( '' );
+		$wp_rewrite->flush_rules();
 
 		// Basic case
 		$this->assertEquals( get_permalink( $post_id ), wp_get_shortlink( $post_id, 'post' ) );
@@ -59,8 +71,6 @@ class Tests_Link extends WP_UnitTestCase {
 		$this->assertEquals( '', wp_get_shortlink( 0 ) );
 		$this->assertEquals( '', wp_get_shortlink() );
 
-		global $wp_rewrite;
-		$wp_rewrite->permalink_structure = '';
 		$wp_rewrite->set_permalink_structure( '/%year%/%monthnum%/%day%/%postname%/' );
 		$wp_rewrite->flush_rules();
 
@@ -73,9 +83,6 @@ class Tests_Link extends WP_UnitTestCase {
 		$this->assertEquals( home_url( '?p=' . $post_id ), wp_get_shortlink( 0, 'post' ) );
 		$this->assertEquals( home_url( '?p=' . $post_id ), wp_get_shortlink( 0 ) );
 		$this->assertEquals( home_url( '?p=' . $post_id ), wp_get_shortlink() );
-
-		$wp_rewrite->set_permalink_structure( '' );
-		$wp_rewrite->flush_rules();
 	}
 
 	function test_wp_get_shortlink_with_page() {
@@ -86,14 +93,10 @@ class Tests_Link extends WP_UnitTestCase {
 		$this->assertEquals( home_url( '?p=' . $post_id ), wp_get_shortlink( $post_id, 'post' ) );
 
 		global $wp_rewrite;
-		$wp_rewrite->permalink_structure = '';
 		$wp_rewrite->set_permalink_structure( '/%year%/%monthnum%/%day%/%postname%/' );
 		$wp_rewrite->flush_rules();
 
 		$this->assertEquals( home_url( '?p=' . $post_id ), wp_get_shortlink( $post_id, 'post' ) );
-
-		$wp_rewrite->set_permalink_structure( '' );
-		$wp_rewrite->flush_rules();
 	}
 
 	/**
@@ -112,9 +115,6 @@ class Tests_Link extends WP_UnitTestCase {
 		$wp_rewrite->flush_rules();
 
 		$this->assertEquals( home_url( '/' ), wp_get_shortlink( $post_id, 'post' ) );
-
-		$wp_rewrite->set_permalink_structure( '' );
-		$wp_rewrite->flush_rules();
 	}
 
 	/**
@@ -187,5 +187,66 @@ class Tests_Link extends WP_UnitTestCase {
 
 		$this->assertEquals( array( $post_two ), get_boundary_post( true, '', true, 'post_tag' ) );
 		$this->assertEquals( array( $post_four ), get_boundary_post( true, '', false, 'post_tag' ) );
+	}
+
+	/**
+	* @ticket 22112
+	*/
+	function test_get_adjacent_post_exclude_self_term() {
+		$include = $this->factory->category->create();
+		$exclude = $this->factory->category->create();
+
+		$one = $this->factory->post->create_and_get( array(
+			'post_date' => '2012-01-01 12:00:00',
+			'post_category' => array( $include, $exclude ),
+		) );
+
+		$two = $this->factory->post->create_and_get( array(
+			'post_date' => '2012-01-02 12:00:00',
+			'post_category' => array(),
+		) );
+
+		$three = $this->factory->post->create_and_get( array(
+			'post_date' => '2012-01-03 12:00:00',
+			'post_category' => array( $include, $exclude ),
+		) );
+
+		$four = $this->factory->post->create_and_get( array(
+			'post_date' => '2012-01-04 12:00:00',
+			'post_category' => array( $include ),
+		) );
+
+		$five = $this->factory->post->create_and_get( array(
+			'post_date' => '2012-01-05 12:00:00',
+			'post_category' => array( $include, $exclude ),
+		) );
+
+		// First post
+		$this->go_to( get_permalink( $one ) );
+		$this->assertEquals( $two, get_adjacent_post( false, array(), false ) );
+		$this->assertEquals( $three, get_adjacent_post( true, array(), false ) );
+		$this->assertEquals( $two, get_adjacent_post( false, array( $exclude ), false ) );
+		$this->assertEquals( $four, get_adjacent_post( true, array( $exclude ), false ) );
+		$this->assertEmpty( get_adjacent_post( false, array(), true ) );
+
+		// Fourth post
+		$this->go_to( get_permalink( $four ) );
+		$this->assertEquals( $five, get_adjacent_post( false, array(), false ) );
+		$this->assertEquals( $five, get_adjacent_post( true, array(), false ) );
+		$this->assertEmpty( get_adjacent_post( false, array( $exclude ), false ) );
+		$this->assertEmpty( get_adjacent_post( true, array( $exclude ), false ) );
+
+		$this->assertEquals( $three, get_adjacent_post( false, array(), true ) );
+		$this->assertEquals( $three, get_adjacent_post( true, array(), true ) );
+		$this->assertEquals( $two, get_adjacent_post( false, array( $exclude ), true ) );
+		$this->assertEmpty( get_adjacent_post( true, array( $exclude ), true ) );
+
+		// Last post
+		$this->go_to( get_permalink( $five ) );
+		$this->assertEquals( $four, get_adjacent_post( false, array(), true ) );
+		$this->assertEquals( $four, get_adjacent_post( true, array(), true ) );
+		$this->assertEquals( $four, get_adjacent_post( false, array( $exclude ), true ) );
+		$this->assertEquals( $four, get_adjacent_post( true, array( $exclude ), true ) );
+		$this->assertEmpty( get_adjacent_post( false, array(), false ) );
 	}
 }

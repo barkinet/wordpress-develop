@@ -241,6 +241,10 @@ function list_plugin_updates() {
 <?php
 	foreach ( (array) $plugins as $plugin_file => $plugin_data) {
 		$info = plugins_api('plugin_information', array('slug' => $plugin_data->update->slug ));
+		if ( is_wp_error( $info ) ) {
+			continue;
+		}
+
 		// Get plugin compat for running version of WordPress.
 		if ( isset($info->tested) && version_compare($info->tested, $cur_wp_version, '>=') ) {
 			$compat = '<br />' . sprintf(__('Compatibility with WordPress %1$s: 100%% (according to its author)'), $cur_wp_version);
@@ -345,9 +349,9 @@ function list_translation_updates() {
 	$form_action = 'update-core.php?action=do-translation-upgrade';
 	?>
 	<h3><?php _e( 'Translations' ); ?></h3>
-	<form method="post" action="<?php echo esc_url( $form_action ); ?>" name="upgrade-themes" class="upgrade">
+	<form method="post" action="<?php echo esc_url( $form_action ); ?>" name="upgrade-translations" class="upgrade">
 		<p><?php _e( 'Some of your translations are out of date.' ); ?></p>
-		<?php wp_nonce_field('upgrade-translations'); ?>
+		<?php wp_nonce_field( 'upgrade-translations' ); ?>
 		<p><input class="button" type="submit" value="<?php esc_attr_e( 'Update Translations' ); ?>" name="upgrade" /></p>
 	</form>
 	<?php
@@ -540,8 +544,7 @@ if ( 'upgrade-core' == $action ) {
 
 	check_admin_referer('upgrade-core');
 
-	// do the (un)dismiss actions before headers,
-	// so that they can redirect
+	// Do the (un)dismiss actions before headers, so that they can redirect.
 	if ( isset( $_POST['dismiss'] ) )
 		do_dismiss_core_update();
 	elseif ( isset( $_POST['undismiss'] ) )

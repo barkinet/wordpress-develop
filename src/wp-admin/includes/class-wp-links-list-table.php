@@ -9,6 +9,16 @@
  */
 class WP_Links_List_Table extends WP_List_Table {
 
+	/**
+	 * Constructor.
+	 *
+	 * @since 3.1.0
+	 * @access public
+	 *
+	 * @see WP_List_Table::__construct() for more information on default arguments.
+	 *
+	 * @param array $args An associative array of arguments.
+	 */
 	public function __construct( $args = array() ) {
 		parent::__construct( array(
 			'plural' => 'bookmarks',
@@ -69,13 +79,13 @@ class WP_Links_List_Table extends WP_List_Table {
 				'orderby' => 'name',
 			);
 			wp_dropdown_categories( $dropdown_options );
-			submit_button( __( 'Filter' ), 'button', false, false, array( 'id' => 'post-query-submit' ) );
+			submit_button( __( 'Filter' ), 'button', 'filter_action', false, array( 'id' => 'post-query-submit' ) );
 ?>
 		</div>
 <?php
 	}
 
-	protected function get_columns() {
+	public function get_columns() {
 		return array(
 			'cb'         => '<input type="checkbox" />',
 			'name'       => _x( 'Name', 'link name' ),
@@ -96,7 +106,7 @@ class WP_Links_List_Table extends WP_List_Table {
 		);
 	}
 
-	protected function display_rows() {
+	public function display_rows() {
 		global $cat_id;
 
 		$alt = 0;

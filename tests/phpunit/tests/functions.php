@@ -123,7 +123,7 @@ class Tests_Functions extends WP_UnitTestCase {
 		$this->assertEquals( "abcdefgh.png", wp_unique_filename( $testdir, 'abcdefg"h.png' ), 'File with quote failed' );
 
 		// test crazy name (useful for regression tests)
-		$this->assertEquals( '12%af34567890@..%^_+qwerty-fghjkl-zx.png', wp_unique_filename( $testdir, '12%af34567890#~!@#$..%^&*()|_+qwerty  fgh`jkl zx<>?:"{}[]="\'/?.png' ), 'Failed crazy file name' );
+		$this->assertEquals( '12%af34567890@..%^_-qwerty-fghjkl-zx.png', wp_unique_filename( $testdir, '12%af34567890#~!@#$..%^&*()|_+qwerty  fgh`jkl zx<>?:"{}[]="\'/?.png' ), 'Failed crazy file name' );
 
 		// test slashes in names
 		$this->assertEquals( 'abcdefg.png', wp_unique_filename( $testdir, 'abcde\fg.png' ), 'Slash not removed' );
@@ -370,6 +370,7 @@ class Tests_Functions extends WP_UnitTestCase {
 		$original_urls = array(
 			'http://woo.com/1,2,3,4,5,6/-1-2-3-4-/woo.html',
 			'http://this.com',
+			'http://127.0.0.1',
 			'http://www111.urwyeoweytwutreyytqytwetowteuiiu.com/?346236346326&2134362574863.437',
 			'http://wordpress-core/1,2,3,4,5,6/-1-2-3-4-/woo.html',
 			'http://wordpress-core.com:8080/',
@@ -419,13 +420,18 @@ class Tests_Functions extends WP_UnitTestCase {
 			'http://تونس.icom.museum',
 			'http://türkiye.icom.museum',
 			'http://украина.icom.museum',
-			'http://việtnam.icom.museum'
+			'http://việtnam.icom.museum',
+			'ftp://127.0.0.1/',
+			'http://www.woo.com/video?v=exvUH2qKLTU',
+			'http://taco.com?burrito=enchilada#guac'
 		);
 
 		$blob ="
 			http://woo.com/1,2,3,4,5,6/-1-2-3-4-/woo.html
 
 			http://this.com
+
+			http://127.0.0.1
 
 			http://www111.urwyeoweytwutreyytqytwetowteuiiu.com/?346236346326&amp;2134362574863.437
 
@@ -476,6 +482,10 @@ class Tests_Functions extends WP_UnitTestCase {
 			http://türkiye.icom.museum
 			http://украина.icom.museum
 			http://việtnam.icom.museum
+			ftp://127.0.0.1/
+			http://www.woo.com/video?v=exvUH2qKLTU
+
+			http://taco.com?burrito=enchilada#guac
 		";
 
 		$urls = wp_extract_urls( $blob );
@@ -493,7 +503,7 @@ class Tests_Functions extends WP_UnitTestCase {
 
 		$blob ="Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor
 			incididunt ut labore http://woo.com/1,2,3,4,5,6/-1-2-3-4-/woo.html et dolore magna aliqua.
-			Ut http://this.com enim ad minim veniam, quis nostrud exercitation ullamco
+			Ut http://this.com enim ad minim veniam, quis nostrud exercitation 16.06. to 18.06.2014 ullamco http://127.0.0.1
 			laboris nisi ut aliquip ex http://www111.urwyeoweytwutreyytqytwetowteuiiu.com/?346236346326&amp;2134362574863.437 ea
 			commodo consequat. http://wordpress-core/1,2,3,4,5,6/-1-2-3-4-/woo.html Duis aute irure dolor in reprehenderit in voluptate
 			velit esse http://wordpress-core.com:8080/ cillum dolore eu fugiat nulla <A href=\"http://www.website.com:5000\">http://www.website.com:5000</B> pariatur. Excepteur sint occaecat cupidatat non proident,
@@ -502,12 +512,12 @@ class Tests_Functions extends WP_UnitTestCase {
 		$urls = wp_extract_urls( $blob );
 		$this->assertNotEmpty( $urls );
 		$this->assertInternalType( 'array', $urls );
-		$this->assertCount( 7, $urls );
-		$this->assertEquals( array_slice( $original_urls, 0, 7 ), $urls );
+		$this->assertCount( 8, $urls );
+		$this->assertEquals( array_slice( $original_urls, 0, 8 ), $urls );
 
 		$blob = 'Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor
 			incididunt ut labore <a href="http://woo.com/1,2,3,4,5,6/-1-2-3-4-/woo.html">343462^</a> et dolore magna aliqua.
-			Ut <a href="http://this.com">&amp;3640i6p1yi499</a> enim ad minim veniam, quis nostrud exercitation ullamco
+			Ut <a href="http://this.com">&amp;3640i6p1yi499</a> enim ad minim veniam, quis nostrud exercitation 16.06. to 18.06.2014 ullamco <a href="http://127.0.0.1">localhost</a>
 			laboris nisi ut aliquip ex <a href="http://www111.urwyeoweytwutreyytqytwetowteuiiu.com/?346236346326&amp;2134362574863.437">343462^</a> ea
 			commodo consequat. <a href="http://wordpress-core/1,2,3,4,5,6/-1-2-3-4-/woo.html">343462^</a> Duis aute irure dolor in reprehenderit in voluptate
 			velit esse <a href="http://wordpress-core.com:8080/">-3-4--321-64-4@#!$^$!@^@^</a> cillum dolore eu <A href="http://www.website.com:5000">http://www.website.com:5000</B> fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident,
@@ -516,7 +526,7 @@ class Tests_Functions extends WP_UnitTestCase {
 		$urls = wp_extract_urls( $blob );
 		$this->assertNotEmpty( $urls );
 		$this->assertInternalType( 'array', $urls );
-		$this->assertCount( 7, $urls );
-		$this->assertEquals( array_slice( $original_urls, 0, 7 ), $urls );
+		$this->assertCount( 8, $urls );
+		$this->assertEquals( array_slice( $original_urls, 0, 8 ), $urls );
 	}
 }

@@ -74,6 +74,7 @@ function wp_default_scripts( &$scripts ) {
 		'url' => (string) SITECOOKIEPATH,
 		'uid' => (string) get_current_user_id(),
 		'time' => (string) time(),
+		'secure' => (string) ( 'https' === parse_url( site_url(), PHP_URL_SCHEME ) ),
 	) );
 
 	$scripts->add( 'common', "/wp-admin/js/common$suffix.js", array('jquery', 'hoverIntent', 'utils'), false, 1 );
@@ -301,9 +302,9 @@ function wp_default_scripts( &$scripts ) {
 
 	$scripts->add( 'imgareaselect', "/wp-includes/js/imgareaselect/jquery.imgareaselect$suffix.js", array('jquery'), '0.9.10', 1 );
 
-	$scripts->add( 'mediaelement', "/wp-includes/js/mediaelement/mediaelement-and-player.min.js", array('jquery'), '2.14.2', 1 );
+	$scripts->add( 'mediaelement', "/wp-includes/js/mediaelement/mediaelement-and-player.min.js", array('jquery'), '2.15.1', 1 );
 	did_action( 'init' ) && $scripts->localize( 'mediaelement', 'mejsL10n', array(
-		'language' => get_bloginfo( 'language' ),
+		'language' => substr( get_bloginfo( 'language' ), 0, 2 ),
 		'strings'  => array(
 			'Close'               => __( 'Close' ),
 			'Fullscreen'          => __( 'Fullscreen' ),
@@ -345,6 +346,7 @@ function wp_default_scripts( &$scripts ) {
 	) );
 
 	$scripts->add( 'user-profile', "/wp-admin/js/user-profile$suffix.js", array( 'jquery', 'password-strength-meter' ), false, 1 );
+	$scripts->add( 'language-chooser', "/wp-admin/js/language-chooser$suffix.js", array( 'jquery' ), false, 1 );
 
 	$scripts->add( 'user-suggest', "/wp-admin/js/user-suggest$suffix.js", array( 'jquery-ui-autocomplete' ), false, 1 );
 
@@ -356,7 +358,7 @@ function wp_default_scripts( &$scripts ) {
 		'update' => __('Update'),
 		'save' => __('Add Link'),
 		'noTitle' => __('(no title)'),
-		'noMatchesFound' => __('No matches found.')
+		'noMatchesFound' => __('No results found.')
 	) );
 
 	$scripts->add( 'wpdialogs', "/wp-includes/js/wpdialog$suffix.js", array( 'jquery-ui-dialog' ), false, 1 );
@@ -381,6 +383,7 @@ function wp_default_scripts( &$scripts ) {
 	did_action( 'init' ) && $scripts->localize( 'customize-controls', '_wpCustomizeControlsL10n', array(
 		'activate'  => __( 'Save &amp; Activate' ),
 		'save'      => __( 'Save &amp; Publish' ),
+		'saveAlert' => __( 'The changes you made will be lost if you navigate away from this page.' ),
 		'saved'     => __( 'Saved' ),
 		'cancel'    => __( 'Cancel' ),
 		'close'     => __( 'Close' ),
@@ -457,6 +460,8 @@ function wp_default_scripts( &$scripts ) {
 			'savingText' => __('Saving Draft&#8230;'),
 		) );
 
+		$scripts->add( 'editor-expand', "/wp-admin/js/editor-expand$suffix.js", array( 'jquery' ), false, 1 );
+
 		$scripts->add( 'link', "/wp-admin/js/link$suffix.js", array( 'wp-lists', 'postbox' ), false, 1 );
 
 		$scripts->add( 'comment', "/wp-admin/js/comment$suffix.js", array( 'jquery', 'postbox' ) );
@@ -476,7 +481,7 @@ function wp_default_scripts( &$scripts ) {
 			'error' => __('Error while saving the changes.'),
 			'ntdeltitle' => __('Remove From Bulk Edit'),
 			'notitle' => __('(no title)'),
-			'comma' => _x( ',', 'tag delimiter' ),
+			'comma' => trim( _x( ',', 'tag delimiter' ) ),
 		) );
 
 		$scripts->add( 'inline-edit-tax', "/wp-admin/js/inline-edit-tax$suffix.js", array( 'jquery' ), false, 1 );
@@ -507,6 +512,7 @@ function wp_default_scripts( &$scripts ) {
 
 		$scripts->add( 'list-revisions', "/wp-includes/js/wp-list-revisions$suffix.js" );
 
+		$scripts->add( 'media-grid', "/wp-includes/js/media-grid$suffix.js", array( 'media-editor' ), false, 1 );
 		$scripts->add( 'media', "/wp-admin/js/media$suffix.js", array( 'jquery' ), false, 1 );
 		did_action( 'init' ) && $scripts->localize( 'media', 'attachMediaBoxL10n', array(
 			'error' => __( 'An error has occurred. Please reload the page and try again.' ),
@@ -528,10 +534,10 @@ function wp_default_scripts( &$scripts ) {
 		// Navigation Menus
 		$scripts->add( 'nav-menu', "/wp-admin/js/nav-menu$suffix.js", array( 'jquery-ui-sortable', 'jquery-ui-draggable', 'jquery-ui-droppable', 'wp-lists', 'postbox' ) );
 		did_action( 'init' ) && $scripts->localize( 'nav-menu', 'navMenuL10n', array(
-			'noResultsFound' => _x('No results found.', 'search results'),
+			'noResultsFound' => __( 'No results found.' ),
 			'warnDeleteMenu' => __( "You are about to permanently delete this menu. \n 'Cancel' to stop, 'OK' to delete." ),
-			'saveAlert' => __('The changes you made will be lost if you navigate away from this page.'),
-			'untitled' => _x('(no label)', 'missing menu item navigation label')
+			'saveAlert' => __( 'The changes you made will be lost if you navigate away from this page.' ),
+			'untitled' => _x( '(no label)', 'missing menu item navigation label' )
 		) );
 
 		$scripts->add( 'custom-header', "/wp-admin/js/custom-header.js", array( 'jquery-masonry' ), false, 1 );
@@ -628,7 +634,7 @@ function wp_default_styles( &$styles ) {
 	// External libraries and friends
 	$styles->add( 'imgareaselect',       '/wp-includes/js/imgareaselect/imgareaselect.css', array(), '0.9.8' );
 	$styles->add( 'wp-jquery-ui-dialog', "/wp-includes/css/jquery-ui-dialog$suffix.css", array( 'dashicons' ) );
-	$styles->add( 'mediaelement',        "/wp-includes/js/mediaelement/mediaelementplayer.min.css", array(), '2.13.0' );
+	$styles->add( 'mediaelement',        "/wp-includes/js/mediaelement/mediaelementplayer.min.css", array(), '2.15.1' );
 	$styles->add( 'wp-mediaelement',     "/wp-includes/js/mediaelement/wp-mediaelement.css", array( 'mediaelement' ) );
 	$styles->add( 'thickbox',            '/wp-includes/js/thickbox/thickbox.css', array( 'dashicons' ) );
 

@@ -66,6 +66,7 @@ class wp_xmlrpc_server extends IXR_Server {
 			'wp.deleteCategory'		=> 'this:wp_deleteCategory',
 			'wp.suggestCategories'	=> 'this:wp_suggestCategories',
 			'wp.uploadFile'			=> 'this:mw_newMediaObject',	// Alias
+			'wp.deleteFile'			=> 'this:wp_deletePost',		// Alias
 			'wp.getCommentCount'	=> 'this:wp_getCommentCount',
 			'wp.getPostStatusList'	=> 'this:wp_getPostStatusList',
 			'wp.getPageStatusList'	=> 'this:wp_getPageStatusList',
@@ -141,12 +142,14 @@ class wp_xmlrpc_server extends IXR_Server {
 	}
 
 	/**
-	 * Make private/protected methods readable for backwards compatibility
+	 * Make private/protected methods readable for backwards compatibility.
 	 *
 	 * @since 4.0.0
-	 * @param string $name
-	 * @param array $arguments
-	 * @return mixed
+	 * @access public
+	 *
+	 * @param callable $name      Method to call.
+	 * @param array    $arguments Arguments to pass when calling.
+	 * @return mixed|bool Return value of the callback, false otherwise.
 	 */
 	public function __call( $name, $arguments ) {
 		return call_user_func_array( array( $this, $name ), $arguments );
@@ -908,8 +911,10 @@ class wp_xmlrpc_server extends IXR_Server {
 
 		// Pull the categories info together.
 		$categories = array();
-		foreach ( wp_get_post_categories( $page->ID ) as $cat_id ) {
-			$categories[] = get_cat_name( $cat_id );
+		if ( is_object_in_taxonomy( 'page', 'category' ) ) {
+			foreach ( wp_get_post_categories( $page->ID ) as $cat_id ) {
+				$categories[] = get_cat_name( $cat_id );
+			}
 		}
 
 		// Get the author info.
@@ -1100,6 +1105,21 @@ class wp_xmlrpc_server extends IXR_Server {
 
 		if ( ! $user = $this->login( $username, $password ) )
 			return $this->error;
+
+		// convert the date field back to IXR form
+		if ( isset( $content_struct['post_date'] ) && ! is_a( $content_struct['post_date'], 'IXR_Date' ) ) {
+			$content_struct['post_date'] = $this->_convert_date( $content_struct['post_date'] );
+		}
+
+		// ignore the existing GMT date if it is empty or a non-GMT date was supplied in $content_struct,
+		// since _insert_post will ignore the non-GMT date if the GMT date is set
+		if ( isset( $content_struct['post_date_gmt'] ) && ! is_a( $content_struct['post_date_gmt'], 'IXR_Date' ) ) {
+			if ( $content_struct['post_date_gmt'] == '0000-00-00 00:00:00' || isset( $content_struct['post_date'] ) ) {
+				unset( $content_struct['post_date_gmt'] );
+			} else {
+				$content_struct['post_date_gmt'] = $this->_convert_date( $content_struct['post_date_gmt'] );
+			}
+		}
 
 		/** This action is documented in wp-includes/class-wp-xmlrpc-server.php */
 		do_action( 'xmlrpc_call', 'wp.newPost' );
@@ -5741,7 +5761,7 @@ class wp_xmlrpc_server extends IXR_Server {
 		$urltest = parse_url($pagelinkedto);
 		if ( $post_ID = url_to_postid($pagelinkedto) ) {
 			$way = 'url_to_postid()';
-		} elseif ( preg_match('#p/[0-9]{1,}#', $urltest['path'], $match) ) {
+		} elseif ( isset( $urltest['path'] ) && preg_match('#p/[0-9]{1,}#', $urltest['path'], $match) ) {
 			// the path defines the post_ID (archives/p/XXXX)
 			$blah = explode('/', $match[0]);
 			$post_ID = (int) $blah[1];

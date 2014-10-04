@@ -163,8 +163,10 @@ function save_mod_rewrite_rules() {
 	$home_path = get_home_path();
 	$htaccess_file = $home_path.'.htaccess';
 
-	// If the file doesn't already exist check for write access to the directory and whether we have some rules.
-	// else check for write access to the file.
+	/*
+	 * If the file doesn't already exist check for write access to the directory
+	 * and whether we have some rules. Else check for write access to the file.
+	 */
 	if ((!file_exists($htaccess_file) && is_writable($home_path) && $wp_rewrite->using_mod_rewrite_permalinks()) || is_writable($htaccess_file)) {
 		if ( got_mod_rewrite() ) {
 			$rules = explode( "\n", $wp_rewrite->mod_rewrite_rules() );
@@ -824,3 +826,20 @@ function heartbeat_autosave( $response, $data ) {
 }
 // Run later as we have to set DOING_AUTOSAVE for back-compat
 add_filter( 'heartbeat_received', 'heartbeat_autosave', 500, 2 );
+
+/**
+ * Disables autocomplete on the 'post' form (Add/Edit Post screens) for WebKit browsers,
+ * as they disregard the autocomplete setting on the editor textarea. That can break the editor
+ * when the user navigates to it with the browser's Back button. See #28037
+ *
+ * @since 4.0
+ */
+function post_form_autocomplete_off() {
+	global $is_safari, $is_chrome;
+
+	if ( $is_safari || $is_chrome ) {
+		echo ' autocomplete="off"';
+	}
+}
+
+add_action( 'post_edit_form_tag', 'post_form_autocomplete_off' );

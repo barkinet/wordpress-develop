@@ -11,6 +11,16 @@ class WP_Terms_List_Table extends WP_List_Table {
 
 	public $callback_args;
 
+	/**
+	 * Constructor.
+	 *
+	 * @since 3.1.0
+	 * @access public
+	 *
+	 * @see WP_List_Table::__construct() for more information on default arguments.
+	 *
+	 * @param array $args An associative array of arguments.
+	 */
 	public function __construct( $args = array() ) {
 		global $post_type, $taxonomy, $action, $tax;
 
@@ -116,7 +126,7 @@ class WP_Terms_List_Table extends WP_List_Table {
 		return parent::current_action();
 	}
 
-	protected function get_columns() {
+	public function get_columns() {
 		$columns = array(
 			'cb'          => '<input type="checkbox" />',
 			'name'        => _x( 'Name', 'term name' ),
@@ -127,8 +137,7 @@ class WP_Terms_List_Table extends WP_List_Table {
 		if ( 'link_category' == $this->screen->taxonomy ) {
 			$columns['links'] = __( 'Links' );
 		} else {
-			$post_type_object = get_post_type_object( $this->screen->post_type );
-			$columns['posts'] = $post_type_object ? $post_type_object->labels->name : __( 'Posts' );
+			$columns['posts'] = _x( 'Count', 'Number/count of items' );
 		}
 
 		return $columns;
@@ -144,7 +153,7 @@ class WP_Terms_List_Table extends WP_List_Table {
 		);
 	}
 
-	protected function display_rows_or_placeholder() {
+	public function display_rows_or_placeholder() {
 		$taxonomy = $this->screen->taxonomy;
 
 		$args = wp_parse_args( $this->callback_args, array(
@@ -155,12 +164,13 @@ class WP_Terms_List_Table extends WP_List_Table {
 		) );
 
 		$page = $args['page'];
-		// set variable because $args['number'] can be subsequently overridden
+
+		// Set variable because $args['number'] can be subsequently overridden.
 		$number = $args['number'];
 
 		$args['offset'] = $offset = ( $page - 1 ) * $number;
 
-		// convert it to table rows
+		// Convert it to table rows.
 		$count = 0;
 
 		if ( is_taxonomy_hierarchical( $taxonomy ) && ! isset( $args['orderby'] ) ) {
@@ -240,7 +250,7 @@ class WP_Terms_List_Table extends WP_List_Table {
 		}
 	}
 
-	protected function single_row( $tag, $level = 0 ) {
+	public function single_row( $tag, $level = 0 ) {
 		global $taxonomy;
  		$tag = sanitize_term( $tag, $taxonomy );
 

@@ -18,6 +18,7 @@ class WP_Upgrader_Skin {
 
 	public $upgrader;
 	public $done_header = false;
+	public $done_footer = false;
 	public $result = false;
 
 	public function __construct($args = array()) {
@@ -47,13 +48,18 @@ class WP_Upgrader_Skin {
 	}
 
 	public function header() {
-		if ( $this->done_header )
+		if ( $this->done_header ) {
 			return;
+		}
 		$this->done_header = true;
 		echo '<div class="wrap">';
 		echo '<h2>' . $this->options['title'] . '</h2>';
 	}
 	public function footer() {
+		if ( $this->done_footer ) {
+			return;
+		}
+		$this->done_footer = true;
 		echo '</div>';
 	}
 
@@ -104,13 +110,22 @@ class WP_Upgrader_Skin {
 		if ( ! $this->result || is_wp_error( $this->result ) || 'up_to_date' === $this->result ) {
 			return;
 		}
-		echo '<script type="text/javascript">
-				(function( wp ) {
-					if ( wp && wp.updates.decrementCount ) {
-						wp.updates.decrementCount( "' . $type . '" );
+
+		if ( defined( 'IFRAME_REQUEST' ) ) {
+			echo '<script type="text/javascript">
+					if ( window.postMessage && JSON ) {
+						window.parent.postMessage( JSON.stringify( { action: "decrementUpdateCount", upgradeType: "' . $type . '" } ), window.location.protocol + "//" + window.location.hostname );
 					}
-				})( window.wp );
-			</script>';
+				</script>';
+		} else {
+			echo '<script type="text/javascript">
+					(function( wp ) {
+						if ( wp && wp.updates.decrementCount ) {
+							wp.updates.decrementCount( "' . $type . '" );
+						}
+					})( window.wp );
+				</script>';
+		}
 	}
 }
 
@@ -283,25 +298,6 @@ class Bulk_Upgrader_Skin extends WP_Upgrader_Skin {
 	public function flush_output() {
 		wp_ob_end_flush_all();
 		flush();
-	}
-
-	/**
-	 * Output JavaScript that sends message to parent window to decrement the update counts.
-	 *
-	 * @since 3.9.0
-	 *
-	 * @param string $type Type of update count to decrement. Likely values include 'plugin',
-	 *                     'theme', 'translation', etc.
-	 */
-	protected function decrement_update_count( $type ) {
-		if ( ! $this->result || is_wp_error( $this->result ) || 'up_to_date' === $this->result ) {
-			return;
-		}
-		echo '<script type="text/javascript">
-				if ( window.postMessage && JSON ) {
-					window.parent.postMessage( JSON.stringify( { action: "decrementUpdateCount", upgradeType: "' . $type . '" } ), window.location.protocol + "//" + window.location.hostname );
-				}
-			</script>';
 	}
 }
 
@@ -522,7 +518,9 @@ class Theme_Installer_Skin extends WP_Upgrader_Skin {
 
 		$install_actions = array();
 		$install_actions['preview']  = '<a href="' . esc_url( $preview_link ) . '" class="hide-if-customize" title="' . esc_attr( sprintf( __('Preview &#8220;%s&#8221;'), $name ) ) . '">' . __('Preview') . '</a>';
-		$install_actions['preview'] .= '<a href="' . wp_customize_url( $stylesheet ) . '" class="hide-if-no-customize load-customize" title="' . esc_attr( sprintf( __('Preview &#8220;%s&#8221;'), $name ) ) . '">' . __('Live Preview') . '</a>';
+		if ( current_user_can( 'edit_theme_options' ) && current_user_can( 'customize' ) ) {
+			$install_actions['preview'] .= '<a href="' . wp_customize_url( $stylesheet ) . '" class="hide-if-no-customize load-customize" title="' . esc_attr( sprintf( __('Preview &#8220;%s&#8221;'), $name ) ) . '">' . __('Live Preview') . '</a>';
+		}
 		$install_actions['activate'] = '<a href="' . esc_url( $activate_link ) . '" class="activatelink" title="' . esc_attr( sprintf( __('Activate &#8220;%s&#8221;'), $name ) ) . '">' . __('Activate') . '</a>';
 
 		if ( is_network_admin() && current_user_can( 'manage_network_themes' ) )
@@ -594,11 +592,14 @@ class Theme_Upgrader_Skin extends WP_Upgrader_Skin {
 			$activate_link = wp_nonce_url( $activate_link, 'switch-theme_' . $stylesheet );
 
 			if ( get_stylesheet() == $stylesheet ) {
-				if ( current_user_can( 'edit_theme_options' ) )
+				if ( current_user_can( 'edit_theme_options' ) && current_user_can( 'customize' ) ) {
 					$update_actions['preview']  = '<a href="' . wp_customize_url( $stylesheet ) . '" class="hide-if-no-customize load-customize" title="' . esc_attr( sprintf( __('Customize &#8220;%s&#8221;'), $name ) ) . '">' . __('Customize') . '</a>';
+				}
 			} elseif ( current_user_can( 'switch_themes' ) ) {
 				$update_actions['preview']  = '<a href="' . esc_url( $preview_link ) . '" class="hide-if-customize" title="' . esc_attr( sprintf( __('Preview &#8220;%s&#8221;'), $name ) ) . '">' . __('Preview') . '</a>';
-				$update_actions['preview'] .= '<a href="' . wp_customize_url( $stylesheet ) . '" class="hide-if-no-customize load-customize" title="' . esc_attr( sprintf( __('Preview &#8220;%s&#8221;'), $name ) ) . '">' . __('Live Preview') . '</a>';
+				if ( current_user_can( 'edit_theme_options' ) && current_user_can( 'customize' ) ) {
+					$update_actions['preview'] .= '<a href="' . wp_customize_url( $stylesheet ) . '" class="hide-if-no-customize load-customize" title="' . esc_attr( sprintf( __('Preview &#8220;%s&#8221;'), $name ) ) . '">' . __('Live Preview') . '</a>';
+				}
 				$update_actions['activate'] = '<a href="' . esc_url( $activate_link ) . '" class="activatelink" title="' . esc_attr( sprintf( __('Activate &#8220;%s&#8221;'), $name ) ) . '">' . __('Activate') . '</a>';
 			}
 
@@ -633,6 +634,7 @@ class Theme_Upgrader_Skin extends WP_Upgrader_Skin {
 class Language_Pack_Upgrader_Skin extends WP_Upgrader_Skin {
 	public $language_update = null;
 	public $done_header = false;
+	public $done_footer = false;
 	public $display_footer_actions = true;
 
 	public function __construct( $args = array() ) {
@@ -640,6 +642,7 @@ class Language_Pack_Upgrader_Skin extends WP_Upgrader_Skin {
 		$args = wp_parse_args( $args, $defaults );
 		if ( $args['skip_header_footer'] ) {
 			$this->done_header = true;
+			$this->done_footer = true;
 			$this->display_footer_actions = false;
 		}
 		parent::__construct( $args );
@@ -679,8 +682,6 @@ class Language_Pack_Upgrader_Skin extends WP_Upgrader_Skin {
 
 		if ( $update_actions && $this->display_footer_actions )
 			$this->feedback( implode( ' | ', $update_actions ) );
-
-		parent::footer();
 	}
 }
 

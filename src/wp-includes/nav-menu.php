@@ -142,6 +142,11 @@ function get_nav_menu_locations() {
  * @return bool Whether location has a menu.
  */
 function has_nav_menu( $location ) {
+	$registered_nav_menus = get_registered_nav_menus();
+	if ( ! isset( $registered_nav_menus[ $location ] ) ) {
+		return false;
+	}
+
 	$locations = get_nav_menu_locations();
 	return ( ! empty( $locations[ $location ] ) );
 }
@@ -455,12 +460,13 @@ function wp_update_nav_menu_item( $menu_id = 0, $menu_item_db_id = 0, $menu_item
  * Returns all navigation menu objects.
  *
  * @since 3.0.0
+ * @since 4.1.0 Default 'orderby' argument changed from 'none' to 'name'.
  *
  * @param array $args Array of arguments passed on to get_terms().
  * @return array menu objects
  */
 function wp_get_nav_menus( $args = array() ) {
-	$defaults = array( 'hide_empty' => false, 'orderby' => 'none' );
+	$defaults = array( 'hide_empty' => false, 'orderby' => 'name' );
 	$args = wp_parse_args( $args, $defaults );
 
 	/**
@@ -547,10 +553,7 @@ function wp_get_nav_menu_items( $menu, $args = array() ) {
 	$defaults = array( 'order' => 'ASC', 'orderby' => 'menu_order', 'post_type' => 'nav_menu_item',
 		'post_status' => 'publish', 'output' => ARRAY_A, 'output_key' => 'menu_order', 'nopaging' => true );
 	$args = wp_parse_args( $args, $defaults );
-	if ( count( $items ) > 1 )
-		$args['include'] = implode( ',', $items );
-	else
-		$args['include'] = $items[0];
+	$args['include'] = $items;
 
 	$items = get_posts( $args );
 

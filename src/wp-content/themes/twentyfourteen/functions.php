@@ -211,7 +211,11 @@ function twentyfourteen_font_url() {
 	 * by Lato, translate this to 'off'. Do not translate into your own language.
 	 */
 	if ( 'off' !== _x( 'on', 'Lato font: on or off', 'twentyfourteen' ) ) {
-		$font_url = add_query_arg( 'family', urlencode( 'Lato:300,400,700,900,300italic,400italic,700italic' ), "//fonts.googleapis.com/css" );
+		$query_args = array(
+			'family' => urlencode( 'Lato:300,400,700,900,300italic,400italic,700italic' ),
+			'subset' => urlencode( 'latin,latin-ext' ),
+		);
+		$font_url = add_query_arg( $query_args, '//fonts.googleapis.com/css' );
 	}
 
 	return $font_url;
@@ -256,7 +260,7 @@ function twentyfourteen_scripts() {
 		) );
 	}
 
-	wp_enqueue_script( 'twentyfourteen-script', get_template_directory_uri() . '/js/functions.js', array( 'jquery' ), '20140319', true );
+	wp_enqueue_script( 'twentyfourteen-script', get_template_directory_uri() . '/js/functions.js', array( 'jquery' ), '20140616', true );
 }
 add_action( 'wp_enqueue_scripts', 'twentyfourteen_scripts' );
 
@@ -385,7 +389,7 @@ endif;
  *
  * Adds body classes to denote:
  * 1. Single or multiple authors.
- * 2. Presence of header image.
+ * 2. Presence of header image except in Multisite signup and activate pages.
  * 3. Index views.
  * 4. Full-width content layout.
  * 5. Presence of footer widgets.
@@ -404,7 +408,7 @@ function twentyfourteen_body_classes( $classes ) {
 
 	if ( get_header_image() ) {
 		$classes[] = 'header-image';
-	} else {
+	} elseif ( ! in_array( $GLOBALS['pagenow'], array( 'wp-activate.php', 'wp-signup.php' ) ) ) {
 		$classes[] = 'masthead-fixed';
 	}
 
