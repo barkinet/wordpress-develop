@@ -95,8 +95,6 @@ window.wp = window.wp || {};
 		 * @param  string src URL to load in the Customizer.
 		 */
 		open: function( src ) {
-			var hash, messenger;
-
 			if ( this.active ) {
 				return;
 			}
@@ -116,14 +114,14 @@ window.wp = window.wp || {};
 			this.iframe.one( 'load', this.loaded );
 
 			// Create a postMessage connection with the iframe.
-			this.messenger = messenger = new api.Messenger({
+			this.messenger = new api.Messenger({
 				url: src,
 				channel: 'loader',
 				targetWindow: this.iframe[0].contentWindow
 			});
 
 			// Wait for the connection from the iframe before sending any postMessage events.
-			messenger.bind( 'ready', function() {
+			this.messenger.bind( 'ready', function() {
 				Loader.messenger.send( 'back' );
 			} );
 
@@ -179,13 +177,13 @@ window.wp = window.wp || {};
 				}
 
 				// Allow customizer to control history of parent
-				messenger.bind( 'pushstate', function( args ) {
+				this.messenger.bind( 'pushstate', function( args ) {
 					history.pushState.apply( history, args );
 				} );
 
 				// Forward popstate events to customizer
 				$( window ).on( 'popstate', function ( e ) {
-					messenger.send( 'popstate', [ e.originalEvent.state, window.location ] );
+					Loader.messenger.send( 'popstate', [ e.originalEvent.state, window.location ] );
 				} );
 
 			} else if ( $.support.hashchange && hash ) {
