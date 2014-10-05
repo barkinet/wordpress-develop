@@ -126,6 +126,7 @@ class WP_Customize_Section {
 	 */
 	public function json() {
 		$array = wp_array_slice_assoc( (array) $this, array( 'title', 'description', 'priority' ) );
+		$array['content'] = $this->get_content();
 		return $array;
 	}
 
@@ -145,6 +146,21 @@ class WP_Customize_Section {
 			return false;
 
 		return true;
+	}
+
+	/**
+	 * Get the section's content template for insertion into the Customizer pane.
+	 *
+	 * @since 4.1.0
+	 *
+	 * @return string
+	 */
+	public final function get_content() {
+		ob_start();
+		$this->maybe_render();
+		$template = ob_get_contents();
+		ob_end_clean();
+		return $template;
 	}
 
 	/**
@@ -185,6 +201,7 @@ class WP_Customize_Section {
 	protected function render() {
 		$classes = 'control-section accordion-section';
 		if ( $this->panel ) {
+			// @todo This should be supplied via JS
 			$classes .= ' control-subsection';
 		}
 		?>
@@ -197,10 +214,7 @@ class WP_Customize_Section {
 				<?php if ( ! empty( $this->description ) ) : ?>
 				<li><p class="description customize-section-description"><?php echo $this->description; ?></p></li>
 				<?php endif; ?>
-				<?php
-				foreach ( $this->controls as $control )
-					$control->maybe_render();
-				?>
+				{{{controls}}}
 			</ul>
 		</li>
 		<?php

@@ -118,6 +118,7 @@ class WP_Customize_Panel {
 	 */
 	public function json() {
 		$array = wp_array_slice_assoc( (array) $this, array( 'title', 'description', 'priority' ) );
+		$array['content'] = $this->get_content();
 		return $array;
 	}
 
@@ -139,6 +140,21 @@ class WP_Customize_Panel {
 		}
 
 		return true;
+	}
+
+	/**
+	 * Get the panel's content template for insertion into the Customizer pane.
+	 *
+	 * @since 4.1.0
+	 *
+	 * @return string
+	 */
+	public final function get_content() {
+		ob_start();
+		$this->maybe_render();
+		$template = ob_get_contents();
+		ob_end_clean();
+		return $template;
 	}
 
 	/**
@@ -200,11 +216,7 @@ class WP_Customize_Panel {
 						</div>
 					<?php endif; ?>
 				</li>
-				<?php
-				foreach ( $this->sections as $section ) {
-					$section->maybe_render();
-				}
-				?>
+				{{{sections}}}
 			</ul>
 		</li>
 		<?php

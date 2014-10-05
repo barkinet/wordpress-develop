@@ -220,6 +220,7 @@ class WP_Customize_Control {
 
 		$this->json['type'] = $this->type;
 		$this->json['active'] = $this->active();
+		$this->json['content'] = $this->get_content();
 	}
 
 	/**
@@ -252,6 +253,21 @@ class WP_Customize_Control {
 			return false;
 
 		return true;
+	}
+
+	/**
+	 * Get the control's content for insertion into the Customizer pane.
+	 *
+	 * @since 4.1.0
+	 *
+	 * @return string
+	 */
+	public final function get_content() {
+		ob_start();
+		$this->maybe_render();
+		$template = ob_get_contents();
+		ob_end_clean();
+		return $template;
 	}
 
 	/**

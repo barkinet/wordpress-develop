@@ -160,13 +160,9 @@ do_action( 'customize_controls_print_scripts' );
 				<?php endif; ?>
 			</div>
 
-			<div id="customize-theme-controls"><ul>
-				<?php
-				foreach ( $wp_customize->containers() as $container ) {
-					$container->maybe_render();
-				}
-				?>
-			</ul></div>
+			<div id="customize-theme-controls">
+				<ul><?php // Panels and sections are managed here via JavaScript ?></ul>
+			</div>
 		</div>
 		</div>
 
