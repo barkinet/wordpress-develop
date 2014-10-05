@@ -58,8 +58,6 @@
 		});
 	});
 
-	var sectionContent = $( '.accordion-section-content' );
-
 	/**
 	 * Close the current accordion section and open a new one.
 	 *
@@ -69,7 +67,7 @@
 	function accordionSwitch ( el ) {
 		var section = el.closest( '.accordion-section' ),
 			siblings = section.closest( '.accordion-container' ).find( '.open' ),
-			content = section.find( sectionContent );
+			content = section.find( '.accordion-section-content' );
 
 		// This section has no content and cannot be expanded.
 		if ( section.hasClass( 'cannot-expand' ) ) {
@@ -87,7 +85,7 @@
 			content.toggle( true ).slideToggle( 150 );
 		} else {
 			siblings.removeClass( 'open' );
-			siblings.find( sectionContent ).show().slideUp( 150 );
+			siblings.find( '.accordion-section-content' ).show().slideUp( 150 );
 			content.toggle( false ).slideToggle( 150 );
 			section.toggleClass( 'open' );
 		}
@@ -125,7 +123,7 @@
 		} else {
 			// Close all open sections in any accordion level.
 			siblings.removeClass( 'open' );
-			siblings.find( sectionContent ).show().slideUp( 0 );
+			siblings.find( '.accordion-section-content' ).show().slideUp( 0 );
 			content.show( 0, function() {
 				position = content.offset().top;
 				scroll = container.scrollTop();
