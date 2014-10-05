@@ -220,6 +220,7 @@ class WP_Customize_Control {
 
 		$this->json['type'] = $this->type;
 		$this->json['active'] = $this->active();
+		$this->json['section'] = $this->section;
 		$this->json['content'] = $this->get_content();
 	}
 
@@ -265,7 +266,7 @@ class WP_Customize_Control {
 	public final function get_content() {
 		ob_start();
 		$this->maybe_render();
-		$template = ob_get_contents();
+		$template = trim( ob_get_contents() );
 		ob_end_clean();
 		return $template;
 	}

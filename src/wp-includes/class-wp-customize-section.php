@@ -125,7 +125,7 @@ class WP_Customize_Section {
 	 * @return array The array to be exported to the client as JSON
 	 */
 	public function json() {
-		$array = wp_array_slice_assoc( (array) $this, array( 'title', 'description', 'priority' ) );
+		$array = wp_array_slice_assoc( (array) $this, array( 'title', 'description', 'priority', 'panel' ) );
 		$array['content'] = $this->get_content();
 		return $array;
 	}
@@ -158,7 +158,7 @@ class WP_Customize_Section {
 	public final function get_content() {
 		ob_start();
 		$this->maybe_render();
-		$template = ob_get_contents();
+		$template = trim( ob_get_contents() );
 		ob_end_clean();
 		return $template;
 	}
@@ -200,10 +200,6 @@ class WP_Customize_Section {
 	 */
 	protected function render() {
 		$classes = 'control-section accordion-section';
-		if ( $this->panel ) {
-			// @todo This should be supplied via JS
-			$classes .= ' control-subsection';
-		}
 		?>
 		<li id="accordion-section-<?php echo esc_attr( $this->id ); ?>" class="<?php echo esc_attr( $classes ); ?>">
 			<h3 class="accordion-section-title" tabindex="0">
@@ -212,9 +208,10 @@ class WP_Customize_Section {
 			</h3>
 			<ul class="accordion-section-content">
 				<?php if ( ! empty( $this->description ) ) : ?>
-				<li><p class="description customize-section-description"><?php echo $this->description; ?></p></li>
+					<li class="customize-section-description-container">
+						<p class="description customize-section-description"><?php echo $this->description; ?></p>
+					</li>
 				<?php endif; ?>
-				{{{controls}}}
 			</ul>
 		</li>
 		<?php

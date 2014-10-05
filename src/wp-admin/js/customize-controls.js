@@ -41,11 +41,17 @@
 		 * @param {Array} options
 		 */
 		initialize: function ( id, options ) {
-			this.id = id;
-			this.params = {};
-			$.extend( this, options || {} );
-			this.panel = new api.Value( this.params.panel );
-			this.priority = new api.Value( this.params.priority || 100 );
+			var section = this;
+			section.id = id;
+			section.params = {};
+			$.extend( section, options || {} );
+			section.panel = new api.Value();
+			section.container = $( section.params.content );
+			section.priority = new api.Value( section.params.priority || 100 );
+			section.panel.bind( function ( id ) {
+				$( section.container ).toggleClass( 'control-subsection', !! id );
+			});
+			section.panel.set( section.params.panel || '' );
 		},
 
 		/**
@@ -54,13 +60,16 @@
 		 * @returns {Array}
 		 */
 		controls: function () {
-			var controls = [];
-			api.control.each( function ( id, control ) {
-				if ( control.section.get() === id ) {
+			var section = this,
+				controls = [];
+			api.control.each( function ( control ) {
+				if ( control.section.get() === section.id ) {
 					controls.push( control );
 				}
 			} );
-			// @todo Sort by priority
+			controls.sort( function ( a, b ) {
+				return a.priority() - b.priority();
+			} );
 			return controls;
 		},
 
@@ -85,10 +94,12 @@
 	 */
 	api.Panel = api.Class.extend({
 		initialize: function ( id, options ) {
-			this.id = id;
-			this.params = {};
-			$.extend( this, options || {} );
-			this.priority = new api.Value( this.params.priority || 160 );
+			var panel = this;
+			panel.id = id;
+			panel.params = {};
+			$.extend( panel, options || {} );
+			panel.priority = new api.Value( panel.params.priority || 160 );
+			panel.container = $( panel.params.content );
 		},
 
 		/**
@@ -97,13 +108,16 @@
 		 * @returns {Array}
 		 */
 		sections: function () {
-			var sections = [];
-			api.section.each( function ( id, section ) {
-				if ( section.panel.get() === id ) {
+			var panel = this,
+				sections = [];
+			api.section.each( function ( section ) {
+				if ( section.panel.get() === panel.id ) {
 					sections.push( section );
 				}
 			} );
-			// @todo Sort by priority
+			sections.sort( function ( a, b ) {
+				return a.priority() - b.priority();
+			} );
 			return sections;
 		},
 
@@ -136,8 +150,7 @@
 
 			this.id = id;
 			this.selector = '#customize-control-' + id.replace( /\]/g, '' ).replace( /\[/g, '-' );
-			this.container = $( this.selector );
-			// @todo Allow template to be supplied instead of assuming the element is already in the DOM
+			this.container = this.params.content ? $( this.params.content ) : $( this.selector );
 
 			this.section = new api.Value( this.params.section );
 			this.priority = new api.Value( this.params.priority || 10 );
@@ -156,7 +169,7 @@
 				}
 
 				control.setting = control.settings['default'] || null;
-				control.ready();
+				//control.ready(); // @todo We need to wait here until the element is inserted into the DOM
 			}) );
 
 			control.elements = [];

@@ -152,7 +152,7 @@ class WP_Customize_Panel {
 	public final function get_content() {
 		ob_start();
 		$this->maybe_render();
-		$template = ob_get_contents();
+		$template = trim( ob_get_contents() );
 		ob_end_clean();
 		return $template;
 	}
@@ -203,7 +203,7 @@ class WP_Customize_Panel {
 				<span class="screen-reader-text"><?php _e( 'Press return or enter to open this panel' ); ?></span>
 			</h3>
 			<ul class="accordion-sub-container control-panel-content">
-				<li class="accordion-section control-section<?php if ( empty( $this->description ) ) echo ' cannot-expand'; ?>">
+				<li class="panel-meta accordion-section control-section<?php if ( empty( $this->description ) ) echo ' cannot-expand'; ?>">
 					<div class="accordion-section-title" tabindex="0">
 						<span class="preview-notice"><?php
 							/* translators: %s is the site/panel title in the Customizer */
@@ -216,7 +216,7 @@ class WP_Customize_Panel {
 						</div>
 					<?php endif; ?>
 				</li>
-				{{{sections}}}
+
 			</ul>
 		</li>
 		<?php
