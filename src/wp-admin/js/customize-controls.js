@@ -55,6 +55,26 @@
 		},
 
 		/**
+		 *
+		 */
+		embed: function ( readyCallback ) {
+			var panel_id,
+				section = this;
+
+			panel_id = this.panel.get();
+			if ( ! panel_id ) {
+				$( '#customize-theme-controls > ul' ).append( section.container );
+				readyCallback();
+			} else {
+				api.panel( panel_id, function ( panel ) {
+					panel.embed();
+					panel.container.find( 'ul:first' ).append( section.container );
+					readyCallback();
+				} );
+			}
+		},
+
+		/**
 		 * Get the controls that are associated with this section.
 		 *
 		 * @returns {Array}
@@ -98,8 +118,18 @@
 			panel.id = id;
 			panel.params = {};
 			$.extend( panel, options || {} );
-			panel.priority = new api.Value( panel.params.priority || 160 );
+			panel.priority = new api.Value( panel.params.priority || 160 ); // @todo What if the priority gets changed dynamically?
 			panel.container = $( panel.params.content );
+		},
+
+		/**
+		 *
+		 */
+		embed: function ( readyCallback ) {
+			$( '#customize-theme-controls > ul' ).append( this.container );
+			if ( readyCallback ) {
+				readyCallback();
+			}
 		},
 
 		/**
@@ -169,7 +199,9 @@
 				}
 
 				control.setting = control.settings['default'] || null;
-				//control.ready(); // @todo We need to wait here until the element is inserted into the DOM
+				control.embed( function () {
+					control.ready();
+				} );
 			}) );
 
 			control.elements = [];
@@ -203,6 +235,27 @@
 				control.toggle( active );
 			} );
 			control.toggle( control.active() );
+		},
+
+		/**
+		 * @param {Function} [readyCallback] Callback to fire when the embedding is done.
+		 */
+		embed: function ( readyCallback ) {
+			var section_id,
+				control = this;
+
+			section_id = control.section.get();
+			if ( ! section_id ) {
+				throw new Error( 'A control must have an associated section.' );
+			}
+
+			// Defer until the associated section is available
+			api.section( section_id, function ( section ) {
+				section.embed( function () {
+					section.container.find( 'ul:first' ).append( control.container );
+					readyCallback();
+				} );
+			} );
 		},
 
 		/**
@@ -687,6 +740,19 @@
 	api.control = new api.Values({ defaultConstructor: api.Control });
 	api.section = new api.Values({ defaultConstructor: api.Section });
 	api.panel = new api.Values({ defaultConstructor: api.Panel });
+
+	// @todo For each, bind the 'add' and 'remove' events
+	// @todo For each, bind to the changes in the priority for each item added, and then reorder the elements based on priority
+	//
+	//api.panel.bind( 'add', function () {
+	//	console.info( 'add panel', arguments )
+	//} );
+	//api.section.bind( 'add', function () {
+	//	console.info( 'add section', arguments )
+	//} );
+	//api.control.bind( 'add', function () {
+	//	console.info( 'add control', arguments )
+	//} );
 
 	/**
 	 * @constructor
