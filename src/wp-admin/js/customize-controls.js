@@ -69,6 +69,11 @@
 				$( section.container ).toggleClass( 'control-subsection', !! id );
 			});
 			section.panel.set( section.params.panel || '' );
+			section.active = new api.Value( true ); // @todo pass from params; value is whether sections is not empty
+			section.active.bind( function ( active ) {
+				section.toggle( active );
+			} );
+			section.toggle( section.active() );
 			bubbleChildValueChanges( this );
 		},
 
@@ -112,17 +117,25 @@
 		},
 
 		/**
-		 * Expand the accordion section (and collapse all others).
+		 * Callback for change to the section's active state.
+		 *
+		 * Override function for custom behavior for the section being active/inactive.
+		 *
+		 * @param {Boolean} active
 		 */
-		expand: function () {
-			throw new Error( 'Not implemented' ); // @todo
+		toggle: function ( active ) {
+			if ( active ) {
+				this.container.slideDown();
+			} else {
+				this.container.slideUp();
+			}
 		},
 
 		/**
-		 * Collapse the accordion section.
+		 * Bring the containing panel into view and then expand this section and bring it into view
 		 */
-		collapse: function () {
-			throw new Error( 'Not implemented' ); // @todo
+		focus: function () {
+			throw new Error( 'Not implemented yet' );
 		}
 	});
 
@@ -138,6 +151,11 @@
 			$.extend( panel, options || {} );
 			panel.priority = new api.Value( panel.params.priority || 160 ); // @todo What if the priority gets changed dynamically?
 			panel.container = $( panel.params.content );
+			panel.active = new api.Value( true ); // @todo pass from params; value is whether sections is not empty
+			panel.active.bind( function ( active ) {
+				panel.toggle( active );
+			} );
+			panel.toggle( panel.active() );
 			bubbleChildValueChanges( this );
 		},
 
@@ -171,17 +189,19 @@
 		},
 
 		/**
-		 * Expand the accordion section (and collapse all others).
+		 * Callback for change to the panel's active state.
+		 *
+		 * Override function for custom behavior for the control being active/inactive.
+		 *
+		 * @param {Boolean} active
 		 */
-		expand: function () {
-			throw new Error( 'Not implemented' ); // @todo
-		},
-
-		/**
-		 * Collapse the accordion section.
-		 */
-		collapse: function () {
-			throw new Error( 'Not implemented' ); // @todo
+		toggle: function ( active ) {
+			if ( active ) {
+				this.container.slideDown();
+			} else {
+				// @todo Need to first exit out of the Panel
+				this.container.slideUp();
+			}
 		}
 	});
 
@@ -283,6 +303,13 @@
 		 * @abstract
 		 */
 		ready: function() {},
+
+		/**
+		 * Bring the containing section and panel into view and then this control into view, focusing on the first input
+		 */
+		focus: function () {
+			throw new Error( 'Not implemented yet' );
+		},
 
 		/**
 		 * Callback for change to the control's active state.
@@ -761,19 +788,6 @@
 	api.control = new api.Values({ defaultConstructor: api.Control });
 	api.section = new api.Values({ defaultConstructor: api.Section });
 	api.panel = new api.Values({ defaultConstructor: api.Panel });
-
-	// @todo For each, bind the 'add' and 'remove' events
-	// @todo For each, bind to the changes in the priority for each item added, and then reorder the elements based on priority
-	//
-	//api.panel.bind( 'add', function () {
-	//	console.info( 'add panel', arguments )
-	//} );
-	//api.section.bind( 'add', function () {
-	//	console.info( 'add section', arguments )
-	//} );
-	//api.control.bind( 'add', function () {
-	//	console.info( 'add control', arguments )
-	//} );
 
 	/**
 	 * @constructor
@@ -1334,6 +1348,71 @@
 			} );
 			api.control.add( id, control );
 		});
+
+		/**
+		 * Sort panels, sections, controls by priorities. Hide empty sections and panels.
+		 */
+		api.reflowPaneContents = _.bind( function () {
+
+			var appendContainer, rootNodes = [];
+
+			api.panel.each( function ( panel ) {
+				rootNodes.push( panel );
+
+				// Toggle display
+				var activeCount = 0,
+					sections = panel.sections();
+				_( sections ).each( function ( section ) {
+					if ( section.active && section.active() ) {
+						activeCount += 1;
+					}
+				} );
+				panel.toggle( 0 !== activeCount ); // @todo This is not sticking
+
+				// Sort sections
+				appendContainer = panel.container.find( 'ul:first' );
+				_.chain( sections ).reverse().each( function ( section ) {
+					appendContainer.append( section.container );
+				} );
+			} );
+
+			api.section.each( function ( section ) {
+				var activeCount = 0,
+					controls = section.controls();
+				_( controls ).each( function ( control ) {
+					if ( control.active && control.active() ) {
+						activeCount += 1;
+					}
+				} );
+				section.toggle( 0 !== activeCount );
+
+				if ( ! section.panel() ) {
+					rootNodes.push( section );
+				}
+
+				// Sort controls
+				appendContainer = section.container.find( 'ul:first' );
+				_.chain( controls ).reverse().each( function ( control ) {
+					appendContainer.append( control.container );
+				} );
+			} );
+
+			// Sort the root elements
+			rootNodes.sort( function ( a, b ) {
+				return a.priority() - b.priority();
+			} );
+			appendContainer = $( '#customize-theme-controls > ul' );
+			_.chain( rootNodes ).each( function ( rootNode ) {
+				appendContainer.append( rootNode.container );
+			} );
+		}, api );
+		api.reflowPaneContents = _.debounce( api.reflowPaneContents, 100 );
+		$( [ api.panel, api.section, api.control ] ).each( function ( i, values ) {
+			values.bind( 'add', api.reflowPaneContents );
+			values.bind( 'change', api.reflowPaneContents );
+			values.bind( 'remove', api.reflowPaneContents );
+		} );
+		api.bind( 'ready', api.reflowPaneContents );
 
 		// Check if preview url is valid and load the preview frame.
 		if ( api.previewer.previewUrl() ) {
