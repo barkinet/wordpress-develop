@@ -1,6 +1,6 @@
 /* globals _wpCustomizeHeader, _wpMediaViewsL10n */
 (function( exports, $ ){
-	var api = wp.customize;
+	var bubbleChildValueChanges, api = wp.customize;
 
 	/**
 	 * @constructor
@@ -31,6 +31,23 @@
 	});
 
 	/**
+	 * Watch all changes to Value properties, and bubble changes to parent Values instance
+	 *
+	 * @param instance
+	 */
+	bubbleChildValueChanges = function ( instance ) {
+		$.each( instance, function ( key, value ) {
+			if ( value && value.extended && value.extended( api.Value ) ) {
+				value.bind( function () {
+					if ( instance.parent ) {
+						instance.parent.trigger( 'change', instance );
+					}
+				} );
+			}
+		} );
+	};
+
+	/**
 	 * @constructor
 	 * @augments wp.customize.Class
 	 */
@@ -52,6 +69,7 @@
 				$( section.container ).toggleClass( 'control-subsection', !! id );
 			});
 			section.panel.set( section.params.panel || '' );
+			bubbleChildValueChanges( this );
 		},
 
 		/**
@@ -120,6 +138,7 @@
 			$.extend( panel, options || {} );
 			panel.priority = new api.Value( panel.params.priority || 160 ); // @todo What if the priority gets changed dynamically?
 			panel.container = $( panel.params.content );
+			bubbleChildValueChanges( this );
 		},
 
 		/**
@@ -235,6 +254,8 @@
 				control.toggle( active );
 			} );
 			control.toggle( control.active() );
+
+			bubbleChildValueChanges( this );
 		},
 
 		/**
