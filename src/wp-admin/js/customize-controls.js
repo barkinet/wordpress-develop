@@ -1157,6 +1157,8 @@
 		image:  api.ImageControl,
 		header: api.HeaderControl
 	};
+	api.panelConstructor = {};
+	api.sectionConstructor = {};
 
 	$( function() {
 		api.settings = window._wpCustomizeSettings;
@@ -1269,7 +1271,7 @@
 			$.extend( this.nonce, nonce );
 		});
 
-		//
+		// Create Settings
 		$.each( api.settings.settings, function( id, data ) {
 			api.create( id, id, data.value, {
 				transport: data.transport,
@@ -1277,21 +1279,30 @@
 			} );
 		});
 
+		// Create Panels
 		$.each( api.settings.panels, function ( id, data ) {
-			var panel = new api.Panel( id, {
+			var constructor = api.panelConstructor[ data.type ] || api.Panel,
+				panel;
+
+			panel = new constructor( id, {
 				params: data
 			} );
 			api.panel.add( id, panel );
 		});
 
+		// Create Sections
 		$.each( api.settings.sections, function ( id, data ) {
-			var section = new api.Section( id, {
+			var constructor = api.sectionConstructor[ data.type ] || api.Section,
+				section;
+
+			section = new constructor( id, {
 				params: data
 			} );
 			api.section.add( id, section );
 		});
 
-		// @todo Extract this out
+		// Create Controls
+		// @todo factor this out
 		$.each( api.settings.controls, function( id, data ) {
 			var constructor = api.controlConstructor[ data.type ] || api.Control,
 				control;

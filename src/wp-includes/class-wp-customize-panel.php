@@ -83,6 +83,13 @@ class WP_Customize_Panel {
 	public $sections;
 
 	/**
+	 * @since 4.1.0
+	 * @access public
+	 * @var string
+	 */
+	public $type;
+
+	/**
 	 * Constructor.
 	 *
 	 * Any supplied $args override class property defaults.
@@ -117,7 +124,7 @@ class WP_Customize_Panel {
 	 * @return array The array to be exported to the client as JSON
 	 */
 	public function json() {
-		$array = wp_array_slice_assoc( (array) $this, array( 'title', 'description', 'priority' ) );
+		$array = wp_array_slice_assoc( (array) $this, array( 'title', 'description', 'priority', 'type' ) );
 		$array['content'] = $this->get_content();
 		return $array;
 	}
