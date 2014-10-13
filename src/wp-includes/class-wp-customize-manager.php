@@ -424,6 +424,7 @@ final class WP_Customize_Manager {
 		add_action( 'wp_head', array( $this, 'customize_preview_base' ) );
 		add_action( 'wp_head', array( $this, 'customize_preview_html5' ) );
 		add_action( 'wp_footer', array( $this, 'customize_preview_settings' ), 20 );
+		add_action( 'wp_footer', array( $this, 'customize_preview_base_hash_url_fix' ), 20 );
 		add_action( 'shutdown', array( $this, 'customize_preview_signature' ), 1000 );
 		add_filter( 'wp_die_handler', array( $this, 'remove_preview_signature' ) );
 
@@ -461,7 +462,34 @@ final class WP_Customize_Manager {
 	 * @since 3.4.0
 	 */
 	public function customize_preview_base() {
-		?><base href="<?php echo home_url( '/' ); ?>" /><?php
+		?><base id="wp-customize-preview-base" href="<?php echo home_url( '/' ); ?>" /><?php
+	}
+
+	/**
+	 * Print script to allow hash URLs to work as expected
+	 *
+	 * @since 3.8
+	 */
+	public function customize_preview_base_hash_url_fix() {
+		?><script>(function(){
+			var wp_base = document.getElementById( 'wp-customize-preview-base' ),
+				a_tags = document.getElementsByTagName( 'a' ),
+				i, j, a_tag, attr;
+
+			if ( wp_base ) {
+				for ( i = 0; i < a_tags.length; i++ ) {
+					a_tag = a_tags[i];
+					for ( j = 0; j < a_tag.attributes.length; j++ ) {
+						attr = a_tag.attributes[j];
+						if ( attr.nodeName === 'href' && attr.nodeValue.charAt(0) === '#' ) {
+							attr.nodeValue = document.location.href + attr.nodeValue;
+						}
+					}
+				}
+			}
+
+		})();
+		</script><?php
 	}
 
 	/**
