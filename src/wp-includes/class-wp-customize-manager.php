@@ -424,7 +424,7 @@ final class WP_Customize_Manager {
 		add_action( 'wp_head', array( $this, 'customize_preview_base' ) );
 		add_action( 'wp_head', array( $this, 'customize_preview_html5' ) );
 		add_action( 'wp_footer', array( $this, 'customize_preview_settings' ), 20 );
-		add_action( 'wp_footer', array( $this, 'customize_preview_base_hash_url_fix' ), 20 );
+		add_action( 'wp_footer', array( $this, 'customize_preview_base_hash_url_fix' ), 30 );
 		add_action( 'shutdown', array( $this, 'customize_preview_signature' ), 1000 );
 		add_filter( 'wp_die_handler', array( $this, 'remove_preview_signature' ) );
 
@@ -462,34 +462,10 @@ final class WP_Customize_Manager {
 	 * @since 3.4.0
 	 */
 	public function customize_preview_base() {
-		?><base id="wp-customize-preview-base" href="<?php echo home_url( '/' ); ?>" /><?php
-	}
-
-	/**
-	 * Print script to allow hash URLs to work as expected
-	 *
-	 * @since 3.8
-	 */
-	public function customize_preview_base_hash_url_fix() {
-		?><script>(function(){
-			var wp_base = document.getElementById( 'wp-customize-preview-base' ),
-				a_tags = document.getElementsByTagName( 'a' ),
-				i, j, a_tag, attr;
-
-			if ( wp_base ) {
-				for ( i = 0; i < a_tags.length; i++ ) {
-					a_tag = a_tags[i];
-					for ( j = 0; j < a_tag.attributes.length; j++ ) {
-						attr = a_tag.attributes[j];
-						if ( attr.nodeName === 'href' && attr.nodeValue.charAt(0) === '#' ) {
-							attr.nodeValue = document.location.href + attr.nodeValue;
-						}
-					}
-				}
-			}
-
-		})();
-		</script><?php
+		// Note: we cannot just pass $_SERVER[REQUEST_URI] directly to home_url() because of subdirectory installs
+		$host = parse_url( home_url(), PHP_URL_HOST );
+		$base_href = '//' . $host . wp_unslash( $_SERVER['REQUEST_URI'] );
+		?><base href="<?php echo esc_url( $base_href ); ?>" /><?php
 	}
 
 	/**
@@ -541,6 +517,24 @@ final class WP_Customize_Manager {
 			var _wpCustomizeSettings = <?php echo json_encode( $settings ); ?>;
 		</script>
 		<?php
+	}
+
+	/**
+	 * Print script to allow hash URLs to work as expected
+	 *
+	 * @since 4.1
+	 */
+	public function customize_preview_base_hash_url_fix() {
+		wp_print_scripts( array( 'jquery' ) );
+		?><script>
+		(function( $ ){
+			var base = $( 'head > base[href]:last' ),
+				baseUrl = base.prop( 'href' ).replace( /#.*/, '' );
+			$( 'a[href^="#"]' ).attr( 'href', function ( i, hash ) {
+				return baseUrl + hash;
+			} );
+		})( jQuery );
+		</script><?php
 	}
 
 	/**
