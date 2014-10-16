@@ -97,6 +97,38 @@ endif; // twentyfifteen_setup
 add_action( 'after_setup_theme', 'twentyfifteen_setup' );
 
 /**
+ * Core adds the wp-head-callbacks for the custom header and background on the
+ * wp_head action at the default priority of 10. At the same time, Core by default
+ * adds wp_print_styles to the wp_head action at the priority of 8. For this reason
+ * the inline styles added in the head callback fail to get added in time to be
+ * output with any styles output by wp_print_styles. This is a workaround for that.
+ *
+ * @see _custom_header_background_just_in_time().
+ */
+function twentyfifteen_custom_header_background_just_in_even_more_time() {
+	$print_styles_priority = has_filter( 'wp_head', 'wp_print_styles' );
+
+	if ( current_theme_supports( 'custom-header' ) ) {
+		$args = get_theme_support( 'custom-header' );
+		$callback = $args[0]['wp-head-callback'];
+		if ( $callback ) {
+			remove_action( 'wp_head', $callback, 10 );
+			add_action( 'wp_head', $callback, $print_styles_priority - 1 );
+		}
+	}
+
+	if ( current_theme_supports( 'custom-background' ) ) {
+		$args = get_theme_support( 'custom-background' );
+		$callback = $args[0]['wp-head-callback'];
+		if ( $callback ) {
+			remove_action( 'wp_head', $callback, 10 );
+			add_action( 'wp_head', $callback, $print_styles_priority - 1 );
+		}
+	}
+}
+add_action( 'wp_loaded', 'twentyfifteen_custom_header_background_just_in_even_more_time', 11 );
+
+/**
  * Register widget area.
  *
  * @since Twenty Fifteen 1.0
