@@ -170,6 +170,11 @@
 					control.setting.set( false );
 				}
 			});
+
+			this.setting.bind( function ( value ) {
+				picker.val( value );
+				picker.wpColorPicker( 'color', value );
+			});
 		}
 	});
 
