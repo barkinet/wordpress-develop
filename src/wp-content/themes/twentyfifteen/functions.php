@@ -102,6 +102,9 @@ add_action( 'after_setup_theme', 'twentyfifteen_setup' );
  * adds wp_print_styles to the wp_head action at the priority of 8. For this reason
  * the inline styles added in the head callback fail to get added in time to be
  * output with any styles output by wp_print_styles. This is a workaround for that.
+ * Also, since we're using the wp_add_inline_styles() for the sake of faster
+ * style updates in the Customizer, we can add the callbacks to wp_enqueue_scripts
+ * instead of wp_head.
  *
  * @see _custom_header_background_just_in_time().
  */
@@ -113,7 +116,7 @@ function twentyfifteen_custom_header_background_just_in_even_more_time() {
 		$callback = $args[0]['wp-head-callback'];
 		if ( $callback ) {
 			remove_action( 'wp_head', $callback, 10 );
-			add_action( 'wp_head', $callback, $print_styles_priority - 1 );
+			add_action( 'wp_enqueue_scripts', $callback, 11 );
 		}
 	}
 
@@ -122,7 +125,7 @@ function twentyfifteen_custom_header_background_just_in_even_more_time() {
 		$callback = $args[0]['wp-head-callback'];
 		if ( $callback ) {
 			remove_action( 'wp_head', $callback, 10 );
-			add_action( 'wp_head', $callback, $print_styles_priority - 1 );
+			add_action( 'wp_enqueue_scripts', $callback, 11 );
 		}
 	}
 }
