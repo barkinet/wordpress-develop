@@ -86,58 +86,69 @@ function twentyfifteen_header_style() {
 		return;
 	}
 
-	// If we get this far, we have custom styles. Let's do this.
-	?>
-	<style type="text/css" id="twentyfifteen-header-css">
-	<?php
-		if ( ! empty( $header_image ) ) :
-	?>
-		.site-header {
-			background: url(<?php header_image(); ?>) no-repeat 50% 50%;
-			-webkit-background-size: cover;
-			-moz-background-size:    cover;
-			-o-background-size:      cover;
-			background-size:         cover;
-		}
+	$css = '';
 
-		@media screen and (min-width: 59.6875em) {
-			body:before {
-				background: url(<?php header_image(); ?>) no-repeat 100% 50%;
+	if ( ! empty( $header_image ) ) {
+		$css .= sprintf(
+			'
+			/* Header image */
+			.site-header {
+				background: url( %1$s ) no-repeat 50%% 50%%;
 				-webkit-background-size: cover;
 				-moz-background-size:    cover;
 				-o-background-size:      cover;
 				background-size:         cover;
-				border-right: 0;
 			}
 
-			.site-header {
-				background: transparent;
-			}
-		}
-	<?php
-		endif;
+			@media screen and (min-width: 59.6875em) {
+				body:before {
+					background: url( %1$s ) no-repeat 100%% 50%%;
+					-webkit-background-size: cover;
+					-moz-background-size:    cover;
+					-o-background-size:      cover;
+					background-size:         cover;
+					border-right: 0;
+				}
 
-		// Has the text been hidden?
-		if ( ! display_header_text() ) :
-	?>
-		.site-title,
-		.site-description {
-			clip: rect(1px, 1px, 1px, 1px);
-			position: absolute;
-		}
-	<?php
-		// If the user has set a custom color for the text use that
-		elseif ( $text_color != get_theme_support( 'custom-header', 'default-text-color' ) ) :
-	?>
-		.site-title a,
-		.site-title a:hover,
-		.site-title a:focus,
-		.site-description {
-			color: #<?php echo esc_attr( $text_color ); ?>;
-		}
-	<?php endif; ?>
-	</style>
-	<?php
+				.site-header {
+					background: transparent;
+				}
+			}
+			',
+			esc_url( $header_image )
+		);
+	}
+
+	if ( ! display_header_text() ) {
+		$css .= '
+			/* Hide display header text */
+			.site-title,
+			.site-description {
+				clip: rect(1px, 1px, 1px, 1px);
+				position: absolute;
+			}
+		';
+	}
+
+	if ( $text_color != get_theme_support( 'custom-header', 'default-text-color' ) ) {
+		$css .= sprintf(
+			'
+			/* Header text color */
+			.site-title a,
+			.site-title a:hover,
+			.site-title a:focus,
+			.site-description {
+				color: %1$s;
+			}
+			',
+			sanitize_hex_color( '#' . $text_color )
+		);
+	}
+
+	if ( $css ) {
+		wp_add_inline_style( 'twentyfifteen-style', $css );
+	}
+
 }
 endif; // twentyfifteen_header_style
 
