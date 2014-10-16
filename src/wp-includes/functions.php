@@ -2016,7 +2016,7 @@ function wp_ext2type( $ext ) {
 		'image'       => array( 'jpg', 'jpeg', 'jpe',  'gif',  'png',  'bmp',   'tif',  'tiff', 'ico' ),
 		'audio'       => array( 'aac', 'ac3',  'aif',  'aiff', 'm3a',  'm4a',   'm4b',  'mka',  'mp1',  'mp2',  'mp3', 'ogg', 'oga', 'ram', 'wav', 'wma' ),
 		'video'       => array( '3g2',  '3gp', '3gpp', 'asf', 'avi',  'divx', 'dv',   'flv',  'm4v',   'mkv',  'mov',  'mp4',  'mpeg', 'mpg', 'mpv', 'ogm', 'ogv', 'qt',  'rm', 'vob', 'wmv' ),
-		'document'    => array( 'doc', 'docx', 'docm', 'dotm', 'odt',  'pages', 'pdf',  'xps',  'oxps', 'rtf',  'wp',   'wpd' ),
+		'document'    => array( 'doc', 'docx', 'docm', 'dotm', 'odt',  'pages', 'pdf',  'xps',  'oxps', 'rtf',  'wp', 'wpd', 'psd' ),
 		'spreadsheet' => array( 'numbers',     'ods',  'xls',  'xlsx', 'xlsm',  'xlsb' ),
 		'interactive' => array( 'swf', 'key',  'ppt',  'pptx', 'pptm', 'pps',   'ppsx', 'ppsm', 'sldx', 'sldm', 'odp' ),
 		'text'        => array( 'asc', 'csv',  'tsv',  'txt' ),
@@ -2223,6 +2223,7 @@ function wp_get_mime_types() {
 	'rar' => 'application/rar',
 	'7z' => 'application/x-7z-compressed',
 	'exe' => 'application/x-msdownload',
+	'psd' => 'application/octet-stream',
 	// MS Office formats.
 	'doc' => 'application/msword',
 	'pot|pps|ppt' => 'application/vnd.ms-powerpoint',
@@ -4627,4 +4628,22 @@ function wp_validate_boolean( $var ) {
 	}
 
 	return (bool) $var;
+}
+
+/**
+ * Helper function to retrieve an incrementer identified by $group
+ *
+ * @since 4.1.0
+ *
+ * @param string $group The cache group for the incrementer.
+ * @param bool $force Whether or not to generate a new incrementor.
+ * @return int The timestamp representing 'last_changed'.
+ */
+function wp_get_last_changed( $group, $force = false ) {
+	$last_changed = wp_cache_get( 'last_changed', $group );
+	if ( ! $last_changed || true === $force ) {
+		$last_changed = microtime();
+		wp_cache_set( 'last_changed', $last_changed, $group );
+	}
+	return $last_changed;
 }

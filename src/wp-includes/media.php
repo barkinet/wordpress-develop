@@ -686,10 +686,10 @@ function wp_get_attachment_image_src($attachment_id, $size='thumbnail', $icon = 
  * @see add_image_size()
  * @uses wp_get_attachment_image_src() Gets attachment file URL and dimensions
  *
- * @param int $attachment_id Image attachment ID.
- * @param string $size Optional, default is 'thumbnail'.
- * @param bool $icon Optional, default is false. Whether it is an icon.
- * @param mixed $attr Optional, attributes for the image markup.
+ * @param int          $attachment_id Image attachment ID.
+ * @param string|array $size          Optional. Default 'thumbnail'.
+ * @param bool         $icon          Optional. Whether it is an icon. Default false.
+ * @param string|array $attr          Optional. Attributes for the image markup. Default empty string.
  * @return string HTML img element or empty string on failure.
  */
 function wp_get_attachment_image($attachment_id, $size = 'thumbnail', $icon = false, $attr = '') {
@@ -699,12 +699,14 @@ function wp_get_attachment_image($attachment_id, $size = 'thumbnail', $icon = fa
 	if ( $image ) {
 		list($src, $width, $height) = $image;
 		$hwstring = image_hwstring($width, $height);
-		if ( is_array($size) )
-			$size = join('x', $size);
+		$size_class = $size;
+		if ( is_array( $size_class ) ) {
+			$size_class = join( 'x', $size_class );
+		}
 		$attachment = get_post($attachment_id);
 		$default_attr = array(
 			'src'	=> $src,
-			'class'	=> "attachment-$size",
+			'class'	=> "attachment-$size_class",
 			'alt'	=> trim(strip_tags( get_post_meta($attachment_id, '_wp_attachment_image_alt', true) )), // Use Alt field first
 		);
 		if ( empty($default_attr['alt']) )
@@ -719,10 +721,11 @@ function wp_get_attachment_image($attachment_id, $size = 'thumbnail', $icon = fa
 		 *
 		 * @since 2.8.0
 		 *
-		 * @param mixed $attr       Attributes for the image markup.
-		 * @param int   $attachment Image attachment post.
+		 * @param array        $attr       Attributes for the image markup.
+		 * @param WP_Post      $attachment Image attachment post.
+		 * @param string|array $size       Requested size.
 		 */
-		$attr = apply_filters( 'wp_get_attachment_image_attributes', $attr, $attachment );
+		$attr = apply_filters( 'wp_get_attachment_image_attributes', $attr, $attachment, $size );
 		$attr = array_map( 'esc_attr', $attr );
 		$html = rtrim("<img $hwstring");
 		foreach ( $attr as $name => $value ) {
@@ -1053,12 +1056,14 @@ function gallery_shortcode( $attr ) {
 
 	$i = 0;
 	foreach ( $attachments as $id => $attachment ) {
+		
+		$attr = ( trim( $attachment->post_excerpt ) ) ? array( 'aria-describedby' => "$selector-$id" ) : '';
 		if ( ! empty( $atts['link'] ) && 'file' === $atts['link'] ) {
-			$image_output = wp_get_attachment_link( $id, $atts['size'], false, false );
+			$image_output = wp_get_attachment_link( $id, $atts['size'], false, false, $attr );
 		} elseif ( ! empty( $atts['link'] ) && 'none' === $atts['link'] ) {
-			$image_output = wp_get_attachment_image( $id, $atts['size'], false );
+			$image_output = wp_get_attachment_image( $id, $atts['size'], false, $attr );
 		} else {
-			$image_output = wp_get_attachment_link( $id, $atts['size'], true, false );
+			$image_output = wp_get_attachment_link( $id, $atts['size'], true, false, false, $attr );
 		}
 		$image_meta  = wp_get_attachment_metadata( $id );
 
@@ -1073,7 +1078,7 @@ function gallery_shortcode( $attr ) {
 			</{$icontag}>";
 		if ( $captiontag && trim($attachment->post_excerpt) ) {
 			$output .= "
-				<{$captiontag} class='wp-caption-text gallery-caption'>
+				<{$captiontag} class='wp-caption-text gallery-caption' id='$selector-$id'>
 				" . wptexturize($attachment->post_excerpt) . "
 				</{$captiontag}>";
 		}

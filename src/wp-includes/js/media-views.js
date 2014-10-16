@@ -3724,7 +3724,7 @@
 		},
 
 		drop: function( event ) {
-			var $wrap = null;
+			var $wrap = null, uploadView;
 
 			this.containerDragleave( event );
 			this.dropzoneDragleave( event );
@@ -3747,7 +3747,12 @@
 					title:    wp.media.view.l10n.addMedia,
 					multiple: true
 				});
-				this.workflow.on( 'uploader:ready', this.addFiles, this );
+				uploadView = this.workflow.uploader;
+				if ( uploadView.uploader && uploadView.uploader.ready ) {
+					this.addFiles.apply( this );
+				} else {
+					this.workflow.on( 'uploader:ready', this.addFiles, this );
+				}
 			} else {
 				this.workflow.state().reset();
 				this.addFiles.apply( this );
@@ -4840,6 +4845,8 @@
 				this.model.on( 'selection:single selection:unsingle', this.details, this );
 				this.details( this.model, this.controller.state().get('selection') );
 			}
+
+			this.listenTo( this.controller, 'attachment:compat:waiting attachment:compat:ready', this.updateSave );
 		},
 		/**
 		 * @returns {wp.media.view.Attachment} Returns itself to allow chaining
@@ -5500,10 +5507,6 @@
 			this.$el.sortable( _.extend({
 				// If the `collection` has a `comparator`, disable sorting.
 				disabled: !! collection.comparator,
-
-				// Prevent attachments from being dragged outside the bounding
-				// box of the list.
-				containment: this.$el,
 
 				// Change the position of the attachment as soon as the
 				// mouse pointer overlaps a thumbnail.
@@ -6908,7 +6911,12 @@
 				data[ pair.name ] = pair.value;
 			});
 
-			this.model.saveCompat( data );
+			this.controller.trigger( 'attachment:compat:waiting', ['waiting'] );
+			this.model.saveCompat( data ).always( _.bind( this.postSave, this ) );
+		},
+
+		postSave: function() {
+			this.controller.trigger( 'attachment:compat:ready', ['ready'] );
 		}
 	});
 
