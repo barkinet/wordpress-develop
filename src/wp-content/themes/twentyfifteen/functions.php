@@ -87,15 +87,6 @@ function twentyfifteen_setup() {
 		'aside', 'image', 'video', 'quote', 'link', 'gallery', 'status', 'audio', 'chat'
 	) );
 
-	$color_scheme  = twentyfifteen_get_color_scheme();
-	$default_color = trim( $color_scheme[0], '#' );
-
-	// Setup the WordPress core custom background feature.
-	add_theme_support( 'custom-background', apply_filters( 'twentyfifteen_custom_background_args', array(
-		'default-color'      => $default_color,
-		'default-attachment' => 'fixed',
-	) ) );
-
 	/*
 	 * This theme styles the visual editor to resemble the theme style,
 	 * specifically font, colors, icons, and column width.
@@ -316,6 +307,13 @@ add_filter( 'walker_nav_menu_start_el', 'twentyfifteen_nav_description', 10, 4 )
  * @since Twenty Fifteen 1.0
  */
 require get_template_directory() . '/inc/custom-header.php';
+
+/**
+ * Implement the Custom Background feature.
+ *
+ * @since Twenty Fifteen 1.0
+ */
+require get_template_directory() . '/inc/custom-background.php';
 
 /**
  * Custom template tags for this theme.
