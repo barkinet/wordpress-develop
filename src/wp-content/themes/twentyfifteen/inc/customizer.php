@@ -682,11 +682,78 @@ function twentyfifteen_color_scheme_css() {
 add_action( 'wp_enqueue_scripts', 'twentyfifteen_color_scheme_css' );
 
 /**
+ * Return the CSS via Ajax for the Customizer preview so that updates to the
+ * settings needn't require a full page refresh when a new color scheme is
+ * selected.
+ *
+ * @since Twenty Fifteen 1.0
+ */
+function twentyfifteen_ajax_inline_styles() {
+	/**
+	 * @var WP_Styles $wp_styles
+	 * @var WP_Customize_Manager $wp_customize
+	 */
+	global $wp_styles, $wp_customize;
+
+	if ( empty( $wp_customize ) ) {
+		wp_send_json_error( 'customizer_required' );
+	}
+
+	$nonce_tick = check_ajax_referer( 'twentyfifteen_inline_styles' , 'nonce', false );
+	if ( ! $nonce_tick ) {
+		wp_send_json_error( 'bad_nonce' );
+	}
+
+	foreach ( $wp_customize->settings() as $setting ) {
+		if ( $setting->check_capabilities() ) {
+			$setting->preview();
+		}
+	}
+
+	wp_enqueue_scripts();
+
+	$inline_styles = array();
+	foreach ( $wp_styles->queue as $handle ) {
+		$data = $wp_styles->get_data( $handle, 'after' );
+		if ( $data ) {
+			$inline_styles[ $handle ] = implode( "\n", $data );
+		}
+	}
+
+	$data = array(
+		'inlineStyles' => $inline_styles,
+		'theme' => get_stylesheet(),
+	);
+	if ( 2 === $nonce_tick ) {
+		$data['nonce'] = wp_create_nonce( 'twentyfifteen_inline_styles' );
+	}
+
+	wp_send_json_success( $data );
+}
+add_action( 'wp_ajax_twentyfifteen_inline_styles', 'twentyfifteen_ajax_inline_styles' );
+
+/**
  * Binds JS handlers to make Customizer preview reload changes asynchronously.
  *
  * @since Twenty Fifteen 1.0
  */
 function twentyfifteen_customize_preview_js() {
-	wp_enqueue_script( 'twentyfifteen-customizer', get_template_directory_uri() . '/js/customizer.js', array( 'customize-preview' ), '20141005', true );
+	global $wp_scripts;
+
+	wp_enqueue_script( 'twentyfifteen-customizer', get_template_directory_uri() . '/js/customizer.js', array( 'customize-preview', 'wp-util', 'underscore' ), '20141005', true );
+
+	$exports = array(
+		'inlineStyleSettings' => twentyfifteen_get_inline_style_settings(),
+		'nonce' => wp_create_nonce( 'twentyfifteen_inline_styles' ),
+	);
+
+	/**
+	 * @var WP_Scripts $wp_scripts
+	 */
+	$wp_scripts->add_data(
+		'twentyfifteen-customizer',
+		'data',
+		sprintf( 'var _twentyfifteenCustomizerExports = %s;', json_encode( $exports ) )
+	);
 }
 add_action( 'customize_preview_init', 'twentyfifteen_customize_preview_js' );
