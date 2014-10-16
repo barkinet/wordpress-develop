@@ -8,6 +8,30 @@
  */
 
 /**
+ * Get the settings which should be postMessage and which should trigger a
+ * refresh of the CSS via Ajax.
+ *
+ * @since Twenty Fifteen 1.0
+ *
+ * @return array
+ */
+function twentyfifteen_get_inline_style_settings() {
+	return array(
+		'header_image',
+		'header_image_data',
+		'header_textcolor',
+		'color_scheme',
+		'header_background_color',
+		'sidebar_textcolor',
+		'background_color',
+		'background_attachment',
+		'background_repeat',
+		'background_position_x',
+		'background_image',
+	);
+}
+
+/**
  * Add postMessage support for site title and description for the Customizer.
  *
  * @since Twenty Fifteen 1.0
@@ -16,10 +40,6 @@
  */
 function twentyfifteen_customize_register( $wp_customize ) {
 	$color_scheme = twentyfifteen_get_color_scheme();
-
-	$wp_customize->get_setting( 'blogname' )->transport         = 'postMessage';
-	$wp_customize->get_setting( 'blogdescription' )->transport  = 'postMessage';
-	$wp_customize->get_setting( 'background_color' )->transport = 'refresh';
 
 	// Add color scheme setting and control.
 	$wp_customize->add_setting( 'color_scheme', array(
@@ -55,6 +75,18 @@ function twentyfifteen_customize_register( $wp_customize ) {
 		'label'   => esc_html__( 'Header & Sidebar Background Color', 'twentyfifteen' ),
 		'section' => 'colors',
 	) ) );
+
+	$post_message_settings = array_merge(
+		array(
+			'blogname',
+			'blogdescription',
+		),
+		twentyfifteen_get_inline_style_settings()
+	);
+
+	foreach ( $post_message_settings as $setting ) {
+		$wp_customize->get_setting( $setting )->transport = 'postMessage';
+	}
 }
 add_action( 'customize_register', 'twentyfifteen_customize_register', 11 );
 
