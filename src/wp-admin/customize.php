@@ -53,8 +53,6 @@ do_action( 'customize_controls_init' );
 wp_enqueue_script( 'customize-controls' );
 wp_enqueue_style( 'customize-controls' );
 
-wp_enqueue_script( 'accordion' );
-
 /**
  * Enqueue Customizer control scripts.
  *
