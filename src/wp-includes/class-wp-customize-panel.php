@@ -224,7 +224,7 @@ class WP_Customize_Panel {
 	 */
 	protected function render_content() {
 		?>
-		<li class="panel-meta accordion-section control-section<?php if ( empty( $this->description ) ) echo ' cannot-expand'; ?>">
+		<li class="panel-meta accordion-section control-section<?php if ( empty( $this->description ) ) { echo ' cannot-expand'; } ?>">
 			<div class="accordion-section-title" tabindex="0">
 				<span class="preview-notice"><?php
 					/* translators: %s is the site/panel title in the Customizer */
