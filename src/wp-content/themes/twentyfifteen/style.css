@@ -150,6 +150,7 @@ a:active {
 
 a img {
 	border: 0;
+	display: block;
 }
 
 
@@ -378,7 +379,6 @@ ol {
 li > ul,
 li > ol {
 	margin-bottom: 0;
-	margin-left: 1.3333em;
 }
 
 dl {
@@ -1999,8 +1999,8 @@ a.post-thumbnail:focus {
 	width: auto;
 }
 
-.type-attachment .entry-header {
-	clear: right;
+.entry-attachment {
+	margin-bottom: 1.6em;
 }
 
 .type-attachment .entry-title {
@@ -2022,6 +2022,7 @@ a.post-thumbnail:focus {
 	-ms-hyphens: auto;
 	hyphens: auto;
 	line-height: 1.5;
+	padding-top: 0.5em;
 	word-wrap: break-word;
 }
 
@@ -2457,6 +2458,10 @@ span > video {
 	max-width: 11.11%;
 }
 
+.gallery-icon img {
+	margin: 0 auto;
+}
+
 .gallery-caption {
 	color: #707070;
 	color: rgba(51, 51, 51, 0.7);
@@ -2501,6 +2506,11 @@ span > video {
 	ul,
 	ol {
 		margin-left: 0;
+	}
+
+	li > ul,
+	li > ol {
+		margin-left: 1.3333em;
 	}
 
 	blockquote {
@@ -2664,6 +2674,11 @@ span > video {
 	.comment-content ul,
 	.comment-content ol {
 		margin-left: 0;
+	}
+
+	.comment-content li > ul,
+	.comment-content li > ol {
+		margin-left: 1.3333em;
 	}
 }
 
@@ -3145,6 +3160,10 @@ span > video {
 
 	.page-links {
 		margin-bottom: 1.5294em;
+	}
+
+	.entry-attachment {
+		margin-bottom: 1.6471em;
 	}
 
 	.format-aside .entry-title,
@@ -3679,6 +3698,10 @@ span > video {
 		margin-bottom: 1.5789em;
 	}
 
+	.entry-attachment {
+		margin-bottom: 1.6842em
+	}
+
 	.format-aside .entry-title,
 	.format-image .entry-title,
 	.format-video .entry-title,
@@ -3784,6 +3807,14 @@ span > video {
  */
 
 @media screen and (min-width: 59.6875em) {
+	body:before,
+	.site-header,
+	.main-navigation,
+	.social-navigation,
+	.widget {
+		-webkit-transform: translateZ(0); /* Fixes flashing bug with scrolling on iOS Safari */
+	}
+
 	body:before {
 		background-color: #fff;
 		box-shadow: 0 0 1px rgba(0, 0, 0, 0.15);
@@ -3805,10 +3836,10 @@ span > video {
 	.sidebar {
 		float: left;
 		height: 100%;
-		overflow-y: auto;
 		margin-right: -100%;
 		max-width: 413px;
-		-webkit-overflow-scrolling: touch;
+		overflow-y: scroll;
+		-webkit-overflow-scrolling: touch; /* Enable momentum scrolling on iOS Safari */
 		position: fixed;
 		width: 29.4118%;
 	}
@@ -3823,7 +3854,6 @@ span > video {
 		display: block;
 		margin: 0;
 		padding: 0;
-		-webkit-transform: translateZ(0);
 	}
 
 	.site-main {
@@ -3993,6 +4023,10 @@ span > video {
 		padding: 5% 10%;
 	}
 
+	.pagination {
+		margin: 8.333% 8.333% 0;
+	}
+
 	.pagination .nav-links {
 		min-height: 3.2em;
 	}
@@ -4059,7 +4093,6 @@ span > video {
 		border-bottom: 0;
 		margin: 20% 0;
 		padding: 0 20%;
-		-webkit-transform: translateZ(0);
 	}
 
 	.site-branding {
@@ -4322,6 +4355,10 @@ span > video {
 
 	.page-links {
 		margin-bottom: 1.4667em;
+	}
+
+	.entry-attachment {
+		margin-bottom: 1.6em;
 	}
 
 	.format-aside .entry-title,
@@ -4842,6 +4879,10 @@ span > video {
 		margin-bottom: 1.5294em;
 	}
 
+	.entry-attachment {
+		margin-bottom: 1.6471em;
+	}
+
 	.format-aside .entry-title,
 	.format-image .entry-title,
 	.format-video .entry-title,
@@ -5356,6 +5397,10 @@ span > video {
 		margin-bottom: 1.5789em;
 	}
 
+	.entry-attachment {
+		margin-bottom: 1.6842em;
+	}
+
 	.format-aside .entry-title,
 	.format-image .entry-title,
 	.format-video .entry-title,
@@ -5463,5 +5508,153 @@ span > video {
 	body:before {
 		width: -webkit-calc(50% - 289px);
 		width: calc(50% - 289px);
+	}
+}
+
+
+/**
+ * 16.0 Print
+ */
+
+@media print {
+	body {
+		background: none !important; /* Brute force since user agents all print differently. */
+		font-size: 11.25pt;
+	}
+
+	.secondary-toggle,
+	.navigation,
+	.page-links,
+	.edit-link,
+	#reply-title,
+	.comment-form,
+	.comment-edit-link,
+	.comment-list .reply a,
+	button,
+	input,
+	textarea,
+	select {
+		display: none;
+	}
+
+	.site-header,
+	.site-footer,
+	.hentry,
+	.entry-footer,
+	.page-header,
+	.page-content,
+	.comments-area {
+		background: none !important; /* Make sure color schemes dont't affect to print */
+	}
+
+	body,
+	blockquote,
+	blockquote cite,
+	blockquote small,
+	label,
+	a,
+	.site-title a,
+	.site-description,
+	.post-title,
+	.author-heading,
+	.entry-footer,
+	.entry-footer a,
+	.taxonomy-description,
+	.entry-caption,
+	.comment-author,
+	.comment-metadata,
+	.comment-metadata a,
+	.comment-notes,
+	.comment-awaiting-moderation,
+	.no-comments,
+	.site-info,
+	.site-info a,
+	.wp-caption-text,
+	.gallery-caption {
+		color: #000 !important; /* Make sure color schemes don't affect to print */
+	}
+
+	pre,
+	abbr[title],
+	table,
+	th,
+	td,
+	.site-header,
+	.site-footer,
+	.hentry + .hentry,
+	.author-info,
+	.page-header,
+	.comments-area,
+	.comment-list + .comment-respond,
+	.comment-list article,
+	.comment-list .pingback,
+	.comment-list .trackback,
+	.no-comments {
+		border-color: #eaeaea !important; /* Make sure color schemes don't affect to print */
+	}
+
+	.site {
+		margin: 0 7.6923%;
+	}
+
+	.site-branding {
+		padding: 0;
+	}
+
+	.site-header {
+		padding: 7.6923% 0;
+	}
+
+	.site-description {
+		display: block;
+	}
+
+	.hentry + .hentry {
+		margin-top: 7.6923%;
+	}
+
+	.hentry.has-post-thumbnail {
+		padding-top: 7.6923%;
+	}
+
+	.sticky-post {
+		background: #000 !important;
+		color: #fff !important;
+	}
+
+	.entry-header,
+	.entry-footer  {
+		padding: 0;
+	}
+
+	.entry-content,
+	.entry-summary {
+		padding: 0 0 7.6923%;
+	}
+
+	.post-thumbnail img {
+		margin: 0;
+	}
+
+	.author-info {
+		margin: 0;
+	}
+
+	.page-content {
+		padding: 7.6923% 0 0;
+	}
+
+	.page-header {
+		padding: 3.84615% 0;
+	}
+
+	.comments-area {
+		border: 0;
+		padding: 7.6923% 0 0;
+	}
+
+	.site-footer {
+		margin-top: 7.6923%;
+		padding: 3.84615% 0;
 	}
 }

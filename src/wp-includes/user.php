@@ -742,6 +742,12 @@ class WP_User_Query {
 			$this->query_where .= " AND $wpdb->users.ID NOT IN ($ids)";
 		}
 
+		// Date queries are allowed for the user_registered field.
+		if ( ! empty( $qv['date_query'] ) && is_array( $qv['date_query'] ) ) {
+			$date_query = new WP_Date_Query( $qv['date_query'], 'user_registered' );
+			$this->query_where .= $date_query->get_sql();
+		}
+
 		/**
 		 * Fires after the WP_User_Query has been parsed, and before
 		 * the query is executed.
@@ -2062,6 +2068,27 @@ function wp_get_user_contact_methods( $user = null ) {
  */
 function _wp_get_user_contactmethods( $user = null ) {
 	return wp_get_user_contact_methods( $user );
+}
+
+/**
+ * Gets the text suggesting how to create strong passwords.
+ *
+ * @since 4.1.0
+ * @access private
+ *
+ * @return string The password hint text.
+ */
+function _wp_password_hint() {
+	$hint = __( 'Hint: The password should be at least seven characters long. To make it stronger, use upper and lower case letters, numbers, and symbols like ! " ? $ % ^ &amp; ).' );
+
+	/**
+	 * Filter the text describing the site's password complexity policy.
+	 *
+	 * @since 4.1.0
+	 *
+	 * @param string $hint The password hint text.
+	 */
+	return apply_filters( 'password_hint', $hint );
 }
 
 /**
