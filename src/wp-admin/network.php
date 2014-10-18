@@ -383,13 +383,14 @@ function network_step2( $errors = false ) {
 ?>
 		<ol>
 			<li><p><?php printf( __( 'Add the following to your <code>wp-config.php</code> file in <code>%s</code> <strong>above</strong> the line reading <code>/* That&#8217;s all, stop editing! Happy blogging. */</code>:' ), $location_of_wp_config ); ?></p>
-				<textarea class="code" readonly="readonly" cols="100" rows="6">
+				<textarea class="code" readonly="readonly" cols="100" rows="7">
 define('MULTISITE', true);
 define('SUBDOMAIN_INSTALL', <?php echo $subdomain_install ? 'true' : 'false'; ?>);
 define('DOMAIN_CURRENT_SITE', '<?php echo $hostname; ?>');
 define('PATH_CURRENT_SITE', '<?php echo $base; ?>');
 define('SITE_ID_CURRENT_SITE', 1);
-define('BLOG_ID_CURRENT_SITE', 1);</textarea>
+define('BLOG_ID_CURRENT_SITE', 1);
+</textarea>
 <?php
 	$keys_salts = array( 'AUTH_KEY' => '', 'SECURE_AUTH_KEY' => '', 'LOGGED_IN_KEY' => '', 'NONCE_KEY' => '', 'AUTH_SALT' => '', 'SECURE_AUTH_SALT' => '', 'LOGGED_IN_SALT' => '', 'NONCE_SALT' => '' );
 	foreach ( $keys_salts as $c => $v ) {
@@ -439,7 +440,7 @@ define('BLOG_ID_CURRENT_SITE', 1);</textarea>
 					$web_config_file .= '
                 <rule name="WordPress Rule for Files" stopProcessing="true">
                     <match url="^' . $iis_subdir_match . 'files/(.+)" ignoreCase="false" />
-                    <action type="Rewrite" url="' . $iis_rewrite_base . 'wp-includes/ms-files.php?file={R:1}" appendQueryString="false" />
+                    <action type="Rewrite" url="' . $iis_rewrite_base . WPINC . '/ms-files.php?file={R:1}" appendQueryString="false" />
                 </rule>';
                 }
                 $web_config_file .= '
@@ -470,7 +471,8 @@ define('BLOG_ID_CURRENT_SITE', 1);</textarea>
             </rules>
         </rewrite>
     </system.webServer>
-</configuration>';
+</configuration>
+';
 
 		echo '<li><p>';
 		/* translators: 1: a filename like .htaccess. 2: a file path. */
@@ -489,7 +491,7 @@ define('BLOG_ID_CURRENT_SITE', 1);</textarea>
 		$ms_files_rewriting = '';
 		if ( is_multisite() && get_site_option( 'ms_files_rewriting' ) ) {
 			$ms_files_rewriting = "\n# uploaded files\nRewriteRule ^";
-			$ms_files_rewriting .= $subdir_match . "files/(.+) {$rewrite_base}wp-includes/ms-files.php?file={$subdir_replacement_12} [L]" . "\n";
+			$ms_files_rewriting .= $subdir_match . "files/(.+) {$rewrite_base}" . WPINC . "/ms-files.php?file={$subdir_replacement_12} [L]" . "\n";
 		}
 
 		$htaccess_file = <<<EOF
@@ -506,6 +508,7 @@ RewriteRule ^ - [L]
 RewriteRule ^{$subdir_match}(wp-(content|admin|includes).*) {$rewrite_base}{$subdir_replacement_12} [L]
 RewriteRule ^{$subdir_match}(.*\.php)$ {$rewrite_base}$subdir_replacement_12 [L]
 RewriteRule . index.php [L]
+
 EOF;
 
 		echo '<li><p>';
@@ -533,7 +536,7 @@ if ( $_POST ) {
 	check_admin_referer( 'install-network-1' );
 
 	require_once( ABSPATH . 'wp-admin/includes/upgrade.php' );
-	// create network tables
+	// Create network tables.
 	install_network();
 	$base              = parse_url( trailingslashit( get_option( 'home' ) ), PHP_URL_PATH );
 	$subdomain_install = allow_subdomain_install() ? !empty( $_POST['subdomain_install'] ) : false;

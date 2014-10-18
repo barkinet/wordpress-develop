@@ -128,7 +128,7 @@ function wp_clean_themes_cache( $clear_update_cache = true ) {
  * @return bool true if a child theme is in use, false otherwise.
  **/
 function is_child_theme() {
-	return get_template_directory() !== get_stylesheet_directory();
+	return ( TEMPLATEPATH !== STYLESHEETPATH );
 }
 
 /**
@@ -137,7 +137,7 @@ function is_child_theme() {
  * The theme name that the administrator has currently set the front end theme
  * as.
  *
- * For all extensive purposes, the template name and the stylesheet name are
+ * For all intents and purposes, the template name and the stylesheet name are
  * going to be the same for most cases.
  *
  * @since 1.5.0
@@ -370,11 +370,19 @@ function register_theme_directory( $directory ) {
 		// Try prepending as the theme directory could be relative to the content directory
 		$directory = WP_CONTENT_DIR . '/' . $directory;
 		// If this directory does not exist, return and do not register
-		if ( ! file_exists( $directory ) )
+		if ( ! file_exists( $directory ) ) {
 			return false;
+		}
 	}
 
-	$wp_theme_directories[] = $directory;
+	if ( ! is_array( $wp_theme_directories ) ) {
+		$wp_theme_directories = array();
+	}
+
+	$untrailed = untrailingslashit( $directory );
+	if ( ! empty( $untrailed ) && ! in_array( $untrailed, $wp_theme_directories ) ) {
+		$wp_theme_directories[] = $untrailed;
+	}
 
 	return true;
 }
@@ -796,9 +804,9 @@ function switch_theme( $stylesheet ) {
 		add_option( "theme_mods_$stylesheet", $default_theme_mods );
 	} else {
 		/*
-		 * Since retrieve_widgets() is called when initializing the customizer theme,
+		 * Since retrieve_widgets() is called when initializing a theme in the Customizer,
 		 * we need to to remove the theme mods to avoid overwriting changes made via
-		 * the widget customizer when accessing wp-admin/widgets.php.
+		 * the Customizer when accessing wp-admin/widgets.php.
 		 */
 		if ( 'wp_ajax_customize_save' === current_action() ) {
 			remove_theme_mod( 'sidebars_widgets' );
@@ -1395,6 +1403,54 @@ function remove_editor_styles() {
 }
 
 /**
+ * Retrieve any registered editor stylesheets
+ *
+ * @since 4.0.0
+ *
+ * @global $editor_styles Registered editor stylesheets
+ *
+ * @return array If registered, a list of editor stylesheet URLs.
+ */
+function get_editor_stylesheets() {
+	$stylesheets = array();
+	// load editor_style.css if the current theme supports it
+	if ( ! empty( $GLOBALS['editor_styles'] ) && is_array( $GLOBALS['editor_styles'] ) ) {
+		$editor_styles = $GLOBALS['editor_styles'];
+
+		$editor_styles = array_unique( array_filter( $editor_styles ) );
+		$style_uri = get_stylesheet_directory_uri();
+		$style_dir = get_stylesheet_directory();
+
+		// Support externally referenced styles (like, say, fonts).
+		foreach ( $editor_styles as $key => $file ) {
+			if ( preg_match( '~^(https?:)?//~', $file ) ) {
+				$stylesheets[] = esc_url_raw( $file );
+				unset( $editor_styles[ $key ] );
+			}
+		}
+
+		// Look in a parent theme first, that way child theme CSS overrides.
+		if ( is_child_theme() ) {
+			$template_uri = get_template_directory_uri();
+			$template_dir = get_template_directory();
+
+			foreach ( $editor_styles as $key => $file ) {
+				if ( $file && file_exists( "$template_dir/$file" ) ) {
+					$stylesheets[] = "$template_uri/$file";
+				}
+			}
+		}
+
+		foreach ( $editor_styles as $file ) {
+			if ( $file && file_exists( "$style_dir/$file" ) ) {
+				$stylesheets[] = "$style_uri/$file";
+			}
+		}
+	}
+	return $stylesheets;
+}
+
+/**
  * Allows a theme to register its support of a certain feature
  *
  * Must be called in the theme's functions.php file to work.
@@ -1426,7 +1482,7 @@ function add_theme_support( $feature ) {
 				// Build an array of types for back-compat.
 				$args = array( 0 => array( 'comment-list', 'comment-form', 'search-form' ) );
 			} elseif ( ! is_array( $args[0] ) ) {
-				_doing_it_wrong( "add_theme_support( 'html5' )", 'You need to pass an array of types.', '3.6.1' );
+				_doing_it_wrong( "add_theme_support( 'html5' )", __( 'You need to pass an array of types.' ), '3.6.1' );
 				return false;
 			}
 
@@ -1874,6 +1930,9 @@ function _wp_customize_loader_settings() {
 		'url'           => esc_url( admin_url( 'customize.php' ) ),
 		'isCrossDomain' => $cross_domain,
 		'browser'       => $browser,
+		'l10n'          => array(
+			'saveAlert' => __( 'The changes you made will be lost if you navigate away from this page.' ),
+		),
 	);
 
 	$script = 'var _wpCustomizeLoaderSettings = ' . json_encode( $settings ) . ';';
@@ -1887,7 +1946,7 @@ function _wp_customize_loader_settings() {
 add_action( 'admin_enqueue_scripts', '_wp_customize_loader_settings' );
 
 /**
- * Returns a URL to load the theme customizer.
+ * Returns a URL to load the Customizer.
  *
  * @since 3.4.0
  *
@@ -1902,7 +1961,7 @@ function wp_customize_url( $stylesheet = null ) {
 }
 
 /**
- * Prints a script to check whether or not the customizer is supported,
+ * Prints a script to check whether or not the Customizer is supported,
  * and apply either the no-customize-support or customize-support class
  * to the body.
  *
@@ -1937,4 +1996,19 @@ function wp_customize_support_script() {
 		}());
 	</script>
 	<?php
+}
+
+/**
+ * Whether the site is being previewed in the Customizer.
+ *
+ * @since 4.0.0
+ *
+ * @global WP_Customize_Manager $wp_customize Customizer instance.
+ *
+ * @return bool True if the site is being previewed in the Customizer, false otherwise.
+ */
+function is_customize_preview() {
+	global $wp_customize;
+
+	return is_a( $wp_customize, 'WP_Customize_Manager' ) && $wp_customize->is_preview();
 }

@@ -9,10 +9,7 @@ class Tests_Post_Attachments extends WP_UnitTestCase {
 
 	function tearDown() {
 		// Remove all uploads.
-		$uploads = wp_upload_dir();
-		foreach ( scandir( $uploads['basedir'] ) as $file )
-			_rmdir( $uploads['basedir'] . '/' . $file );
-
+		$this->remove_added_uploads();
 		parent::tearDown();
 	}
 
@@ -229,6 +226,56 @@ class Tests_Post_Attachments extends WP_UnitTestCase {
 
 		$guid = get_the_guid( $id );
 		$this->assertFalse( empty( $guid ) );
+	}
+
+	/**
+	 * @ticket 21963
+	 */
+	function test_update_attachment_fields() {
+		$filename = ( DIR_TESTDATA . '/images/test-image.jpg' );
+		$contents = file_get_contents($filename);
+
+		$upload = wp_upload_bits( basename( $filename ), null, $contents );
+		$this->assertTrue( empty( $upload['error'] ) );
+
+		$id = $this->_make_attachment( $upload );
+
+		$attached_file = get_post_meta( $id, '_wp_attached_file', true );
+
+		$post = get_post( $id, ARRAY_A );
+
+		$post['post_title'] = 'title';
+		$post['post_excerpt'] = 'caption';
+		$post['post_content'] = 'description';
+
+		wp_update_post( $post );
+
+		// Make sure the update didn't remove the attached file.
+		$this->assertEquals( $attached_file, get_post_meta( $id, '_wp_attached_file', true ) );
+	}
+
+	/**
+	 * @ticket 29646
+	 */
+	function test_update_orphan_attachment_parent() {
+		$filename = ( DIR_TESTDATA . '/images/test-image.jpg' );
+		$contents = file_get_contents( $filename );
+
+		$upload = wp_upload_bits( basename( $filename ), null, $contents );
+		$this->assertTrue( empty( $upload['error'] ) );
+
+		$attachment_id = $this->_make_attachment( $upload );
+
+		// Assert that the attachment is an orphan
+		$attachment = get_post( $attachment_id );
+		$this->assertEquals( $attachment->post_parent, 0 );
+
+		$post_id = wp_insert_post( array( 'post_content' => rand_str(), 'post_title' => rand_str() ) );
+
+		// Assert that the attachment has a parent
+		wp_insert_attachment( $attachment, '', $post_id );
+		$attachment = get_post( $attachment_id );
+		$this->assertEquals( $attachment->post_parent, $post_id );
 	}
 
 }

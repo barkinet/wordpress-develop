@@ -493,11 +493,23 @@ function wp_admin_bar_edit_menu( $wp_admin_bar ) {
 			&& ( $post_type_object->public )
 			&& ( $post_type_object->show_in_admin_bar ) )
 		{
-			$wp_admin_bar->add_menu( array(
-				'id' => 'view',
-				'title' => $post_type_object->labels->view_item,
-				'href' => get_permalink( $post->ID )
-			) );
+			if( 'draft' == $post->post_status ) {
+				$preview_link = set_url_scheme( get_permalink( $post->ID ) );
+				/** This filter is documented in wp-admin/includes/meta-boxes.php */
+				$preview_link = apply_filters( 'preview_post_link', add_query_arg( 'preview', 'true', $preview_link ), $post );
+				$wp_admin_bar->add_menu( array(
+					'id' => 'preview',
+					'title' => $post_type_object->labels->view_item,
+					'href' => esc_url( $preview_link ),
+					'meta' => array( 'target' => 'wp-preview-' . $post->ID ),
+				) );
+			} else {
+				$wp_admin_bar->add_menu( array(
+					'id' => 'view',
+					'title' => $post_type_object->labels->view_item,
+					'href' => get_permalink( $post->ID )
+				) );
+			}
 		} elseif ( 'edit-tags' == $current_screen->base
 			&& isset( $tag ) && is_object( $tag )
 			&& ( $tax = get_taxonomy( $tag->taxonomy ) )
@@ -518,22 +530,24 @@ function wp_admin_bar_edit_menu( $wp_admin_bar ) {
 		if ( ! empty( $current_object->post_type )
 			&& ( $post_type_object = get_post_type_object( $current_object->post_type ) )
 			&& current_user_can( 'edit_post', $current_object->ID )
-			&& $post_type_object->show_ui && $post_type_object->show_in_admin_bar )
+			&& $post_type_object->show_ui && $post_type_object->show_in_admin_bar
+			&& $edit_post_link = get_edit_post_link( $current_object->ID ) )
 		{
 			$wp_admin_bar->add_menu( array(
 				'id' => 'edit',
 				'title' => $post_type_object->labels->edit_item,
-				'href' => get_edit_post_link( $current_object->ID )
+				'href' => $edit_post_link
 			) );
 		} elseif ( ! empty( $current_object->taxonomy )
 			&& ( $tax = get_taxonomy( $current_object->taxonomy ) )
 			&& current_user_can( $tax->cap->edit_terms )
-			&& $tax->show_ui )
+			&& $tax->show_ui
+			&& $edit_term_link = get_edit_term_link( $current_object->term_id, $current_object->taxonomy ) )
 		{
 			$wp_admin_bar->add_menu( array(
 				'id' => 'edit',
 				'title' => $tax->labels->edit_item,
-				'href' => get_edit_term_link( $current_object->term_id, $current_object->taxonomy )
+				'href' => $edit_term_link
 			) );
 		}
 	}
@@ -648,17 +662,19 @@ function wp_admin_bar_appearance_menu( $wp_admin_bar ) {
 	if ( ! current_user_can( 'edit_theme_options' ) )
 		return;
 
-	$current_url = ( is_ssl() ? 'https://' : 'http://' ) . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'];
-	$wp_admin_bar->add_menu( array(
-		'parent' => 'appearance',
-		'id'     => 'customize',
-		'title'  => __('Customize'),
-		'href'   => add_query_arg( 'url', urlencode( $current_url ), wp_customize_url() ),
-		'meta'   => array(
-			'class' => 'hide-if-no-customize',
-		),
-	) );
-	add_action( 'wp_before_admin_bar_render', 'wp_customize_support_script' );
+	if ( current_user_can( 'customize' ) ) {
+		$current_url = ( is_ssl() ? 'https://' : 'http://' ) . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'];
+		$wp_admin_bar->add_menu( array(
+			'parent' => 'appearance',
+			'id'     => 'customize',
+			'title'  => __('Customize'),
+			'href'   => add_query_arg( 'url', urlencode( $current_url ), wp_customize_url() ),
+			'meta'   => array(
+				'class' => 'hide-if-no-customize',
+			),
+		) );
+		add_action( 'wp_before_admin_bar_render', 'wp_customize_support_script' );
+	}
 
 	if ( current_theme_supports( 'widgets' )  )
 		$wp_admin_bar->add_menu( array( 'parent' => 'appearance', 'id' => 'widgets', 'title' => __('Widgets'), 'href' => admin_url('widgets.php') ) );

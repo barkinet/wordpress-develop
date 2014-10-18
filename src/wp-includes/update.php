@@ -264,12 +264,20 @@ function wp_update_plugins( $extra_stats = array() ) {
 	 */
 	$locales = apply_filters( 'plugins_update_check_locales', $locales );
 
+	if ( defined( 'DOING_CRON' ) && DOING_CRON ) {
+		$timeout = 30;
+	} else {
+		// Three seconds, plus one extra second for every 10 plugins
+		$timeout = 3 + (int) ( count( $plugins ) / 10 );
+	}
+
 	$options = array(
-		'timeout' => ( ( defined('DOING_CRON') && DOING_CRON ) ? 30 : 3),
+		'timeout' => $timeout,
 		'body' => array(
 			'plugins'      => json_encode( $to_send ),
 			'translations' => json_encode( $translations ),
 			'locale'       => json_encode( $locales ),
+			'all'          => json_encode( true ),
 		),
 		'user-agent' => 'WordPress/' . $wp_version . '; ' . get_bloginfo( 'url' )
 	);
@@ -296,13 +304,20 @@ function wp_update_plugins( $extra_stats = array() ) {
 		$plugin = (object) $plugin;
 	}
 	unset( $plugin );
+	foreach ( $response['no_update'] as &$plugin ) {
+		$plugin = (object) $plugin;
+	}
+	unset( $plugin );
 
 	if ( is_array( $response ) ) {
 		$new_option->response = $response['plugins'];
 		$new_option->translations = $response['translations'];
+		// TODO: Perhaps better to store no_update in a separate transient with an expiry?
+		$new_option->no_update = $response['no_update'];
 	} else {
 		$new_option->response = array();
 		$new_option->translations = array();
+		$new_option->no_update = array();
 	}
 
 	set_site_transient( 'update_plugins', $new_option );
@@ -412,8 +427,15 @@ function wp_update_themes( $extra_stats = array() ) {
 	 */
 	$locales = apply_filters( 'themes_update_check_locales', $locales );
 
+	if ( defined( 'DOING_CRON' ) && DOING_CRON ) {
+		$timeout = 30;
+	} else {
+		// Three seconds, plus one extra second for every 10 themes
+		$timeout = 3 + (int) ( count( $themes ) / 10 );
+	}
+
 	$options = array(
-		'timeout' => ( ( defined('DOING_CRON') && DOING_CRON ) ? 30 : 3),
+		'timeout' => $timeout,
 		'body' => array(
 			'themes'       => json_encode( $request ),
 			'translations' => json_encode( $translations ),

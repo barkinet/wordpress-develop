@@ -452,7 +452,7 @@ function wp_comment_reply($position = '1', $checkbox = false, $mode = 'single', 
 
 		<div class="inside">
 		<label for="author-url"><?php _e('URL') ?></label>
-		<input type="text" id="author-url" name="newcomment_author_url" size="103" value="" />
+		<input type="text" id="author-url" name="newcomment_author_url" class="code" size="103" value="" />
 		</div>
 		<div style="clear:both;"></div>
 	</div>
@@ -583,10 +583,10 @@ function _list_meta_row( $entry, &$count ) {
 
 	if ( is_serialized( $entry['meta_value'] ) ) {
 		if ( is_serialized_string( $entry['meta_value'] ) ) {
-			// this is a serialized string, so we should display it
+			// This is a serialized string, so we should display it.
 			$entry['meta_value'] = maybe_unserialize( $entry['meta_value'] );
 		} else {
-			// this is a serialized array/object so we should NOT display it
+			// This is a serialized array/object so we should NOT display it.
 			--$count;
 			return;
 		}
@@ -716,6 +716,7 @@ function touch_time( $edit = 1, $for_post = 1, $tab_index = 0, $multi = 0 ) {
 	if ( (int) $tab_index > 0 )
 		$tab_index_attribute = " tabindex=\"$tab_index\"";
 
+	// todo: Remove this?
 	// echo '<label for="timestamp" style="display: block;"><input type="checkbox" class="checkbox" name="edit_date" value="1" id="timestamp"'.$tab_index_attribute.' /> '.__( 'Edit timestamp' ).'</label><br />';
 
 	$time_adj = current_time('timestamp');
@@ -940,23 +941,30 @@ function add_meta_box( $id, $title, $callback, $screen = null, $context = 'advan
 				// If core box previously deleted, don't add
 				if ( false === $wp_meta_boxes[$page][$a_context][$a_priority][$id] )
 					return;
-				// If box was added with default priority, give it core priority to maintain sort order
+
+				/*
+				 * If box was added with default priority, give it core priority to
+				 * maintain sort order.
+				 */
 				if ( 'default' == $a_priority ) {
 					$wp_meta_boxes[$page][$a_context]['core'][$id] = $wp_meta_boxes[$page][$a_context]['default'][$id];
 					unset($wp_meta_boxes[$page][$a_context]['default'][$id]);
 				}
 				return;
 			}
-			// If no priority given and id already present, use existing priority
+			// If no priority given and id already present, use existing priority.
 			if ( empty($priority) ) {
 				$priority = $a_priority;
-			// else if we're adding to the sorted priority, we don't know the title or callback. Grab them from the previously added context/priority.
+			/*
+			 * Else, if we're adding to the sorted priority, we don't know the title
+			 * or callback. Grab them from the previously added context/priority.
+			 */
 			} elseif ( 'sorted' == $priority ) {
 				$title = $wp_meta_boxes[$page][$a_context][$a_priority][$id]['title'];
 				$callback = $wp_meta_boxes[$page][$a_context][$a_priority][$id]['callback'];
 				$callback_args = $wp_meta_boxes[$page][$a_context][$a_priority][$id]['args'];
 			}
-			// An id can be in only one priority and one context
+			// An id can be in only one priority and one context.
 			if ( $priority != $a_priority || $context != $a_context )
 				unset($wp_meta_boxes[$page][$a_context][$a_priority][$id]);
 		}
@@ -1122,7 +1130,10 @@ function do_accordion_sections( $screen, $context, $object ) {
 					}
 					?>
 					<li class="control-section accordion-section <?php echo $hidden_class; ?> <?php echo $open_class; ?> <?php echo esc_attr( $box['id'] ); ?>" id="<?php echo esc_attr( $box['id'] ); ?>">
-						<h3 class="accordion-section-title hndle" tabindex="0" title="<?php echo esc_attr( $box['title'] ); ?>"><?php echo esc_html( $box['title'] ); ?></h3>
+						<h3 class="accordion-section-title hndle" tabindex="0">
+							<?php echo esc_html( $box['title'] ); ?>
+							<span class="screen-reader-text"><?php _e( 'Press return or enter to expand' ); ?></span>
+						</h3>
 						<div class="accordion-section-content <?php postbox_classes( $box['id'], $page ); ?>">
 							<div class="inside">
 								<?php call_user_func( $box['callback'], $object, $box ); ?>
@@ -1340,23 +1351,25 @@ function add_settings_error( $setting, $code, $message, $type = 'error' ) {
 function get_settings_errors( $setting = '', $sanitize = false ) {
 	global $wp_settings_errors;
 
-	// If $sanitize is true, manually re-run the sanitization for this option
-	// This allows the $sanitize_callback from register_setting() to run, adding
-	// any settings errors you want to show by default.
+	/*
+	 * If $sanitize is true, manually re-run the sanitization for this option
+	 * This allows the $sanitize_callback from register_setting() to run, adding
+	 * any settings errors you want to show by default.
+	 */
 	if ( $sanitize )
 		sanitize_option( $setting, get_option( $setting ) );
 
-	// If settings were passed back from options.php then use them
+	// If settings were passed back from options.php then use them.
 	if ( isset( $_GET['settings-updated'] ) && $_GET['settings-updated'] && get_transient( 'settings_errors' ) ) {
 		$wp_settings_errors = array_merge( (array) $wp_settings_errors, get_transient( 'settings_errors' ) );
 		delete_transient( 'settings_errors' );
 	}
 
-	// Check global in case errors have been added on this pageload
+	// Check global in case errors have been added on this pageload.
 	if ( ! count( $wp_settings_errors ) )
 		return array();
 
-	// Filter the results to those of a specific setting if one was set
+	// Filter the results to those of a specific setting if one was set.
 	if ( $setting ) {
 		$setting_errors = array();
 		foreach ( (array) $wp_settings_errors as $key => $details ) {
@@ -1472,7 +1485,7 @@ function the_post_password() {
  *
  * @since 2.7.0
  *
- * @param int|WP_Post $post Optional. Post ID or WP_Post object. Default is global `$post`.
+ * @param int|WP_Post $post Optional. Post ID or WP_Post object. Default is global $post.
  * @return string The post title if set.
  */
 function _draft_or_post_title( $post = 0 ) {
@@ -1992,7 +2005,7 @@ final class WP_Internal_Pointers {
 
 		self::print_js( 'wp360_revisions', '.misc-pub-section.misc-pub-revisions', array(
 			'content' => $content,
-			'position' => array( 'edge' => is_rtl() ? 'left' : 'right', 'align' => 'center', 'my' => is_rtl() ? 'left' : 'right-14px' ),
+			'position' => array( 'edge' => is_rtl() ? 'left' : 'right', 'align' => 'center' ),
 		) );
 	}
 
@@ -2016,11 +2029,11 @@ final class WP_Internal_Pointers {
 		}
 
 		$content  = '<h3>' . __( 'New Feature: Live Widget Previews' ) . '</h3>';
-		$content .= '<p>' . __( 'Add, edit, and play around with your widgets from the theme customizer.' ) . ' ' . __( 'Preview your changes in real-time and only save them when you&#8217;re ready.' ) . '</p>';
+		$content .= '<p>' . __( 'Add, edit, and play around with your widgets from the Customizer.' ) . ' ' . __( 'Preview your changes in real-time and only save them when you&#8217;re ready.' ) . '</p>';
 
 		if ( 'themes' === get_current_screen()->id ) {
 			$selector = '.theme.active .customize';
-			$position = array( 'edge' => is_rtl() ? 'right' : 'left', 'align' => 'center', 'my' => is_rtl() ? 'right-13px' : '' );
+			$position = array( 'edge' => is_rtl() ? 'right' : 'left', 'align' => 'center' );
 		} else {
 			$selector = 'a[href="customize.php"]';
 			if ( is_rtl() ) {
@@ -2136,6 +2149,7 @@ function wp_star_rating( $args = array() ) {
 	}
 
 	echo '<div class="star-rating" title="' . esc_attr( $title ) . '">';
+	echo '<span class="screen-reader-text">' . $title . '</span>';
 	echo str_repeat( '<div class="star star-full"></div>', $full_stars );
 	echo str_repeat( '<div class="star star-half"></div>', $half_stars );
 	echo str_repeat( '<div class="star star-empty"></div>', $empty_stars);

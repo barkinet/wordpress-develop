@@ -88,7 +88,7 @@ class Tests_Image_Functions extends WP_UnitTestCase {
 		// these are image files but aren't suitable for web pages because of compatibility or size issues
 		$files = array(
 			// 'test-image-cmyk.jpg', Allowed in r9727
-			// 'test-image.bmp', Allowed in r28589 
+			// 'test-image.bmp', Allowed in r28589
 			// 'test-image-grayscale.jpg', Allowed in r9727
 			'test-image.pct',
 			'test-image.tga',
@@ -144,8 +144,8 @@ class Tests_Image_Functions extends WP_UnitTestCase {
 				$this->assertEquals( $mime_type, $this->get_mime_type( $ret['path'] ) );
 
 				// Clean up
-				@unlink( $file );
-				@unlink( $ret['path'] );
+				unlink( $file );
+				unlink( $ret['path'] );
 			}
 
 			// Clean up
@@ -185,8 +185,8 @@ class Tests_Image_Functions extends WP_UnitTestCase {
 			$this->assertEquals( $mime_type, $this->get_mime_type( $ret['path'] ) );
 
 			// Clean up
-			@unlink( $file );
-			@unlink( $ret['path'] );
+			unlink( $file );
+			unlink( $ret['path'] );
 			unset( $img );
 		}
 	}
@@ -224,6 +224,8 @@ class Tests_Image_Functions extends WP_UnitTestCase {
 
 			// Save the image as each file extension, check the mime type
 			$img = wp_get_image_editor( DIR_TESTDATA . '/images/canola.jpg' );
+			$this->assertNotInstanceOf( 'WP_Error', $img );
+
 			$temp = get_temp_dir();
 			foreach ( $mime_types as $ext => $mime_type ) {
 				$file = wp_unique_filename( $temp, uniqid() . ".$ext" );
@@ -231,8 +233,7 @@ class Tests_Image_Functions extends WP_UnitTestCase {
 				$this->assertNotEmpty( $ret );
 				$this->assertNotInstanceOf( 'WP_Error', $ret );
 				$this->assertEquals( $mime_type, $this->get_mime_type( $ret['path'] ) );
-				@unlink( $file );
-				@unlink( $ret['path'] );
+				unlink( $ret['path'] );
 			}
 
 			// Clean up

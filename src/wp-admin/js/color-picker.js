@@ -50,7 +50,7 @@
 
 			el.iris( {
 				target: self.pickerContainer,
-				hide: true,
+				hide: self.options.hide,
 				width: 255,
 				mode: 'hsv',
 				palettes: self.options.palettes,
@@ -120,7 +120,7 @@
 			});
 		},
 		open: function() {
-			this.element.show().iris( 'toggle' );
+			this.element.show().iris( 'toggle' ).focus();
 			this.button.removeClass( 'hidden' );
 			this.toggler.addClass( 'wp-picker-open' );
 			$( 'body' ).trigger( 'click.wpcolorpicker' ).on( 'click.wpcolorpicker', this.close );

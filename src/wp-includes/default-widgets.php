@@ -385,8 +385,8 @@ class WP_Widget_Meta extends WP_Widget {
 			<ul>
 			<?php wp_register(); ?>
 			<li><?php wp_loginout(); ?></li>
-			<li><a href="<?php bloginfo('rss2_url'); ?>" title="<?php echo esc_attr(__('Syndicate this site using RSS 2.0')); ?>"><?php _e('Entries <abbr title="Really Simple Syndication">RSS</abbr>'); ?></a></li>
-			<li><a href="<?php bloginfo('comments_rss2_url'); ?>" title="<?php echo esc_attr(__('The latest comments to all posts in RSS')); ?>"><?php _e('Comments <abbr title="Really Simple Syndication">RSS</abbr>'); ?></a></li>
+			<li><a href="<?php bloginfo('rss2_url'); ?>"><?php _e('Entries <abbr title="Really Simple Syndication">RSS</abbr>'); ?></a></li>
+			<li><a href="<?php bloginfo('comments_rss2_url'); ?>"><?php _e('Comments <abbr title="Really Simple Syndication">RSS</abbr>'); ?></a></li>
 <?php
 			/**
 			 * Filter the "Powered by WordPress" text in the Meta widget.
@@ -871,7 +871,13 @@ class WP_Widget_Recent_Comments extends WP_Widget {
 			_prime_post_caches( $post_ids, strpos( get_option( 'permalink_structure' ), '%category%' ), false );
 
 			foreach ( (array) $comments as $comment) {
-				$output .=  '<li class="recentcomments">' . /* translators: comments widget: 1: comment author, 2: post link */ sprintf(_x('%1$s on %2$s', 'widgets'), get_comment_author_link(), '<a href="' . esc_url( get_comment_link($comment->comment_ID) ) . '">' . get_the_title($comment->comment_post_ID) . '</a>') . '</li>';
+				$output .= '<li class="recentcomments">';
+				/* translators: comments widget: 1: comment author, 2: post link */
+				$output .= sprintf( _x( '%1$s on %2$s', 'widgets' ),
+					'<span class="comment-author-link">' . get_comment_author_link() . '</span>',
+					'<a href="' . esc_url( get_comment_link( $comment->comment_ID ) ) . '">' . get_the_title( $comment->comment_post_ID ) . '</a>'
+				);
+				$output .= '</li>';
 			}
 		}
 		$output .= '</ul>';
@@ -963,7 +969,7 @@ class WP_Widget_RSS extends WP_Widget {
 		$url = esc_url(strip_tags($url));
 		$icon = includes_url('images/rss.png');
 		if ( $title )
-			$title = "<a class='rsswidget' href='$url' title='" . esc_attr__( 'Syndicate this content' ) ."'><img style='border:0' width='14' height='14' src='$icon' alt='RSS' /></a> <a class='rsswidget' href='$link' title='$desc'>$title</a>";
+			$title = "<a class='rsswidget' href='$url'><img style='border:0' width='14' height='14' src='$icon' alt='RSS' /></a> <a class='rsswidget' href='$link'>$title</a>";
 
 		echo $args['before_widget'];
 		if ( $title ) {
@@ -1084,7 +1090,7 @@ function wp_widget_rss_output( $rss, $args = array() ) {
 		} elseif ( $show_summary ) {
 			echo "<li><a class='rsswidget' href='$link'>$title</a>{$date}{$summary}{$author}</li>";
 		} else {
-			echo "<li><a class='rsswidget' href='$link' title='$desc'>$title</a>{$date}{$author}</li>";
+			echo "<li><a class='rsswidget' href='$link'>$title</a>{$date}{$author}</li>";
 		}
 	}
 	echo '</ul>';
@@ -1108,16 +1114,18 @@ function wp_widget_rss_form( $args, $inputs = null ) {
 	$default_inputs = array( 'url' => true, 'title' => true, 'items' => true, 'show_summary' => true, 'show_author' => true, 'show_date' => true );
 	$inputs = wp_parse_args( $inputs, $default_inputs );
 
-	$number = esc_attr( $args['number'] );
-	$title  = isset( $args['title'] ) ? esc_attr( $args['title'] ) : '';
-	$url    = isset( $args['url'] ) ? esc_url( $args['url'] ) : '';
-	$items  = isset( $args['items'] ) ? (int) $args['items'] : 0;
-	if ( $items < 1 || 20 < $items ) {
-		$items  = 10;
+	$args['number'] = esc_attr( $args['number'] );
+	$args['title'] = isset( $args['title'] ) ? esc_attr( $args['title'] ) : '';
+	$args['url'] = isset( $args['url'] ) ? esc_url( $args['url'] ) : '';
+	$args['items'] = isset( $args['items'] ) ? (int) $args['items'] : 0;
+
+	if ( $args['items'] < 1 || 20 < $args['items'] ) {
+		$args['items'] = 10;
 	}
-	$show_summary   = isset( $args['show_summary'] ) ? (int) $args['show_summary'] : (int) $inputs['show_summary'];
-	$show_author    = isset( $args['show_author'] ) ? (int) $args['show_author'] : (int) $inputs['show_author'];
-	$show_date      = isset( $args['show_date'] ) ? (int) $args['show_date'] : (int) $inputs['show_date'];
+
+	$args['show_summary']   = isset( $args['show_summary'] ) ? (int) $args['show_summary'] : (int) $inputs['show_summary'];
+	$args['show_author']    = isset( $args['show_author'] ) ? (int) $args['show_author'] : (int) $inputs['show_author'];
+	$args['show_date']      = isset( $args['show_date'] ) ? (int) $args['show_date'] : (int) $inputs['show_date'];
 
 	if ( ! empty( $args['error'] ) ) {
 		echo '<p class="widget-error"><strong>' . sprintf( __( 'RSS Error: %s' ), $args['error'] ) . '</strong></p>';
@@ -1125,35 +1133,36 @@ function wp_widget_rss_form( $args, $inputs = null ) {
 
 	if ( $inputs['url'] ) :
 ?>
-	<p><label for="rss-url-<?php echo $number; ?>"><?php _e('Enter the RSS feed URL here:'); ?></label>
-	<input class="widefat" id="rss-url-<?php echo $number; ?>" name="widget-rss[<?php echo $number; ?>][url]" type="text" value="<?php echo $url; ?>" /></p>
+	<p><label for="rss-url-<?php echo $args['number']; ?>"><?php _e( 'Enter the RSS feed URL here:' ); ?></label>
+	<input class="widefat" id="rss-url-<?php echo $args['number']; ?>" name="widget-rss[<?php echo $args['number']; ?>][url]" type="text" value="<?php echo $args['url']; ?>" /></p>
 <?php endif; if ( $inputs['title'] ) : ?>
-	<p><label for="rss-title-<?php echo $number; ?>"><?php _e('Give the feed a title (optional):'); ?></label>
-	<input class="widefat" id="rss-title-<?php echo $number; ?>" name="widget-rss[<?php echo $number; ?>][title]" type="text" value="<?php echo $title; ?>" /></p>
+	<p><label for="rss-title-<?php echo $args['number']; ?>"><?php _e( 'Give the feed a title (optional):' ); ?></label>
+	<input class="widefat" id="rss-title-<?php echo $args['number']; ?>" name="widget-rss[<?php echo $args['number']; ?>][title]" type="text" value="<?php echo $args['title']; ?>" /></p>
 <?php endif; if ( $inputs['items'] ) : ?>
-	<p><label for="rss-items-<?php echo $number; ?>"><?php _e('How many items would you like to display?'); ?></label>
-	<select id="rss-items-<?php echo $number; ?>" name="widget-rss[<?php echo $number; ?>][items]">
+	<p><label for="rss-items-<?php echo $args['number']; ?>"><?php _e( 'How many items would you like to display?' ); ?></label>
+	<select id="rss-items-<?php echo $args['number']; ?>" name="widget-rss[<?php echo $args['number']; ?>][items]">
 <?php
-		for ( $i = 1; $i <= 20; ++$i )
-			echo "<option value='$i' " . selected( $items, $i, false ) . ">$i</option>";
+		for ( $i = 1; $i <= 20; ++$i ) {
+			echo "<option value='$i' " . selected( $args['items'], $i, false ) . ">$i</option>";
+		}
 ?>
 	</select></p>
 <?php endif; if ( $inputs['show_summary'] ) : ?>
-	<p><input id="rss-show-summary-<?php echo $number; ?>" name="widget-rss[<?php echo $number; ?>][show_summary]" type="checkbox" value="1" <?php if ( $show_summary ) echo 'checked="checked"'; ?>/>
-	<label for="rss-show-summary-<?php echo $number; ?>"><?php _e('Display item content?'); ?></label></p>
+	<p><input id="rss-show-summary-<?php echo $args['number']; ?>" name="widget-rss[<?php echo $args['number']; ?>][show_summary]" type="checkbox" value="1" <?php checked( $args['show_summary'] ); ?> />
+	<label for="rss-show-summary-<?php echo $args['number']; ?>"><?php _e( 'Display item content?' ); ?></label></p>
 <?php endif; if ( $inputs['show_author'] ) : ?>
-	<p><input id="rss-show-author-<?php echo $number; ?>" name="widget-rss[<?php echo $number; ?>][show_author]" type="checkbox" value="1" <?php if ( $show_author ) echo 'checked="checked"'; ?>/>
-	<label for="rss-show-author-<?php echo $number; ?>"><?php _e('Display item author if available?'); ?></label></p>
+	<p><input id="rss-show-author-<?php echo $args['number']; ?>" name="widget-rss[<?php echo $args['number']; ?>][show_author]" type="checkbox" value="1" <?php checked( $args['show_author'] ); ?> />
+	<label for="rss-show-author-<?php echo $args['number']; ?>"><?php _e( 'Display item author if available?' ); ?></label></p>
 <?php endif; if ( $inputs['show_date'] ) : ?>
-	<p><input id="rss-show-date-<?php echo $number; ?>" name="widget-rss[<?php echo $number; ?>][show_date]" type="checkbox" value="1" <?php if ( $show_date ) echo 'checked="checked"'; ?>/>
-	<label for="rss-show-date-<?php echo $number; ?>"><?php _e('Display item date?'); ?></label></p>
+	<p><input id="rss-show-date-<?php echo $args['number']; ?>" name="widget-rss[<?php echo $args['number']; ?>][show_date]" type="checkbox" value="1" <?php checked( $args['show_date'] ); ?>/>
+	<label for="rss-show-date-<?php echo $args['number']; ?>"><?php _e( 'Display item date?' ); ?></label></p>
 <?php
 	endif;
 	foreach ( array_keys($default_inputs) as $input ) :
 		if ( 'hidden' === $inputs[$input] ) :
 			$id = str_replace( '_', '-', $input );
 ?>
-	<input type="hidden" id="rss-<?php echo $id; ?>-<?php echo $number; ?>" name="widget-rss[<?php echo $number; ?>][<?php echo $input; ?>]" value="<?php echo $inputs[ $input ]; ?>" />
+	<input type="hidden" id="rss-<?php echo $id; ?>-<?php echo $args['number']; ?>" name="widget-rss[<?php echo $args['number']; ?>][<?php echo $input; ?>]" value="<?php echo $args[ $input ]; ?>" />
 <?php
 		endif;
 	endforeach;
@@ -1335,7 +1344,7 @@ class WP_Widget_Tag_Cloud extends WP_Widget {
 		$nav_menu = isset( $instance['nav_menu'] ) ? $instance['nav_menu'] : '';
 
 		// Get menus
-		$menus = wp_get_nav_menus( array( 'orderby' => 'name' ) );
+		$menus = wp_get_nav_menus();
 
 		// If no menus exists, direct the user to go and create some.
 		if ( !$menus ) {

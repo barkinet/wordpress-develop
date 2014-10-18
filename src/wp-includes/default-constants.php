@@ -302,16 +302,12 @@ function wp_templating_constants() {
 	/**
 	 * Filesystem path to the current active template directory
 	 * @since 1.5.0
-	 * @deprecated 4.0.0
-	 * @deprecated Use get_template_directory()
 	 */
 	define('TEMPLATEPATH', get_template_directory());
 
 	/**
 	 * Filesystem path to the current active template stylesheet directory
 	 * @since 2.1.0
-	 * @deprecated 4.0.0
-	 * @deprecated Use get_stylesheet_directory()
 	 */
 	define('STYLESHEETPATH', get_stylesheet_directory());
 
@@ -322,6 +318,6 @@ function wp_templating_constants() {
 	 * @since 3.0.0
 	 */
 	if ( !defined('WP_DEFAULT_THEME') )
-		define( 'WP_DEFAULT_THEME', 'twentyfourteen' );
+		define( 'WP_DEFAULT_THEME', 'twentyfifteen' );
 
 }

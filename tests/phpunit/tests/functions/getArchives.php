@@ -32,12 +32,18 @@ class Tests_Get_Archives extends WP_UnitTestCase {
 	function test_wp_get_archives_limit() {
 		$ids = array_slice( array_reverse( $this->post_ids ), 0, 5 );
 
+		$link1 = get_permalink( $ids[0] );
+		$link2 = get_permalink( $ids[1] );
+		$link3 = get_permalink( $ids[2] );
+		$link4 = get_permalink( $ids[3] );
+		$link5 = get_permalink( $ids[4] );
+
 		$expected['limit'] = <<<EOF
-<li><a href='http://example.org/?p={$ids[0]}'>Post title 8</a></li>
-	<li><a href='http://example.org/?p={$ids[1]}'>Post title 7</a></li>
-	<li><a href='http://example.org/?p={$ids[2]}'>Post title 6</a></li>
-	<li><a href='http://example.org/?p={$ids[3]}'>Post title 5</a></li>
-	<li><a href='http://example.org/?p={$ids[4]}'>Post title 4</a></li>
+<li><a href='$link1'>Post title 8</a></li>
+	<li><a href='$link2'>Post title 7</a></li>
+	<li><a href='$link3'>Post title 6</a></li>
+	<li><a href='$link4'>Post title 5</a></li>
+	<li><a href='$link5'>Post title 4</a></li>
 EOF;
 		$this->assertEquals( $expected['limit'], trim( wp_get_archives( array( 'echo' => false, 'type' => 'postbypost', 'limit' => 5 ) ) ) );
 	}

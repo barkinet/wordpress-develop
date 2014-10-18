@@ -45,6 +45,16 @@ class WP_Posts_List_Table extends WP_List_Table {
 	 */
 	private $sticky_posts_count = 0;
 
+	/**
+	 * Constructor.
+	 *
+	 * @since 3.1.0
+	 * @access public
+	 *
+	 * @see WP_List_Table::__construct() for more information on default arguments.
+	 *
+	 * @param array $args An associative array of arguments.
+	 */
 	public function __construct( $args = array() ) {
 		global $post_type_object, $wpdb;
 
@@ -98,7 +108,12 @@ class WP_Posts_List_Table extends WP_List_Table {
 		else
 			$total_pages = $wp_query->max_num_pages;
 
-		$mode = empty( $_REQUEST['mode'] ) ? 'list' : $_REQUEST['mode'];
+		if ( ! empty( $_REQUEST['mode'] ) ) {
+			$mode = $_REQUEST['mode'] == 'excerpt' ? 'excerpt' : 'list';
+			set_user_setting ( 'posts_list_mode', $mode );
+		} else {
+			$mode = get_user_setting ( 'posts_list_mode', 'list' );
+		}
 
 		$this->is_trash = isset( $_REQUEST['post_status'] ) && $_REQUEST['post_status'] == 'trash';
 
@@ -183,16 +198,21 @@ class WP_Posts_List_Table extends WP_List_Table {
 
 	protected function get_bulk_actions() {
 		$actions = array();
+		$post_type_obj = get_post_type_object( $this->screen->post_type );
 
-		if ( $this->is_trash )
+		if ( $this->is_trash ) {
 			$actions['untrash'] = __( 'Restore' );
-		else
+		} else {
 			$actions['edit'] = __( 'Edit' );
+		}
 
-		if ( $this->is_trash || !EMPTY_TRASH_DAYS )
-			$actions['delete'] = __( 'Delete Permanently' );
-		else
-			$actions['trash'] = __( 'Move to Trash' );
+		if ( current_user_can( $post_type_obj->cap->delete_posts ) ) {
+			if ( $this->is_trash || ! EMPTY_TRASH_DAYS ) {
+				$actions['delete'] = __( 'Delete Permanently' );
+			} else {
+				$actions['trash'] = __( 'Move to Trash' );
+			}
+		}
 
 		return $actions;
 	}
@@ -208,13 +228,15 @@ class WP_Posts_List_Table extends WP_List_Table {
 
 			if ( is_object_in_taxonomy( $this->screen->post_type, 'category' ) ) {
 				$dropdown_options = array(
-					'show_option_all' => __( 'View all categories' ),
+					'show_option_all' => __( 'All categories' ),
 					'hide_empty' => 0,
 					'hierarchical' => 1,
 					'show_count' => 0,
 					'orderby' => 'name',
 					'selected' => $cat
 				);
+
+				echo '<label class="screen-reader-text" for="cat">' . __( 'Filter by category' ) . '</label>';
 				wp_dropdown_categories( $dropdown_options );
 			}
 
@@ -228,7 +250,7 @@ class WP_Posts_List_Table extends WP_List_Table {
 			 */
 			do_action( 'restrict_manage_posts' );
 
-			submit_button( __( 'Filter' ), 'button', false, false, array( 'id' => 'post-query-submit' ) );
+			submit_button( __( 'Filter' ), 'button', 'filter_action', false, array( 'id' => 'post-query-submit' ) );
 		}
 
 		if ( $this->is_trash && current_user_can( get_post_type_object( $this->screen->post_type )->cap->edit_others_posts ) ) {
@@ -259,7 +281,7 @@ class WP_Posts_List_Table extends WP_List_Table {
 		return array( 'widefat', 'fixed', is_post_type_hierarchical( $this->screen->post_type ) ? 'pages' : 'posts' );
 	}
 
-	protected function get_columns() {
+	public function get_columns() {
 		$post_type = $this->screen->post_type;
 
 		$posts_columns = array();
@@ -353,7 +375,7 @@ class WP_Posts_List_Table extends WP_List_Table {
 		);
 	}
 
-	protected function display_rows( $posts = array(), $level = 0 ) {
+	public function display_rows( $posts = array(), $level = 0 ) {
 		global $wp_query, $per_page;
 
 		if ( empty( $posts ) )
@@ -409,7 +431,7 @@ class WP_Posts_List_Table extends WP_List_Table {
 
 			foreach ( $pages as $page ) {
 
-				// catch and repair bad pages
+				// Catch and repair bad pages.
 				if ( $page->post_parent == $page->ID ) {
 					$page->post_parent = 0;
 					$wpdb->update( $wpdb->posts, array( 'post_parent' => 0 ), array( 'ID' => $page->ID ) );
@@ -444,7 +466,7 @@ class WP_Posts_List_Table extends WP_List_Table {
 				$this->_page_rows( $children_pages, $count, $page->ID, $level + 1, $pagenum, $per_page );
 		}
 
-		// if it is the last pagenum and there are orphaned pages, display them with paging as well
+		// If it is the last pagenum and there are orphaned pages, display them with paging as well.
 		if ( isset( $children_pages ) && $count < $end ){
 			foreach ( $children_pages as $orphans ){
 				foreach ( $orphans as $op ) {
@@ -520,7 +542,7 @@ class WP_Posts_List_Table extends WP_List_Table {
 		unset( $children_pages[$parent] ); //required in order to keep track of orphans
 	}
 
-	protected function single_row( $post, $level = 0 ) {
+	public function single_row( $post, $level = 0 ) {
 		global $mode;
 		static $alternate;
 
@@ -586,7 +608,7 @@ class WP_Posts_List_Table extends WP_List_Table {
 				$attributes = 'class="post-title page-title column-title"' . $style;
 				if ( $this->hierarchical_display ) {
 					if ( 0 == $level && (int) $post->post_parent > 0 ) {
-						//sent level 0 by accident, by default, or because we don't know the actual level
+						// Sent level 0 by accident, by default, or because we don't know the actual level.
 						$find_main_page = (int) $post->post_parent;
 						while ( $find_main_page > 0 ) {
 							$parent = get_post( $find_main_page );
@@ -656,9 +678,10 @@ class WP_Posts_List_Table extends WP_List_Table {
 				if ( $post_type_object->public ) {
 					if ( in_array( $post->post_status, array( 'pending', 'draft', 'future' ) ) ) {
 						if ( $can_edit_post ) {
-
+							$preview_link = set_url_scheme( get_permalink( $post->ID ) );
 							/** This filter is documented in wp-admin/includes/meta-boxes.php */
-							$actions['view'] = '<a href="' . esc_url( apply_filters( 'preview_post_link', set_url_scheme( add_query_arg( 'preview', 'true', get_permalink( $post->ID ) ) ) ) ) . '" title="' . esc_attr( sprintf( __( 'Preview &#8220;%s&#8221;' ), $title ) ) . '" rel="permalink">' . __( 'Preview' ) . '</a>';
+							$preview_link = apply_filters( 'preview_post_link', add_query_arg( 'preview', 'true', $preview_link ), $post );
+							$actions['view'] = '<a href="' . esc_url( $preview_link ) . '" title="' . esc_attr( sprintf( __( 'Preview &#8220;%s&#8221;' ), $title ) ) . '" rel="permalink">' . __( 'Preview' ) . '</a>';
 						}
 					} elseif ( 'trash' != $post->post_status ) {
 						$actions['view'] = '<a href="' . get_permalink( $post->ID ) . '" title="' . esc_attr( sprintf( __( 'View &#8220;%s&#8221;' ), $title ) ) . '" rel="permalink">' . __( 'View' ) . '</a>';

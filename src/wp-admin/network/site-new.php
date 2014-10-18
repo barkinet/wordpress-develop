@@ -49,15 +49,19 @@ if ( isset($_REQUEST['action']) && 'add-site' == $_REQUEST['action'] ) {
 			wp_die( sprintf( __('The following words are reserved for use by WordPress functions and cannot be used as blog names: <code>%s</code>' ), implode( '</code>, <code>', $subdirectory_reserved_names ) ) );
 	}
 
-	$email = sanitize_email( $blog['email'] );
 	$title = $blog['title'];
 
 	if ( empty( $domain ) )
 		wp_die( __( 'Missing or invalid site address.' ) );
-	if ( empty( $email ) )
+
+	if ( isset( $blog['email'] ) && '' === trim( $blog['email'] ) ) {
 		wp_die( __( 'Missing email address.' ) );
-	if ( !is_email( $email ) )
+	}
+
+	$email = sanitize_email( $blog['email'] );
+	if ( ! is_email( $email ) ) {
 		wp_die( __( 'Invalid email address.' ) );
+	}
 
 	if ( is_subdomain_install() ) {
 		$newdomain = $domain . '.' . preg_replace( '|^www\.|', '', $current_site->domain );
@@ -119,7 +123,7 @@ if ( ! empty( $messages ) ) {
 	foreach ( $messages as $msg )
 		echo '<div id="message" class="updated"><p>' . $msg . '</p></div>';
 } ?>
-<form method="post" action="<?php echo network_admin_url('site-new.php?action=add-site'); ?>">
+<form method="post" action="<?php echo network_admin_url( 'site-new.php?action=add-site' ); ?>" novalidate="novalidate">
 <?php wp_nonce_field( 'add-blog', '_wpnonce_add-blog' ) ?>
 	<table class="form-table">
 		<tr class="form-field form-required">
@@ -140,7 +144,7 @@ if ( ! empty( $messages ) ) {
 		</tr>
 		<tr class="form-field form-required">
 			<th scope="row"><?php _e( 'Admin Email' ) ?></th>
-			<td><input name="blog[email]" type="text" class="regular-text wp-suggest-user" data-autocomplete-type="search" data-autocomplete-field="user_email" title="<?php esc_attr_e( 'Email' ) ?>"/></td>
+			<td><input name="blog[email]" type="email" class="regular-text wp-suggest-user" data-autocomplete-type="search" data-autocomplete-field="user_email" title="<?php esc_attr_e( 'Email' ) ?>"/></td>
 		</tr>
 		<tr class="form-field">
 			<td colspan="2"><?php _e( 'A new user will be created if the above email address is not in the database.' ) ?><br /><?php _e( 'The username and password will be mailed to this email address.' ) ?></td>

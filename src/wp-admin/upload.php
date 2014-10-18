@@ -22,16 +22,55 @@ if ( isset( $_GET['mode'] ) && in_array( $_GET['mode'], $modes ) ) {
 
 if ( 'grid' === $mode ) {
 	wp_enqueue_media();
+	wp_enqueue_script( 'media-grid' );
 	wp_enqueue_script( 'media' );
+	wp_localize_script( 'media-grid', '_wpMediaGridSettings', array(
+		'adminUrl' => parse_url( self_admin_url(), PHP_URL_PATH ),
+	) );
+
+	get_current_screen()->add_help_tab( array(
+		'id'		=> 'overview',
+		'title'		=> __( 'Overview' ),
+		'content'	=>
+			'<p>' . __( 'All the files you&#8217;ve uploaded are listed in the Media Library, with the most recent uploads listed first.' ) . '</p>' .
+			'<p>' . __( 'You can view your media in a simple visual grid or a list with columns. Switch between these views using the icons to the left above the media.' ) . '</p>' .
+			'<p>' . __( 'To delete media items, click the Bulk Select button at the top of the screen. Select any items you wish to delete, then click the Delete Selected button. Clicking the Cancel Selection button takes you back to viewing your media.' ) . '</p>'
+	) );
+
+	get_current_screen()->add_help_tab( array(
+		'id'		=> 'attachment-details',
+		'title'		=> __( 'Attachment Details' ),
+		'content'	=>
+			'<p>' . __( 'Clicking an item will display an Attachment Details dialog, which allows you to preview media and make quick edits. Any changes you make to the attachment details will be automatically saved.' ) . '</p>' .
+			'<p>' . __( 'Use the arrow buttons at the top of the dialog, or the left and right arrow keys on your keyboard, to navigate between media items quickly.' ) . '</p>' .
+			'<p>' . __( 'You can also delete individual items and access the extended edit screen from the details dialog.' ) . '</p>'
+	) );
+
+	get_current_screen()->set_help_sidebar(
+		'<p><strong>' . __( 'For more information:' ) . '</strong></p>' .
+		'<p>' . __( '<a href="http://codex.wordpress.org/Media_Library_Screen" target="_blank">Documentation on Media Library</a>' ) . '</p>' .
+		'<p>' . __( '<a href="https://wordpress.org/support/" target="_blank">Support Forums</a>' ) . '</p>'
+	);
+
+	$title = __('Media Library');
+	$parent_file = 'upload.php';
+
 	require_once( ABSPATH . 'wp-admin/admin-header.php' );
-	?><div class="view-switch media-grid-view-switch">
-		<a href="<?php echo esc_url( add_query_arg( 'mode', 'list', $_SERVER['REQUEST_URI'] ) ) ?>" class="view-list">
-			<img id="view-switch-list" src="<?php echo includes_url( 'images/blank.gif' ) ?>" width="20" height="20" title="List View" alt="List View"/>
-		</a>
-		<a href="<?php echo esc_url( add_query_arg( 'mode', 'grid', $_SERVER['REQUEST_URI'] ) ) ?>" class="view-grid current">
-			<img id="view-switch-excerpt" src="<?php echo includes_url( 'images/blank.gif' ) ?>" width="20" height="20" title="Grid View" alt="Grid View"/>
-		</a>
-	</div><?php
+	?>
+	<div class="wrap" id="wp-media-grid">
+		<h2>
+		<?php
+		echo esc_html( $title );
+		if ( current_user_can( 'upload_files' ) ) { ?>
+			<a href="media-new.php" class="add-new-h2"><?php echo esc_html_x( 'Add New', 'file' ); ?></a><?php
+		}
+		?>
+		</h2>
+		<div class="error hide-if-js">
+			<p><?php _e( 'The grid view for the Media Library requires JavaScript. <a href="upload.php?mode=list">Switch to the list view</a>.' ); ?></p>
+		</div>
+	</div>
+	<?php
 	include( ABSPATH . 'wp-admin/admin-footer.php' );
 	exit;
 }
@@ -61,21 +100,6 @@ if ( $doaction ) {
 	}
 
 	switch ( $doaction ) {
-		case 'find_detached':
-			if ( !current_user_can('edit_posts') )
-				wp_die( __('You are not allowed to scan for lost attachments.') );
-
-			$lost = $wpdb->get_col( "
-				SELECT ID FROM $wpdb->posts
-				WHERE post_type = 'attachment' AND post_parent > '0'
-				AND post_parent NOT IN (
-					SELECT ID FROM $wpdb->posts
-					WHERE post_type NOT IN ( 'attachment', '" . join( "', '", get_post_types( array( 'public' => false ) ) ) . "' )
-				)
-			" );
-
-			$_REQUEST['detached'] = 1;
-			break;
 		case 'attach':
 			$parent_id = (int) $_REQUEST['found_post_id'];
 			if ( !$parent_id )
@@ -174,7 +198,8 @@ get_current_screen()->add_help_tab( array(
 'title'		=> __('Overview'),
 'content'	=>
 	'<p>' . __( 'All the files you&#8217;ve uploaded are listed in the Media Library, with the most recent uploads listed first. You can use the Screen Options tab to customize the display of this screen.' ) . '</p>' .
-	'<p>' . __( 'You can narrow the list by file type/status using the text link filters at the top of the screen. You also can refine the list by date using the dropdown menu above the media table.' ) . '</p>'
+	'<p>' . __( 'You can narrow the list by file type/status using the text link filters at the top of the screen. You also can refine the list by date using the dropdown menu above the media table.' ) . '</p>' .
+	'<p>' . __( 'You can view your media in a simple visual grid or a list with columns. Switch between these views using the icons to the left above the media.' ) . '</p>'
 ) );
 get_current_screen()->add_help_tab( array(
 'id'		=> 'actions-links',
@@ -252,11 +277,9 @@ if ( !empty($message) ) { ?>
 <div id="message" class="updated"><p><?php echo $message; ?></p></div>
 <?php } ?>
 
-<?php $wp_list_table->views(); ?>
-
 <form id="posts-filter" action="" method="get">
 
-<?php $wp_list_table->search_box( __( 'Search Media' ), 'media' ); ?>
+<?php $wp_list_table->views(); ?>
 
 <?php $wp_list_table->display(); ?>
 

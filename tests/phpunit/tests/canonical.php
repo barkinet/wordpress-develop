@@ -19,16 +19,20 @@ class Tests_Canonical extends WP_UnitTestCase {
 	var $term_ids;
 
 	function setUp() {
+		global $wp_rewrite;
+
 		parent::setUp();
 
 		update_option( 'page_comments', true );
 		update_option( 'comments_per_page', 5 );
 		update_option( 'posts_per_page', 5 );
 
-		update_option( 'permalink_structure', $this->structure );
+		$wp_rewrite->init();
+		$wp_rewrite->set_permalink_structure( $this->structure );
+
 		create_initial_taxonomies();
-		$GLOBALS['wp_rewrite']->init();
-		flush_rewrite_rules();
+
+		$wp_rewrite->flush_rules();
 
 		$this->old_current_user = get_current_user_id();
 		$this->author_id = $this->factory->user->create( array( 'user_login' => 'canonical-author' ) );
@@ -80,10 +84,11 @@ class Tests_Canonical extends WP_UnitTestCase {
 	}
 
 	function tearDown() {
+		global $wp_rewrite;
 		parent::tearDown();
 		wp_set_current_user( $this->old_current_user );
 
-		$GLOBALS['wp_rewrite']->init();
+		$wp_rewrite->init();
 	}
 
 	// URL's are relative to the site "front", ie. /category/uncategorized/ instead of http://site.../category..
@@ -101,7 +106,9 @@ class Tests_Canonical extends WP_UnitTestCase {
 	/**
 	 * @dataProvider data
 	 */
-	function test($test_url, $expected, $ticket = 0) {
+	function test( $test_url, $expected, $ticket = 0, $expected_doing_it_wrong = array() ) {
+		$this->expected_doing_it_wrong = array_merge( $this->expected_doing_it_wrong, (array) $expected_doing_it_wrong );
+
 		if ( $ticket )
 			$this->knownWPBug( $ticket );
 
@@ -241,7 +248,7 @@ class Tests_Canonical extends WP_UnitTestCase {
 			array( '/?year=2008', '/2008/'),
 
 			array( '/2012/13/', '/2012/'),
-			array( '/2012/11/51/', '/2012/11/'),
+			array( '/2012/11/51/', '/2012/11/', 0, array( 'WP_Date_Query' ) ),
 
 			// Authors
 			array( '/?author=%d', '/author/canonical-author/' ),

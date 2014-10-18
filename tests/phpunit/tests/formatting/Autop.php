@@ -4,7 +4,7 @@
  * @group formatting
  */
 class Tests_Formatting_Autop extends WP_UnitTestCase {
-	//From ticket http://core.trac.wordpress.org/ticket/11008
+	//From ticket https://core.trac.wordpress.org/ticket/11008
 	function test_first_post() {
 		$expected = '<p>Welcome to WordPress!  This post contains important information.  After you read it, you can make it private to hide it from visitors but still have the information handy for future reference.</p>
 <p>First things first:</p>
@@ -272,5 +272,132 @@ Paragraph two.';
 	public function test_skip_select_option_elements() {
 		$str = 'Country: <select id="state" name="state"><option value="1">Alabama</option><option value="2">Alaska</option><option value="3">Arizona</option><option value="4">Arkansas</option><option value="5">California</option></select>';
 		$this->assertEquals( "<p>$str</p>", trim( wpautop( $str ) ) );
+	}
+
+	/**
+	 * wpautop() should treat block level HTML elements as blocks.
+	 *
+	 * @ticket 27268
+	 */
+	function test_that_wpautop_treats_block_level_elements_as_blocks() {
+		$blocks = array(
+			'table',
+			'thead',
+			'tfoot',
+			'caption',
+			'col',
+			'colgroup',
+			'tbody',
+			'tr',
+			'td',
+			'th',
+			'div',
+			'dl',
+			'dd',
+			'dt',
+			'ul',
+			'ol',
+			'li',
+			'pre',
+			'form',
+			'map',
+			'area',
+			'address',
+			'math',
+			'style',
+			'p',
+			'h1',
+			'h2',
+			'h3',
+			'h4',
+			'h5',
+			'h6',
+			'hr',
+			'fieldset',
+			'legend',
+			'section',
+			'article',
+			'aside',
+			'hgroup',
+			'header',
+			'footer',
+			'nav',
+			'figure',
+			'details',
+			'menu',
+			'summary',
+		);
+
+		$content = array();
+
+		foreach ( $blocks as $block ) {
+			$content[] = "<$block>foo</$block>";
+		}
+
+		$expected = join( "\n", $content );
+		$content = join( "\n\n", $content ); // WS difference
+
+		$this->assertEquals( $expected, trim( wpautop( $content ) ) );
+	}
+
+	/**
+	 * wpautop() should autop a blockquote's contents but not the blockquote itself
+	 *
+	 * @ticket 27268
+	 */
+	function test_that_wpautop_does_not_wrap_blockquotes_but_does_autop_their_contents() {
+		$content  = "<blockquote>foo</blockquote>";
+		$expected = "<blockquote><p>foo</p></blockquote>";
+
+		$this->assertEquals( $expected, trim( wpautop( $content ) ) );
+	}
+
+	/**
+	 * wpautop() should treat inline HTML elements as inline.
+	 *
+	 * @ticket 27268
+	 */
+	function test_that_wpautop_treats_inline_elements_as_inline() {
+		$inlines = array(
+			'a',
+			'em',
+			'strong',
+			'small',
+			's',
+			'cite',
+			'q',
+			'dfn',
+			'abbr',
+			'data',
+			'time',
+			'code',
+			'var',
+			'samp',
+			'kbd',
+			'sub',
+			'sup',
+			'i',
+			'b',
+			'u',
+			'mark',
+			'span',
+			'del',
+			'ins',
+			'noscript',
+			'figcaption',
+			'select',
+		);
+
+		$content = $expected = array();
+
+		foreach ( $inlines as $inline ) {
+			$content[] = "<$inline>foo</$inline>";
+			$expected[] = "<p><$inline>foo</$inline></p>";
+		}
+
+		$content = join( "\n\n", $content );
+		$expected = join( "\n", $expected );
+
+		$this->assertEquals( $expected, trim( wpautop( $content ) ) );
 	}
 }

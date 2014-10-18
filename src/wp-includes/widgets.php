@@ -689,9 +689,9 @@ function unregister_sidebar( $name ) {
 /**
  * Register widget for use in sidebars.
  *
- * The default widget option is 'classname' that can be override.
+ * The default widget option is 'classname' that can be overridden.
  *
- * The function can also be used to unregister widgets when $output_callback
+ * The function can also be used to un-register widgets when $output_callback
  * parameter is an empty string.
  *
  * @since 2.2.0
@@ -1142,8 +1142,9 @@ function is_active_widget($callback = false, $widget_id = false, $id_base = fals
 
 	if ( is_array($sidebars_widgets) ) {
 		foreach ( $sidebars_widgets as $sidebar => $widgets ) {
-			if ( $skip_inactive && 'wp_inactive_widgets' == $sidebar )
+			if ( $skip_inactive && ( 'wp_inactive_widgets' === $sidebar || 'orphaned_widgets' === substr( $sidebar, 0, 16 ) ) ) {
 				continue;
+			}
 
 			if ( is_array($widgets) ) {
 				foreach ( $widgets as $widget ) {
@@ -1405,7 +1406,7 @@ function _wp_sidebars_changed() {
  * @since 2.8.0
  *
  * @param mixed $theme_changed Whether the theme was changed as a boolean. A value
- *                             of 'customize' defers updates for the customizer.
+ *                             of 'customize' defers updates for the Customizer.
  * @return array
  */
 function retrieve_widgets( $theme_changed = false ) {
@@ -1424,8 +1425,9 @@ function retrieve_widgets( $theme_changed = false ) {
 		}
 
 		foreach ( $_sidebars_widgets as $sidebar => $widgets ) {
-			if ( 'wp_inactive_widgets' == $sidebar || 'orphaned_widgets' == substr( $sidebar, 0, 16 ) )
+			if ( 'wp_inactive_widgets' === $sidebar || 'orphaned_widgets' === substr( $sidebar, 0, 16 ) ) {
 				continue;
+			}
 
 			if ( !in_array( $sidebar, $registered_sidebar_keys ) ) {
 				$_sidebars_widgets['orphaned_widgets_' . ++$orphaned] = $widgets;

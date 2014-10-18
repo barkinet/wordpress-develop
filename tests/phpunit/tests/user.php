@@ -375,6 +375,9 @@ class Tests_User extends WP_UnitTestCase {
 			wpmu_delete_user( $user_id );
 		else
 			wp_delete_user( $user_id );
+
+		$user = new WP_User( $user_id );
+		$this->assertFalse( $user->exists(), 'WP_User->exists' );
 		$this->assertEquals( array(), get_blogs_of_user( $user_id ) );
 	}
 
@@ -626,5 +629,47 @@ class Tests_User extends WP_UnitTestCase {
 
 		// If this test fails, it will error out for calling the to_array() method on a non-object.
 		$this->assertInstanceOf( 'WP_Error', wp_update_user( array( 'ID' => $user_id ) ) );
+	}
+
+	/**
+	 * @ticket 28315
+	 */
+	function test_user_meta_error() {
+		$id1 = wp_insert_user( array(
+			'user_login' => rand_str(),
+			'user_pass' => 'password',
+			'user_email' => 'taco@burrito.com',
+		) );
+		$this->assertEquals( $id1, email_exists( 'taco@burrito.com' ) );
+
+		$id2 = wp_insert_user( array(
+			'user_login' => rand_str(),
+			'user_pass' => 'password',
+			'user_email' => 'taco@burrito.com',
+		) );
+
+		if ( ! defined( 'WP_IMPORTING' ) ) {
+			$this->assertWPError( $id2 );
+		}
+
+		@update_user_meta( $id2, 'key', 'value' );
+
+		$metas = array_keys( get_user_meta( 1 ) );
+		$this->assertNotContains( 'key', $metas );
+	}
+
+	/**
+	 * @ticket 29696
+	 */
+	public function test_wp_insert_user_should_sanitize_user_nicename_parameter() {
+		$user = $this->factory->user->create_and_get();
+
+		$userdata = $user->to_array();
+		$userdata['user_nicename'] = str_replace( '-', '.', $user->user_nicename );
+		wp_insert_user( $userdata );
+
+		$updated_user = new WP_User( $user->ID );
+
+		$this->assertSame( $user->user_nicename, $updated_user->user_nicename );
 	}
 }

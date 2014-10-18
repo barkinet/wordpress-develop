@@ -136,11 +136,11 @@ function get_permalink( $id = 0, $leavename = false ) {
 		return false;
 
 	if ( $post->post_type == 'page' )
-		return get_page_link($post->ID, $leavename, $sample);
+		return get_page_link($post, $leavename, $sample);
 	elseif ( $post->post_type == 'attachment' )
-		return get_attachment_link( $post->ID, $leavename );
+		return get_attachment_link( $post, $leavename );
 	elseif ( in_array($post->post_type, get_post_types( array('_builtin' => false) ) ) )
-		return get_post_permalink($post->ID, $leavename, $sample);
+		return get_post_permalink($post, $leavename, $sample);
 
 	$permalink = get_option('permalink_structure');
 
@@ -257,10 +257,12 @@ function get_post_permalink( $id = 0, $leavename = false, $sample = false ) {
 
 	$post_type = get_post_type_object($post->post_type);
 
+	if ( $post_type->hierarchical ) {
+		$slug = get_page_uri( $id );
+	}
+
 	if ( !empty($post_link) && ( !$draft_or_pending || $sample ) ) {
 		if ( ! $leavename ) {
-			if ( $post_type->hierarchical )
-				$slug = get_page_uri($id);
 			$post_link = str_replace("%$post->post_type%", $slug, $post_link);
 		}
 		$post_link = home_url( user_trailingslashit($post_link) );
@@ -290,7 +292,7 @@ function get_post_permalink( $id = 0, $leavename = false, $sample = false ) {
  *
  * @since 1.0.0
  *
- * @param int|WP_Post $post_id Optional. Post ID or WP_Post object. Default is global `$post`.
+ * @param int|WP_Post $post_id Optional. Post ID or WP_Post object. Default is global $post.
  * @param mixed $deprecated Not used.
  * @return string
  */
@@ -1477,41 +1479,41 @@ function get_adjacent_post( $in_same_term = false, $excluded_terms = '', $previo
 	$current_post_date = $post->post_date;
 
 	$join = '';
-	$posts_in_ex_terms_sql = '';
+	$where = '';
+
 	if ( $in_same_term || ! empty( $excluded_terms ) ) {
 		$join = " INNER JOIN $wpdb->term_relationships AS tr ON p.ID = tr.object_id INNER JOIN $wpdb->term_taxonomy tt ON tr.term_taxonomy_id = tt.term_taxonomy_id";
+		$where = $wpdb->prepare( "AND tt.taxonomy = %s", $taxonomy );
+
+		if ( ! empty( $excluded_terms ) && ! is_array( $excluded_terms ) ) {
+			// back-compat, $excluded_terms used to be $excluded_terms with IDs separated by " and "
+			if ( false !== strpos( $excluded_terms, ' and ' ) ) {
+				_deprecated_argument( __FUNCTION__, '3.3', sprintf( __( 'Use commas instead of %s to separate excluded terms.' ), "'and'" ) );
+				$excluded_terms = explode( ' and ', $excluded_terms );
+			} else {
+				$excluded_terms = explode( ',', $excluded_terms );
+			}
+
+			$excluded_terms = array_map( 'intval', $excluded_terms );
+		}
 
 		if ( $in_same_term ) {
 			if ( ! is_object_in_taxonomy( $post->post_type, $taxonomy ) )
 				return '';
 			$term_array = wp_get_object_terms( $post->ID, $taxonomy, array( 'fields' => 'ids' ) );
+
+			// Remove any exclusions from the term array to include.
+			$term_array = array_diff( $term_array, (array) $excluded_terms );
+			$term_array = array_map( 'intval', $term_array );
+
 			if ( ! $term_array || is_wp_error( $term_array ) )
 				return '';
-			$join .= $wpdb->prepare( " AND tt.taxonomy = %s AND tt.term_id IN (" . implode( ',', array_map( 'intval', $term_array ) ) . ")", $taxonomy );
+
+			$where .= " AND tt.term_id IN (" . implode( ',', $term_array ) . ")";
 		}
 
-		$posts_in_ex_terms_sql = $wpdb->prepare( "AND tt.taxonomy = %s", $taxonomy );
 		if ( ! empty( $excluded_terms ) ) {
-			if ( ! is_array( $excluded_terms ) ) {
-				// back-compat, $excluded_terms used to be $excluded_terms with IDs separated by " and "
-				if ( false !== strpos( $excluded_terms, ' and ' ) ) {
-					_deprecated_argument( __FUNCTION__, '3.3', sprintf( __( 'Use commas instead of %s to separate excluded terms.' ), "'and'" ) );
-					$excluded_terms = explode( ' and ', $excluded_terms );
-				} else {
-					$excluded_terms = explode( ',', $excluded_terms );
-				}
-			}
-
-			$excluded_terms = array_map( 'intval', $excluded_terms );
-
-			if ( ! empty( $term_array ) ) {
-				$excluded_terms = array_diff( $excluded_terms, $term_array );
-				$posts_in_ex_terms_sql = '';
-			}
-
-			if ( ! empty( $excluded_terms ) ) {
-				$posts_in_ex_terms_sql = $wpdb->prepare( " AND tt.taxonomy = %s AND tt.term_id NOT IN (" . implode( $excluded_terms, ',' ) . ')', $taxonomy );
-			}
+			$where .= " AND p.ID NOT IN ( SELECT object_id FROM $wpdb->term_relationships WHERE term_taxonomy_id IN (" . implode( $excluded_terms, ',' ) . ') )';
 		}
 	}
 
@@ -1545,7 +1547,7 @@ function get_adjacent_post( $in_same_term = false, $excluded_terms = '', $previo
 	 * @param bool   $in_same_term   Whether post should be in a same taxonomy term.
 	 * @param array  $excluded_terms Array of excluded term IDs.
 	 */
-	$where = apply_filters( "get_{$adjacent}_post_where", $wpdb->prepare( "WHERE p.post_date $op %s AND p.post_type = %s AND p.post_status = 'publish' $posts_in_ex_terms_sql", $current_post_date, $post->post_type), $in_same_term, $excluded_terms );
+	$where = apply_filters( "get_{$adjacent}_post_where", $wpdb->prepare( "WHERE p.post_date $op %s AND p.post_type = %s AND p.post_status = 'publish' $where", $current_post_date, $post->post_type ), $in_same_term, $excluded_terms );
 
 	/**
 	 * Filter the ORDER BY clause in the SQL for an adjacent post query.
@@ -1655,7 +1657,7 @@ function adjacent_posts_rel_link( $title = '%title', $in_same_term = false, $exc
  *
  */
 function adjacent_posts_rel_link_wp_head() {
-	if ( ! is_single() ) {
+	if ( ! is_single() || is_attachment() ) {
 		return;
 	}
 	adjacent_posts_rel_link();
@@ -2626,23 +2628,24 @@ function content_url($path = '') {
 }
 
 /**
- * Retrieve the url to the plugins directory or to a specific file within that directory.
- * You can hardcode the plugin slug in $path or pass __FILE__ as a second argument to get the correct folder name.
+ * Retrieve a URL within the plugins or mu-plugins directory.
+ *
+ * Defaults to the plugins directory URL if no arguments are supplied.
  *
  * @since 2.6.0
  *
- * @param string $path Optional. Path relative to the plugins url.
- * @param string $plugin Optional. The plugin file that you want to be relative to - i.e. pass in __FILE__
- * @return string Plugins url link with optional path appended.
+ * @param  string $path   Optional. Extra path appended to the end of the URL, including
+ *                        the relative directory if $plugin is supplied. Default empty.
+ * @param  string $plugin Optional. A full path to a file inside a plugin or mu-plugin.
+ *                        The URL will be relative to its directory. Default empty.
+ *                        Typically this is done by passing `__FILE__` as the argument.
+ * @return string Plugins URL link with optional paths appended.
 */
-function plugins_url($path = '', $plugin = '') {
+function plugins_url( $path = '', $plugin = '' ) {
 
-	$path = str_replace( '\\' ,'/', $path ); // sanitize for Win32 installs
-	$path = preg_replace( '|/+|', '/', $path );
-	$plugin = str_replace( '\\' ,'/', $plugin ); // sanitize for Win32 installs
-	$plugin = preg_replace( '|/+|', '/', $plugin );
-	$mu_plugin_dir = str_replace( '\\' ,'/', WPMU_PLUGIN_DIR ); // sanitize for Win32 installs
-	$mu_plugin_dir = preg_replace( '|/+|', '/', $mu_plugin_dir );
+	$path = wp_normalize_path( $path );
+	$plugin = wp_normalize_path( $plugin );
+	$mu_plugin_dir = wp_normalize_path( WPMU_PLUGIN_DIR );
 
 	if ( !empty($plugin) && 0 === strpos($plugin, $mu_plugin_dir) )
 		$url = WPMU_PLUGIN_URL;

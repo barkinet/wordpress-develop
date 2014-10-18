@@ -2,10 +2,11 @@
 /**
  * Base class for displaying a list of items in an ajaxified HTML table.
  *
- * @package WordPress
- * @subpackage List_Table
  * @since 3.1.0
  * @access private
+ *
+ * @package WordPress
+ * @subpackage List_Table
  */
 class WP_List_Table {
 
@@ -14,9 +15,9 @@ class WP_List_Table {
 	 *
 	 * @since 3.1.0
 	 * @var array
-	 * @access protected
+	 * @access public
 	 */
-	protected $items;
+	public $items;
 
 	/**
 	 * Various information about the current table
@@ -64,10 +65,30 @@ class WP_List_Table {
 	private $_pagination;
 
 	/**
-	 * Constructor. The child class should call this constructor from its own constructor
+	 * Constructor.
 	 *
-	 * @param array $args An associative array with information about the current table
-	 * @access protected
+	 * The child class should call this constructor from its own constructor to override
+	 * the default $args.
+	 *
+	 * @since 3.1.0
+	 * @access public
+	 *
+	 * @param array|string $args {
+	 *     Array or string of arguments.
+	 *
+	 *     @type string $plural   Plural value used for labels and the objects being listed.
+	 *                            This affects things such as CSS class-names and nonces used
+	 *                            in the list table, e.g. 'posts'. Default empty.
+	 *     @type string $singular Singular label for an object being listed, e.g. 'post'.
+	 *                            Default empty
+	 *     @type bool   $ajax     Whether the list table supports AJAX. This includes loading
+	 *                            and sorting data, for example. If true, the class will call
+	 *                            the {@see _js_vars()} method in the footer to provide variables
+	 *                            to any scripts handling AJAX events. Default false.
+	 *     @type string $screen   String containing the hook name used to determine the current
+	 *                            screen. If left null, the current screen will be automatically set.
+	 *                            Default null.
+	 * }
 	 */
 	public function __construct( $args = array() ) {
 		$args = wp_parse_args( $args, array(
@@ -96,57 +117,66 @@ class WP_List_Table {
 	}
 
 	/**
-	 * Make private properties readable for backwards compatibility
+	 * Make private properties readable for backwards compatibility.
 	 *
 	 * @since 4.0.0
-	 * @param string $name
-	 * @return mixed
+	 * @access public
+	 *
+	 * @param string $name Property to get.
+	 * @return mixed Property.
 	 */
 	public function __get( $name ) {
 		return $this->$name;
 	}
 
 	/**
-	 * Make private properties setable for backwards compatibility
+	 * Make private properties settable for backwards compatibility.
 	 *
 	 * @since 4.0.0
-	 * @param string $name
-	 * @param string $value
-	 * @return mixed
+	 * @access public
+	 *
+	 * @param string $name  Property to set.
+	 * @param mixed  $value Property value.
+	 * @return mixed Newly-set property.
 	 */
 	public function __set( $name, $value ) {
 		return $this->$name = $value;
 	}
 
 	/**
-	 * Make private properties checkable for backwards compatibility
+	 * Make private properties checkable for backwards compatibility.
 	 *
 	 * @since 4.0.0
-	 * @param string $name
-	 * @return mixed
+	 * @access public
+	 *
+	 * @param string $name Property to check if set.
+	 * @return bool Whether the property is set.
 	 */
 	public function __isset( $name ) {
 		return isset( $this->$name );
 	}
 
 	/**
-	 * Make private properties unsetable for backwards compatibility
+	 * Make private properties un-settable for backwards compatibility.
 	 *
 	 * @since 4.0.0
-	 * @param string $name
-	 * @return mixed
+	 * @access public
+	 *
+	 * @param string $name Property to unset.
 	 */
 	public function __unset( $name ) {
 		unset( $this->$name );
 	}
 
 	/**
-	 * Make private/protected methods readable for backwards compatibility
+	 * Make private/protected methods readable for backwards compatibility.
 	 *
 	 * @since 4.0.0
-	 * @param string $name
-	 * @param array $arguments
-	 * @return mixed
+	 * @access public
+	 *
+	 * @param callable $name      Method to call.
+	 * @param array    $arguments Arguments to pass when calling.
+	 * @return mixed|bool Return value of the callback, false otherwise.
 	 */
 	public function __call( $name, $arguments ) {
 		return call_user_func_array( array( $this, $name ), $arguments );
@@ -192,7 +222,7 @@ class WP_List_Table {
 		if ( !$args['total_pages'] && $args['per_page'] > 0 )
 			$args['total_pages'] = ceil( $args['total_items'] / $args['per_page'] );
 
-		// redirect if page number is invalid and headers are not already sent
+		// Redirect if page number is invalid and headers are not already sent.
 		if ( ! headers_sent() && ( ! defined( 'DOING_AJAX' ) || ! DOING_AJAX ) && $args['total_pages'] > 0 && $this->get_pagenum() > $args['total_pages'] ) {
 			wp_redirect( add_query_arg( 'paged', $args['total_pages'] ) );
 			exit;
@@ -333,9 +363,12 @@ class WP_List_Table {
 	 * Display the bulk actions dropdown.
 	 *
 	 * @since 3.1.0
-	 * @access public
+	 * @access protected
+	 *
+	 * @param string $which The location of the bulk actions: 'top' or 'bottom'.
+	 *                      This is designated as optional for backwards-compatibility.
 	 */
-	public function bulk_actions() {
+	protected function bulk_actions( $which = '' ) {
 		if ( is_null( $this->_actions ) ) {
 			$no_new_actions = $this->_actions = $this->get_bulk_actions();
 			/**
@@ -360,7 +393,8 @@ class WP_List_Table {
 		if ( empty( $this->_actions ) )
 			return;
 
-		echo "<select name='action$two'>\n";
+		echo "<label for='bulk-action-selector-" . esc_attr( $which ) . "' class='screen-reader-text'>" . __( 'Select bulk action' ) . "</label>";
+		echo "<select name='action$two' id='bulk-action-selector-" . esc_attr( $which ) . "'>\n";
 		echo "<option value='-1' selected='selected'>" . __( 'Bulk Actions' ) . "</option>\n";
 
 		foreach ( $this->_actions as $name => $title ) {
@@ -384,6 +418,9 @@ class WP_List_Table {
 	 * @return string|bool The action name or False if no action was selected
 	 */
 	public function current_action() {
+		if ( isset( $_REQUEST['filter_action'] ) && ! empty( $_REQUEST['filter_action'] ) )
+			return false;
+
 		if ( isset( $_REQUEST['action'] ) && -1 != $_REQUEST['action'] )
 			return $_REQUEST['action'];
 
@@ -454,7 +491,8 @@ class WP_List_Table {
 
 		$m = isset( $_GET['m'] ) ? (int) $_GET['m'] : 0;
 ?>
-		<select name="m">
+		<label for="filter-by-date" class="screen-reader-text"><?php _e( 'Filter by date' ); ?></label>
+		<select name="m" id="filter-by-date">
 			<option<?php selected( $m, 0 ); ?> value="0"><?php _e( 'All dates' ); ?></option>
 <?php
 		foreach ( $months as $arc_row ) {
@@ -497,11 +535,9 @@ class WP_List_Table {
 				if ( $current_mode == $mode )
 					$classes[] = 'current';
 				printf(
-					"<a href='%s' class='%s'><img id='view-switch-$mode' src='%s' width='20' height='20' title='%s' alt='%s' /></a>\n",
+					"<a href='%s' class='%s' id='view-switch-$mode'><span class='screen-reader-text'>%s</span></a>\n",
 					esc_url( add_query_arg( 'mode', $mode ) ),
 					implode( ' ', $classes ),
-					esc_url( includes_url( 'images/blank.gif' ) ),
-					$title,
 					$title
 				);
 			}
@@ -516,8 +552,8 @@ class WP_List_Table {
 	 * @since 3.1.0
 	 * @access protected
 	 *
-	 * @param int $post_id
-	 * @param int $pending_comments
+	 * @param int $post_id          The post ID.
+	 * @param int $pending_comments Number of pending comments.
 	 */
 	protected function comments_bubble( $post_id, $pending_comments ) {
 		$pending_phrase = sprintf( __( '%s pending' ), number_format( $pending_comments ) );
@@ -535,11 +571,11 @@ class WP_List_Table {
 	 * Get the current page number
 	 *
 	 * @since 3.1.0
-	 * @access protected
+	 * @access public
 	 *
 	 * @return int
 	 */
-	protected function get_pagenum() {
+	public function get_pagenum() {
 		$pagenum = isset( $_REQUEST['paged'] ) ? absint( $_REQUEST['paged'] ) : 0;
 
 		if( isset( $this->_pagination_args['total_pages'] ) && $pagenum > $this->_pagination_args['total_pages'] )
@@ -628,7 +664,8 @@ class WP_List_Table {
 		if ( 'bottom' == $which ) {
 			$html_current_page = $current;
 		} else {
-			$html_current_page = sprintf( "<input class='current-page' title='%s' type='text' name='paged' value='%s' size='%d' />",
+			$html_current_page = sprintf( "%s<input class='current-page' id='current-page-selector' title='%s' type='text' name='paged' value='%s' size='%d' />",
+				'<label for="current-page-selector" class="screen-reader-text">' . __( 'Select Page' ) . '</label>',
 				esc_attr__( 'Current page' ),
 				$current,
 				strlen( $total_pages )
@@ -672,12 +709,12 @@ class WP_List_Table {
 	 * 'internal-name' => 'Title'
 	 *
 	 * @since 3.1.0
-	 * @access protected
+	 * @access public
 	 * @abstract
 	 *
 	 * @return array
 	 */
-	protected function get_columns() {
+	public function get_columns() {
 		die( 'function WP_List_Table::get_columns() must be over-ridden in a sub-class.' );
 	}
 
@@ -761,11 +798,11 @@ class WP_List_Table {
 	 * Print column headers, accounting for hidden and sortable columns.
 	 *
 	 * @since 3.1.0
-	 * @access protected
+	 * @access public
 	 *
 	 * @param bool $with_id Whether to set the id attribute or not
 	 */
-	protected function print_column_headers( $with_id = true ) {
+	public function print_column_headers( $with_id = true ) {
 		list( $columns, $hidden, $sortable ) = $this->get_column_info();
 
 		$current_url = set_url_scheme( 'http://' . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'] );
@@ -888,7 +925,7 @@ class WP_List_Table {
 	<div class="tablenav <?php echo esc_attr( $which ); ?>">
 
 		<div class="alignleft actions bulkactions">
-			<?php $this->bulk_actions(); ?>
+			<?php $this->bulk_actions( $which ); ?>
 		</div>
 <?php
 		$this->extra_tablenav( $which );
@@ -912,9 +949,9 @@ class WP_List_Table {
 	 * Generate the <tbody> part of the table
 	 *
 	 * @since 3.1.0
-	 * @access protected
+	 * @access public
 	 */
-	protected function display_rows_or_placeholder() {
+	public function display_rows_or_placeholder() {
 		if ( $this->has_items() ) {
 			$this->display_rows();
 		} else {
@@ -928,9 +965,9 @@ class WP_List_Table {
 	 * Generate the table rows
 	 *
 	 * @since 3.1.0
-	 * @access protected
+	 * @access public
 	 */
-	protected function display_rows() {
+	public function display_rows() {
 		foreach ( $this->items as $item )
 			$this->single_row( $item );
 	}
@@ -939,11 +976,11 @@ class WP_List_Table {
 	 * Generates content for a single row of the table
 	 *
 	 * @since 3.1.0
-	 * @access protected
+	 * @access public
 	 *
 	 * @param object $item The current item
 	 */
-	protected function single_row( $item ) {
+	public function single_row( $item ) {
 		static $row_class = '';
 		$row_class = ( $row_class == '' ? ' class="alternate"' : '' );
 
@@ -1027,9 +1064,9 @@ class WP_List_Table {
 	/**
 	 * Send required variables to JavaScript land
 	 *
-	 * @access private
+	 * @access public
 	 */
-	private function _js_vars() {
+	public function _js_vars() {
 		$args = array(
 			'class'  => get_class( $this ),
 			'screen' => array(

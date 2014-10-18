@@ -162,11 +162,16 @@ class Tests_Meta extends WP_UnitTestCase {
 		$this->assertEquals( $expected2, get_metadata( 'user', $this->author->ID, $key, true ) );
 	}
 
+	/**
+	 * @ticket 16814
+	 */
 	function test_meta_type_cast() {
 		$post_id1 = $this->factory->post->create();
 		add_post_meta( $post_id1, 'num_as_longtext', 123 );
+		add_post_meta( $post_id1, 'num_as_longtext_desc', 10 );
 		$post_id2 = $this->factory->post->create();
 		add_post_meta( $post_id2, 'num_as_longtext', 99 );
+		add_post_meta( $post_id2, 'num_as_longtext_desc', 100 );
 
 		$posts = new WP_Query( array(
 			'fields' => 'ids',
@@ -175,6 +180,47 @@ class Tests_Meta extends WP_UnitTestCase {
 			'meta_value' => '0',
 			'meta_compare' => '>',
 			'meta_type' => 'UNSIGNED',
+			'orderby' => 'meta_value',
+			'order' => 'ASC'
+		) );
+
+		$this->assertEquals( array( $post_id2, $post_id1 ), $posts->posts );
+		$this->assertEquals( 2, substr_count( $posts->request, 'CAST(' ) );
+
+		// Make sure the newer meta_query syntax behaves in a consistent way
+		$posts = new WP_Query( array(
+			'fields' => 'ids',
+			'post_type' => 'any',
+			'meta_query' => array(
+				array(
+					'key' => 'num_as_longtext',
+					'value' => '0',
+					'compare' => '>',
+					'type' => 'UNSIGNED',
+				),
+			),
+			'orderby' => 'meta_value',
+			'order' => 'ASC'
+		) );
+
+		$this->assertEquals( array( $post_id2, $post_id1 ), $posts->posts );
+		$this->assertEquals( 2, substr_count( $posts->request, 'CAST(' ) );
+
+		// The legacy `meta_key` value should take precedence.
+		$posts = new WP_Query( array(
+			'fields' => 'ids',
+			'post_type' => 'any',
+			'meta_key' => 'num_as_longtext',
+			'meta_compare' => '>',
+			'meta_type' => 'UNSIGNED',
+			'meta_query' => array(
+				array(
+					'key' => 'num_as_longtext_desc',
+					'value' => '0',
+					'compare' => '>',
+					'type' => 'UNSIGNED',
+				),
+			),
 			'orderby' => 'meta_value',
 			'order' => 'ASC'
 		) );
@@ -198,42 +244,23 @@ class Tests_Meta extends WP_UnitTestCase {
 		}
 	}
 
-	function test_query_meta_query_order() {
-		$post1 = $this->factory->post->create( array( 'post_title' => 'meta-value-1', 'post_date' => '2007-01-01 00:00:00' ) );
-		$post2 = $this->factory->post->create( array( 'post_title' => 'meta-value-2', 'post_date' => '2007-01-01 00:00:00' ) );
-		$post3 = $this->factory->post->create( array( 'post_title' => 'meta-value-3', 'post_date' => '2007-01-01 00:00:00' ) );
+	/**
+	 * @ticket 28315
+	 */
+	function test_non_numeric_object_id() {
+		$this->assertFalse( add_metadata( 'user', array( 1 ), 'meta_key', 'meta_value' ) );
+		$this->assertFalse( update_metadata( 'user', array( 1 ), 'meta_key', 'meta_new_value' ) );
+		$this->assertFalse( delete_metadata( 'user', array( 1 ), 'meta_key' ) );
+		$this->assertFalse( get_metadata( 'user', array( 1 ) ) );
+		$this->assertFalse( metadata_exists( 'user', array( 1 ), 'meta_key' ) );
+	}
 
-		add_post_meta( $post1, 'order', 1 );
-		add_post_meta( $post2, 'order', 2 );
-		add_post_meta( $post3, 'order', 3 );
-
-		$args = array(
-			'post_type' => 'post',
-			'meta_key' => 'order',
-			'meta_value' => 1,
-			'meta_compare' => '>=',
-			'orderby' => 'meta_value'
-		);
-
-		$args2 = array(
-			'post_type' => 'post',
-			'meta_key' => 'order',
-			'meta_value' => 1,
-			'meta_compare' => '>=',
-			'orderby' => 'meta_value',
-			'meta_query' => array(
-				'relation' => 'OR',
-				array(
-					'key' => 'order',
-					'compare' => '>=',
-					'value' => 1
-				)
-			)
-		);
-
-		$posts = get_posts( $args );
-		$posts2 = get_posts( $args2 );
-
-		$this->assertEquals( wp_list_pluck( $posts, 'post_title' ), wp_list_pluck( $posts2, 'post_title' ) );
+	/**
+	 * @ticket 28315
+	 */
+	function test_non_numeric_meta_id() {
+		$this->assertFalse( get_metadata_by_mid( 'user', array( 1 ) ) );
+		$this->assertFalse( update_metadata_by_mid( 'user', array( 1 ), 'meta_new_value' ) );
+		$this->assertFalse( delete_metadata_by_mid( 'user', array( 1 ) ) );
 	}
 }

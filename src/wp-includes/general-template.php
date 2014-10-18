@@ -571,7 +571,7 @@ function wp_register( $before = '<li>', $after = '</li>', $echo = true ) {
  *
  * @since 1.5.0
  *
- * @link http://trac.wordpress.org/ticket/1458 Explanation of 'wp_meta' action.
+ * @link https://core.trac.wordpress.org/ticket/1458 Explanation of 'wp_meta' action.
  */
 function wp_meta() {
 	/**
@@ -1503,7 +1503,7 @@ function get_calendar($initial = true, $echo = true) {
 	<tr>';
 
 	if ( $previous ) {
-		$calendar_output .= "\n\t\t".'<td colspan="3" id="prev"><a href="' . get_month_link($previous->year, $previous->month) . '" title="' . esc_attr( sprintf(__('View posts for %1$s %2$s'), $wp_locale->get_month($previous->month), date('Y', mktime(0, 0 , 0, $previous->month, 1, $previous->year)))) . '">&laquo; ' . $wp_locale->get_month_abbrev($wp_locale->get_month($previous->month)) . '</a></td>';
+		$calendar_output .= "\n\t\t".'<td colspan="3" id="prev"><a href="' . get_month_link($previous->year, $previous->month) . '">&laquo; ' . $wp_locale->get_month_abbrev($wp_locale->get_month($previous->month)) . '</a></td>';
 	} else {
 		$calendar_output .= "\n\t\t".'<td colspan="3" id="prev" class="pad">&nbsp;</td>';
 	}
@@ -1511,7 +1511,7 @@ function get_calendar($initial = true, $echo = true) {
 	$calendar_output .= "\n\t\t".'<td class="pad">&nbsp;</td>';
 
 	if ( $next ) {
-		$calendar_output .= "\n\t\t".'<td colspan="3" id="next"><a href="' . get_month_link($next->year, $next->month) . '" title="' . esc_attr( sprintf(__('View posts for %1$s %2$s'), $wp_locale->get_month($next->month), date('Y', mktime(0, 0 , 0, $next->month, 1, $next->year))) ) . '">' . $wp_locale->get_month_abbrev($wp_locale->get_month($next->month)) . ' &raquo;</a></td>';
+		$calendar_output .= "\n\t\t".'<td colspan="3" id="next"><a href="' . get_month_link($next->year, $next->month) . '">' . $wp_locale->get_month_abbrev($wp_locale->get_month($next->month)) . ' &raquo;</a></td>';
 	} else {
 		$calendar_output .= "\n\t\t".'<td colspan="3" id="next" class="pad">&nbsp;</td>';
 	}
@@ -1725,10 +1725,14 @@ function the_date( $d = '', $before = '', $after = '', $echo = true ) {
  *
  * @param  string      $d    Optional. PHP date format defaults to the date_format option if not specified.
  * @param  int|WP_Post $post Optional. Post ID or WP_Post object. Default current post.
- * @return string Date the current post was written.
+ * @return string|bool Date the current post was written. False on failure.
  */
 function get_the_date( $d = '', $post = null ) {
 	$post = get_post( $post );
+
+	if ( ! $post ) {
+		return false;
+	}
 
 	if ( '' == $d ) {
 		$the_date = mysql2date( get_option( 'date_format' ), $post->post_date );
@@ -1839,10 +1843,14 @@ function the_time( $d = '' ) {
  *                          was written. Either 'G', 'U', or php date format defaults
  *                          to the value specified in the time_format option. Default empty.
  * @param int|WP_Post $post WP_Post object or ID. Default is global $post object.
- * @return string|int Formatted date string, or Unix timestamp.
+ * @return string|int|bool Formatted date string or Unix timestamp. False on failure.
  */
 function get_the_time( $d = '', $post = null ) {
 	$post = get_post($post);
+
+	if ( ! $post ) {
+		return false;
+	}
 
 	if ( '' == $d )
 		$the_time = get_post_time(get_option('time_format'), false, $post, true);
@@ -1873,10 +1881,14 @@ function get_the_time( $d = '', $post = null ) {
  * @param bool        $gmt       Optional. Whether to retrieve the GMT time. Default false.
  * @param int|WP_Post $post      WP_Post object or ID. Default is global $post object.
  * @param bool        $translate Whether to translate the time string. Default false.
- * @return string|int Formatted date string, or Unix timestamp.
+ * @return string|int|bool Formatted date string or Unix timestamp. False on failure.
  */
 function get_post_time( $d = 'U', $gmt = false, $post = null, $translate = false ) {
 	$post = get_post($post);
+
+	if ( ! $post ) {
+		return false;
+	}
 
 	if ( $gmt )
 		$time = $post->post_date_gmt;
@@ -1951,14 +1963,19 @@ function get_the_modified_time($d = '') {
  *
  * @since 2.0.0
  *
- * @param string $d Optional, default is 'U'. Either 'G', 'U', or php date format.
- * @param bool $gmt Optional, default is false. Whether to return the gmt time.
- * @param int|object $post Optional, default is global post object. A post_id or post object
- * @param bool $translate Optional, default is false. Whether to translate the result
- * @return string Returns timestamp
+ * @param string      $d         Optional. Format to use for retrieving the time the post
+ *                               was modified. Either 'G', 'U', or php date format. Default 'U'.
+ * @param bool        $gmt       Optional. Whether to retrieve the GMT time. Default false.
+ * @param int|WP_Post $post      WP_Post object or ID. Default is global $post object.
+ * @param bool        $translate Whether to translate the time string. Default false.
+ * @return string|int|bool Formatted date string or Unix timestamp. False on failure.
  */
 function get_post_modified_time( $d = 'U', $gmt = false, $post = null, $translate = false ) {
 	$post = get_post($post);
+
+	if ( ! $post ) {
+		return false;
+	}
 
 	if ( $gmt )
 		$time = $post->post_modified_gmt;
@@ -2181,8 +2198,8 @@ function rsd_link() {
  * @since 2.3.1
  */
 function wlwmanifest_link() {
-	echo '<link rel="wlwmanifest" type="application/wlwmanifest+xml" href="'
-		. get_bloginfo('wpurl') . '/wp-includes/wlwmanifest.xml" /> ' . "\n";
+	echo '<link rel="wlwmanifest" type="application/wlwmanifest+xml" href="',
+		includes_url( 'wlwmanifest.xml' ), '" /> ', "\n";
 }
 
 /**
@@ -2280,13 +2297,13 @@ function wp_default_editor() {
  * Renders an editor.
  *
  * Using this function is the proper way to output all needed components for both TinyMCE and Quicktags.
- * _WP_Editors should not be used directly. See http://core.trac.wordpress.org/ticket/17144.
+ * _WP_Editors should not be used directly. See https://core.trac.wordpress.org/ticket/17144.
  *
  * NOTE: Once initialized the TinyMCE editor cannot be safely moved in the DOM. For that reason
  * running wp_editor() inside of a metabox is not a good idea unless only Quicktags is used.
  * On the post edit screen several actions can be used to include additional editors
  * containing TinyMCE: 'edit_page_form', 'edit_form_advanced' and 'dbx_post_sidebar'.
- * See http://core.trac.wordpress.org/ticket/19173 for more information.
+ * See https://core.trac.wordpress.org/ticket/19173 for more information.
  *
  * @see wp-includes/class-wp-editor.php
  * @since 3.3.0
@@ -2438,11 +2455,29 @@ function language_attributes($doctype = 'html') {
  * @return array|string String of page links or array of page links.
  */
 function paginate_links( $args = '' ) {
+	global $wp_query, $wp_rewrite;
+
+	$total        = ( isset( $wp_query->max_num_pages ) ) ? $wp_query->max_num_pages : 1;
+	$current      = ( get_query_var( 'paged' ) ) ? intval( get_query_var( 'paged' ) ) : 1;
+	$pagenum_link = html_entity_decode( get_pagenum_link() );
+	$query_args   = array();
+	$url_parts    = explode( '?', $pagenum_link );
+
+	if ( isset( $url_parts[1] ) ) {
+		wp_parse_str( $url_parts[1], $query_args );
+	}
+
+	$pagenum_link = remove_query_arg( array_keys( $query_args ), $pagenum_link );
+	$pagenum_link = trailingslashit( $pagenum_link ) . '%_%';
+
+	$format  = $wp_rewrite->using_index_permalinks() && ! strpos( $pagenum_link, 'index.php' ) ? 'index.php/' : '';
+	$format .= $wp_rewrite->using_permalinks() ? user_trailingslashit( $wp_rewrite->pagination_base . '/%#%', 'paged' ) : '?paged=%#%';
+
 	$defaults = array(
-		'base' => '%_%', // http://example.com/all_posts.php%_% : %_% is replaced by format (below)
-		'format' => '?page=%#%', // ?page=%#% : %#% is replaced by the page number
-		'total' => 1,
-		'current' => 0,
+		'base' => $pagenum_link, // http://example.com/all_posts.php%_% : %_% is replaced by format (below)
+		'format' => $format, // ?page=%#% : %#% is replaced by the page number
+		'total' => $total,
+		'current' => $current,
 		'show_all' => false,
 		'prev_next' => true,
 		'prev_text' => __('&laquo; Previous'),
@@ -2450,7 +2485,7 @@ function paginate_links( $args = '' ) {
 		'end_size' => 1,
 		'mid_size' => 2,
 		'type' => 'plain',
-		'add_args' => false, // array of query args to add
+		'add_args' => $query_args, // array of query args to add
 		'add_fragment' => '',
 		'before_page_number' => '',
 		'after_page_number' => ''
@@ -2476,10 +2511,10 @@ function paginate_links( $args = '' ) {
 	$r = '';
 	$page_links = array();
 	$dots = false;
-	$base = str_replace( '%_%', $args['format'], $args['base'] );
 
 	if ( $args['prev_next'] && $current && 1 < $current ) :
-		$link = str_replace( '%#%', $current - 1, $base );
+		$link = str_replace( '%_%', 2 == $current ? '' : $args['format'], $args['base'] );
+		$link = str_replace( '%#%', $current - 1, $link );
 		if ( $add_args )
 			$link = add_query_arg( $add_args, $link );
 		$link .= $args['add_fragment'];
@@ -2499,7 +2534,8 @@ function paginate_links( $args = '' ) {
 			$dots = true;
 		else :
 			if ( $args['show_all'] || ( $n <= $end_size || ( $current && $n >= $current - $mid_size && $n <= $current + $mid_size ) || $n > $total - $end_size ) ) :
-				$link = str_replace( '%#%', $n, $base );
+				$link = str_replace( '%_%', 1 == $n ? '' : $args['format'], $args['base'] );
+				$link = str_replace( '%#%', $n, $link );
 				if ( $add_args )
 					$link = add_query_arg( $add_args, $link );
 				$link .= $args['add_fragment'];
@@ -2514,7 +2550,8 @@ function paginate_links( $args = '' ) {
 		endif;
 	endfor;
 	if ( $args['prev_next'] && $current && ( $current < $total || -1 == $total ) ) :
-		$link = str_replace( '%#%', $current + 1, $base );
+		$link = str_replace( '%_%', $args['format'], $args['base'] );
+		$link = str_replace( '%#%', $current + 1, $link );
 		if ( $add_args )
 			$link = add_query_arg( $add_args, $link );
 		$link .= $args['add_fragment'];

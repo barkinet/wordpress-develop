@@ -38,6 +38,8 @@ window.wp = window.wp || {};
 			frame = new MediaFrame.AudioDetails( attributes );
 		} else if ( 'video' === attributes.frame && MediaFrame.VideoDetails ) {
 			frame = new MediaFrame.VideoDetails( attributes );
+		} else if ( 'edit-attachments' === attributes.frame && MediaFrame.EditAttachments ) {
+			frame = new MediaFrame.EditAttachments( attributes );
 		}
 
 		delete attributes.frame;
@@ -822,9 +824,12 @@ window.wp = window.wp || {};
 		/**
 		 * @access private
 		 */
-		_requery: function() {
+		_requery: function( refresh ) {
+			var props;
 			if ( this.props.get('query') ) {
-				this.mirror( Query.get( this.props.toJSON() ) );
+				props = this.props.toJSON();
+				props.cache = ( true !== refresh );
+				this.mirror( Query.get( props ) );
 			}
 		},
 		/**
@@ -945,6 +950,22 @@ window.wp = window.wp || {};
 				}
 
 				return uploadedTo === attachment.get('uploadedTo');
+			},
+			/**
+			 * @static
+			 * @param {wp.media.model.Attachment} attachment
+			 *
+			 * @this wp.media.model.Attachments
+			 *
+			 * @returns {Boolean}
+			 */
+			status: function( attachment ) {
+				var status = this.props.get('status');
+				if ( _.isUndefined( status ) ) {
+					return true;
+				}
+
+				return status === attachment.get('status');
 			}
 		}
 	});
@@ -1142,7 +1163,10 @@ window.wp = window.wp || {};
 			'type':      'post_mime_type',
 			'perPage':   'posts_per_page',
 			'menuOrder': 'menu_order',
-			'uploadedTo': 'post_parent'
+			'uploadedTo': 'post_parent',
+			'status':     'post_status',
+			'include':    'post__in',
+			'exclude':    'post__not_in'
 		},
 		/**
 		 * @static
@@ -1167,11 +1191,13 @@ window.wp = window.wp || {};
 				var args     = {},
 					orderby  = Query.orderby,
 					defaults = Query.defaultProps,
-					query;
+					query,
+					cache    = !! props.cache || _.isUndefined( props.cache );
 
 				// Remove the `query` property. This isn't linked to a query,
 				// this *is* the query.
 				delete props.query;
+				delete props.cache;
 
 				// Fill default args.
 				_.defaults( props, defaults );
@@ -1186,6 +1212,12 @@ window.wp = window.wp || {};
 				if ( ! _.contains( orderby.allowed, props.orderby ) ) {
 					props.orderby = defaults.orderby;
 				}
+
+				_.each( [ 'include', 'exclude' ], function( prop ) {
+					if ( props[ prop ] && ! _.isArray( props[ prop ] ) ) {
+						props[ prop ] = [ props[ prop ] ];
+					}
+				} );
 
 				// Generate the query `args` object.
 				// Correct any differing property names.
@@ -1205,9 +1237,13 @@ window.wp = window.wp || {};
 				args.orderby = orderby.valuemap[ props.orderby ] || props.orderby;
 
 				// Search the query cache for matches.
-				query = _.find( queries, function( query ) {
-					return _.isEqual( query.args, args );
-				});
+				if ( cache ) {
+					query = _.find( queries, function( query ) {
+						return _.isEqual( query.args, args );
+					});
+				} else {
+					queries = [];
+				}
 
 				// Otherwise, create a new query and add it to the cache.
 				if ( ! query ) {

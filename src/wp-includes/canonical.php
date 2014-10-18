@@ -39,8 +39,23 @@
 function redirect_canonical( $requested_url = null, $do_redirect = true ) {
 	global $wp_rewrite, $is_IIS, $wp_query, $wpdb;
 
-	if ( is_trackback() || is_search() || is_comments_popup() || is_admin() || !empty($_POST) || is_preview() || is_robots() || ( $is_IIS && !iis7_supports_permalinks() ) )
+	if ( isset( $_SERVER['REQUEST_METHOD'] ) && ! in_array( strtoupper( $_SERVER['REQUEST_METHOD'] ), array( 'GET', 'HEAD' ) ) ) {
 		return;
+	}
+
+	// If we're not in wp-admin and the post has been published and preview nonce
+	// is non-existent or invalid then no need for preview in query
+	if ( is_preview() && get_query_var( 'p' ) && 'publish' == get_post_status( get_query_var( 'p' ) ) ) {
+		if ( ! isset( $_GET['preview_id'] )
+			|| ! isset( $_GET['preview_nonce'] )
+			|| ! wp_verify_nonce( $_GET['preview_nonce'], 'post_preview_' . (int) $_GET['preview_id'] ) ) {
+			$wp_query->is_preview = false;
+		}
+	}
+
+	if ( is_trackback() || is_search() || is_comments_popup() || is_admin() || is_preview() || is_robots() || ( $is_IIS && !iis7_supports_permalinks() ) ) {
+		return;
+	}
 
 	if ( !$requested_url ) {
 		// build the URL in the address bar
@@ -54,8 +69,8 @@ function redirect_canonical( $requested_url = null, $do_redirect = true ) {
 		return;
 
 	// Some PHP setups turn requests for / into /index.php in REQUEST_URI
-	// See: http://trac.wordpress.org/ticket/5017
-	// See: http://trac.wordpress.org/ticket/7173
+	// See: https://core.trac.wordpress.org/ticket/5017
+	// See: https://core.trac.wordpress.org/ticket/7173
 	// Disabled, for now:
 	// $original['path'] = preg_replace('|/index\.php$|', '/', $original['path']);
 
@@ -67,6 +82,11 @@ function redirect_canonical( $requested_url = null, $do_redirect = true ) {
 		$redirect['path'] = '';
 	if ( !isset($redirect['query']) )
 		$redirect['query'] = '';
+
+	// It's not a preview, so remove it from URL
+	if ( get_query_var( 'preview' ) ) {
+		$redirect['query'] = remove_query_arg( 'preview', $redirect['query'] );
+	}
 
 	if ( is_feed() && ( $id = get_query_var( 'p' ) ) ) {
 		if ( $redirect_url = get_post_comments_feed_link( $id, get_query_var( 'feed' ) ) ) {
@@ -174,7 +194,7 @@ function redirect_canonical( $requested_url = null, $do_redirect = true ) {
 		} elseif ( is_category() || is_tag() || is_tax() ) { // Terms (Tags/categories)
 
 			$term_count = 0;
-			foreach ( $wp_query->tax_query->queries as $tax_query )
+			foreach ( $wp_query->tax_query->queried_terms as $tax_query )
 				$term_count += count( $tax_query['terms'] );
 
 			$obj = $wp_query->get_queried_object();

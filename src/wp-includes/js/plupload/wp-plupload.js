@@ -152,13 +152,14 @@ window.wp = window.wp || {};
 				// being quickly removed and re-added when elements inside the
 				// dropzone are repositioned.
 				//
-				// See http://core.trac.wordpress.org/ticket/21705
+				// See https://core.trac.wordpress.org/ticket/21705
 				timer = setTimeout( function() {
 					active = false;
 					dropzone.trigger('dropzone:leave').removeClass('drag-over');
 				}, 0 );
 			});
-
+			
+			self.ready = true;
 			$(self).trigger( 'uploader:ready' );
 		});
 
