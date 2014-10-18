@@ -770,7 +770,7 @@
 	api.setDocumentTitle = function ( documentTitle ) {
 		var tmpl, title;
 		tmpl = api.settings.documentTitleTmpl;
-		title = tmpl.replace( '{{title}}', documentTitle );
+		title = tmpl.replace( '%s', documentTitle );
 		document.title = title;
 		if ( window !== window.parent ) {
 			window.parent.document.title = document.title;

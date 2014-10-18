@@ -88,15 +88,12 @@ if ( is_rtl() ) {
 $body_class .= ' locale-' . sanitize_html_class( strtolower( str_replace( '_', '-', get_locale() ) ) );
 
 if ( $wp_customize->is_theme_active() ) {
-	$document_title_tmpl = _x( 'Customize: {{title}}', '{{title}} is for JS template' );
+	$document_title_tmpl = _x( 'Customize: %s', 'Placeholder is the document title from the preview' );
 } else {
-	$document_title_tmpl = sprintf(
-		_x( 'Live Preview %s: {{title}}', '%s is theme name, {{title}} is for JS template' ),
-		strip_tags( $wp_customize->theme()->display( 'Name' ) )
-	);
+	$document_title_tmpl = _x( 'Live Preview: %s', 'Placeholder is the document title from the preview' );
 }
 $document_title_tmpl = html_entity_decode( $document_title_tmpl, ENT_QUOTES, 'UTF-8' );
-$admin_title = str_replace( '{{title}}', __( 'Loading&hellip;' ), $document_title_tmpl );
+$admin_title = sprintf( $document_title_tmpl, __( 'Loading&hellip;' ) );
 
 ?><title><?php echo $admin_title; ?></title>
 
