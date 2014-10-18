@@ -765,7 +765,7 @@
 	/**
 	 * Set the document title of the customizer
 	 *
-	 * @param title
+	 * @param {string} documentTitle
 	 */
 	api.setDocumentTitle = function ( documentTitle ) {
 		var tmpl, title;

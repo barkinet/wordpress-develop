@@ -92,7 +92,7 @@ if ( $wp_customize->is_theme_active() ) {
 } else {
 	$document_title_tmpl = _x( 'Live Preview: %s', 'Placeholder is the document title from the preview' );
 }
-$document_title_tmpl = html_entity_decode( $document_title_tmpl, ENT_QUOTES, 'UTF-8' );
+$document_title_tmpl = html_entity_decode( $document_title_tmpl, ENT_QUOTES, 'UTF-8' ); // because exported to JS and assigned to document.title
 $admin_title = sprintf( $document_title_tmpl, __( 'Loading&hellip;' ) );
 
 ?><title><?php echo $admin_title; ?></title>
