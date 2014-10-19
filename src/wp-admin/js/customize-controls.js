@@ -57,9 +57,6 @@
 		slideSpeed: 150,
 
 		initialize: function ( id, options ) {
-			console.info( this, id, options )
-
-
 			var self = this;
 			self.id = id;
 			self.params = {};
@@ -105,6 +102,27 @@
 			self.priority.set( self.params.priority || 100 );
 			self.active.set( true ); // @todo pass from params; value is whether sections is not empty
 			self.expanded.set( false ); // @todo True if deeplinking?
+		},
+
+		/**
+		 * Get the child models associated with this parent, sorting them by their priority Value.
+		 *
+		 * @param {String} parentType
+		 * @param {String} childType
+		 * @returns {Array}
+		 */
+		_children: function ( parentType, childType ) {
+			var parent = this,
+				children = [];
+			api[ childType ].each( function ( child ) {
+				if ( child[ parentType ].get() === parent.id ) {
+					children.push( child );
+				}
+			} );
+			children.sort( function ( a, b ) {
+				return a.priority() - b.priority();
+			} );
+			return children;
 		},
 
 		/**
@@ -272,17 +290,7 @@
 		 * @returns {Array}
 		 */
 		controls: function () {
-			var section = this,
-				controls = [];
-			api.control.each( function ( control ) {
-				if ( control.section.get() === section.id ) {
-					controls.push( control );
-				}
-			} );
-			controls.sort( function ( a, b ) {
-				return a.priority() - b.priority();
-			} );
-			return controls;
+			return this._children( 'section', 'control' );
 		},
 
 		/**
@@ -425,17 +433,7 @@
 		 * @returns {Array}
 		 */
 		sections: function () {
-			var panel = this,
-				sections = [];
-			api.section.each( function ( section ) {
-				if ( section.panel.get() === panel.id ) {
-					sections.push( section );
-				}
-			} );
-			sections.sort( function ( a, b ) {
-				return a.priority() - b.priority();
-			} );
-			return sections;
+			return this._children( 'panel', 'section' );
 		},
 
 		/**
