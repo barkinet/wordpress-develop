@@ -53,6 +53,8 @@
 	 */
 	api.Section = api.Class.extend({
 
+		slideSpeed: 150,
+
 		/**
 		 * @param {String} id
 		 * @param {Array} options
@@ -62,19 +64,41 @@
 			section.id = id;
 			section.params = {};
 			$.extend( section, options || {} );
-			section.panel = new api.Value();
 			section.container = $( section.params.content );
-			section.priority = new api.Value( section.params.priority || 100 );
+			section.panel = new api.Value();
+			section.priority = new api.Value();
+			section.active = new api.Value();
+			section.expanded = new api.Value();
+
 			section.panel.bind( function ( id ) {
 				$( section.container ).toggleClass( 'control-subsection', !! id );
 			});
-			section.panel.set( section.params.panel || '' );
-			section.active = new api.Value( true ); // @todo pass from params; value is whether sections is not empty
 			section.active.bind( function ( active ) {
-				section.toggle( active );
+				if ( active ) {
+					section.onActivate();
+					// @todo Trigger 'activated' event?
+				} else {
+					section.onDeactivate();
+					// @todo Trigger 'deactivated' event?
+				}
 			} );
-			section.toggle( section.active() );
+			section.expanded.bind( function ( expanded ) {
+				if ( expanded ) {
+					section.onExpand();
+					// @todo Trigger 'expanded' event?
+				} else {
+					section.onCollapse();
+					// @todo Trigger 'collapsed' event?
+				}
+			} );
+
+			section.setupAccordion();
 			bubbleChildValueChanges( this );
+
+			section.panel.set( section.params.panel || '' );
+			section.priority.set( section.params.priority || 100 );
+			section.active.set( true ); // @todo pass from params; value is whether sections is not empty
+			section.expanded.set( false ); // @todo True if deeplinking?
 		},
 
 		/**
@@ -95,6 +119,38 @@
 					readyCallback();
 				} );
 			}
+		},
+
+		/**
+		 * Add behaviors for the accordion section
+		 */
+		setupAccordion: function () {
+			var section = this;
+
+			// Expand/Collapse accordion sections on click.
+			section.container.find( '.accordion-section-title' ).on( 'click keydown', function( e ) {
+				if ( e.type === 'keydown' && 13 !== e.which ) { // "return" key
+					return;
+				}
+				e.preventDefault(); // Keep this AFTER the key filter above
+
+				if ( section.expanded() ) {
+					section.collapse();
+				} else {
+					section.expand();
+				}
+			});
+
+			//// Go back to the top-level Customizer accordion.
+			//$( '#customize-header-actions' ).on( 'click keydown', '.control-panel-back', function( e ) {
+			//	if ( e.type === 'keydown' && 13 !== e.which ) { // "return" key
+			//		return;
+			//	}
+			//
+			//	e.preventDefault(); // Keep this AFTER the key filter above
+			//
+			//	panelSwitch( $( '.current-panel' ) );
+			//});
 		},
 
 		/**
@@ -124,18 +180,125 @@
 		 * @param {Boolean} active
 		 */
 		toggle: function ( active ) {
+			// @todo
 			if ( active ) {
-				this.container.slideDown();
+				this.show();
 			} else {
-				this.container.slideUp();
+				this.hide();
 			}
+			// @todo How does toggle and show/hide relate to toggle with expand/collapse?
+		},
+
+		/**
+		 *
+		 */
+		activate: function () {
+			// @todo Prevent this from proceeding if there are no active controls; as soon as a control becomes active, then this would automatically show
+
+			this.active.set( true );
+		},
+
+		/**
+		 *
+		 * @param {Function} [callback] to run when the section is completely shown.
+		 */
+		onActivate: function ( callback ) {
+			this.container.slideDown( callback );
+		},
+
+		/**
+		 *
+		 * @param {Function} [callback] to run when the section is completely hidden.
+		 */
+		deactivate: function () {
+			this.active.set( false );
+		},
+
+		/**
+		 *
+		 * @param {Function} [callback] to run when the section is completely hidden.
+		 */
+		onDeactivate: function ( callback ) {
+			this.container.slideUp( callback );
+		},
+
+
+
+		/**
+		 *
+		 * @param {Function} [callback] to run when the section is completely collapsed.
+		 */
+		expand: function () {
+			this.expanded.set( true );
+		},
+
+		/**
+		 * Show the accordion section contents and collapse all other sections at the same time
+		 */
+		onExpand: function () {
+			// @todo All this should do is set this.expanded( true )
+
+			var section = this,
+				content = section.container.find( '.accordion-section-content' );
+
+			// This section has no content and cannot be expanded.
+			if ( section.container.hasClass( 'cannot-expand' ) ) {
+				return;
+			}
+
+			// Slide into a sub-panel instead of accordioning (Customizer-specific).
+			if ( section.container.hasClass( 'control-panel' ) ) {
+				//panelSwitch( section ); // @todo
+				return;
+			}
+
+			api.section.each( function ( otherSection ) {
+				if ( otherSection !== section ) {
+					otherSection.collapse();
+				}
+			});
+
+			content.slideDown( section.slideSpeed );
+			section.container.addClass( 'open' );
+			section.expanded.set( true );
+		},
+
+		/**
+		 *
+		 */
+		collapse: function () {
+			this.expanded( false );
+		},
+
+		/**
+		 *
+		 * @param {Function} [callback] to run when the section is completely collapsed.
+		 */
+		onCollapse: function () {
+			var section = this,
+				content = section.container.find( '.accordion-section-content' );
+
+			section.container.removeClass( 'open' );
+			content.slideUp( section.slideSpeed );
+			section.expanded.set( false );
 		},
 
 		/**
 		 * Bring the containing panel into view and then expand this section and bring it into view
+		 *
+		 * @param {Function} [callback] to run when the section is completely focused.
 		 */
-		focus: function () {
-			throw new Error( 'Not implemented yet' );
+		focus: function ( callback ) {
+			var section = this;
+			// @todo What if it is not active? Return false?
+			section.show( function () {
+				section.expand( function () {
+					// @todo add focus to the section's accordion title?
+					if ( callback ) {
+						callback();
+					}
+				} );
+			} );
 		}
 	});
 
@@ -1395,7 +1558,7 @@
 						activeCount += 1;
 					}
 				} );
-				section.toggle( 0 !== activeCount );
+				section.active( 0 !== activeCount );
 
 				if ( ! section.panel() ) {
 					rootNodes.push( section );
@@ -1655,64 +1818,6 @@
  */
 
 ( function( $ ){
-
-	$( document ).ready( function () {
-
-		// Expand/Collapse accordion sections on click.
-		$( '.accordion-container' ).on( 'click keydown', '.accordion-section-title', function( e ) {
-			if ( e.type === 'keydown' && 13 !== e.which ) { // "return" key
-				return;
-			}
-
-			e.preventDefault(); // Keep this AFTER the key filter above
-
-			accordionSwitch( $( this ) );
-		});
-
-		// Go back to the top-level Customizer accordion.
-		$( '#customize-header-actions' ).on( 'click keydown', '.control-panel-back', function( e ) {
-			if ( e.type === 'keydown' && 13 !== e.which ) { // "return" key
-				return;
-			}
-
-			e.preventDefault(); // Keep this AFTER the key filter above
-
-			panelSwitch( $( '.current-panel' ) );
-		});
-	});
-
-	/**
-	 * Close the current accordion section and open a new one.
-	 *
-	 * @param {Object} el Title element of the accordion section to toggle.
-	 * @since 3.6.0
-	 */
-	function accordionSwitch ( el ) {
-		var section = el.closest( '.accordion-section' ),
-			siblings = section.closest( '.accordion-container' ).find( '.open' ),
-			content = section.find( '.accordion-section-content' );
-
-		// This section has no content and cannot be expanded.
-		if ( section.hasClass( 'cannot-expand' ) ) {
-			return;
-		}
-
-		// Slide into a sub-panel instead of accordioning (Customizer-specific).
-		if ( section.hasClass( 'control-panel' ) ) {
-			panelSwitch( section );
-			return;
-		}
-
-		if ( section.hasClass( 'open' ) ) {
-			section.toggleClass( 'open' );
-			content.toggle( true ).slideToggle( 150 );
-		} else {
-			siblings.removeClass( 'open' );
-			siblings.find( '.accordion-section-content' ).show().slideUp( 150 );
-			content.toggle( false ).slideToggle( 150 );
-			section.toggleClass( 'open' );
-		}
-	}
 
 	/**
 	 * Slide into an accordion sub-panel.
