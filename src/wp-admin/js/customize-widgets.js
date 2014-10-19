@@ -404,6 +404,21 @@
 	 * @augments wp.customize.Control
 	 */
 	api.Widgets.WidgetControl = api.Control.extend({
+
+		initialize: function ( id, options ) {
+			var control = this;
+			api.Control.prototype.initialize.call( control, id, options );
+			control.expanded = new api.Value();
+			control.expanded.bind( function ( expanded ) {
+				if ( expanded ) {
+					control.onExpanded();
+				} else {
+					control.onCollapsed();
+				}
+			});
+			control.expanded.set( false );
+		},
+
 		/**
 		 * Set up the control
 		 */
@@ -1111,15 +1126,33 @@
 		/**
 		 * Expand the widget form control
 		 */
+		expand: function () {
+			this.expanded( true );
+		},
+
+		/**
+		 * Expand the widget form control
+		 *
+		 * @deprecated alias of expand()
+		 */
 		expandForm: function() {
-			this.toggleForm( true );
+			this.expand();
 		},
 
 		/**
 		 * Collapse the widget form control
 		 */
+		collapse: function () {
+			this.expanded( false );
+		},
+
+		/**
+		 * Collapse the widget form control
+		 *
+		 * @deprecated alias of expand()
+		 */
 		collapseForm: function() {
-			this.toggleForm( false );
+			this.collapse();
 		},
 
 		/**
@@ -1128,59 +1161,67 @@
 		 * @param {boolean|undefined} [showOrHide] If not supplied, will be inverse of current visibility
 		 */
 		toggleForm: function( showOrHide ) {
-			var self = this, $widget, $inside, complete;
+			if ( typeof showOrHide === 'undefined' ) {
+				showOrHide = ! this.expanded();
+			}
+			this.expanded( showOrHide );
+		},
 
+		/**
+		 * Behavior for expanding a widget form control.
+		 */
+		onExpanded: function () {
+			var self = this, $widget, $inside, complete;
 			$widget = this.container.find( 'div.widget:first' );
 			$inside = $widget.find( '.widget-inside:first' );
-			if ( typeof showOrHide === 'undefined' ) {
-				showOrHide = ! $inside.is( ':visible' );
-			}
 
-			// Already expanded or collapsed, so noop
-			if ( $inside.is( ':visible' ) === showOrHide ) {
-				return;
-			}
-
-			if ( showOrHide ) {
-				// Close all other widget controls before expanding this one
-				api.control.each( function( otherControl ) {
-					if ( self.params.type === otherControl.params.type && self !== otherControl ) {
-						otherControl.collapseForm();
-					}
-				} );
-
-				complete = function() {
-					self.container.removeClass( 'expanding' );
-					self.container.addClass( 'expanded' );
-					self.container.trigger( 'expanded' );
-				};
-
-				if ( self.params.is_wide ) {
-					$inside.fadeIn( 'fast', complete );
-				} else {
-					$inside.slideDown( 'fast', complete );
+			// Close all other widget controls before expanding this one
+			api.control.each( function( otherControl ) {
+				if ( self.params.type === otherControl.params.type && self !== otherControl ) {
+					otherControl.collapse();
 				}
+			} );
 
-				self.container.trigger( 'expand' );
-				self.container.addClass( 'expanding' );
+			complete = function() {
+				self.container.removeClass( 'expanding' );
+				self.container.addClass( 'expanded' );
+				self.container.trigger( 'expanded' );
+			};
+
+			if ( self.params.is_wide ) {
+				$inside.fadeIn( 'fast', complete );
 			} else {
-				complete = function() {
-					self.container.removeClass( 'collapsing' );
-					self.container.removeClass( 'expanded' );
-					self.container.trigger( 'collapsed' );
-				};
+				$inside.slideDown( 'fast', complete );
+			}
 
-				self.container.trigger( 'collapse' );
-				self.container.addClass( 'collapsing' );
+			self.container.trigger( 'expand' );
+			self.container.addClass( 'expanding' );
+		},
 
-				if ( self.params.is_wide ) {
-					$inside.fadeOut( 'fast', complete );
-				} else {
-					$inside.slideUp( 'fast', function() {
-						$widget.css( { width:'', margin:'' } );
-						complete();
-					} );
-				}
+		/**
+		 * Behavior for collapsing a widget form control.
+		 */
+		onCollapsed: function () {
+			var self = this, $widget, $inside, complete;
+			$widget = this.container.find( 'div.widget:first' );
+			$inside = $widget.find( '.widget-inside:first' );
+
+			complete = function() {
+				self.container.removeClass( 'collapsing' );
+				self.container.removeClass( 'expanded' );
+				self.container.trigger( 'collapsed' );
+			};
+
+			self.container.trigger( 'collapse' );
+			self.container.addClass( 'collapsing' );
+
+			if ( self.params.is_wide ) {
+				$inside.fadeOut( 'fast', complete );
+			} else {
+				$inside.slideUp( 'fast', function() {
+					$widget.css( { width:'', margin:'' } );
+					complete();
+				} );
 			}
 		},
 
@@ -1190,7 +1231,7 @@
 		 */
 		focus: function() {
 			this.expandControlSection();
-			this.expandForm();
+			this.expand();
 			this.container.find( '.widget-content :focusable:first' ).focus();
 		},
 
