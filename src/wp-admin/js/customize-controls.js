@@ -161,6 +161,7 @@
 		 *
 		 */
 		onDeactivate: function () {
+			this.onCollapse();
 			this.container.stop( true, true ).slideUp(); // @todo Trigger 'deactivated' event when complete?
 		},
 
@@ -1681,8 +1682,6 @@
 		api.reflowPaneContents = _.bind( function () {
 
 			var appendContainer, activeElement, rootNodes = [];
-
-			// @todo We need to detect first if there is any change to a property that would affect the layout
 
 			if ( document.activeElement ) {
 				activeElement = $( document.activeElement );
