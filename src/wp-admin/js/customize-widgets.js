@@ -1116,11 +1116,7 @@
 		 * Expand the accordion section containing a control
 		 */
 		expandControlSection: function() {
-			var $section = this.container.closest( '.accordion-section' );
-
-			if ( ! $section.hasClass( 'open' ) ) {
-				$section.find( '.accordion-section-title:first' ).trigger( 'click' );
-			}
+			api.section( this.section() ).expand();
 		},
 
 		/**
