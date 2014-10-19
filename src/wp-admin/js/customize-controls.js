@@ -115,9 +115,7 @@
 		},
 
 		/**
-		 * Callback for change to the section's active state.
-		 *
-		 * Override function for custom behavior for the section being active/inactive.
+		 * Change to the section's active state.
 		 *
 		 * @param {Boolean} active
 		 */
@@ -143,8 +141,7 @@
 		 */
 		onActivate: function () {
 			// @todo Prevent this from proceeding if there are no active controls; as soon as a control becomes active, then this would automatically show
-
-			this.container.slideDown(); // @todo Trigger 'activated' event when complete?
+			this.container.stop( true, true ).slideDown(); // @todo Trigger 'activated' event when complete?
 		},
 
 		/**
@@ -159,7 +156,7 @@
 		 *
 		 */
 		onDeactivate: function () {
-			this.container.slideUp(); // @todo Trigger 'deactivated' event when complete?
+			this.container.stop( true, true ).slideUp(); // @todo Trigger 'deactivated' event when complete?
 		},
 
 		/**
@@ -259,23 +256,10 @@
 					section.expand();
 				}
 			});
-
-			//// Go back to the top-level Customizer accordion.
-			//$( '#customize-header-actions' ).on( 'click keydown', '.control-panel-back', function( e ) {
-			//	if ( e.type === 'keydown' && 13 !== e.which ) { // "return" key
-			//		return;
-			//	}
-			//
-			//	e.preventDefault(); // Keep this AFTER the key filter above
-			//
-			//	panelSwitch( $( '.current-panel' ) );
-			//});
 		},
 
 		/**
-		 * Get the controls that are associated with this section.
-		 *
-		 * @todo abstract this into a children() function
+		 * Get the controls that are associated with this section, sorted by their priority Value.
 		 *
 		 * @returns {Array}
 		 */
@@ -287,20 +271,11 @@
 		 * Show the accordion section contents and collapse all other sections at the same time
 		 */
 		onExpand: function () {
-			// @todo All this should do is set this.expanded( true )
-
 			var section = this,
 				content = section.container.find( '.accordion-section-content' );
 
-			// This section has no content and cannot be expanded.
-			if ( section.container.hasClass( 'cannot-expand' ) ) {
-				return;
-			}
-
-			// Slide into a sub-panel instead of accordioning (Customizer-specific).
-			if ( section.container.hasClass( 'control-panel' ) ) {
-				//panelSwitch( section ); // @todo
-				return;
+			if ( section.panel() ) {
+				api.panel( section.panel() ).expand();
 			}
 
 			api.section.each( function ( otherSection ) {
@@ -309,13 +284,12 @@
 				}
 			});
 
-			content.slideDown( section.slideSpeed );
+			content.stop().slideDown( section.slideSpeed );
 			section.container.addClass( 'open' );
 		},
 
 		/**
 		 *
-		 * @param {Function} [callback] to run when the section is completely collapsed.
 		 */
 		onCollapse: function () {
 			var section = this,
@@ -328,19 +302,12 @@
 		/**
 		 * Bring the containing panel into view and then expand this section and bring it into view
 		 *
-		 * @param {Function} [callback] to run when the section is completely focused.
+		 * @todo This is an alias for expand(); do we need it?
 		 */
-		focus: function ( callback ) {
+		focus: function () {
 			var section = this;
 			// @todo What if it is not active? Return false?
-			section.show( function () {
-				section.expand( function () {
-					// @todo add focus to the section's accordion title?
-					if ( callback ) {
-						callback();
-					}
-				} );
-			} );
+			section.expand();
 		}
 	});
 
@@ -364,61 +331,50 @@
 			}
 		},
 
+		/**
+		 *
+		 */
 		attachEvents: function () {
-			var panel = this;
+			var meta, panel = this;
 
-			/**
-			 * Slide into an accordion sub-panel.
-			 *
-			 * For the Customizer-specific panel functionality
-			 *
-			 * @param {Object} panel Title element or back button of the accordion panel to toggle.
-			 * @since 4.0.0
-			 */
-			//function panelSwitch( panel.container ) {
-				var position, scroll,
-					section = panel.container.closest( '.accordion-section' ),
-					overlay = section.closest( '.wp-full-overlay' ),
-					container = section.closest( '.accordion-container' ),
-					siblings = container.find( '.open' ),
-					topPanel = overlay.find( '#customize-theme-controls > ul > .accordion-section > .accordion-section-title' ).add( '#customize-info > .accordion-section-title' ),
-					backBtn = overlay.find( '.control-panel-back' ),
-					panelTitle = section.find( '.accordion-section-title' ).first(),
-					content = section.find( '.control-panel-content' );
-
-				if ( section.hasClass( 'current-panel' ) ) {
-					section.toggleClass( 'current-panel' );
-					overlay.toggleClass( 'in-sub-panel' );
-					content.delay( 180 ).hide( 0, function() {
-						content.css( 'margin-top', 'inherit' ); // Reset
-					} );
-					topPanel.attr( 'tabindex', '0' );
-					backBtn.attr( 'tabindex', '-1' );
-					panelTitle.focus();
-					container.scrollTop( 0 );
-				} else {
-					// Close all open sections in any accordion level.
-					siblings.removeClass( 'open' );
-					siblings.find( '.accordion-section-content' ).show().slideUp( 0 );
-					content.show( 0, function() {
-						position = content.offset().top;
-						scroll = container.scrollTop();
-						content.css( 'margin-top', ( 45 - position - scroll ) );
-						section.toggleClass( 'current-panel' );
-						overlay.toggleClass( 'in-sub-panel' );
-						container.scrollTop( 0 );
-					} );
-					topPanel.attr( 'tabindex', '-1' );
-					backBtn.attr( 'tabindex', '0' );
-					backBtn.focus();
+			// Expand/Collapse accordion sections on click.
+			panel.container.find( '.accordion-section-title' ).on( 'click keydown', function( e ) {
+				if ( e.type === 'keydown' && 13 !== e.which ) { // "return" key
+					return;
 				}
-			//}
+				e.preventDefault(); // Keep this AFTER the key filter above
+
+				if ( ! panel.expanded() ) {
+					panel.expand();
+				}
+			});
+
+			meta = panel.container.find( '.panel-meta:first' );
+
+			meta.find( '> .accordion-section-title' ).on( 'click keydown', function( e ) {
+				if ( e.type === 'keydown' && 13 !== e.which ) { // "return" key
+					return;
+				}
+				e.preventDefault(); // Keep this AFTER the key filter above
+
+				if ( meta.hasClass( 'cannot-expand' ) ) {
+					return;
+				}
+
+				var content = meta.find( '.accordion-section-content:first' );
+				if ( meta.hasClass( 'open' ) ) {
+					meta.toggleClass( 'open' );
+					content.slideUp( 150 );
+				} else {
+					content.slideDown( 150 );
+					meta.toggleClass( 'open' );
+				}
+			});
+
 		},
 
 		/**
-		 * Get the controls that are associated with this section.
-		 *
-		 * @todo abastract this into a children() function
+		 * Get the sections that are associated with this panel, sorted by their priority Value.
 		 *
 		 * @returns {Array}
 		 */
@@ -427,63 +383,78 @@
 		},
 
 		/**
-		 * Show the accordion section contents and collapse all other sections at the same time
+		 *
 		 */
 		onExpand: function () {
-			// @todo All this should do is set this.expanded( true )
 
-			var section = this,
-				content = section.container.find( '.accordion-section-content' );
+			var position, scroll,
+				panel = this,
+				section = panel.container.closest( '.accordion-section' ),
+				overlay = section.closest( '.wp-full-overlay' ),
+				container = section.closest( '.accordion-container' ),
+				topPanel = overlay.find( '#customize-theme-controls > ul > .accordion-section > .accordion-section-title' ).add( '#customize-info > .accordion-section-title' ),
+				backBtn = overlay.find( '.control-panel-back' ),
+				content = section.find( '.control-panel-content' );
 
-			// This section has no content and cannot be expanded.
-			if ( section.container.hasClass( 'cannot-expand' ) ) {
-				return;
-			}
-
-			// Slide into a sub-panel instead of accordioning (Customizer-specific).
-			if ( section.container.hasClass( 'control-panel' ) ) {
-				//panelSwitch( section ); // @todo
-				return;
-			}
-
-			api.section.each( function ( otherSection ) {
-				if ( otherSection !== section ) {
-					otherSection.collapse();
+			// Collapse any sibling sections/panels
+			api.section.each( function ( section ) {
+				if ( ! section.panel() ) {
+					section.collapse(); // @todo If any sections are open, then the position calculation below will fire too early
+				}
+			});
+			api.panel.each( function ( otherPanel ) {
+				if ( panel !== otherPanel ) {
+					otherPanel.collapse(); // @todo the position calculation below probably will fire too early
 				}
 			});
 
-			content.slideDown( section.slideSpeed );
-			section.container.addClass( 'open' );
+			content.show( 0, function() {
+				position = content.offset().top;
+				scroll = container.scrollTop();
+				content.css( 'margin-top', ( 45 - position - scroll ) );
+				section.addClass( 'current-panel' );
+				overlay.addClass( 'in-sub-panel' );
+				container.scrollTop( 0 );
+			} );
+			topPanel.attr( 'tabindex', '-1' );
+			backBtn.attr( 'tabindex', '0' );
+			backBtn.focus();
 		},
 
 		/**
 		 *
-		 * @param {Function} [callback] to run when the section is completely collapsed.
 		 */
 		onCollapse: function () {
-			var section = this,
-				content = section.container.find( '.accordion-section-content' );
 
-			section.container.removeClass( 'open' );
-			content.slideUp( section.slideSpeed );
+			var panel = this,
+				section = panel.container.closest( '.accordion-section' ),
+				overlay = section.closest( '.wp-full-overlay' ),
+				container = section.closest( '.accordion-container' ),
+				siblings = container.find( '.open' ),
+				topPanel = overlay.find( '#customize-theme-controls > ul > .accordion-section > .accordion-section-title' ).add( '#customize-info > .accordion-section-title' ),
+				backBtn = overlay.find( '.control-panel-back' ),
+				panelTitle = section.find( '.accordion-section-title' ).first(),
+				content = section.find( '.control-panel-content' );
+
+			siblings.removeClass( 'open' );
+			section.removeClass( 'current-panel' );
+			overlay.removeClass( 'in-sub-panel' );
+			content.delay( 180 ).hide( 0, function() {
+				content.css( 'margin-top', 'inherit' ); // Reset
+			} );
+			topPanel.attr( 'tabindex', '0' );
+			backBtn.attr( 'tabindex', '-1' );
+			panelTitle.focus();
+			container.scrollTop( 0 );
 		},
 
 		/**
 		 * Bring the containing panel into view and then expand this section and bring it into view
-		 *
-		 * @param {Function} [callback] to run when the section is completely focused.
 		 */
-		focus: function ( callback ) {
-			var section = this;
+		focus: function () {
+			var panel = this;
 			// @todo What if it is not active? Return false?
-			section.show( function () {
-				section.expand( function () {
-					// @todo add focus to the section's accordion title?
-					if ( callback ) {
-						callback();
-					}
-				} );
-			} );
+			panel.expand();
 		}
 
 		// @todo Need to first exit out of the Panel
@@ -596,9 +567,7 @@
 		},
 
 		/**
-		 * Callback for change to the control's active state.
-		 *
-		 * Override function for custom behavior for the control being active/inactive.
+		 * Change to the control's active state.
 		 *
 		 * @param {Boolean} active
 		 */
@@ -1508,6 +1477,29 @@
 			}
 		});
 
+		// Expand/Collapse the main customizer customize info
+		$( '#customize-info' ).find( '> .accordion-section-title' ).on( 'click keydown', function( e ) {
+			if ( e.type === 'keydown' && 13 !== e.which ) { // "return" key
+				return;
+			}
+			e.preventDefault(); // Keep this AFTER the key filter above
+
+			var section = $( this ).parent(),
+				content = section.find( '.accordion-section-content:first' );
+
+			if ( section.hasClass( 'cannot-expand' ) ) {
+				return;
+			}
+
+			if ( section.hasClass( 'open' ) ) {
+				section.toggleClass( 'open' );
+				content.slideUp( 150 );
+			} else {
+				content.slideDown( 150 );
+				section.toggleClass( 'open' );
+			}
+		});
+
 		// Initialize Previewer
 		api.previewer = new api.Previewer({
 			container:   '#customize-preview',
@@ -1649,7 +1641,13 @@
 		 */
 		api.reflowPaneContents = _.bind( function () {
 
-			var appendContainer, rootNodes = [];
+			var appendContainer, activeElement, rootNodes = [];
+
+			// @todo We need to detect first if there is any change to a property that would affect the layout
+
+			if ( document.activeElement ) {
+				activeElement = $( document.activeElement );
+			}
 
 			api.panel.each( function ( panel ) {
 				rootNodes.push( panel );
@@ -1662,7 +1660,7 @@
 						activeCount += 1;
 					}
 				} );
-				panel.toggle( 0 !== activeCount ); // @todo This is not sticking
+				panel.active( 0 !== activeCount );
 
 				// Sort sections
 				appendContainer = panel.container.find( 'ul:first' );
@@ -1700,6 +1698,10 @@
 			_.chain( rootNodes ).each( function ( rootNode ) {
 				appendContainer.append( rootNode.container );
 			} );
+
+			if ( activeElement ) {
+				activeElement.focus();
+			}
 		}, api );
 		api.reflowPaneContents = _.debounce( api.reflowPaneContents, 100 );
 		$( [ api.panel, api.section, api.control ] ).each( function ( i, values ) {
@@ -1771,6 +1773,18 @@
 			if ( 13 === event.which ) // enter
 				api.previewer.save();
 			event.preventDefault();
+		});
+
+		// Go back to the top-level Customizer accordion.
+		$( '#customize-header-actions' ).on( 'click keydown', '.control-panel-back', function( e ) {
+			if ( e.type === 'keydown' && 13 !== e.which ) { // "return" key
+				return;
+			}
+
+			e.preventDefault(); // Keep this AFTER the key filter above
+			api.panel.each( function ( panel ) {
+				panel.collapse();
+			});
 		});
 
 		closeBtn.keydown( function( event ) {
