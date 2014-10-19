@@ -35,15 +35,13 @@
 	 *
 	 * @param instance
 	 */
-	bubbleChildValueChanges = function ( instance ) {
-		$.each( instance, function ( key, value ) {
-			if ( value && value.extended && value.extended( api.Value ) ) {
-				value.bind( function () {
-					if ( instance.parent ) {
-						instance.parent.trigger( 'change', instance );
-					}
-				} );
-			}
+	bubbleChildValueChanges = function ( instance, properties ) {
+		$.each( properties, function ( i, key ) {
+			instance[ key ].bind( function () {
+				if ( instance.parent ) {
+					instance.parent.trigger( 'change', instance );
+				}
+			} );
 		} );
 	};
 
@@ -88,16 +86,7 @@
 
 			self.attachEvents();
 
-			// bubbleChildValueChanges
-			$.each( self, function ( key, value ) {
-				if ( value && value.extended && value.extended( api.Value ) ) {
-					value.bind( function () {
-						if ( self.parent ) {
-							self.parent.trigger( 'change', self );
-						}
-					} );
-				}
-			} );
+			bubbleChildValueChanges( self, [ 'priority', 'active' ] );
 
 			self.priority.set( self.params.priority || 100 );
 			self.active.set( true ); // @todo pass from params; value is whether sections is not empty
@@ -228,6 +217,7 @@
 				$( section.container ).toggleClass( 'control-subsection', !! id );
 			});
 			section.panel.set( section.params.panel || '' );
+			bubbleChildValueChanges( section, [ 'panel' ] );
 		},
 
 		/**
@@ -569,7 +559,7 @@
 			} );
 			control.toggle( control.active() );
 
-			bubbleChildValueChanges( this );
+			bubbleChildValueChanges( control, [ 'section', 'priority', 'active' ] );
 		},
 
 		/**
