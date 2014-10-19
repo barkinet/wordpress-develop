@@ -33,12 +33,13 @@
 	/**
 	 * Watch all changes to Value properties, and bubble changes to parent Values instance
 	 *
-	 * @param instance
+	 * @param {wp.customize.Class} instance
+	 * @param {Array} properties  The names of the Value instances to watch.
 	 */
 	bubbleChildValueChanges = function ( instance, properties ) {
 		$.each( properties, function ( i, key ) {
-			instance[ key ].bind( function () {
-				if ( instance.parent ) {
+			instance[ key ].bind( function ( to, from ) {
+				if ( instance.parent && to !== from ) {
 					instance.parent.trigger( 'change', instance );
 				}
 			} );
@@ -66,7 +67,7 @@
 			self.expanded = new api.Value();
 
 			self.active.bind( function ( active ) {
-				if ( active ) {
+				if ( active && self.isContextuallyActive() ) {
 					self.onActivate();
 					// @todo Trigger 'activated' event?
 				} else {
@@ -89,7 +90,7 @@
 			bubbleChildValueChanges( self, [ 'priority', 'active' ] );
 
 			self.priority.set( self.params.priority || 100 );
-			self.active.set( true ); // @todo pass from params; value is whether sections is not empty
+			self.active.set( true ); // @todo pass from params, eventually from active_callback when defining panel/section
 			self.expanded.set( false ); // @todo True if deeplinking?
 		},
 
@@ -126,6 +127,10 @@
 			} else {
 				this.activate();
 			}
+		},
+
+		isContextuallyActive: function () {
+			throw new Error( 'Must override with subclass.' );
 		},
 
 		/**
@@ -259,6 +264,23 @@
 		},
 
 		/**
+		 * Return whether this section has any active controls.
+		 *
+		 * @returns {boolean}
+		 */
+		isContextuallyActive: function () {
+			var section = this,
+				controls = section.controls(),
+				activeCount = 0;
+			_( controls ).each( function ( control ) {
+				if ( control.active() ) {
+					activeCount += 1;
+				}
+			} );
+			return ( activeCount !== 0 );
+		},
+
+		/**
 		 * Get the controls that are associated with this section, sorted by their priority Value.
 		 *
 		 * @returns {Array}
@@ -380,6 +402,23 @@
 		 */
 		sections: function () {
 			return this._children( 'panel', 'section' );
+		},
+
+		/**
+		 * Return whether this section has any active sections.
+		 *
+		 * @returns {boolean}
+		 */
+		isContextuallyActive: function () {
+			var panel = this,
+				sections = panel.sections(),
+				activeCount = 0;
+			_( sections ).each( function ( section ) {
+				if ( section.active() && section.isContextuallyActive() ) {
+					activeCount += 1;
+				}
+			} );
+			return ( activeCount !== 0 );
 		},
 
 		/**
@@ -1650,19 +1689,8 @@
 			}
 
 			api.panel.each( function ( panel ) {
+				var sections = panel.sections();
 				rootNodes.push( panel );
-
-				// Toggle display
-				var activeCount = 0,
-					sections = panel.sections();
-				_( sections ).each( function ( section ) {
-					if ( section.active && section.active() ) {
-						activeCount += 1;
-					}
-				} );
-				panel.active( 0 !== activeCount );
-
-				// Sort sections
 				appendContainer = panel.container.find( 'ul:first' );
 				_.chain( sections ).reverse().each( function ( section ) {
 					appendContainer.append( section.container );
@@ -1670,20 +1698,10 @@
 			} );
 
 			api.section.each( function ( section ) {
-				var activeCount = 0,
-					controls = section.controls();
-				_( controls ).each( function ( control ) {
-					if ( control.active && control.active() ) {
-						activeCount += 1;
-					}
-				} );
-				section.active( 0 !== activeCount );
-
+				var controls = section.controls();
 				if ( ! section.panel() ) {
 					rootNodes.push( section );
 				}
-
-				// Sort controls
 				appendContainer = section.container.find( 'ul:first' );
 				_.chain( controls ).reverse().each( function ( control ) {
 					appendContainer.append( control.container );
@@ -1697,6 +1715,16 @@
 			appendContainer = $( '#customize-theme-controls > ul' );
 			_.chain( rootNodes ).each( function ( rootNode ) {
 				appendContainer.append( rootNode.container );
+			} );
+
+			// Now re-trigger the active Value callbacks to that the panels and sections can decide whether they can be rendered
+			api.panel.each( function ( panel ) {
+				var value = panel.active();
+				panel.active.callbacks.fireWith( panel.active, [ value, value ] );
+			} );
+			api.section.each( function ( section ) {
+				var value = section.active();
+				section.active.callbacks.fireWith( section.active, [ value, value ] );
 			} );
 
 			if ( activeElement ) {
