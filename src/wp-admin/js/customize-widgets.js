@@ -1171,6 +1171,8 @@
 			$widget = this.container.find( 'div.widget:first' );
 			$inside = $widget.find( '.widget-inside:first' );
 
+			self.expandControlSection();
+
 			// Close all other widget controls before expanding this one
 			api.control.each( function( otherControl ) {
 				if ( self.params.type === otherControl.params.type && self !== otherControl ) {
@@ -1226,7 +1228,6 @@
 		 * the first input in the control
 		 */
 		focus: function() {
-			this.expandControlSection();
 			this.expand();
 			this.container.find( '.widget-content :focusable:first' ).focus();
 		},
