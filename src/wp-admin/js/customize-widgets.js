@@ -1394,6 +1394,7 @@
 				priority = 0;
 				_( widgetFormControls ).each( function ( control ) {
 					control.priority( priority );
+					control.section( self.section() );
 					priority += 1;
 				});
 				self.priority( priority ); // Make sure sidebar control remains at end
@@ -1616,7 +1617,7 @@
 
 			if ( showOrHide ) {
 				_( this.getWidgetFormControls() ).each( function( formControl ) {
-					formControl.collapseForm();
+					formControl.collapse();
 				} );
 
 				this.$sectionContent.find( '.first-widget .move-widget' ).focus();
