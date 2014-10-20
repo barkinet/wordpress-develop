@@ -1363,7 +1363,7 @@
 				registeredSidebar = api.Widgets.registeredSidebars.get( this.params.sidebar_id );
 
 			this.setting.bind( function( newWidgetIds, oldWidgetIds ) {
-				var widgetFormControls, $sidebarWidgetsAddControl, finalControlContainers, removedWidgetIds;
+				var widgetFormControls, removedWidgetIds, priority;
 
 				removedWidgetIds = _( oldWidgetIds ).difference( newWidgetIds );
 
@@ -1388,21 +1388,15 @@
 				widgetFormControls.sort( function( a, b ) {
 					var aIndex = _.indexOf( newWidgetIds, a.params.widget_id ),
 						bIndex = _.indexOf( newWidgetIds, b.params.widget_id );
+					return aIndex - bIndex;
+				});
 
-					if ( aIndex === bIndex ) {
-						return 0;
-					}
-
-					return aIndex < bIndex ? -1 : 1;
-				} );
-
-				// Append the controls to put them in the right order
-				finalControlContainers = _( widgetFormControls ).map( function( widgetFormControls ) {
-					return widgetFormControls.container[0];
-				} );
-
-				$sidebarWidgetsAddControl = self.$sectionContent.find( '.customize-control-sidebar_widgets' );
-				$sidebarWidgetsAddControl.before( finalControlContainers );
+				priority = 0;
+				_( widgetFormControls ).each( function ( control ) {
+					control.priority( priority );
+					priority += 1;
+				});
+				self.priority( priority ); // Make sure sidebar control remains at end
 
 				// Re-sort widget form controls (including widgets form other sidebars newly moved here)
 				self._applyCardinalOrderClassNames();
