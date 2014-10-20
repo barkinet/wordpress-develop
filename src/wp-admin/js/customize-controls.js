@@ -1691,7 +1691,7 @@
 				var sections = panel.sections();
 				rootNodes.push( panel );
 				appendContainer = panel.container.find( 'ul:first' );
-				_.chain( sections ).reverse().each( function ( section ) {
+				_( sections ).each( function ( section ) {
 					appendContainer.append( section.container );
 				} );
 			} );
@@ -1702,7 +1702,7 @@
 					rootNodes.push( section );
 				}
 				appendContainer = section.container.find( 'ul:first' );
-				_.chain( controls ).reverse().each( function ( control ) {
+				_( controls ).each( function ( control ) {
 					appendContainer.append( control.container );
 				} );
 			} );
@@ -1712,7 +1712,7 @@
 				return a.priority() - b.priority();
 			} );
 			appendContainer = $( '#customize-theme-controls > ul' );
-			_.chain( rootNodes ).each( function ( rootNode ) {
+			_( rootNodes ).each( function ( rootNode ) {
 				appendContainer.append( rootNode.container );
 			} );
 
