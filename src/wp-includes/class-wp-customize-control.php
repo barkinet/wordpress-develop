@@ -219,6 +219,7 @@ class WP_Customize_Control {
 		}
 
 		$this->json['type'] = $this->type;
+		$this->json['priority'] = $this->priority;
 		$this->json['active'] = $this->active();
 		$this->json['section'] = $this->section;
 		$this->json['content'] = $this->get_content();

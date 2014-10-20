@@ -89,7 +89,7 @@
 
 			bubbleChildValueChanges( self, [ 'priority', 'active' ] );
 
-			self.priority.set( self.params.priority || 100 );
+			self.priority.set( isNaN( self.params.priority ) ? 100 : self.params.priority );
 			self.active.set( true ); // @todo pass from params, eventually from active_callback when defining panel/section
 			self.expanded.set( false ); // @todo True if deeplinking?
 		},
@@ -517,7 +517,7 @@
 			this.container = this.params.content ? $( this.params.content ) : $( this.selector );
 
 			this.section = new api.Value( this.params.section );
-			this.priority = new api.Value( this.params.priority || 10 );
+			this.priority = new api.Value( isNaN( this.params.priority ) ? 10 : this.params.priority );
 			this.active = new api.Value( this.params.active );
 
 			settings = $.map( this.params.settings, function( value ) {
