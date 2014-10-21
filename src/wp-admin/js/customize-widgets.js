@@ -410,11 +410,7 @@
 			api.Control.prototype.initialize.call( control, id, options );
 			control.expanded = new api.Value();
 			control.expanded.bind( function ( expanded ) {
-				if ( expanded ) {
-					control.onExpanded();
-				} else {
-					control.onCollapsed();
-				}
+				control.toggleExpanded( expanded );
 			});
 			control.expanded.set( false );
 		},
@@ -544,13 +540,13 @@
 				if ( sidebarWidgetsControl.isReordering ) {
 					return;
 				}
-				self.toggleForm();
+				self.expanded( ! self.expanded() );
 			} );
 
 			$closeBtn = this.container.find( '.widget-control-close' );
 			$closeBtn.on( 'click', function( e ) {
 				e.preventDefault();
-				self.collapseForm();
+				self.collapse();
 				self.container.find( '.widget-top .widget-action:first' ).focus(); // keyboard accessibility
 			} );
 		},
@@ -1154,6 +1150,8 @@
 		/**
 		 * Expand or collapse the widget control
 		 *
+		 * @deprecated this is poor naming, and it is better to directly set control.expanded( showOrHide )
+		 *
 		 * @param {boolean|undefined} [showOrHide] If not supplied, will be inverse of current visibility
 		 */
 		toggleForm: function( showOrHide ) {
@@ -1164,62 +1162,60 @@
 		},
 
 		/**
-		 * Behavior for expanding a widget form control.
+		 * Respond to change in the expanded state.
+		 *
+		 * @param {Boolean} expanded
 		 */
-		onExpanded: function () {
+		toggleExpanded: function ( expanded ) {
+
 			var self = this, $widget, $inside, complete;
 			$widget = this.container.find( 'div.widget:first' );
 			$inside = $widget.find( '.widget-inside:first' );
 
-			self.expandControlSection();
+			if ( expanded ) {
 
-			// Close all other widget controls before expanding this one
-			api.control.each( function( otherControl ) {
-				if ( self.params.type === otherControl.params.type && self !== otherControl ) {
-					otherControl.collapse();
-				}
-			} );
+				self.expandControlSection();
 
-			complete = function() {
-				self.container.removeClass( 'expanding' );
-				self.container.addClass( 'expanded' );
-				self.container.trigger( 'expanded' );
-			};
-
-			if ( self.params.is_wide ) {
-				$inside.fadeIn( 'fast', complete );
-			} else {
-				$inside.slideDown( 'fast', complete );
-			}
-
-			self.container.trigger( 'expand' );
-			self.container.addClass( 'expanding' );
-		},
-
-		/**
-		 * Behavior for collapsing a widget form control.
-		 */
-		onCollapsed: function () {
-			var self = this, $widget, $inside, complete;
-			$widget = this.container.find( 'div.widget:first' );
-			$inside = $widget.find( '.widget-inside:first' );
-
-			complete = function() {
-				self.container.removeClass( 'collapsing' );
-				self.container.removeClass( 'expanded' );
-				self.container.trigger( 'collapsed' );
-			};
-
-			self.container.trigger( 'collapse' );
-			self.container.addClass( 'collapsing' );
-
-			if ( self.params.is_wide ) {
-				$inside.fadeOut( 'fast', complete );
-			} else {
-				$inside.slideUp( 'fast', function() {
-					$widget.css( { width:'', margin:'' } );
-					complete();
+				// Close all other widget controls before expanding this one
+				api.control.each( function( otherControl ) {
+					if ( self.params.type === otherControl.params.type && self !== otherControl ) {
+						otherControl.collapse();
+					}
 				} );
+
+				complete = function() {
+					self.container.removeClass( 'expanding' );
+					self.container.addClass( 'expanded' );
+					self.container.trigger( 'expanded' );
+				};
+
+				if ( self.params.is_wide ) {
+					$inside.fadeIn( 'fast', complete );
+				} else {
+					$inside.slideDown( 'fast', complete );
+				}
+
+				self.container.trigger( 'expand' );
+				self.container.addClass( 'expanding' );
+			} else {
+
+				complete = function() {
+					self.container.removeClass( 'collapsing' );
+					self.container.removeClass( 'expanded' );
+					self.container.trigger( 'collapsed' );
+				};
+
+				self.container.trigger( 'collapse' );
+				self.container.addClass( 'collapsing' );
+
+				if ( self.params.is_wide ) {
+					$inside.fadeOut( 'fast', complete );
+				} else {
+					$inside.slideUp( 'fast', function() {
+						$widget.css( { width:'', margin:'' } );
+						complete();
+					} );
+				}
 			}
 		},
 
@@ -1770,7 +1766,7 @@
 
 			$control.slideDown( function() {
 				if ( isExistingWidget ) {
-					widgetFormControl.expandForm();
+					widgetFormControl.expand();
 					widgetFormControl.updateWidget( {
 						instance: widgetFormControl.setting(),
 						complete: function( error ) {
