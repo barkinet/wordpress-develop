@@ -793,7 +793,7 @@
 		 *
 		 * @param {Boolean} active
 		 */
-		toggle: function ( active ) {
+		toggleActive: function ( active ) {
 			this.container.toggleClass( 'widget-rendered', active );
 		},
 
@@ -1471,13 +1471,15 @@
 		},
 
 		/**
-		 * Show the sidebar section when it becomes visible.
+		 * Respond to change in active state to show the sidebar section.
 		 *
-		 * Overrides api.Control.toggle()
+		 * Overrides api.Control.toggleActive()
 		 *
 		 * @param {Boolean} active
 		 */
-		toggle: function ( active ) {
+		toggleActive: function ( active ) {
+			// @todo this seems wrong. It seems we should be linking this.active with api.section( this.section.get() ).active
+
 			var $section, sectionSelector;
 
 			sectionSelector = '#accordion-section-sidebar-widgets-' + this.params.sidebar_id;
@@ -1684,6 +1686,7 @@
 
 			$widget = $( controlHtml );
 
+			// @todo need to pass this in as the control's 'content' property
 			$control = $( '<li/>' )
 				.addClass( 'customize-control' )
 				.addClass( 'customize-control-' + controlType )
@@ -1707,6 +1710,7 @@
 			}
 			$control.attr( 'id', 'customize-control-' + settingId.replace( /\]/g, '' ).replace( /\[/g, '-' ) );
 
+			// @todo Eliminate this
 			this.container.after( $control );
 
 			// Only create setting if it doesn't already exist (if we're adding a pre-existing inactive widget)

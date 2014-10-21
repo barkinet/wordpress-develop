@@ -67,22 +67,12 @@
 			self.expanded = new api.Value();
 
 			self.active.bind( function ( active ) {
-				if ( active && self.isContextuallyActive() ) {
-					self.onActivate();
-					// @todo Trigger 'activated' event?
-				} else {
-					self.onDeactivate();
-					// @todo Trigger 'deactivated' event?
-				}
+				self.toggleActive( active && self.isContextuallyActive() );
+				// @todo trigger 'activatged' and 'deactivated' events based on the expanded param?
 			});
 			self.expanded.bind( function ( expanded ) {
-				if ( expanded ) {
-					self.onExpand();
-					// @todo Trigger 'expanded' event?
-				} else {
-					self.onCollapse();
-					// @todo Trigger 'collapsed' event?
-				}
+				self.toggleExpanded( expanded );
+				// @todo trigger 'expanded' and 'collapsed' events based on the expanded param?
 			});
 
 			self.attachEvents();
@@ -116,21 +106,27 @@
 		},
 
 		/**
-		 * Change to the section's active state.
+		 * To override by subclass, to return whether the container has active children.
+		 */
+		isContextuallyActive: function () {
+			throw new Error( 'Must override with subclass.' );
+		},
+
+		/**
+		 * Handle changes to the active state.
+		 * This does not change the active state, it merely handles the behavior
+		 * for when it does change.
+		 *
+		 * To override by subclass, update the container's UI to reflect the provided active state.
 		 *
 		 * @param {Boolean} active
 		 */
-		toggle: function ( active ) {
-			// @todo
+		toggleActive: function ( active ) {
 			if ( active ) {
-				this.deactivate();
+				this.container.stop( true, true ).slideDown();
 			} else {
-				this.activate();
+				this.container.stop( true, true ).slideUp();
 			}
-		},
-
-		isContextuallyActive: function () {
-			throw new Error( 'Must override with subclass.' );
 		},
 
 		/**
@@ -138,15 +134,6 @@
 		 */
 		activate: function () {
 			this.active.set( true );
-			// @todo If it was already active, then re-trigger the events
-		},
-
-		/**
-		 *
-		 */
-		onActivate: function () {
-			// @todo Prevent this from proceeding if there are no active controls; as soon as a control becomes active, then this would automatically show
-			this.container.stop( true, true ).slideDown(); // @todo Trigger 'activated' event when complete?
 		},
 
 		/**
@@ -154,15 +141,13 @@
 		 */
 		deactivate: function () {
 			this.active.set( false );
-			// @todo If it was already inactive, then re-trigger the events
 		},
 
 		/**
-		 *
+		 * To override by subclass, update the container's UI to reflect the provided active state.
 		 */
-		onDeactivate: function () {
-			this.onCollapse();
-			this.container.stop( true, true ).slideUp(); // @todo Trigger 'deactivated' event when complete?
+		toggleExpanded: function () {
+			throw new Error( 'Must override with subclass.' );
 		},
 
 		/**
@@ -173,24 +158,10 @@
 		},
 
 		/**
-		 * Show the accordion section contents and collapse all other sections at the same time
-		 */
-		onExpand: function () {
-			throw new Error( 'onCollapse method must be overridden' );
-		},
-
-		/**
 		 *
 		 */
 		collapse: function () {
 			this.expanded( false );
-		},
-
-		/**
-		 *
-		 */
-		onCollapse: function () {
-			throw new Error( 'onCollapse method must be overridden' );
 		},
 
 		/**
@@ -291,35 +262,33 @@
 		},
 
 		/**
-		 * Show the accordion section contents and collapse all other sections at the same time
-		 */
-		onExpand: function () {
-			var section = this,
-				content = section.container.find( '.accordion-section-content' );
-
-			if ( section.panel() ) {
-				api.panel( section.panel() ).expand();
-			}
-
-			api.section.each( function ( otherSection ) {
-				if ( otherSection !== section ) {
-					otherSection.collapse();
-				}
-			});
-
-			content.stop().slideDown( section.slideSpeed );
-			section.container.addClass( 'open' );
-		},
-
-		/**
+		 * Update UI to reflect expanded state
 		 *
+		 * @param {Boolean} expanded
 		 */
-		onCollapse: function () {
+		toggleExpanded: function ( expanded ) {
 			var section = this,
 				content = section.container.find( '.accordion-section-content' );
 
-			section.container.removeClass( 'open' );
-			content.slideUp( section.slideSpeed );
+			if ( expanded ) {
+
+				if ( section.panel() ) {
+					api.panel( section.panel() ).expand();
+				}
+
+				api.section.each( function ( otherSection ) {
+					if ( otherSection !== section ) {
+						otherSection.collapse();
+					}
+				});
+
+				content.stop().slideDown( section.slideSpeed );
+				section.container.addClass( 'open' );
+			} else {
+
+				section.container.removeClass( 'open' );
+				content.slideUp( section.slideSpeed );
+			}
 		},
 
 		/**
@@ -423,50 +392,13 @@
 		},
 
 		/**
+		 * Update UI to reflect expanded state
 		 *
+		 * @param {Boolean} expanded
 		 */
-		onExpand: function () {
-
+		toggleExpanded: function ( expanded ) {
 			var position, scroll,
 				panel = this,
-				section = panel.container.closest( '.accordion-section' ),
-				overlay = section.closest( '.wp-full-overlay' ),
-				container = section.closest( '.accordion-container' ),
-				topPanel = overlay.find( '#customize-theme-controls > ul > .accordion-section > .accordion-section-title' ).add( '#customize-info > .accordion-section-title' ),
-				backBtn = overlay.find( '.control-panel-back' ),
-				content = section.find( '.control-panel-content' );
-
-			// Collapse any sibling sections/panels
-			api.section.each( function ( section ) {
-				if ( ! section.panel() ) {
-					section.collapse(); // @todo If any sections are open, then the position calculation below will fire too early
-				}
-			});
-			api.panel.each( function ( otherPanel ) {
-				if ( panel !== otherPanel ) {
-					otherPanel.collapse(); // @todo the position calculation below probably will fire too early
-				}
-			});
-
-			content.show( 0, function() {
-				position = content.offset().top;
-				scroll = container.scrollTop();
-				content.css( 'margin-top', ( 45 - position - scroll ) );
-				section.addClass( 'current-panel' );
-				overlay.addClass( 'in-sub-panel' );
-				container.scrollTop( 0 );
-			} );
-			topPanel.attr( 'tabindex', '-1' );
-			backBtn.attr( 'tabindex', '0' );
-			backBtn.focus();
-		},
-
-		/**
-		 *
-		 */
-		onCollapse: function () {
-
-			var panel = this,
 				section = panel.container.closest( '.accordion-section' ),
 				overlay = section.closest( '.wp-full-overlay' ),
 				container = section.closest( '.accordion-container' ),
@@ -476,16 +408,43 @@
 				panelTitle = section.find( '.accordion-section-title' ).first(),
 				content = section.find( '.control-panel-content' );
 
-			siblings.removeClass( 'open' );
-			section.removeClass( 'current-panel' );
-			overlay.removeClass( 'in-sub-panel' );
-			content.delay( 180 ).hide( 0, function() {
-				content.css( 'margin-top', 'inherit' ); // Reset
-			} );
-			topPanel.attr( 'tabindex', '0' );
-			backBtn.attr( 'tabindex', '-1' );
-			panelTitle.focus();
-			container.scrollTop( 0 );
+			if ( expanded ) {
+
+				// Collapse any sibling sections/panels
+				api.section.each( function ( section ) {
+					if ( ! section.panel() ) {
+						section.collapse(); // @todo If any sections are open, then the position calculation below will fire too early
+					}
+				});
+				api.panel.each( function ( otherPanel ) {
+					if ( panel !== otherPanel ) {
+						otherPanel.collapse(); // @todo the position calculation below probably will fire too early
+					}
+				});
+
+				content.show( 0, function() {
+					position = content.offset().top;
+					scroll = container.scrollTop();
+					content.css( 'margin-top', ( 45 - position - scroll ) );
+					section.addClass( 'current-panel' );
+					overlay.addClass( 'in-sub-panel' );
+					container.scrollTop( 0 );
+				} );
+				topPanel.attr( 'tabindex', '-1' );
+				backBtn.attr( 'tabindex', '0' );
+				backBtn.focus();
+			} else {
+				siblings.removeClass( 'open' );
+				section.removeClass( 'current-panel' );
+				overlay.removeClass( 'in-sub-panel' );
+				content.delay( 180 ).hide( 0, function() {
+					content.css( 'margin-top', 'inherit' ); // Reset
+				} );
+				topPanel.attr( 'tabindex', '0' );
+				backBtn.attr( 'tabindex', '-1' );
+				panelTitle.focus();
+				container.scrollTop( 0 );
+			}
 		},
 
 		/**
@@ -509,22 +468,59 @@
 			var control = this,
 				nodes, radios, settings;
 
-			this.params = {};
-			$.extend( this, options || {} );
+			control.params = {};
+			$.extend( control, options || {} );
 
-			this.id = id;
-			this.selector = '#customize-control-' + id.replace( /\]/g, '' ).replace( /\[/g, '-' );
-			this.container = this.params.content ? $( this.params.content ) : $( this.selector );
+			control.id = id;
+			control.selector = '#customize-control-' + id.replace( /\]/g, '' ).replace( /\[/g, '-' );
+			control.container = control.params.content ? $( control.params.content ) : $( control.selector );
 
-			this.section = new api.Value( this.params.section );
-			this.priority = new api.Value( isNaN( this.params.priority ) ? 10 : this.params.priority );
-			this.active = new api.Value( this.params.active );
+			control.section = new api.Value();
+			control.priority = new api.Value();
+			control.active = new api.Value();
 
-			settings = $.map( this.params.settings, function( value ) {
-				return value;
+			control.elements = [];
+
+			nodes  = control.container.find('[data-customize-setting-link]');
+			radios = {};
+
+			nodes.each( function() {
+				var node = $( this ),
+					name;
+
+				if ( node.is( ':radio' ) ) {
+					name = node.prop( 'name' );
+					if ( radios[ name ] ) {
+						return;
+					}
+
+					radios[ name ] = true;
+					node = nodes.filter( '[name="' + name + '"]' );
+				}
+
+				api( node.data( 'customizeSettingLink' ), function( setting ) {
+					var element = new api.Element( node );
+					control.elements.push( element );
+					element.sync( setting );
+					element.set( setting() );
+				});
 			});
 
-			api.apply( api, settings.concat( function() {
+			control.active.bind( function ( active ) {
+				control.toggleActive( active );
+			} );
+
+			control.section.set( control.params.section );
+			control.priority.set( isNaN( control.params.priority ) ? 10 : control.params.priority );
+			control.active.set( control.params.active );
+
+			bubbleChildValueChanges( control, [ 'section', 'priority', 'active' ] );
+
+			// Associate this control with its settings when they are created
+			settings = $.map( control.params.settings, function( value ) {
+				return value;
+			});
+			api.apply( api, settings.concat( function () {
 				var key;
 
 				control.settings = {};
@@ -535,42 +531,8 @@
 				control.setting = control.settings['default'] || null;
 				control.embed( function () {
 					control.ready();
-				} );
-			}) );
-
-			control.elements = [];
-
-			nodes  = this.container.find('[data-customize-setting-link]');
-			radios = {};
-
-			nodes.each( function() {
-				var node = $(this),
-					name;
-
-				if ( node.is(':radio') ) {
-					name = node.prop('name');
-					if ( radios[ name ] ) {
-						return;
-					}
-
-					radios[ name ] = true;
-					node = nodes.filter( '[name="' + name + '"]' );
-				}
-
-				api( node.data('customizeSettingLink'), function( setting ) {
-					var element = new api.Element( node );
-					control.elements.push( element );
-					element.sync( setting );
-					element.set( setting() );
 				});
-			});
-
-			control.active.bind( function ( active ) {
-				control.toggle( active );
-			} );
-			control.toggle( control.active() );
-
-			bubbleChildValueChanges( control, [ 'section', 'priority', 'active' ] );
+			}) );
 		},
 
 		/**
@@ -607,16 +569,39 @@
 		},
 
 		/**
-		 * Change to the control's active state.
+		 * Update UI in response to a change in the control's active state.
+		 * This does not change the active state, it merely handles the behavior
+		 * for when it does change.
 		 *
 		 * @param {Boolean} active
 		 */
-		toggle: function ( active ) {
+		toggleActive: function ( active ) {
 			if ( active ) {
 				this.container.slideDown();
 			} else {
 				this.container.slideUp();
 			}
+		},
+
+		/**
+		 * @deprecated alias of toggleActive
+		 */
+		toggle: function ( active ) {
+			return this.toggleActive( active );
+		},
+
+		/**
+		 * Shorthand way to enable the active state.
+		 */
+		activate: function () {
+			this.active.set( true );
+		},
+
+		/**
+		 * Shorthand way to disable the active state.
+		 */
+		deactivate: function () {
+			this.active.set( false );
 		},
 
 		dropdownInit: function() {
@@ -1691,6 +1676,7 @@
 				var sections = panel.sections();
 				rootNodes.push( panel );
 				appendContainer = panel.container.find( 'ul:first' );
+				// @todo Skip doing any DOM manipulation if the ordering is already correct
 				_( sections ).each( function ( section ) {
 					appendContainer.append( section.container );
 				} );
@@ -1702,6 +1688,7 @@
 					rootNodes.push( section );
 				}
 				appendContainer = section.container.find( 'ul:first' );
+				// @todo Skip doing any DOM manipulation if the ordering is already correct
 				_( controls ).each( function ( control ) {
 					appendContainer.append( control.container );
 				} );
@@ -1712,6 +1699,7 @@
 				return a.priority() - b.priority();
 			} );
 			appendContainer = $( '#customize-theme-controls > ul' );
+			// @todo Skip doing any DOM manipulation if the ordering is already correct
 			_( rootNodes ).each( function ( rootNode ) {
 				appendContainer.append( rootNode.container );
 			} );
