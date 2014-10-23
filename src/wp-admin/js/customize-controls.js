@@ -80,7 +80,7 @@
 			bubbleChildValueChanges( self, [ 'priority', 'active' ] );
 
 			self.priority.set( isNaN( self.params.priority ) ? 100 : self.params.priority );
-			self.active.set( true ); // @todo pass from params, eventually from active_callback when defining panel/section
+			self.active.set( self.params.active );
 			self.expanded.set( false ); // @todo True if deeplinking?
 		},
 
@@ -1101,29 +1101,42 @@
 				loaded = false,
 				ready  = false;
 
-			if ( this._ready )
+			if ( this._ready ) {
 				this.unbind( 'ready', this._ready );
+			}
 
 			this._ready = function() {
 				ready = true;
 
-				if ( loaded )
+				if ( loaded ) {
 					deferred.resolveWith( self );
+				}
 			};
 
 			this.bind( 'ready', this._ready );
 
 			this.bind( 'ready', function ( data ) {
-				if ( ! data || ! data.activeControls ) {
+				if ( ! data ) {
 					return;
 				}
 
-				$.each( data.activeControls, function ( id, active ) {
-					var control = api.control( id );
-					if ( control ) {
-						control.active( active );
+				var constructs = {
+					panel: data.activePanels,
+					section: data.activeSections,
+					control: data.activeControls
+				};
+
+				$.each( constructs, function ( type, activeConstructs ) {
+					if ( activeConstructs ) {
+						$.each( activeConstructs, function ( id, active ) {
+							var construct = api[ type ]( id );
+							if ( construct ) {
+								construct.active( active );
+							}
+						} );
 					}
 				} );
+
 			} );
 
 			this.request = $.ajax( this.previewUrl(), {
@@ -1145,7 +1158,7 @@
 
 				// Check if the location response header differs from the current URL.
 				// If so, the request was redirected; try loading the requested page.
-				if ( location && location != self.previewUrl() ) {
+				if ( location && location !== self.previewUrl() ) {
 					deferred.rejectWith( self, [ 'redirect', location ] );
 					return;
 				}
