@@ -1463,38 +1463,9 @@
 			// Update the model with whether or not the sidebar is rendered
 			self.active.bind( function ( active ) {
 				registeredSidebar.set( 'is_rendered', active );
+				api.section( self.section.get() ).active( active );
 			} );
-		},
-
-		/**
-		 * Respond to change in active state to show the sidebar section.
-		 *
-		 * Overrides api.Control.toggleActive()
-		 *
-		 * @param {Boolean} active
-		 */
-		toggleActive: function ( active ) {
-			// @todo this seems wrong. It seems we should be linking this.active with api.section( this.section.get() ).active
-
-			var $section, sectionSelector;
-
-			sectionSelector = '#accordion-section-sidebar-widgets-' + this.params.sidebar_id;
-			$section = $( sectionSelector );
-
-			if ( active ) {
-				$section.stop().slideDown( function() {
-					$( this ).css( 'height', 'auto' ); // so that the .accordion-section-content won't overflow
-				} );
-
-			} else {
-				// Make sure that hidden sections get closed first
-				if ( $section.hasClass( 'open' ) ) {
-					// it would be nice if accordionSwitch() in accordion.js was public
-					$section.find( '.accordion-section-title' ).trigger( 'click' );
-				}
-
-				$section.stop().slideUp();
-			}
+			api.section( self.section.get() ).active( self.active() );
 		},
 
 		/**
@@ -1527,6 +1498,8 @@
 			/**
 			 * Expand other Customizer sidebar section when dragging a control widget over it,
 			 * allowing the control to be dropped into another section
+			 *
+			 * @todo The wp.customize.Section API should accomodate forcing a single accordion open
 			 */
 			this.$controlSection.find( '.accordion-section-title' ).droppable({
 				accept: '.customize-control-widget_form',

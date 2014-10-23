@@ -1062,6 +1062,7 @@ class WP_Customize_Header_Image_Control extends WP_Customize_Image_Control {
 /**
  * Widget Area Customize Control Class
  *
+ * @since 3.9.0
  */
 class WP_Widget_Area_Customize_Control extends WP_Customize_Control {
 	public $type = 'sidebar_widgets';
@@ -1103,6 +1104,8 @@ class WP_Widget_Area_Customize_Control extends WP_Customize_Control {
 
 /**
  * Widget Form Customize Control Class
+ *
+ * @since 3.9.0
  */
 class WP_Widget_Form_Customize_Control extends WP_Customize_Control {
 	public $type = 'widget_form';
