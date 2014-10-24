@@ -53,35 +53,43 @@
 	 * @augments wp.customize.Class
 	 */
 	Container = api.Class.extend({
-		slideSpeed: 150,
+		defaultActiveArguments: { duration: null },
+		defaultExpandedArguments: { duration: 150 },
 
 		initialize: function ( id, options ) {
-			var self = this;
-			self.id = id;
-			self.params = {};
-			$.extend( self, options || {} );
-			self.container = $( self.params.content );
+			var container = this;
+			container.id = id;
+			container.params = {};
+			$.extend( container, options || {} );
+			container.container = $( container.params.content );
 
-			self.priority = new api.Value();
-			self.active = new api.Value();
-			self.expanded = new api.Value();
+			container.priority = new api.Value();
+			container.active = new api.Value();
+			container.activeArgumentsQueue = [];
+			container.expanded = new api.Value();
+			container.expandedArgumentsQueue = [];
 
-			self.active.bind( function ( active ) {
-				self.toggleActive( active && self.isContextuallyActive() );
-				// @todo trigger 'activatged' and 'deactivated' events based on the expanded param?
+			container.active.bind( function ( active ) {
+				var args = container.activeArgumentsQueue.shift();
+				args = $.extend( {}, container.defaultActiveArguments, args );
+				active = ( active && container.isContextuallyActive() );
+				container.onToggleActive( active, args );
+				// @todo trigger 'activated' and 'deactivated' events based on the expanded param?
 			});
-			self.expanded.bind( function ( expanded ) {
-				self.toggleExpanded( expanded );
+			container.expanded.bind( function ( expanded ) {
+				var args = container.expandedArgumentsQueue.shift();
+				args = $.extend( {}, container.defaultExpandedArguments, args );
+				container.onToggleExpanded( expanded, args );
 				// @todo trigger 'expanded' and 'collapsed' events based on the expanded param?
 			});
 
-			self.attachEvents();
+			container.attachEvents();
 
-			bubbleChildValueChanges( self, [ 'priority', 'active' ] );
+			bubbleChildValueChanges( container, [ 'priority', 'active' ] );
 
-			self.priority.set( isNaN( self.params.priority ) ? 100 : self.params.priority );
-			self.active.set( self.params.active );
-			self.expanded.set( false ); // @todo True if deeplinking?
+			container.priority.set( isNaN( container.params.priority ) ? 100 : container.params.priority );
+			container.active.set( container.params.active );
+			container.expanded.set( false ); // @todo True if deeplinking?
 		},
 
 		/**
@@ -120,47 +128,52 @@
 		 * To override by subclass, update the container's UI to reflect the provided active state.
 		 *
 		 * @param {Boolean} active
+		 * @param {Object} args  merged on top of this.defaultActiveArguments
 		 */
-		toggleActive: function ( active ) {
+		onToggleActive: function ( active, args ) {
 			if ( active ) {
-				this.container.stop( true, true ).slideDown();
+				this.container.stop( true, true ).slideDown( args.duration ); // @todo pass args.completeCallback
 			} else {
-				this.container.stop( true, true ).slideUp();
+				this.container.stop( true, true ).slideUp( args.duration ); // @todo pass args.completeCallback
 			}
 		},
 
 		/**
-		 *
+		 * @param {Object} [params]
 		 */
-		activate: function () {
+		activate: function ( params ) {
+			this.activeArgumentsQueue.push( params || {} );
 			this.active.set( true );
 		},
 
 		/**
-		 *
+		 * @param {Object} [params]
 		 */
-		deactivate: function () {
+		deactivate: function ( params ) {
+			this.activeArgumentsQueue.push( params || {} );
 			this.active.set( false );
 		},
 
 		/**
 		 * To override by subclass, update the container's UI to reflect the provided active state.
 		 */
-		toggleExpanded: function () {
+		onToggleExpanded: function () {
 			throw new Error( 'Must override with subclass.' );
 		},
 
 		/**
-		 *
+		 * @param {Object} [params]
 		 */
-		expand: function () {
+		expand: function ( params ) {
+			this.expandedArgumentsQueue.push( params || {} );
 			this.expanded.set( true );
 		},
 
 		/**
-		 *
+		 * @param {Object} [params]
 		 */
-		collapse: function () {
+		collapse: function ( params ) {
+			this.expandedArgumentsQueue.push( params || {} );
 			this.expanded( false );
 		},
 
@@ -265,8 +278,9 @@
 		 * Update UI to reflect expanded state
 		 *
 		 * @param {Boolean} expanded
+		 * @param {Object} args
 		 */
-		toggleExpanded: function ( expanded ) {
+		onToggleExpanded: function ( expanded, args ) {
 			var section = this,
 				content = section.container.find( '.accordion-section-content' );
 
@@ -278,16 +292,16 @@
 
 				api.section.each( function ( otherSection ) {
 					if ( otherSection !== section ) {
-						otherSection.collapse();
+						otherSection.collapse( { duration : 0 } );
 					}
 				});
 
-				content.stop().slideDown( section.slideSpeed );
+				content.stop().slideDown( args.duration ); // @todo pass args.completeCallback
 				section.container.addClass( 'open' );
 			} else {
 
 				section.container.removeClass( 'open' );
-				content.slideUp( section.slideSpeed );
+				content.slideUp( args.duration ); // @todo pass args.completeCallback
 			}
 		},
 
@@ -396,7 +410,8 @@
 		 *
 		 * @param {Boolean} expanded
 		 */
-		toggleExpanded: function ( expanded ) {
+		onToggleExpanded: function ( expanded ) {
+			// Note: there is a second argument 'args' passed
 			var position, scroll,
 				panel = this,
 				section = panel.container.closest( '.accordion-section' ),
@@ -413,12 +428,12 @@
 				// Collapse any sibling sections/panels
 				api.section.each( function ( section ) {
 					if ( ! section.panel() ) {
-						section.collapse(); // @todo If any sections are open, then the position calculation below will fire too early
+						section.collapse( { duration: 0 } );
 					}
 				});
 				api.panel.each( function ( otherPanel ) {
 					if ( panel !== otherPanel ) {
-						otherPanel.collapse(); // @todo the position calculation below probably will fire too early
+						otherPanel.collapse( { duration: 0 } );
 					}
 				});
 
@@ -464,6 +479,8 @@
 	 * @augments wp.customize.Class
 	 */
 	api.Control = api.Class.extend({
+		defaultActiveArguments: { duration: null },
+
 		initialize: function( id, options ) {
 			var control = this,
 				nodes, radios, settings;
@@ -478,6 +495,7 @@
 			control.section = new api.Value();
 			control.priority = new api.Value();
 			control.active = new api.Value();
+			control.activeArgumentsQueue = [];
 
 			control.elements = [];
 
@@ -507,7 +525,9 @@
 			});
 
 			control.active.bind( function ( active ) {
-				control.toggleActive( active );
+				var args = control.activeArgumentsQueue.shift();
+				args = $.extend( {}, control.defaultActiveArguments, args );
+				control.onToggleActive( active, args );
 			} );
 
 			control.section.set( control.params.section );
@@ -574,20 +594,21 @@
 		 * for when it does change.
 		 *
 		 * @param {Boolean} active
+		 * @param {Object} args  merged on top of this.defaultActiveArguments
 		 */
-		toggleActive: function ( active ) {
+		onToggleActive: function ( active, args ) {
 			if ( active ) {
-				this.container.slideDown();
+				this.container.slideDown( args.duration );
 			} else {
-				this.container.slideUp();
+				this.container.slideUp( args.duration );
 			}
 		},
 
 		/**
-		 * @deprecated alias of toggleActive
+		 * @deprecated alias of onToggleActive
 		 */
 		toggle: function ( active ) {
-			return this.toggleActive( active );
+			return this.onToggleActive( active, this.defaultActiveArguments );
 		},
 
 		/**
