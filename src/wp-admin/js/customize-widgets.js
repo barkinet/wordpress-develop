@@ -404,13 +404,17 @@
 	 * @augments wp.customize.Control
 	 */
 	api.Widgets.WidgetControl = api.Control.extend({
+		defaultExpandedArguments: {},
 
 		initialize: function ( id, options ) {
 			var control = this;
 			api.Control.prototype.initialize.call( control, id, options );
 			control.expanded = new api.Value();
+			control.expandedArgumentsQueue = [];
 			control.expanded.bind( function ( expanded ) {
-				control.toggleExpanded( expanded );
+				var args = control.expandedArgumentsQueue.shift();
+				args = $.extend( {}, control.defaultExpandedArguments, args );
+				control.onToggleExpanded( expanded, args );
 			});
 			control.expanded.set( false );
 		},
@@ -789,7 +793,8 @@
 		 *
 		 * @param {Boolean} active
 		 */
-		toggleActive: function ( active ) {
+		onToggleActive: function ( active ) {
+			// Note: there is a second 'args' parameter being passed, merged on top of this.defaultActiveArguments
 			this.container.toggleClass( 'widget-rendered', active );
 		},
 
@@ -1165,8 +1170,9 @@
 		 * Respond to change in the expanded state.
 		 *
 		 * @param {Boolean} expanded
+		 * @param {Object} args  merged on top of this.defaultActiveArguments
 		 */
-		toggleExpanded: function ( expanded ) {
+		onToggleExpanded: function ( expanded, args ) {
 
 			var self = this, $widget, $inside, complete;
 			$widget = this.container.find( 'div.widget:first' );
