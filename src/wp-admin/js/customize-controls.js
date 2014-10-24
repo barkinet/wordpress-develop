@@ -65,13 +65,16 @@
 			self.priority = new api.Value();
 			self.active = new api.Value();
 			self.expanded = new api.Value();
+		        self.expandedArgumentsQueue = [] ; // perhaps this should be a static, not instance variable
 
 			self.active.bind( function ( active ) {
-				self.toggleActive( active && self.isContextuallyActive() );
+				self.onToggleActive( active && self.isContextuallyActive() );
 				// @todo trigger 'activatged' and 'deactivated' events based on the expanded param?
 			});
 			self.expanded.bind( function ( expanded ) {
-				self.toggleExpanded( expanded );
+			        var params = this.expandedArgumentsQueue.pop() ;
+			        var duration = params.duration || null ; 
+				self.onToggleExpanded( expanded , duration );
 				// @todo trigger 'expanded' and 'collapsed' events based on the expanded param?
 			});
 
@@ -121,7 +124,7 @@
 		 *
 		 * @param {Boolean} active
 		 */
-		toggleActive: function ( active ) {
+		onToggleActive: function ( active ) {
 			if ( active ) {
 				this.container.stop( true, true ).slideDown();
 			} else {
@@ -146,21 +149,25 @@
 		/**
 		 * To override by subclass, update the container's UI to reflect the provided active state.
 		 */
-		toggleExpanded: function () {
+		onToggleExpanded: function () {
 			throw new Error( 'Must override with subclass.' );
 		},
 
 		/**
 		 *
 		 */
-		expand: function () {
+		expand: function ( params ) {
+		        var params = params || {} ;
+		        this.expandedArgumentsQueue.push( params );		     		    
 			this.expanded.set( true );
 		},
 
 		/**
 		 *
 		 */
-		collapse: function () {
+		collapse: function ( params ) {
+		        var params = params || {} ; 
+		        expandedArgumentsQueue.push( params );		     
 			this.expanded( false );
 		},
 
@@ -266,7 +273,7 @@
 		 *
 		 * @param {Boolean} expanded
 		 */
-		toggleExpanded: function ( expanded ) {
+		onToggleExpanded: function ( expanded , duration ) {
 			var section = this,
 				content = section.container.find( '.accordion-section-content' );
 
@@ -278,16 +285,16 @@
 
 				api.section.each( function ( otherSection ) {
 					if ( otherSection !== section ) {
-						otherSection.collapse();
+						otherSection.collapse( { duration : 0 } );
 					}
 				});
 
-				content.stop().slideDown( section.slideSpeed );
+				content.stop().slideDown( duration || section.slideSpeed );
 				section.container.addClass( 'open' );
 			} else {
 
 				section.container.removeClass( 'open' );
-				content.slideUp( section.slideSpeed );
+				content.slideUp( duration || section.slideSpeed );
 			}
 		},
 
@@ -396,7 +403,7 @@
 		 *
 		 * @param {Boolean} expanded
 		 */
-		toggleExpanded: function ( expanded ) {
+		onToggleExpanded: function ( expanded , duration ) {
 			var position, scroll,
 				panel = this,
 				section = panel.container.closest( '.accordion-section' ),
@@ -413,12 +420,12 @@
 				// Collapse any sibling sections/panels
 				api.section.each( function ( section ) {
 					if ( ! section.panel() ) {
-						section.collapse(); // @todo If any sections are open, then the position calculation below will fire too early
+						section.collapse( { duration: 0 } );  // @todo If any sections are open, then the position calculation below will fire too early
 					}
 				});
 				api.panel.each( function ( otherPanel ) {
 					if ( panel !== otherPanel ) {
-						otherPanel.collapse(); // @todo the position calculation below probably will fire too early
+						otherPanel.collapse( { duration: 0 } ); // @todo the position calculation below probably will fire too early
 					}
 				});
 
@@ -507,7 +514,7 @@
 			});
 
 			control.active.bind( function ( active ) {
-				control.toggleActive( active );
+				control.onToggleActive( active );
 			} );
 
 			control.section.set( control.params.section );
@@ -575,7 +582,7 @@
 		 *
 		 * @param {Boolean} active
 		 */
-		toggleActive: function ( active ) {
+		onToggleActive: function ( active ) {
 			if ( active ) {
 				this.container.slideDown();
 			} else {
@@ -584,10 +591,10 @@
 		},
 
 		/**
-		 * @deprecated alias of toggleActive
+		 * @deprecated alias of onToggleActive
 		 */
 		toggle: function ( active ) {
-			return this.toggleActive( active );
+			return this.onToggleActive( active );
 		},
 
 		/**
