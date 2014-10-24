@@ -1558,16 +1558,30 @@
 		 * Add classes to the widget_form controls to assist with styling
 		 */
 		_applyCardinalOrderClassNames: function() {
-			this.$sectionContent.find( '.customize-control-widget_form' )
-				.removeClass( 'first-widget' )
-				.removeClass( 'last-widget' )
-				.find( '.move-widget-down, .move-widget-up' ).prop( 'tabIndex', 0 );
+			var widgetControls = [];
+			_.each( this.setting(), function ( widgetId ) {
+				var widgetControl = api.Widgets.getWidgetFormControlForWidget( widgetId );
+				if ( widgetControl ) {
+					widgetControls.push( widgetControl );
+				}
+			});
 
-			this.$sectionContent.find( '.customize-control-widget_form:first' )
+			if ( ! widgetControls.length ) {
+				return;
+			}
+
+			$( widgetControls ).each( function () {
+				$( this.container )
+					.removeClass( 'first-widget' )
+					.removeClass( 'last-widget' )
+					.find( '.move-widget-down, .move-widget-up' ).prop( 'tabIndex', 0 );
+			});
+
+			_.first( widgetControls ).container
 				.addClass( 'first-widget' )
 				.find( '.move-widget-up' ).prop( 'tabIndex', -1 );
 
-			this.$sectionContent.find( '.customize-control-widget_form:last' )
+			_.last( widgetControls ).container
 				.addClass( 'last-widget' )
 				.find( '.move-widget-down' ).prop( 'tabIndex', -1 );
 		},
