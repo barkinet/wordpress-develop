@@ -332,8 +332,12 @@
 		 */
 		focus: function () {
 			var section = this;
-			// @todo What if it is not active? Return false?
-			section.expand();
+                        var containingPanel = api.panel.instance( section.panel() );
+                        if ( containingPanel ) { 
+                               containingPanel.expand();
+                        }
+                        // @todo What if it is not active? Return false?
+                        section.expand();
 		}
 	});
 
@@ -608,9 +612,18 @@
 		 * Bring the containing section and panel into view and then this control into view, focusing on the first input
 		 */
 		focus: function () {
-			throw new Error( 'Not implemented yet' );
+		        var containingSection = api.section.instance( this.section() ) ;
+		        var containingPanel = api.panel.instance( containingSection.panel() ) ;
+		        var control = this ;
+		    
+		        if ( containingPanel ) {
+			        containingPanel.expand();
+	                }
+		        containingSection.expand() ;
+		        control.container.find( 'input' ).first().focus();
+	        
 		},
-
+	
 		/**
 		 * Update UI in response to a change in the control's active state.
 		 * This does not change the active state, it merely handles the behavior
