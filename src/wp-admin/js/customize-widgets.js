@@ -404,7 +404,9 @@
 	 * @augments wp.customize.Control
 	 */
 	api.Widgets.WidgetControl = api.Control.extend({
-		defaultExpandedArguments: {},
+		defaultExpandedArguments: {
+			duration: 'fast'
+		},
 
 		initialize: function ( id, options ) {
 			var control = this;
@@ -1196,9 +1198,9 @@
 				};
 
 				if ( self.params.is_wide ) {
-					$inside.fadeIn( 'fast', complete );
+					$inside.fadeIn( args.duration, complete );
 				} else {
-					$inside.slideDown( 'fast', complete );
+					$inside.slideDown( args.duration, complete );
 				}
 
 				self.container.trigger( 'expand' );
@@ -1215,9 +1217,9 @@
 				self.container.addClass( 'collapsing' );
 
 				if ( self.params.is_wide ) {
-					$inside.fadeOut( 'fast', complete );
+					$inside.fadeOut( args.duration, complete );
 				} else {
-					$inside.slideUp( 'fast', function() {
+					$inside.slideUp( args.duration, function() {
 						$widget.css( { width:'', margin:'' } );
 						complete();
 					} );
