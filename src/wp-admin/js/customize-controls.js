@@ -73,13 +73,13 @@
 				var args = container.activeArgumentsQueue.shift();
 				args = $.extend( {}, container.defaultActiveArguments, args );
 				active = ( active && container.isContextuallyActive() );
-				container.onToggleActive( active, args );
+				container.onChangeActive( active, args );
 				// @todo trigger 'activated' and 'deactivated' events based on the expanded param?
 			});
 			container.expanded.bind( function ( expanded ) {
 				var args = container.expandedArgumentsQueue.shift();
 				args = $.extend( {}, container.defaultExpandedArguments, args );
-				container.onToggleExpanded( expanded, args );
+				container.onChangeExpanded( expanded, args );
 				// @todo trigger 'expanded' and 'collapsed' events based on the expanded param?
 			});
 
@@ -130,7 +130,7 @@
 		 * @param {Boolean} active
 		 * @param {Object} args  merged on top of this.defaultActiveArguments
 		 */
-		onToggleActive: function ( active, args ) {
+		onChangeActive: function ( active, args ) {
 			if ( active ) {
 				this.container.stop( true, true ).slideDown( args.duration ); // @todo pass args.completeCallback
 			} else {
@@ -157,7 +157,7 @@
 		/**
 		 * To override by subclass, update the container's UI to reflect the provided active state.
 		 */
-		onToggleExpanded: function () {
+		onChangeExpanded: function () {
 			throw new Error( 'Must override with subclass.' );
 		},
 
@@ -280,7 +280,7 @@
 		 * @param {Boolean} expanded
 		 * @param {Object} args
 		 */
-		onToggleExpanded: function ( expanded, args ) {
+		onChangeExpanded: function ( expanded, args ) {
 			var section = this,
 				content = section.container.find( '.accordion-section-content' );
 
@@ -410,7 +410,7 @@
 		 *
 		 * @param {Boolean} expanded
 		 */
-		onToggleExpanded: function ( expanded ) {
+		onChangeExpanded: function ( expanded ) {
 			// Note: there is a second argument 'args' passed
 			var position, scroll,
 				panel = this,
@@ -527,7 +527,7 @@
 			control.active.bind( function ( active ) {
 				var args = control.activeArgumentsQueue.shift();
 				args = $.extend( {}, control.defaultActiveArguments, args );
-				control.onToggleActive( active, args );
+				control.onChangeActive( active, args );
 			} );
 
 			control.section.set( control.params.section );
@@ -599,7 +599,7 @@
 		 * @param {Boolean} active
 		 * @param {Object} args  merged on top of this.defaultActiveArguments
 		 */
-		onToggleActive: function ( active, args ) {
+		onChangeActive: function ( active, args ) {
 			if ( active ) {
 				this.container.slideDown( args.duration );
 			} else {
@@ -608,10 +608,10 @@
 		},
 
 		/**
-		 * @deprecated alias of onToggleActive
+		 * @deprecated alias of onChangeActive
 		 */
 		toggle: function ( active ) {
-			return this.onToggleActive( active, this.defaultActiveArguments );
+			return this.onChangeActive( active, this.defaultActiveArguments );
 		},
 
 		/**

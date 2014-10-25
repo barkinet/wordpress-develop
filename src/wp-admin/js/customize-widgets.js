@@ -414,7 +414,7 @@
 			control.expanded.bind( function ( expanded ) {
 				var args = control.expandedArgumentsQueue.shift();
 				args = $.extend( {}, control.defaultExpandedArguments, args );
-				control.onToggleExpanded( expanded, args );
+				control.onChangeExpanded( expanded, args );
 			});
 			control.expanded.set( false );
 		},
@@ -793,7 +793,7 @@
 		 *
 		 * @param {Boolean} active
 		 */
-		onToggleActive: function ( active ) {
+		onChangeActive: function ( active ) {
 			// Note: there is a second 'args' parameter being passed, merged on top of this.defaultActiveArguments
 			this.container.toggleClass( 'widget-rendered', active );
 		},
@@ -1172,7 +1172,7 @@
 		 * @param {Boolean} expanded
 		 * @param {Object} args  merged on top of this.defaultActiveArguments
 		 */
-		onToggleExpanded: function ( expanded, args ) {
+		onChangeExpanded: function ( expanded, args ) {
 
 			var self = this, $widget, $inside, complete;
 			$widget = this.container.find( 'div.widget:first' );
