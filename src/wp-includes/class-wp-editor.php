@@ -177,8 +177,8 @@ final class _WP_Editors {
 				$switch_class = 'tmce-active';
 			}
 
-			$buttons .= '<a id="' . $editor_id . '-html" class="wp-switch-editor switch-html" onclick="switchEditors.switchto(this);">' . _x( 'Text', 'Name for the Text editor tab (formerly HTML)' ) . "</a>\n";
-			$buttons .= '<a id="' . $editor_id . '-tmce" class="wp-switch-editor switch-tmce" onclick="switchEditors.switchto(this);">' . __('Visual') . "</a>\n";
+			$buttons .= '<button type="button" id="' . $editor_id . '-tmce" class="wp-switch-editor switch-tmce" onclick="switchEditors.switchto(this);">' . __('Visual') . "</button>\n";
+			$buttons .= '<button type="button" id="' . $editor_id . '-html" class="wp-switch-editor switch-html" onclick="switchEditors.switchto(this);">' . _x( 'Text', 'Name for the Text editor tab (formerly HTML)' ) . "</button>\n";
 		}
 
 		$wrap_class = 'wp-core-ui wp-editor-wrap ' . $switch_class;
@@ -489,6 +489,7 @@ final class _WP_Editors {
 					'entities' => '38,amp,60,lt,62,gt',
 					'entity_encoding' => 'raw',
 					'keep_styles' => false,
+					'cache_suffix' => 'wp-mce-' . $GLOBALS['tinymce_version'],
 
 					// Limit the preview styles in the menu/toolbar
 					'preview_styles' => 'font-family font-size font-weight font-style text-decoration text-transform',

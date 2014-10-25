@@ -1188,6 +1188,90 @@ class Tests_Post_Query extends WP_UnitTestCase {
 	}
 
 	/**
+	 * @group meta
+	 * @ticket 29604
+	 */
+	public function test_meta_query_with_orderby_meta_value_relation_or() {
+		$posts = $this->factory->post->create_many( 4 );
+		update_post_meta( $posts[0], 'foo', 5 );
+		update_post_meta( $posts[1], 'foo', 6 );
+		update_post_meta( $posts[2], 'foo', 4 );
+		update_post_meta( $posts[3], 'foo', 7 );
+
+		update_post_meta( $posts[0], 'bar1', 'baz' );
+		update_post_meta( $posts[1], 'bar1', 'baz' );
+		update_post_meta( $posts[2], 'bar2', 'baz' );
+
+		$query = new WP_Query( array(
+			'orderby' => 'meta_value',
+			'order' => 'ASC',
+			'meta_key' => 'foo',
+			'meta_query' => array(
+				'relation' => 'OR',
+				array(
+					'key' => 'bar1',
+					'value' => 'baz',
+					'compare' => '=',
+				),
+				array(
+					'key' => 'bar2',
+					'value' => 'baz',
+					'compare' => '=',
+				),
+			),
+			'update_post_meta_cache' => false,
+			'update_post_term_cache' => false,
+			'fields' => 'ids',
+		) );
+
+		$this->assertEquals( array( $posts[2], $posts[0], $posts[1] ), $query->posts );
+	}
+
+	/**
+	 * @group meta
+	 * @ticket 29604
+	 */
+	public function test_meta_query_with_orderby_meta_value_relation_and() {
+		$posts = $this->factory->post->create_many( 4 );
+		update_post_meta( $posts[0], 'foo', 5 );
+		update_post_meta( $posts[1], 'foo', 6 );
+		update_post_meta( $posts[2], 'foo', 4 );
+		update_post_meta( $posts[3], 'foo', 7 );
+
+		update_post_meta( $posts[0], 'bar1', 'baz' );
+		update_post_meta( $posts[1], 'bar1', 'baz' );
+		update_post_meta( $posts[2], 'bar1', 'baz' );
+		update_post_meta( $posts[3], 'bar1', 'baz' );
+		update_post_meta( $posts[0], 'bar2', 'baz' );
+		update_post_meta( $posts[1], 'bar2', 'baz' );
+		update_post_meta( $posts[2], 'bar2', 'baz' );
+
+		$query = new WP_Query( array(
+			'orderby' => 'meta_value',
+			'order' => 'ASC',
+			'meta_key' => 'foo',
+			'meta_query' => array(
+				'relation' => 'AND',
+				array(
+					'key' => 'bar1',
+					'value' => 'baz',
+					'compare' => '=',
+				),
+				array(
+					'key' => 'bar2',
+					'value' => 'baz',
+					'compare' => '=',
+				),
+			),
+			'update_post_meta_cache' => false,
+			'update_post_term_cache' => false,
+			'fields' => 'ids',
+		) );
+
+		$this->assertEquals( array( $posts[2], $posts[0], $posts[1] ), $query->posts );
+	}
+
+	/**
 	 * @ticket 29642
 	 * @group meta
 	 */
@@ -2543,45 +2627,6 @@ class Tests_Post_Query extends WP_UnitTestCase {
 		) );
 
 		$this->assertEquals( array( $image_id ), $posts );
-	}
-
-	/**
-	 * @ticket 27193
-	 * @group taxonomy
-	 */
-	function test_cat_or_tag() {
-		$category1 = $this->factory->term->create( array( 'taxonomy' => 'category', 'name' => 'alpha' ) );
-		$category2 = $this->factory->term->create( array( 'taxonomy' => 'category', 'name' => 'beta' ) );
-
-		$tag1 = $this->factory->term->create( array( 'taxonomy' => 'post_tag', 'name' => 'gamma' ) );
-		$tag2 = $this->factory->term->create( array( 'taxonomy' => 'post_tag', 'name' => 'delta' ) );
-
-		$post_id1 = $this->factory->post->create( array( 'post_title' => 'alpha', 'post_category' => array( $category1 ) ) );
-		$terms1 = get_the_category( $post_id1 );
-		$this->assertEquals( array( get_category( $category1 ) ), $terms1 );
-
-		$post_id2 = $this->factory->post->create( array( 'post_title' => 'beta', 'post_category' => array( $category2 ) ) );
-		$terms2 = get_the_category( $post_id2 );
-		$this->assertEquals( array( get_category( $category2 ) ), $terms2 );
-
-		$post_id3 = $this->factory->post->create( array( 'post_title' => 'gamma', 'post_tag' => array( $tag1 ) ) );
-		$post_id4 = $this->factory->post->create( array( 'post_title' => 'delta', 'post_tag' => array( $tag2 ) ) );
-
-		$query = new WP_Query( array(
-			'fields' => 'ids',
-			'update_post_meta_cache' => false,
-			'update_post_term_cache' => false,
-			'tax_query' => array(
-				//'relation' => 'OR',
-				array(
-					'taxonomy' => 'category',
-					'field' => 'term_id',
-					'terms' => array( $category1, $category2 )
-				)
-			)
-		) );
-		$ids = $query->get_posts();
-		$this->assertEqualSets( array( $post_id1, $post_id2 ), $ids );
 	}
 
 	/**
