@@ -333,6 +333,10 @@
 		 */
 		focus: function () {
 			var section = this;
+			var containingPanel = api.panel.instance( section.panel() );
+			if ( containingPanel ) {
+			       containingPanel.expand();
+			}
 			// @todo What if it is not active? Return false?
 			section.expand();
 		}
@@ -617,7 +621,16 @@
 		 * Bring the containing section and panel into view and then this control into view, focusing on the first input
 		 */
 		focus: function () {
-			throw new Error( 'Not implemented yet' );
+			var containingSection = api.section.instance( this.section() );
+			var containingPanel = api.panel.instance( containingSection.panel() );
+			var control = this;
+
+			if ( containingPanel ) {
+				containingPanel.expand();
+			}
+			containingSection.expand();
+			control.container.find( 'input' ).first().focus();
+
 		},
 
 		/**
