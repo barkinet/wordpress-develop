@@ -140,18 +140,28 @@
 
 		/**
 		 * @param {Object} [params]
+		 * @returns {Boolean} false if already active
 		 */
 		activate: function ( params ) {
+			if ( this.active.get() ) {
+				return false;
+			}
 			this.activeArgumentsQueue.push( params || {} );
 			this.active.set( true );
+			return true;
 		},
 
 		/**
 		 * @param {Object} [params]
+		 * @returns {Boolean} false if already inactive
 		 */
 		deactivate: function ( params ) {
+			if ( ! this.active.get() ) {
+				return false;
+			}
 			this.activeArgumentsQueue.push( params || {} );
 			this.active.set( false );
+			return true;
 		},
 
 		/**
@@ -163,18 +173,28 @@
 
 		/**
 		 * @param {Object} [params]
+		 * @returns {Boolean} false if already expanded
 		 */
 		expand: function ( params ) {
+			if ( this.expanded.get() ) {
+				return false;
+			}
 			this.expandedArgumentsQueue.push( params || {} );
 			this.expanded.set( true );
+			return true;
 		},
 
 		/**
 		 * @param {Object} [params]
+		 * @returns {Boolean} false if already collapsed
 		 */
 		collapse: function ( params ) {
+			if ( ! this.expanded.get() ) {
+				return false;
+			}
 			this.expandedArgumentsQueue.push( params || {} );
 			this.expanded( false );
+			return true;
 		},
 
 		/**
