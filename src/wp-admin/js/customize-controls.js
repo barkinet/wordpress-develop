@@ -320,13 +320,15 @@
 		 */
 		onChangeExpanded: function ( expanded, args ) {
 			var section = this,
-				content = section.container.find( '.accordion-section-content' );
+				content = section.container.find( '.accordion-section-content' ),
+				expand;
 
 			if ( expanded ) {
 
-				if ( section.panel() ) {
-					api.panel( section.panel() ).expand();
-				}
+				expand = function () {
+					content.stop().slideDown( args.duration, args.completeCallback );
+					section.container.addClass( 'open' );
+				};
 
 				if ( ! args.allowMultiple ) {
 					api.section.each( function ( otherSection ) {
@@ -336,8 +338,15 @@
 					});
 				}
 
-				content.stop().slideDown( args.duration, args.completeCallback );
-				section.container.addClass( 'open' );
+				if ( section.panel() ) {
+					api.panel( section.panel() ).expand({
+						duration: args.duration,
+						completeCallback: expand
+					});
+				} else {
+					expand();
+				}
+
 			} else {
 				section.container.removeClass( 'open' );
 				content.slideUp( args.duration, args.completeCallback );
