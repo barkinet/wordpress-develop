@@ -1123,10 +1123,16 @@
 		},
 
 		/**
-		 * Expand the widget form control
+		 * @param {Object} [params]
+		 * @returns {Boolean} false if already expanded
 		 */
-		expand: function () {
-			this.expanded( true );
+		expand: function ( params ) {
+			if ( this.expanded.get() ) {
+				return false;
+			}
+			this.expandedArgumentsQueue.push( params || {} );
+			this.expanded.set( true );
+			return true;
 		},
 
 		/**
@@ -1139,10 +1145,16 @@
 		},
 
 		/**
-		 * Collapse the widget form control
+		 * @param {Object} [params]
+		 * @returns {Boolean} false if already collapsed
 		 */
-		collapse: function () {
+		collapse: function ( params ) {
+			if ( ! this.expanded.get() ) {
+				return false;
+			}
+			this.expandedArgumentsQueue.push( params || {} );
 			this.expanded( false );
+			return true;
 		},
 
 		/**
