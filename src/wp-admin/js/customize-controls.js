@@ -713,18 +713,21 @@
 		 * Render the control from its JS template, if it exists.
 		 *
 		 * The control's container must alreasy exist in the DOM.
+		 *
+		 * @param {Function} [callback]
 		 */
 		renderContent: function( callback ) {
 			var template,
-			    selector = 'customize-control-' + this.params.type + '-content',
-			    callback = callback || function(){};
+				selector = 'customize-control-' + this.params.type + '-content';
 			if ( 0 !== $( '#tmpl-' + selector ).length ) {
 				template = wp.template( selector );
 				if ( template && this.container ) {
 					this.container.append( template( this.params ) );
 				}
 			}
-			callback();
+			if ( callback ) {
+				callback();
+			}
 		}
 	});
 
