@@ -1188,7 +1188,7 @@
 		 */
 		onChangeExpanded: function ( expanded, args ) {
 
-			var self = this, $widget, $inside, complete;
+			var self = this, $widget, $inside, complete, prevComplete;
 			$widget = this.container.find( 'div.widget:first' );
 			$inside = $widget.find( '.widget-inside:first' );
 
@@ -1208,6 +1208,13 @@
 					self.container.addClass( 'expanded' );
 					self.container.trigger( 'expanded' );
 				};
+				if ( args.completeCallback ) {
+					prevComplete = complete;
+					complete = function () {
+						prevComplete();
+						args.completeCallback();
+					};
+				}
 
 				if ( self.params.is_wide ) {
 					$inside.fadeIn( args.duration, complete );
@@ -1224,6 +1231,13 @@
 					self.container.removeClass( 'expanded' );
 					self.container.trigger( 'collapsed' );
 				};
+				if ( args.completeCallback ) {
+					prevComplete = complete;
+					complete = function () {
+						prevComplete();
+						args.completeCallback();
+					};
+				}
 
 				self.container.trigger( 'collapse' );
 				self.container.addClass( 'collapsing' );
@@ -1358,6 +1372,7 @@
 	 * @augments wp.customize.Control
 	 */
 	api.Widgets.SidebarControl = api.Control.extend({
+
 		/**
 		 * Set up the control
 		 */
@@ -1518,18 +1533,22 @@
 			/**
 			 * Expand other Customizer sidebar section when dragging a control widget over it,
 			 * allowing the control to be dropped into another section
-			 *
-			 * @todo The wp.customize.Section API should accomodate forcing a single accordion open
 			 */
 			this.$controlSection.find( '.accordion-section-title' ).droppable({
 				accept: '.customize-control-widget_form',
 				over: function() {
-					if ( ! self.$controlSection.hasClass( 'open' ) ) {
-						self.$controlSection.addClass( 'open' );
-						self.$sectionContent.toggle( false ).slideToggle( 150, function() {
-							self.$sectionContent.sortable( 'refreshPositions' );
-						} );
-					}
+					var section = api.section( self.section.get() );
+					section.expand({
+						allowMultiple: true, // Prevent the section being dragged from to be collapsed
+						completeCallback: function () {
+							// @todo It is not clear when refreshPositions should be called on which sections, or if it is even needed
+							api.section.each( function ( otherSection ) {
+								if ( otherSection.container.find( '.customize-control-sidebar_widgets' ).length ) {
+									otherSection.container.find( '.accordion-section-content:first' ).sortable( 'refreshPositions' );
+								}
+							} );
+						}
+					});
 				}
 			});
 
@@ -1609,6 +1628,8 @@
 		 * Enable/disable the reordering UI
 		 *
 		 * @param {Boolean} showOrHide to enable/disable reordering
+		 *
+		 * @todo We should have a reordering state instead and rename this to onChangeReordering
 		 */
 		toggleReordering: function( showOrHide ) {
 			showOrHide = Boolean( showOrHide );

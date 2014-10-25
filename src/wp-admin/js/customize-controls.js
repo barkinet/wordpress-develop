@@ -310,18 +310,19 @@
 					api.panel( section.panel() ).expand();
 				}
 
-				api.section.each( function ( otherSection ) {
-					if ( otherSection !== section ) {
-						otherSection.collapse( { duration : 0 } );
-					}
-				});
+				if ( ! args.allowMultiple ) {
+					api.section.each( function ( otherSection ) {
+						if ( otherSection !== section ) {
+							otherSection.collapse( {duration: 0} );
+						}
+					});
+				}
 
-				content.stop().slideDown( args.duration ); // @todo pass args.completeCallback
+				content.stop().slideDown( args.duration, args.completeCallback );
 				section.container.addClass( 'open' );
 			} else {
-
 				section.container.removeClass( 'open' );
-				content.slideUp( args.duration ); // @todo pass args.completeCallback
+				content.slideUp( args.duration, args.completeCallback );
 			}
 		},
 
@@ -429,8 +430,10 @@
 		 * Update UI to reflect expanded state
 		 *
 		 * @param {Boolean} expanded
+		 * @param {Object} args  merged with this.defaultExpandedArguments
 		 */
-		onChangeExpanded: function ( expanded ) {
+		onChangeExpanded: function ( expanded, args ) {
+
 			// Note: there is a second argument 'args' passed
 			var position, scroll,
 				panel = this,
@@ -464,6 +467,9 @@
 					section.addClass( 'current-panel' );
 					overlay.addClass( 'in-sub-panel' );
 					container.scrollTop( 0 );
+					if ( args.completeCallback ) {
+						args.completeCallback();
+					}
 				} );
 				topPanel.attr( 'tabindex', '-1' );
 				backBtn.attr( 'tabindex', '0' );
@@ -474,6 +480,9 @@
 				overlay.removeClass( 'in-sub-panel' );
 				content.delay( 180 ).hide( 0, function() {
 					content.css( 'margin-top', 'inherit' ); // Reset
+					if ( args.completeCallback ) {
+						args.completeCallback();
+					}
 				} );
 				topPanel.attr( 'tabindex', '0' );
 				backBtn.attr( 'tabindex', '-1' );
