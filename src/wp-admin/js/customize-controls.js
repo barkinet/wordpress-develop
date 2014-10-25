@@ -139,16 +139,30 @@
 		},
 
 		/**
+		 * @params {Boolean} active
+		 * @param {Object} [params]
+		 * @returns {Boolean} false if state already applied
+		 */
+		_toggleActive: function ( active, params ) {
+			if ( ( active && this.active.get() ) || ( ! active && ! this.active.get() ) ) {
+				if ( params && params.completeCallback ) {
+					setTimeout( function () {
+						params.completeCallback();
+					});
+				}
+				return false;
+			}
+			this.activeArgumentsQueue.push( params || {} );
+			this.active.set( active );
+			return true;
+		},
+
+		/**
 		 * @param {Object} [params]
 		 * @returns {Boolean} false if already active
 		 */
 		activate: function ( params ) {
-			if ( this.active.get() ) {
-				return false;
-			}
-			this.activeArgumentsQueue.push( params || {} );
-			this.active.set( true );
-			return true;
+			return this._toggleActive( true, params );
 		},
 
 		/**
@@ -156,12 +170,7 @@
 		 * @returns {Boolean} false if already inactive
 		 */
 		deactivate: function ( params ) {
-			if ( ! this.active.get() ) {
-				return false;
-			}
-			this.activeArgumentsQueue.push( params || {} );
-			this.active.set( false );
-			return true;
+			return this._toggleActive( false, params );
 		},
 
 		/**
@@ -172,16 +181,30 @@
 		},
 
 		/**
+		 * @param {Boolean} expanded
+		 * @param {Object} [params]
+		 * @returns {Boolean} false if state already applied
+		 */
+		_toggleExpanded: function ( expanded, params ) {
+			if ( ( expanded && this.expanded.get() ) || ( ! expanded && ! this.expanded.get() ) ) {
+				if ( params && params.completeCallback ) {
+					setTimeout( function () {
+						params.completeCallback();
+					});
+				}
+				return false;
+			}
+			this.expandedArgumentsQueue.push( params || {} );
+			this.expanded.set( expanded );
+			return true;
+		},
+
+		/**
 		 * @param {Object} [params]
 		 * @returns {Boolean} false if already expanded
 		 */
 		expand: function ( params ) {
-			if ( this.expanded.get() ) {
-				return false;
-			}
-			this.expandedArgumentsQueue.push( params || {} );
-			this.expanded.set( true );
-			return true;
+			return this._toggleExpanded( true, params );
 		},
 
 		/**
@@ -189,12 +212,7 @@
 		 * @returns {Boolean} false if already collapsed
 		 */
 		collapse: function ( params ) {
-			if ( ! this.expanded.get() ) {
-				return false;
-			}
-			this.expandedArgumentsQueue.push( params || {} );
-			this.expanded( false );
-			return true;
+			return this._toggleExpanded( false, params );
 		},
 
 		/**
@@ -662,14 +680,7 @@
 		 * @param {Object} [params]
 		 * @returns {Boolean} false if already active
 		 */
-		activate: function ( params ) {
-			if ( this.active.get() ) {
-				return false;
-			}
-			this.activeArgumentsQueue.push( params || {} );
-			this.active.set( true );
-			return true;
-		},
+		activate: Container.prototype.activate,
 
 		/**
 		 * Shorthand way to disable the active state.
@@ -677,14 +688,7 @@
 		 * @param {Object} [params]
 		 * @returns {Boolean} false if already inactive
 		 */
-		deactivate: function ( params ) {
-			if ( ! this.active.get() ) {
-				return false;
-			}
-			this.activeArgumentsQueue.push( params || {} );
-			this.active.set( false );
-			return true;
-		},
+		deactivate: Container.prototype.deactivate,
 
 		dropdownInit: function() {
 			var control      = this,
