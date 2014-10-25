@@ -636,16 +636,32 @@
 
 		/**
 		 * Shorthand way to enable the active state.
+		 *
+		 * @param {Object} [params]
+		 * @returns {Boolean} false if already active
 		 */
-		activate: function () {
+		activate: function ( params ) {
+			if ( this.active.get() ) {
+				return false;
+			}
+			this.activeArgumentsQueue.push( params || {} );
 			this.active.set( true );
+			return true;
 		},
 
 		/**
 		 * Shorthand way to disable the active state.
+		 *
+		 * @param {Object} [params]
+		 * @returns {Boolean} false if already inactive
 		 */
-		deactivate: function () {
+		deactivate: function ( params ) {
+			if ( ! this.active.get() ) {
+				return false;
+			}
+			this.activeArgumentsQueue.push( params || {} );
 			this.active.set( false );
+			return true;
 		},
 
 		dropdownInit: function() {
