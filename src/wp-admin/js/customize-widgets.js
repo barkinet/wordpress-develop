@@ -1247,15 +1247,6 @@
 		},
 
 		/**
-		 * Expand the containing sidebar section, expand the form, and focus on
-		 * the first input in the control
-		 */
-		focus: function() {
-			this.expand();
-			this.container.find( '.widget-content :focusable:first' ).focus();
-		},
-
-		/**
 		 * Get the position (index) of the widget in the containing sidebar
 		 *
 		 * @returns {Number}

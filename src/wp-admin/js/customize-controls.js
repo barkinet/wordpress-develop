@@ -1,6 +1,6 @@
 /* globals _wpCustomizeHeader, _wpMediaViewsL10n */
 (function( exports, $ ){
-	var bubbleChildValueChanges, Container, api = wp.customize;
+	var bubbleChildValueChanges, Container, focus, api = wp.customize;
 
 	/**
 	 * @constructor
@@ -44,6 +44,34 @@
 				}
 			} );
 		} );
+	};
+
+	/**
+	 * Expand a panel, section, or control and focus on the first focusable element.
+	 *
+	 * @param {Object} [params]
+	 */
+	focus = function ( params ) {
+		var container, completeCallback, focus;
+		container = this;
+		params = params || {};
+		focus = function () {
+			container.container.find( ':focusable:first' ).focus();
+		};
+		if ( params.completeCallback ) {
+			completeCallback = params.completeCallback;
+			params.completeCallback = function () {
+				focus();
+				completeCallback();
+			};
+		} else {
+			params.completeCallback = focus;
+		}
+		if ( container.expand ) {
+			container.expand( params );
+		} else {
+			params.completeCallback();
+		}
 	};
 
 	/**
@@ -144,12 +172,11 @@
 		 * @returns {Boolean} false if state already applied
 		 */
 		_toggleActive: function ( active, params ) {
+			var self = this;
 			if ( ( active && this.active.get() ) || ( ! active && ! this.active.get() ) ) {
-				if ( params && params.completeCallback ) {
-					setTimeout( function () {
-						params.completeCallback();
-					});
-				}
+				setTimeout( function () {
+					self.onChangeActive( self.active.get(), params || {} );
+				});
 				return false;
 			}
 			this.activeArgumentsQueue.push( params || {} );
@@ -186,12 +213,11 @@
 		 * @returns {Boolean} false if state already applied
 		 */
 		_toggleExpanded: function ( expanded, params ) {
+			var self = this;
 			if ( ( expanded && this.expanded.get() ) || ( ! expanded && ! this.expanded.get() ) ) {
-				if ( params && params.completeCallback ) {
-					setTimeout( function () {
-						params.completeCallback();
-					});
-				}
+				setTimeout( function () {
+					self.onChangeExpanded( self.expanded.get(), params || {} );
+				});
 				return false;
 			}
 			this.expandedArgumentsQueue.push( params || {} );
@@ -216,11 +242,10 @@
 		},
 
 		/**
-		 *
+		 * Bring the container into view and then expand this and bring it into view
+		 * @param {Object} [params]
 		 */
-		focus: function () {
-			throw new Error( 'focus method must be overridden' );
-		}
+		focus: focus
 	});
 
 	/**
@@ -351,29 +376,6 @@
 				section.container.removeClass( 'open' );
 				content.slideUp( args.duration, args.completeCallback );
 			}
-		},
-
-		/**
-		 * Bring the containing panel into view and then expand this section and bring it into view
-		 * @param {Object} [params]
-		 */
-		focus: function ( params ) {
-			var section, completeCallback, focus;
-			section = this;
-			params = params || {};
-			focus = function () {
-				section.container.find( ':focusable:first' ).focus();
-			};
-			if ( params.completeCallback ) {
-				completeCallback = params.completeCallback;
-				params.completeCallback = function () {
-					focus();
-					completeCallback();
-				};
-			} else {
-				params.completeCallback = focus;
-			}
-			section.expand( params );
 		}
 	});
 
@@ -528,18 +530,7 @@
 				panelTitle.focus();
 				container.scrollTop( 0 );
 			}
-		},
-
-		/**
-		 * Bring the containing panel into view and then expand this section and bring it into view
-		 */
-		focus: function () {
-			var panel = this;
-			// @todo What if it is not active? Return false?
-			panel.expand();
 		}
-
-		// @todo Need to first exit out of the Panel
 	});
 
 	/**
@@ -655,18 +646,7 @@
 		/**
 		 * Bring the containing section and panel into view and then this control into view, focusing on the first input
 		 */
-		focus: function () {
-			var containingSection = api.section.instance( this.section() );
-			var containingPanel = api.panel.instance( containingSection.panel() );
-			var control = this;
-
-			if ( containingPanel ) {
-				containingPanel.expand();
-			}
-			containingSection.expand();
-			control.container.find( 'input' ).first().focus();
-
-		},
+		focus: focus,
 
 		/**
 		 * Update UI in response to a change in the control's active state.
