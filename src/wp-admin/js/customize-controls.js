@@ -277,6 +277,14 @@
 			var panel_id,
 				section = this;
 
+			// Short-circuit if already embedded
+			if ( section.container.parent().length ) {
+				if ( readyCallback ) {
+					readyCallback();
+				}
+				return;
+			}
+
 			panel_id = this.panel.get();
 			if ( ! panel_id ) {
 				$( '#customize-theme-controls > ul' ).append( section.container );
@@ -393,6 +401,15 @@
 		 *
 		 */
 		embed: function ( readyCallback ) {
+
+			// Short-circuit if already embedded
+			if ( this.container.parent().length ) {
+				if ( readyCallback ) {
+					readyCallback();
+				}
+				return;
+			}
+
 			$( '#customize-theme-controls > ul' ).append( this.container );
 			if ( readyCallback ) {
 				readyCallback();
@@ -623,6 +640,14 @@
 		embed: function ( readyCallback ) {
 			var section_id,
 				control = this;
+
+			// Short-circuit if already embedded
+			if ( control.container.parent().length ) {
+				if ( readyCallback ) {
+					readyCallback();
+				}
+				return;
+			}
 
 			section_id = control.section.get();
 			if ( ! section_id ) {
