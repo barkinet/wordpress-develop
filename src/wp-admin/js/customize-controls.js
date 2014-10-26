@@ -355,17 +355,25 @@
 
 		/**
 		 * Bring the containing panel into view and then expand this section and bring it into view
-		 *
-		 * @todo This is an alias for expand(); do we need it?
+		 * @param {Object} [params]
 		 */
-		focus: function () {
-			var section = this;
-			var containingPanel = api.panel.instance( section.panel() );
-			if ( containingPanel ) {
-			       containingPanel.expand();
+		focus: function ( params ) {
+			var section, completeCallback, focus;
+			section = this;
+			params = params || {};
+			focus = function () {
+				section.container.find( ':focusable:first' ).focus();
+			};
+			if ( params.completeCallback ) {
+				completeCallback = params.completeCallback;
+				params.completeCallback = function () {
+					focus();
+					completeCallback();
+				};
+			} else {
+				params.completeCallback = focus;
 			}
-			// @todo What if it is not active? Return false?
-			section.expand();
+			section.expand( params );
 		}
 	});
 
