@@ -252,6 +252,7 @@ do_action( 'customize_controls_print_scripts' );
 			'save'    => wp_create_nonce( 'save-customize_' . $wp_customize->get_stylesheet() ),
 			'preview' => wp_create_nonce( 'preview-customize_' . $wp_customize->get_stylesheet() )
 		),
+		'autofocus' => array(),
 	);
 
 	// Prepare Customize Setting objects to pass to Javascript.
@@ -278,6 +279,15 @@ do_action( 'customize_controls_print_scripts' );
 		foreach ( $panel->sections as $section_id => $section ) {
 			$settings['sections'][ $section_id ] = $section->json();
 		}
+	}
+
+	// Pass to frontend the Customizer construct being deeplinked
+	foreach ( array( 'panel', 'section', 'control' ) as $type ) {
+		if ( ! isset( $_GET[ $type ] ) ) {
+			continue;
+		}
+		$construct = wp_unslash( $_GET[ $type ] );
+		$settings['autofocus'][ $type ] = $construct;
 	}
 
 	?>
