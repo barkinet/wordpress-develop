@@ -1123,17 +1123,17 @@
 		},
 
 		/**
+		 * @param {Boolean} expanded
+		 * @param {Object} [params]
+		 * @returns {Boolean} false if state already applied
+		 */
+		_toggleExpanded: api.Section.prototype._toggleExpanded,
+
+		/**
 		 * @param {Object} [params]
 		 * @returns {Boolean} false if already expanded
 		 */
-		expand: function ( params ) {
-			if ( this.expanded.get() ) {
-				return false;
-			}
-			this.expandedArgumentsQueue.push( params || {} );
-			this.expanded.set( true );
-			return true;
-		},
+		expand: api.Section.prototype.expand,
 
 		/**
 		 * Expand the widget form control
@@ -1148,14 +1148,7 @@
 		 * @param {Object} [params]
 		 * @returns {Boolean} false if already collapsed
 		 */
-		collapse: function ( params ) {
-			if ( ! this.expanded.get() ) {
-				return false;
-			}
-			this.expandedArgumentsQueue.push( params || {} );
-			this.expanded( false );
-			return true;
-		},
+		collapse: api.Section.prototype.collapse,
 
 		/**
 		 * Collapse the widget form control
@@ -1251,15 +1244,6 @@
 					} );
 				}
 			}
-		},
-
-		/**
-		 * Expand the containing sidebar section, expand the form, and focus on
-		 * the first input in the control
-		 */
-		focus: function() {
-			this.expand();
-			this.container.find( '.widget-content :focusable:first' ).focus();
 		},
 
 		/**

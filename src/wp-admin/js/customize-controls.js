@@ -1,6 +1,6 @@
 /* globals _wpCustomizeHeader, _wpMediaViewsL10n */
 (function( exports, $ ){
-	var bubbleChildValueChanges, Container, api = wp.customize;
+	var bubbleChildValueChanges, Container, focus, api = wp.customize;
 
 	/**
 	 * @constructor
@@ -44,6 +44,34 @@
 				}
 			} );
 		} );
+	};
+
+	/**
+	 * Expand a panel, section, or control and focus on the first focusable element.
+	 *
+	 * @param {Object} [params]
+	 */
+	focus = function ( params ) {
+		var container, completeCallback, focus;
+		container = this;
+		params = params || {};
+		focus = function () {
+			container.container.find( ':focusable:first' ).focus();
+		};
+		if ( params.completeCallback ) {
+			completeCallback = params.completeCallback;
+			params.completeCallback = function () {
+				focus();
+				completeCallback();
+			};
+		} else {
+			params.completeCallback = focus;
+		}
+		if ( container.expand ) {
+			container.expand( params );
+		} else {
+			params.completeCallback();
+		}
 	};
 
 	/**
@@ -139,16 +167,29 @@
 		},
 
 		/**
+		 * @params {Boolean} active
+		 * @param {Object} [params]
+		 * @returns {Boolean} false if state already applied
+		 */
+		_toggleActive: function ( active, params ) {
+			var self = this;
+			if ( ( active && this.active.get() ) || ( ! active && ! this.active.get() ) ) {
+				setTimeout( function () {
+					self.onChangeActive( self.active.get(), params || {} );
+				});
+				return false;
+			}
+			this.activeArgumentsQueue.push( params || {} );
+			this.active.set( active );
+			return true;
+		},
+
+		/**
 		 * @param {Object} [params]
 		 * @returns {Boolean} false if already active
 		 */
 		activate: function ( params ) {
-			if ( this.active.get() ) {
-				return false;
-			}
-			this.activeArgumentsQueue.push( params || {} );
-			this.active.set( true );
-			return true;
+			return this._toggleActive( true, params );
 		},
 
 		/**
@@ -156,12 +197,7 @@
 		 * @returns {Boolean} false if already inactive
 		 */
 		deactivate: function ( params ) {
-			if ( ! this.active.get() ) {
-				return false;
-			}
-			this.activeArgumentsQueue.push( params || {} );
-			this.active.set( false );
-			return true;
+			return this._toggleActive( false, params );
 		},
 
 		/**
@@ -172,16 +208,29 @@
 		},
 
 		/**
+		 * @param {Boolean} expanded
+		 * @param {Object} [params]
+		 * @returns {Boolean} false if state already applied
+		 */
+		_toggleExpanded: function ( expanded, params ) {
+			var self = this;
+			if ( ( expanded && this.expanded.get() ) || ( ! expanded && ! this.expanded.get() ) ) {
+				setTimeout( function () {
+					self.onChangeExpanded( self.expanded.get(), params || {} );
+				});
+				return false;
+			}
+			this.expandedArgumentsQueue.push( params || {} );
+			this.expanded.set( expanded );
+			return true;
+		},
+
+		/**
 		 * @param {Object} [params]
 		 * @returns {Boolean} false if already expanded
 		 */
 		expand: function ( params ) {
-			if ( this.expanded.get() ) {
-				return false;
-			}
-			this.expandedArgumentsQueue.push( params || {} );
-			this.expanded.set( true );
-			return true;
+			return this._toggleExpanded( true, params );
 		},
 
 		/**
@@ -189,20 +238,14 @@
 		 * @returns {Boolean} false if already collapsed
 		 */
 		collapse: function ( params ) {
-			if ( ! this.expanded.get() ) {
-				return false;
-			}
-			this.expandedArgumentsQueue.push( params || {} );
-			this.expanded( false );
-			return true;
+			return this._toggleExpanded( false, params );
 		},
 
 		/**
-		 *
+		 * Bring the container into view and then expand this and bring it into view
+		 * @param {Object} [params]
 		 */
-		focus: function () {
-			throw new Error( 'focus method must be overridden' );
-		}
+		focus: focus
 	});
 
 	/**
@@ -302,13 +345,15 @@
 		 */
 		onChangeExpanded: function ( expanded, args ) {
 			var section = this,
-				content = section.container.find( '.accordion-section-content' );
+				content = section.container.find( '.accordion-section-content' ),
+				expand;
 
 			if ( expanded ) {
 
-				if ( section.panel() ) {
-					api.panel( section.panel() ).expand();
-				}
+				expand = function () {
+					content.stop().slideDown( args.duration, args.completeCallback );
+					section.container.addClass( 'open' );
+				};
 
 				if ( ! args.allowMultiple ) {
 					api.section.each( function ( otherSection ) {
@@ -318,23 +363,19 @@
 					});
 				}
 
-				content.stop().slideDown( args.duration, args.completeCallback );
-				section.container.addClass( 'open' );
+				if ( section.panel() ) {
+					api.panel( section.panel() ).expand({
+						duration: args.duration,
+						completeCallback: expand
+					});
+				} else {
+					expand();
+				}
+
 			} else {
 				section.container.removeClass( 'open' );
 				content.slideUp( args.duration, args.completeCallback );
 			}
-		},
-
-		/**
-		 * Bring the containing panel into view and then expand this section and bring it into view
-		 *
-		 * @todo This is an alias for expand(); do we need it?
-		 */
-		focus: function () {
-			var section = this;
-			// @todo What if it is not active? Return false?
-			section.expand();
 		}
 	});
 
@@ -489,18 +530,7 @@
 				panelTitle.focus();
 				container.scrollTop( 0 );
 			}
-		},
-
-		/**
-		 * Bring this panel into view
-		 */
-		focus: function () {
-			var panel = this;
-			// @todo What if it is not active? Return false?
-			panel.expand();
 		}
-
-		// @todo Need to first exit out of the Panel
 	});
 
 	/**
@@ -616,9 +646,7 @@
 		/**
 		 * Bring the containing section and panel into view and then this control into view, focusing on the first input
 		 */
-		focus: function () {
-			throw new Error( 'Not implemented yet' );
-		},
+		focus: focus,
 
 		/**
 		 * Update UI in response to a change in the control's active state.
@@ -649,14 +677,7 @@
 		 * @param {Object} [params]
 		 * @returns {Boolean} false if already active
 		 */
-		activate: function ( params ) {
-			if ( this.active.get() ) {
-				return false;
-			}
-			this.activeArgumentsQueue.push( params || {} );
-			this.active.set( true );
-			return true;
-		},
+		activate: Container.prototype.activate,
 
 		/**
 		 * Shorthand way to disable the active state.
@@ -664,14 +685,7 @@
 		 * @param {Object} [params]
 		 * @returns {Boolean} false if already inactive
 		 */
-		deactivate: function ( params ) {
-			if ( ! this.active.get() ) {
-				return false;
-			}
-			this.activeArgumentsQueue.push( params || {} );
-			this.active.set( false );
-			return true;
-		},
+		deactivate: Container.prototype.deactivate,
 
 		dropdownInit: function() {
 			var control      = this,
