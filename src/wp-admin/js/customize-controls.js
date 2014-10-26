@@ -81,8 +81,8 @@
 	 * @augments wp.customize.Class
 	 */
 	Container = api.Class.extend({
-		defaultActiveArguments: { duration: null },
-		defaultExpandedArguments: { duration: 150 },
+		defaultActiveArguments: { duration: 'fast' },
+		defaultExpandedArguments: { duration: 'fast' },
 
 		initialize: function ( id, options ) {
 			var container = this;
@@ -162,10 +162,11 @@
 		 * @param {Object} args  merged on top of this.defaultActiveArguments
 		 */
 		onChangeActive: function ( active, args ) {
+			var duration = ( 'resolved' === api.previewer.deferred.active.state() ? args.duration : 0 );
 			if ( active ) {
-				this.container.stop( true, true ).slideDown( args.duration ); // @todo pass args.completeCallback
+				this.container.stop( true, true ).slideDown( duration, args.completeCallback );
 			} else {
-				this.container.stop( true, true ).slideUp( args.duration ); // @todo pass args.completeCallback
+				this.container.stop( true, true ).slideUp( duration, args.completeCallback );
 			}
 		},
 
@@ -563,7 +564,7 @@
 	 * @augments wp.customize.Class
 	 */
 	api.Control = api.Class.extend({
-		defaultActiveArguments: { duration: null },
+		defaultActiveArguments: { duration: 'fast' },
 
 		initialize: function( id, options ) {
 			var control = this,
@@ -1426,6 +1427,9 @@
 				rscheme = /^https?/;
 
 			$.extend( this, options || {} );
+			this.deferred = {
+				active: $.Deferred()
+			};
 
 			/*
 			 * Wrap this.refresh to prevent it from hammering the servers:
@@ -1557,6 +1561,7 @@
 					self.targetWindow( this.targetWindow() );
 					self.channel( this.channel() );
 
+					self.deferred.active.resolve();
 					self.send( 'active' );
 				});
 
@@ -1820,8 +1825,12 @@
 			var instance, id = api.settings.autofocus[ type ];
 			if ( id && api[ type ]( id ) ) {
 				instance = api[ type ]( id );
+				// Wait until the element is embedded in the DOM
 				instance.deferred.ready.done( function () {
-					instance.focus();
+					// Wait until the preview has activated and so active panels, sections, controls have been set
+					api.previewer.deferred.active.done( function () {
+						instance.focus();
+					});
 				});
 			}
 		});
