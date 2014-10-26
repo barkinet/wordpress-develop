@@ -282,12 +282,13 @@ do_action( 'customize_controls_print_scripts' );
 	}
 
 	// Pass to frontend the Customizer construct being deeplinked
-	foreach ( array( 'panel', 'section', 'control' ) as $type ) {
-		if ( ! isset( $_GET[ $type ] ) ) {
-			continue;
+	if ( isset( $_GET['autofocus'] ) && is_array( $_GET['autofocus'] ) ) {
+		$autofocus = wp_unslash( $_GET['autofocus'] );
+		foreach ( $autofocus as $type => $id ) {
+			if ( isset( $settings[ $type . 's' ][ $id ] ) ) {
+				$settings['autofocus'][ $type ] = $id;
+			}
 		}
-		$construct = wp_unslash( $_GET[ $type ] );
-		$settings['autofocus'][ $type ] = $construct;
 	}
 
 	?>
