@@ -1814,6 +1814,18 @@
 			api.control.add( id, control );
 		});
 
+		// Focus the autofocused element
+		// @todo should we do ?autofocus[control]=x?
+		_.each( [ 'panel', 'section', 'control' ], function ( type ) {
+			var instance, id = api.settings.autofocus[ type ];
+			if ( id && api[ type ]( id ) ) {
+				instance = api[ type ]( id );
+				instance.deferred.ready.done( function () {
+					instance.focus();
+				});
+			}
+		});
+
 		/**
 		 * Sort panels, sections, controls by priorities. Hide empty sections and panels.
 		 */
