@@ -91,6 +91,9 @@
 			$.extend( container, options || {} );
 			container.container = $( container.params.content );
 
+			container.deferred = {
+				ready: new $.Deferred()
+			};
 			container.priority = new api.Value();
 			container.active = new api.Value();
 			container.activeArgumentsQueue = [];
@@ -268,33 +271,35 @@
 			});
 			section.panel.set( section.params.panel || '' );
 			bubbleChildValueChanges( section, [ 'panel' ] );
+
+			section.embed( function () {
+				section.deferred.ready.resolve();
+			});
 		},
 
 		/**
+		 * Embed the container in the DOM when any parent panel is ready.
 		 *
+		 * @param {Function} readyCallback
 		 */
 		embed: function ( readyCallback ) {
-			var panel_id,
+			var panel_id = this.panel.get(),
 				section = this;
+			readyCallback = readyCallback || function () {};
 
 			// Short-circuit if already embedded
-			if ( section.container.parent().length ) {
-				if ( readyCallback ) {
-					readyCallback();
-				}
-				return;
-			}
-
-			panel_id = this.panel.get();
-			if ( ! panel_id ) {
+			if ( 'resolved' === section.deferred.ready.state() ) {
+				readyCallback();
+			} else if ( ! panel_id ) {
 				$( '#customize-theme-controls > ul' ).append( section.container );
 				readyCallback();
 			} else {
 				api.panel( panel_id, function ( panel ) {
-					panel.embed();
-					panel.container.find( 'ul:first' ).append( section.container );
-					readyCallback();
-				} );
+					panel.deferred.ready.done( function () {
+						panel.container.find( 'ul:first' ).append( section.container );
+						readyCallback();
+					});
+				});
 			}
 		},
 
@@ -395,23 +400,26 @@
 		initialize: function ( id, options ) {
 			var panel = this;
 			Container.prototype.initialize.call( panel, id, options );
+
+			panel.embed( function () {
+				panel.deferred.ready.resolve();
+			});
 		},
 
 		/**
+		 * Embed the container in the DOM when any parent panel is ready.
 		 *
+		 * @param {Function} readyCallback
 		 */
 		embed: function ( readyCallback ) {
+			var panel = this;
+			readyCallback = readyCallback || function () {};
 
 			// Short-circuit if already embedded
-			if ( this.container.parent().length ) {
-				if ( readyCallback ) {
-					readyCallback();
-				}
-				return;
-			}
-
-			$( '#customize-theme-controls > ul' ).append( this.container );
-			if ( readyCallback ) {
+			if ( 'resolved' === panel.deferred.ready.state() ) {
+				readyCallback();
+			} else {
+				$( '#customize-theme-controls > ul' ).append( panel.container );
 				readyCallback();
 			}
 		},
@@ -568,6 +576,9 @@
 			control.selector = '#customize-control-' + id.replace( /\]/g, '' ).replace( /\[/g, '-' );
 			control.container = control.params.content ? $( control.params.content ) : $( control.selector );
 
+			control.deferred = {
+				ready: new $.Deferred()
+			};
 			control.section = new api.Value();
 			control.priority = new api.Value();
 			control.active = new api.Value();
@@ -626,9 +637,10 @@
 
 				control.setting = control.settings['default'] || null;
 				control.embed( function () {
-					control.renderContent( function() {
+					control.renderContent( function () {
 						// Don't call ready() until the content has rendered.
 						control.ready();
+						control.deferred.ready.resolve();
 					});
 				});
 			}) );
@@ -640,18 +652,18 @@
 		embed: function ( readyCallback ) {
 			var section_id,
 				control = this;
+			readyCallback = readyCallback || function () {};
 
 			// Short-circuit if already embedded
-			if ( control.container.parent().length ) {
-				if ( readyCallback ) {
-					readyCallback();
-				}
+			if ( 'resolved' === control.deferred.ready.state() ) {
+				readyCallback();
 				return;
 			}
 
 			section_id = control.section.get();
 			if ( ! section_id ) {
 				throw new Error( 'A control must have an associated section.' );
+				// @todo Allow this to wait until control.section gets a value. Will require wp.customize.Value.once()
 			}
 
 			// Defer until the associated section is available
@@ -1791,7 +1803,6 @@
 		});
 
 		// Create Controls
-		// @todo factor this out
 		$.each( api.settings.controls, function( id, data ) {
 			var constructor = api.controlConstructor[ data.type ] || api.Control,
 				control;
