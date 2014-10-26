@@ -57,6 +57,7 @@
 		params = params || {};
 		focus = function () {
 			container.container.find( ':focusable:first' ).focus();
+			container.container[0].scrollIntoView( true );
 		};
 		if ( params.completeCallback ) {
 			completeCallback = params.completeCallback;
