@@ -492,7 +492,7 @@
 		},
 
 		/**
-		 * Bring the containing panel into view and then expand this section and bring it into view
+		 * Bring this panel into view
 		 */
 		focus: function () {
 			var panel = this;
