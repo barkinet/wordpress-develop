@@ -410,7 +410,7 @@
 		},
 
 		/**
-		 * Return whether this section has any active sections.
+		 * Return whether this panel has any active sections.
 		 *
 		 * @returns {boolean}
 		 */
