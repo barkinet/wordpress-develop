@@ -697,9 +697,9 @@
 		 */
 		onChangeActive: function ( active, args ) {
 			if ( active ) {
-				this.container.slideDown( args.duration );
+				this.container.slideDown( args.duration, args.completeCallback );
 			} else {
-				this.container.slideUp( args.duration );
+				this.container.slideUp( args.duration, args.completeCallback );
 			}
 		},
 
