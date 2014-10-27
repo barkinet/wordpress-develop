@@ -1119,7 +1119,7 @@
 		 * Expand the accordion section containing a control
 		 */
 		expandControlSection: function() {
-			api.section( this.section() ).expand();
+			api.Control.prototype.expand.call( this );
 		},
 
 		/**

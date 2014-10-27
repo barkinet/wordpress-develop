@@ -52,12 +52,12 @@
 	 * @param {Object} [params]
 	 */
 	focus = function ( params ) {
-		var container, completeCallback, focus;
-		container = this;
+		var construct, completeCallback, focus;
+		construct = this;
 		params = params || {};
 		focus = function () {
-			container.container.find( ':focusable:first' ).focus();
-			container.container[0].scrollIntoView( true );
+			construct.container.find( ':focusable:first' ).focus();
+			construct.container[0].scrollIntoView( true );
 		};
 		if ( params.completeCallback ) {
 			completeCallback = params.completeCallback;
@@ -68,8 +68,8 @@
 		} else {
 			params.completeCallback = focus;
 		}
-		if ( container.expand ) {
-			container.expand( params );
+		if ( construct.expand ) {
+			construct.expand( params );
 		} else {
 			params.completeCallback();
 		}
@@ -681,6 +681,15 @@
 		 * @abstract
 		 */
 		ready: function() {},
+
+		/**
+		 * Normal controls do not expand, so just expand its parent
+		 *
+		 * @param {Object} [params]
+		 */
+		expand: function ( params ) {
+			api.section( this.section() ).expand( params );
+		},
 
 		/**
 		 * Bring the containing section and panel into view and then this control into view, focusing on the first input
