@@ -125,6 +125,11 @@
 		},
 
 		/**
+		 * @abstract
+		 */
+		ready: function() {},
+
+		/**
 		 * Get the child models associated with this parent, sorting them by their priority Value.
 		 *
 		 * @param {String} parentType
@@ -274,35 +279,44 @@
 			section.panel.set( section.params.panel || '' );
 			bubbleChildValueChanges( section, [ 'panel' ] );
 
-			section.embed( function () {
-				section.deferred.ready.resolve();
+			section.embed();
+			section.deferred.ready.done( function () {
+				section.ready();
 			});
 		},
 
 		/**
 		 * Embed the container in the DOM when any parent panel is ready.
-		 *
-		 * @param {Function} readyCallback
 		 */
-		embed: function ( readyCallback ) {
-			var panel_id = this.panel.get(),
-				section = this;
-			readyCallback = readyCallback || function () {};
+		embed: function () {
+			var section = this, inject;
 
-			// Short-circuit if already embedded
-			if ( 'resolved' === section.deferred.ready.state() ) {
-				readyCallback();
-			} else if ( ! panel_id ) {
-				$( '#customize-theme-controls > ul' ).append( section.container );
-				readyCallback();
-			} else {
-				api.panel( panel_id, function ( panel ) {
-					panel.deferred.ready.done( function () {
-						panel.container.find( 'ul:first' ).append( section.container );
-						readyCallback();
-					});
-				});
-			}
+			// Watch for changes to the panel state
+			inject = function ( panelId ) {
+				var parentContainer;
+				if ( panelId ) {
+					// The panel has been supplied, so wait until the panel object is registered
+					api.panel( panelId, function ( panel ) {
+						// The panel has been registered, wait for it to become ready/initialized
+						panel.deferred.ready.done( function () {
+							parentContainer = panel.container.find( 'ul:first' );
+							if ( ! section.container.parent().is( parentContainer ) ) {
+								parentContainer.append( section.container );
+							}
+							section.deferred.ready.resolve(); // @todo Better to use `embedded` instead of `ready`
+						});
+					} );
+				} else {
+					// There is no panel, so embed the section in the root of the customizer
+					parentContainer = $( '#customize-theme-controls > ul' ); // @todo This should be defined elsewhere, and to be configurable
+					if ( ! section.container.parent().is( parentContainer ) ) {
+						parentContainer.append( section.container );
+					}
+					section.deferred.ready.resolve();
+				}
+			};
+			section.panel.bind( inject );
+			inject( section.panel.get() ); // Since a section may never get a panel, assume that it won't ever get one
 		},
 
 		/**
@@ -402,28 +416,23 @@
 		initialize: function ( id, options ) {
 			var panel = this;
 			Container.prototype.initialize.call( panel, id, options );
-
-			panel.embed( function () {
-				panel.deferred.ready.resolve();
+			panel.embed();
+			panel.deferred.ready.done( function () {
+				panel.ready();
 			});
 		},
 
 		/**
 		 * Embed the container in the DOM when any parent panel is ready.
-		 *
-		 * @param {Function} readyCallback
 		 */
-		embed: function ( readyCallback ) {
-			var panel = this;
-			readyCallback = readyCallback || function () {};
+		embed: function () {
+			var panel = this,
+				parentContainer = $( '#customize-theme-controls > ul' ); // @todo This should be defined elsewhere, and to be configurable
 
-			// Short-circuit if already embedded
-			if ( 'resolved' === panel.deferred.ready.state() ) {
-				readyCallback();
-			} else {
-				$( '#customize-theme-controls > ul' ).append( panel.container );
-				readyCallback();
+			if ( ! panel.container.parent().is( parentContainer ) ) {
+				parentContainer.append( panel.container );
 			}
+			panel.deferred.ready.resolve();
 		},
 
 		/**
@@ -576,6 +585,7 @@
 
 			control.id = id;
 			control.selector = '#customize-control-' + id.replace( /\]/g, '' ).replace( /\[/g, '-' );
+			control.templateSelector = 'customize-control-' + control.params.type + '-content';
 			control.container = control.params.content ? $( control.params.content ) : $( control.selector );
 
 			control.deferred = {
@@ -638,43 +648,43 @@
 				}
 
 				control.setting = control.settings['default'] || null;
-				control.embed( function () {
-					control.renderContent( function () {
-						// Don't call ready() until the content has rendered.
-						control.ready();
-						control.deferred.ready.resolve();
-					});
-				});
+
+				control.embed();
 			}) );
+
+			control.deferred.ready.done( function () {
+				control.ready();
+			});
 		},
 
 		/**
-		 * @param {Function} [readyCallback] Callback to fire when the embedding is done.
+		 *
 		 */
-		embed: function ( readyCallback ) {
-			var section_id,
-				control = this;
-			readyCallback = readyCallback || function () {};
+		embed: function () {
+			var control = this,
+				inject;
 
-			// Short-circuit if already embedded
-			if ( 'resolved' === control.deferred.ready.state() ) {
-				readyCallback();
-				return;
-			}
-
-			section_id = control.section.get();
-			if ( ! section_id ) {
-				throw new Error( 'A control must have an associated section.' );
-				// @todo Allow this to wait until control.section gets a value. Will require wp.customize.Value.once()
-			}
-
-			// Defer until the associated section is available
-			api.section( section_id, function ( section ) {
-				section.embed( function () {
-					section.container.find( 'ul:first' ).append( control.container );
-					readyCallback();
-				} );
-			} );
+			// Watch for changes to the section state
+			inject = function ( sectionId ) {
+				var parentContainer;
+				if ( ! sectionId ) { // @todo allow a control to be embeded without a section, for instance a control embedded in the frontend
+					return;
+				}
+				// Wait for the section to be registered
+				api.section( sectionId, function ( section ) {
+					// Wait for the section to be ready/initialized
+					section.deferred.ready.done( function () {
+						parentContainer = section.container.find( 'ul:first' );
+						if ( ! control.container.parent().is( parentContainer ) ) {
+							parentContainer.append( control.container );
+							control.renderContent();
+						}
+						control.deferred.ready.resolve(); // @todo Better to use `embedded` instead of `ready`
+					});
+				});
+			};
+			control.section.bind( inject );
+			inject( control.section.get() );
 		},
 
 		/**
@@ -774,23 +784,17 @@
 		/**
 		 * Render the control from its JS template, if it exists.
 		 *
-		 * The control's container must alreasy exist in the DOM.
-		 *
-		 * @param {Function} [callback]
+		 * The control's container must already exist in the DOM.
 		 */
-		renderContent: function( callback ) {
+		renderContent: function () {
 			var template,
-				selector = 'customize-control-' + this.params.type + '-content';
+				control = this;
 
-			callback = callback || function(){};
-			if ( 0 !== $( '#tmpl-' + selector ).length ) {
-				template = wp.template( selector );
-				if ( template && this.container ) {
-					this.container.append( template( this.params ) );
+			if ( 0 !== $( '#tmpl-' + control.templateSelector ).length ) {
+				template = wp.template( control.templateSelector );
+				if ( template && control.container ) {
+					control.container.append( template( control.params ) );
 				}
-			}
-			if ( callback ) {
-				callback();
 			}
 		}
 	});
