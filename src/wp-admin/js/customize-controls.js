@@ -1,6 +1,6 @@
 /* globals _wpCustomizeHeader, _wpMediaViewsL10n */
 (function( exports, $ ){
-	var bubbleChildValueChanges, Container, focus, api = wp.customize;
+	var bubbleChildValueChanges, Container, focus, isEnterKeydownEvent, api = wp.customize;
 
 	/**
 	 * @constructor
@@ -73,6 +73,16 @@
 		} else {
 			params.completeCallback();
 		}
+	};
+
+	/**
+	 * Return whether the supplied Event object is for an Enter keydown.
+	 *
+	 * @param {jQuery.Event} event
+	 * @returns {boolean}
+	 */
+	isEnterKeydownEvent = function ( event ) {
+		return ( 'keydown' === event.type &&  13 !== event.which );
 	};
 
 	/**
@@ -327,7 +337,7 @@
 
 			// Expand/Collapse accordion sections on click.
 			section.container.find( '.accordion-section-title' ).on( 'click keydown', function( e ) {
-				if ( e.type === 'keydown' && 13 !== e.which ) { // "return" key
+				if ( isEnterKeydownEvent( e ) ) { // "return" key
 					return;
 				}
 				e.preventDefault(); // Keep this AFTER the key filter above
@@ -443,7 +453,7 @@
 
 			// Expand/Collapse accordion sections on click.
 			panel.container.find( '.accordion-section-title' ).on( 'click keydown', function( e ) {
-				if ( e.type === 'keydown' && 13 !== e.which ) { // "return" key
+				if ( isEnterKeydownEvent( e ) ) { // "return" key
 					return;
 				}
 				e.preventDefault(); // Keep this AFTER the key filter above
@@ -456,7 +466,7 @@
 			meta = panel.container.find( '.panel-meta:first' );
 
 			meta.find( '> .accordion-section-title' ).on( 'click keydown', function( e ) {
-				if ( e.type === 'keydown' && 13 !== e.which ) { // "return" key
+				if ( isEnterKeydownEvent( e ) ) { // "return" key
 					return;
 				}
 				e.preventDefault(); // Keep this AFTER the key filter above
@@ -759,8 +769,9 @@
 
 			// Support the .dropdown class to open/close complex elements
 			this.container.on( 'click keydown', '.dropdown', function( event ) {
-				if ( event.type === 'keydown' &&  13 !== event.which ) // enter
+				if ( isEnterKeydownEvent( event ) ) {
 					return;
+				}
 
 				event.preventDefault();
 
@@ -859,8 +870,9 @@
 
 			this.remover = this.container.find('.remove');
 			this.remover.on( 'click keydown', function( event ) {
-				if ( event.type === 'keydown' &&  13 !== event.which ) // enter
+				if ( isEnterKeydownEvent( event ) ) {
 					return;
+				}
 
 				control.setting.set( control.params.removed );
 				event.preventDefault();
@@ -931,8 +943,9 @@
 
 			// Bind tab switch events
 			this.library.children('ul').on( 'click keydown', 'li', function( event ) {
-				if ( event.type === 'keydown' &&  13 !== event.which ) // enter
+				if ( isEnterKeydownEvent( event ) ) {
 					return;
+				}
 
 				var id  = $(this).data('customizeTab'),
 					tab = control.tabs[ id ];
@@ -949,8 +962,9 @@
 
 			// Bind events to switch image urls.
 			this.library.on( 'click keydown', 'a', function( event ) {
-				if ( event.type === 'keydown' && 13 !== event.which ) // enter
+				if ( isEnterKeydownEvent( event ) ) {
 					return;
+				}
 
 				var value = $(this).data('customizeImageValue');
 
@@ -1679,7 +1693,7 @@
 
 		// Expand/Collapse the main customizer customize info
 		$( '#customize-info' ).find( '> .accordion-section-title' ).on( 'click keydown', function( e ) {
-			if ( e.type === 'keydown' && 13 !== e.which ) { // "return" key
+			if ( isEnterKeydownEvent( e ) ) {
 				return;
 			}
 			e.preventDefault(); // Keep this AFTER the key filter above
@@ -1981,7 +1995,7 @@
 
 		// Go back to the top-level Customizer accordion.
 		$( '#customize-header-actions' ).on( 'click keydown', '.control-panel-back', function( e ) {
-			if ( e.type === 'keydown' && 13 !== e.which ) { // "return" key
+			if ( isEnterKeydownEvent( e ) ) {
 				return;
 			}
 
@@ -2005,8 +2019,9 @@
 		});
 
 		$('.collapse-sidebar').on( 'click keydown', function( event ) {
-			if ( event.type === 'keydown' &&  13 !== event.which ) // enter
+			if ( isEnterKeydownEvent( event ) ) {
 				return;
+			}
 
 			overlay.toggleClass( 'collapsed' ).toggleClass( 'expanded' );
 			event.preventDefault();
