@@ -397,7 +397,7 @@
 				if ( ! args.allowMultiple ) {
 					api.section.each( function ( otherSection ) {
 						if ( otherSection !== section ) {
-							otherSection.collapse( {duration: 0} );
+							otherSection.collapse( { duration: args.duration } );
 						}
 					});
 				}
