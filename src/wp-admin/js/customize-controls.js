@@ -478,9 +478,9 @@
 				var content = meta.find( '.accordion-section-content:first' );
 				if ( meta.hasClass( 'open' ) ) {
 					meta.toggleClass( 'open' );
-					content.slideUp( 150 );
+					content.slideUp( panel.defaultExpandedArguments.duration );
 				} else {
-					content.slideDown( 150 );
+					content.slideDown( panel.defaultExpandedArguments.duration );
 					meta.toggleClass( 'open' );
 				}
 			});
@@ -1707,9 +1707,9 @@
 
 			if ( section.hasClass( 'open' ) ) {
 				section.toggleClass( 'open' );
-				content.slideUp( 150 );
+				content.slideUp( api.Panel.prototype.defaultExpandedArguments.duration );
 			} else {
-				content.slideDown( 150 );
+				content.slideDown( api.Panel.prototype.defaultExpandedArguments.duration );
 				section.toggleClass( 'open' );
 			}
 		});
