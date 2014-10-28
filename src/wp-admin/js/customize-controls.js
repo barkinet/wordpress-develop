@@ -282,6 +282,7 @@
 			var section = this;
 			Container.prototype.initialize.call( section, id, options );
 
+			section.id = id;
 			section.panel = new api.Value();
 			section.panel.bind( function ( id ) {
 				$( section.container ).toggleClass( 'control-subsection', !! id );
