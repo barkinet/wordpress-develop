@@ -832,7 +832,7 @@ class WP_Tax_Query {
 	 * @return bool  Whether the query clause is a first-order clause.
 	 */
 	protected static function is_first_order_clause( $query ) {
-		return empty( $query ) || array_key_exists( 'terms', $query ) || array_key_exists( 'taxonomy', $query ) || array_key_exists( 'include_children', $query ) || array_key_exists( 'field', $query ) || array_key_exists( 'operator', $query );
+		return is_array( $query ) && ( empty( $query ) || array_key_exists( 'terms', $query ) || array_key_exists( 'taxonomy', $query ) || array_key_exists( 'include_children', $query ) || array_key_exists( 'field', $query ) || array_key_exists( 'operator', $query ) );
 	}
 
 	/**
@@ -1594,7 +1594,7 @@ function get_term_to_edit( $id, $taxonomy ) {
  *     @type string       $fields            Term fields to query for. Accepts 'all' (returns an array of
  *                                           term objects), 'ids' or 'names' (returns an array of integers
  *                                           or strings, respectively. Default 'all'.
- *     @type string       $slug              Slug to return term(s) for. Default empty.
+ *     @type string|array $slug              Optional. Slug(s) to return term(s) for. Default empty.
  *     @type bool         $hierarchical      Whether to include terms that have non-empty descendants (even
  *                                           if $hide_empty is set to true). Default true.
  *     @type string       $search            Search criteria to match terms. Will be SQL-formatted with
@@ -1712,6 +1712,9 @@ function get_terms( $taxonomies, $args = '' ) {
 		$orderby = 't.name';
 	} else if ( 'slug' == $_orderby ) {
 		$orderby = 't.slug';
+	} else if ( 'include' == $_orderby && ! empty( $args['include'] ) ) {
+		$include = implode( ',', array_map( 'absint', $args['include'] ) );
+		$orderby = "FIELD( t.term_id, $include )";
 	} else if ( 'term_group' == $_orderby ) {
 		$orderby = 't.term_group';
 	} else if ( 'none' == $_orderby ) {
@@ -1804,8 +1807,13 @@ function get_terms( $taxonomies, $args = '' ) {
 	}
 
 	if ( ! empty( $args['slug'] ) ) {
-		$slug = sanitize_title( $args['slug'] );
-		$where .= " AND t.slug = '$slug'";
+		if ( is_array( $args['slug'] ) ) {
+			$slug = array_map( 'sanitize_title', $args['slug'] );
+			$where .= " AND t.slug IN ('" . implode( "', '", $slug ) . "')";
+		} else {
+			$slug = sanitize_title( $args['slug'] );
+			$where .= " AND t.slug = '$slug'";
+		}
 	}
 
 	if ( ! empty( $args['name__like'] ) ) {

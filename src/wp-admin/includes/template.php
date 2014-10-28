@@ -1004,25 +1004,25 @@ function do_meta_boxes( $screen, $context, $object ) {
 
 	printf('<div id="%s-sortables" class="meta-box-sortables">', htmlspecialchars($context));
 
-	$i = 0;
-	do {
-		// Grab the ones the user has manually sorted. Pull them out of their previous context/priority and into the one the user chose
-		if ( !$already_sorted && $sorted = get_user_option( "meta-box-order_$page" ) ) {
-			foreach ( $sorted as $box_context => $ids ) {
-				foreach ( explode(',', $ids ) as $id ) {
-					if ( $id && 'dashboard_browser_nag' !== $id )
-						add_meta_box( $id, null, null, $screen, $box_context, 'sorted' );
+	// Grab the ones the user has manually sorted. Pull them out of their previous context/priority and into the one the user chose
+	if ( ! $already_sorted && $sorted = get_user_option( "meta-box-order_$page" ) ) {
+		foreach ( $sorted as $box_context => $ids ) {
+			foreach ( explode( ',', $ids ) as $id ) {
+				if ( $id && 'dashboard_browser_nag' !== $id ) {
+					add_meta_box( $id, null, null, $screen, $box_context, 'sorted' );
 				}
 			}
 		}
-		$already_sorted = true;
+	}
 
-		if ( !isset($wp_meta_boxes) || !isset($wp_meta_boxes[$page]) || !isset($wp_meta_boxes[$page][$context]) )
-			break;
+	$already_sorted = true;
 
-		foreach ( array('high', 'sorted', 'core', 'default', 'low') as $priority ) {
-			if ( isset($wp_meta_boxes[$page][$context][$priority]) ) {
-				foreach ( (array) $wp_meta_boxes[$page][$context][$priority] as $box ) {
+	$i = 0;
+
+	if ( isset( $wp_meta_boxes[ $page ][ $context ] ) ) {
+		foreach ( array( 'high', 'sorted', 'core', 'default', 'low' ) as $priority ) {
+			if ( isset( $wp_meta_boxes[ $page ][ $context ][ $priority ]) ) {
+				foreach ( (array) $wp_meta_boxes[ $page ][ $context ][ $priority ] as $box ) {
 					if ( false == $box || ! $box['title'] )
 						continue;
 					$i++;
@@ -1038,7 +1038,7 @@ function do_meta_boxes( $screen, $context, $object ) {
 				}
 			}
 		}
-	} while(0);
+	}
 
 	echo "</div>";
 
@@ -1111,13 +1111,11 @@ function do_accordion_sections( $screen, $context, $object ) {
 	<?php
 	$i = 0;
 	$first_open = false;
-	do {
-		if ( ! isset( $wp_meta_boxes ) || ! isset( $wp_meta_boxes[$page] ) || ! isset( $wp_meta_boxes[$page][$context] ) )
-			break;
 
+	if ( isset( $wp_meta_boxes[ $page ][ $context ] ) ) {
 		foreach ( array( 'high', 'core', 'default', 'low' ) as $priority ) {
-			if ( isset( $wp_meta_boxes[$page][$context][$priority] ) ) {
-				foreach ( $wp_meta_boxes[$page][$context][$priority] as $box ) {
+			if ( isset( $wp_meta_boxes[ $page ][ $context ][ $priority ] ) ) {
+				foreach ( $wp_meta_boxes[ $page ][ $context ][ $priority ] as $box ) {
 					if ( false == $box || ! $box['title'] )
 						continue;
 					$i++;
@@ -1144,7 +1142,7 @@ function do_accordion_sections( $screen, $context, $object ) {
 				}
 			}
 		}
-	} while(0);
+	}
 	?>
 		</ul><!-- .outer-border -->
 	</div><!-- .accordion-container -->
@@ -1272,7 +1270,7 @@ function do_settings_sections( $page ) {
  * @since 2.7.0
  *
  * @param string $page Slug title of the admin page who's settings fields you want to show.
- * @param section $section Slug title of the settings section who's fields you want to show.
+ * @param string $section Slug title of the settings section who's fields you want to show.
  */
 function do_settings_fields($page, $section) {
 	global $wp_settings_fields;
@@ -1954,7 +1952,7 @@ final class WP_Internal_Pointers {
 		<script type="text/javascript">
 		//<![CDATA[
 		(function($){
-			var options = <?php echo json_encode( $args ); ?>, setup;
+			var options = <?php echo wp_json_encode( $args ); ?>, setup;
 
 			if ( ! options )
 				return;

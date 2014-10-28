@@ -598,6 +598,13 @@ class WP_User_Query {
 		$this->query_from = "FROM $wpdb->users";
 		$this->query_where = "WHERE 1=1";
 
+		// Parse and sanitize 'include', for use by 'orderby' as well as 'include' below.
+		if ( ! empty( $qv['include'] ) ) {
+			$include = wp_parse_id_list( $qv['include'] );
+		} else {
+			$include = false;
+		}
+
 		// sorting
 		if ( isset( $qv['orderby'] ) ) {
 			if ( in_array( $qv['orderby'], array('nicename', 'email', 'url', 'registered') ) ) {
@@ -621,6 +628,10 @@ class WP_User_Query {
 				$orderby = 'ID';
 			} elseif ( 'meta_value' == $qv['orderby'] ) {
 				$orderby = "$wpdb->usermeta.meta_value";
+			} else if ( 'include' === $qv['orderby'] && ! empty( $include ) ) {
+				// Sanitized earlier.
+				$include_sql = implode( ',', $include );
+				$orderby = "FIELD( $wpdb->users.ID, $include_sql )";
 			} else {
 				$orderby = 'user_login';
 			}
@@ -734,8 +745,9 @@ class WP_User_Query {
 				$this->query_fields = 'DISTINCT ' . $this->query_fields;
 		}
 
-		if ( ! empty( $qv['include'] ) ) {
-			$ids = implode( ',', wp_parse_id_list( $qv['include'] ) );
+		if ( ! empty( $include ) ) {
+			// Sanitized earlier.
+			$ids = implode( ',', $include );
 			$this->query_where .= " AND $wpdb->users.ID IN ($ids)";
 		} elseif ( ! empty( $qv['exclude'] ) ) {
 			$ids = implode( ',', wp_parse_id_list( $qv['exclude'] ) );
@@ -2078,7 +2090,7 @@ function _wp_get_user_contactmethods( $user = null ) {
  *
  * @return string The password hint text.
  */
-function _wp_password_hint() {
+function _wp_get_password_hint() {
 	$hint = __( 'Hint: The password should be at least seven characters long. To make it stronger, use upper and lower case letters, numbers, and symbols like ! " ? $ % ^ &amp; ).' );
 
 	/**

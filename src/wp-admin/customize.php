@@ -293,7 +293,7 @@ do_action( 'customize_controls_print_scripts' );
 
 	?>
 	<script type="text/javascript">
-		var _wpCustomizeSettings = <?php echo json_encode( $settings ); ?>;
+		var _wpCustomizeSettings = <?php echo wp_json_encode( $settings ); ?>;
 	</script>
 </div>
 </body>
