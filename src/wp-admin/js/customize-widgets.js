@@ -794,10 +794,14 @@
 		 * Overrides api.Control.toggle()
 		 *
 		 * @param {Boolean} active
+		 * @param {Object} args
 		 */
-		onChangeActive: function ( active ) {
+		onChangeActive: function ( active, args ) {
 			// Note: there is a second 'args' parameter being passed, merged on top of this.defaultActiveArguments
 			this.container.toggleClass( 'widget-rendered', active );
+			if ( args.completeCallback ) {
+				args.completeCallback();
+			}
 		},
 
 		/**
@@ -1180,8 +1184,18 @@
 		 * @param {Object} args  merged on top of this.defaultActiveArguments
 		 */
 		onChangeExpanded: function ( expanded, args ) {
-
 			var self = this, $widget, $inside, complete, prevComplete;
+
+			// If the expanded state is unchanged only manipulate container expanded states
+			if ( args.unchanged ) {
+				if ( expanded ) {
+					api.Control.prototype.expand.call( self, {
+						completeCallback:  args.completeCallback
+					});
+				}
+				return;
+			}
+
 			$widget = this.container.find( 'div.widget:first' );
 			$inside = $widget.find( '.widget-inside:first' );
 

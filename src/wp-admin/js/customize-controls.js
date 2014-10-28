@@ -162,6 +162,7 @@
 
 		/**
 		 * To override by subclass, to return whether the container has active children.
+		 * @abstract
 		 */
 		isContextuallyActive: function () {
 			throw new Error( 'Must override with subclass.' );
@@ -193,15 +194,17 @@
 		 */
 		_toggleActive: function ( active, params ) {
 			var self = this;
+			params = params || {};
 			if ( ( active && this.active.get() ) || ( ! active && ! this.active.get() ) ) {
-				setTimeout( function () {
-					self.onChangeActive( self.active.get(), params || {} );
-				});
+				params.unchanged = true;
+				self.onChangeActive( self.active.get(), params );
 				return false;
+			} else {
+				params.unchanged = false;
+				this.activeArgumentsQueue.push( params );
+				this.active.set( active );
+				return true;
 			}
-			this.activeArgumentsQueue.push( params || {} );
-			this.active.set( active );
-			return true;
 		},
 
 		/**
@@ -222,6 +225,7 @@
 
 		/**
 		 * To override by subclass, update the container's UI to reflect the provided active state.
+		 * @abstract
 		 */
 		onChangeExpanded: function () {
 			throw new Error( 'Must override with subclass.' );
@@ -234,15 +238,17 @@
 		 */
 		_toggleExpanded: function ( expanded, params ) {
 			var self = this;
+			params = params || {};
 			if ( ( expanded && this.expanded.get() ) || ( ! expanded && ! this.expanded.get() ) ) {
-				setTimeout( function () {
-					self.onChangeExpanded( self.expanded.get(), params || {} );
-				});
+				params.unchanged = true;
+				self.onChangeExpanded( self.expanded.get(), params );
 				return false;
+			} else {
+				params.unchanged = false;
+				this.expandedArgumentsQueue.push( params );
+				this.expanded.set( expanded );
+				return true;
 			}
-			this.expandedArgumentsQueue.push( params || {} );
-			this.expanded.set( expanded );
-			return true;
 		},
 
 		/**
@@ -390,10 +396,14 @@
 
 			if ( expanded ) {
 
-				expand = function () {
-					content.stop().slideDown( args.duration, args.completeCallback );
-					section.container.addClass( 'open' );
-				};
+				if ( args.unchanged ) {
+					expand = args.completeCallback;
+				} else {
+					expand = function () {
+						content.stop().slideDown( args.duration, args.completeCallback );
+						section.container.addClass( 'open' );
+					};
+				}
 
 				if ( ! args.allowMultiple ) {
 					api.section.each( function ( otherSection ) {
@@ -521,6 +531,14 @@
 		 * @param {Object} args  merged with this.defaultExpandedArguments
 		 */
 		onChangeExpanded: function ( expanded, args ) {
+
+			// Immediately call the complete callback if there were no changes
+			if ( args.unchanged ) {
+				if ( args.completeCallback ) {
+					args.completeCallback();
+				}
+				return;
+			}
 
 			// Note: there is a second argument 'args' passed
 			var position, scroll,
