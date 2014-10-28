@@ -1,6 +1,6 @@
 /* globals _wpCustomizeHeader, _wpMediaViewsL10n */
 (function( exports, $ ){
-	var bubbleChildValueChanges, Container, focus, isEnterKeydownEvent, api = wp.customize;
+	var bubbleChildValueChanges, Container, focus, isKeydownButNotEnterEvent, api = wp.customize;
 
 	/**
 	 * @constructor
@@ -76,13 +76,13 @@
 	};
 
 	/**
-	 * Return whether the supplied Event object is for an Enter keydown.
+	 * Return whether the supplied Event object is for a keydown event but not the Enter key.
 	 *
 	 * @param {jQuery.Event} event
 	 * @returns {boolean}
 	 */
-	isEnterKeydownEvent = function ( event ) {
-		return ( 'keydown' === event.type &&  13 !== event.which );
+	isKeydownButNotEnterEvent = function ( event ) {
+		return ( 'keydown' === event.type && 13 !== event.which );
 	};
 
 	/**
@@ -337,7 +337,7 @@
 
 			// Expand/Collapse accordion sections on click.
 			section.container.find( '.accordion-section-title' ).on( 'click keydown', function( e ) {
-				if ( isEnterKeydownEvent( e ) ) { // "return" key
+				if ( isKeydownButNotEnterEvent( e ) ) {
 					return;
 				}
 				e.preventDefault(); // Keep this AFTER the key filter above
@@ -453,7 +453,7 @@
 
 			// Expand/Collapse accordion sections on click.
 			panel.container.find( '.accordion-section-title' ).on( 'click keydown', function( e ) {
-				if ( isEnterKeydownEvent( e ) ) { // "return" key
+				if ( isKeydownButNotEnterEvent( e ) ) {
 					return;
 				}
 				e.preventDefault(); // Keep this AFTER the key filter above
@@ -466,7 +466,7 @@
 			meta = panel.container.find( '.panel-meta:first' );
 
 			meta.find( '> .accordion-section-title' ).on( 'click keydown', function( e ) {
-				if ( isEnterKeydownEvent( e ) ) { // "return" key
+				if ( isKeydownButNotEnterEvent( e ) ) {
 					return;
 				}
 				e.preventDefault(); // Keep this AFTER the key filter above
@@ -769,7 +769,7 @@
 
 			// Support the .dropdown class to open/close complex elements
 			this.container.on( 'click keydown', '.dropdown', function( event ) {
-				if ( isEnterKeydownEvent( event ) ) {
+				if ( isKeydownButNotEnterEvent( event ) ) {
 					return;
 				}
 
@@ -870,7 +870,7 @@
 
 			this.remover = this.container.find('.remove');
 			this.remover.on( 'click keydown', function( event ) {
-				if ( isEnterKeydownEvent( event ) ) {
+				if ( isKeydownButNotEnterEvent( event ) ) {
 					return;
 				}
 
@@ -943,7 +943,7 @@
 
 			// Bind tab switch events
 			this.library.children('ul').on( 'click keydown', 'li', function( event ) {
-				if ( isEnterKeydownEvent( event ) ) {
+				if ( isKeydownButNotEnterEvent( event ) ) {
 					return;
 				}
 
@@ -962,7 +962,7 @@
 
 			// Bind events to switch image urls.
 			this.library.on( 'click keydown', 'a', function( event ) {
-				if ( isEnterKeydownEvent( event ) ) {
+				if ( isKeydownButNotEnterEvent( event ) ) {
 					return;
 				}
 
@@ -1693,7 +1693,7 @@
 
 		// Expand/Collapse the main customizer customize info
 		$( '#customize-info' ).find( '> .accordion-section-title' ).on( 'click keydown', function( e ) {
-			if ( isEnterKeydownEvent( e ) ) {
+			if ( isKeydownButNotEnterEvent( e ) ) {
 				return;
 			}
 			e.preventDefault(); // Keep this AFTER the key filter above
@@ -1995,7 +1995,7 @@
 
 		// Go back to the top-level Customizer accordion.
 		$( '#customize-header-actions' ).on( 'click keydown', '.control-panel-back', function( e ) {
-			if ( isEnterKeydownEvent( e ) ) {
+			if ( isKeydownButNotEnterEvent( e ) ) {
 				return;
 			}
 
@@ -2019,7 +2019,7 @@
 		});
 
 		$('.collapse-sidebar').on( 'click keydown', function( event ) {
-			if ( isEnterKeydownEvent( event ) ) {
+			if ( isKeydownButNotEnterEvent( event ) ) {
 				return;
 			}
 
