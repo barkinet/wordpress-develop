@@ -10,7 +10,8 @@ jQuery( function( $ ) {
 			initialize: function ( instanceProps ) {
 				$.extend( this, instanceProps || {} );
 			},
-			protoProp: 'protoPropValue' },
+			protoProp: 'protoPropValue'
+		},
 		{
 			staticProp: 'staticPropValue'
 		}
