@@ -2,6 +2,8 @@
 (function( exports, $ ){
 	var bubbleChildValueChanges, Container, focus, isKeydownButNotEnterEvent, areElementListsEqual, api = wp.customize;
 
+	// @todo Move private helper functions to wp.customize.utils so they can be unit tested
+
 	/**
 	 * @constructor
 	 * @augments wp.customize.Value
@@ -94,15 +96,13 @@
 	 */
 	areElementListsEqual = function ( listA, listB ) {
 		var equal = (
-			0 === _.without(
-				_.map(
-					_.zip( listA, listB ),
-					function ( pair ) {
-						return $( pair[0] ).is( pair[1] );
-					}
-				),
-				true
-			).length
+			listA.length === listB.length && // if lists are different lengths, then naturally they are not equal
+			0 !== _.map( // are there any false values in the list returned by map?
+				_.zip( listA, listB ), // pair up each element between the two lists
+				function ( pair ) {
+					return $( pair[0] ).is( pair[1] ); // compare to see if each pair are equal
+				}
+			).indexOf( false ) // check for presence of false in map's return value
 		);
 		return equal;
 	};
