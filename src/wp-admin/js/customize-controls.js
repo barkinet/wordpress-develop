@@ -1,6 +1,6 @@
 /* globals _wpCustomizeHeader, _wpMediaViewsL10n */
 (function( exports, $ ){
-	var bubbleChildValueChanges, Container, focus, isKeydownButNotEnterEvent, api = wp.customize;
+	var bubbleChildValueChanges, Container, focus, isKeydownButNotEnterEvent, areElementListsEqual, api = wp.customize;
 
 	/**
 	 * @constructor
@@ -83,6 +83,28 @@
 	 */
 	isKeydownButNotEnterEvent = function ( event ) {
 		return ( 'keydown' === event.type && 13 !== event.which );
+	};
+
+	/**
+	 * Return whether the two lists of elements are the same and are in the same order.
+	 *
+	 * @param {Array|jQuery} listA
+	 * @param {Array|jQuery} listB
+	 * @returns {boolean}
+	 */
+	areElementListsEqual = function ( listA, listB ) {
+		var equal = (
+			0 === _.without(
+				_.map(
+					_.zip( listA, listB ),
+					function ( pair ) {
+						return $( pair[0] ).is( pair[1] );
+					}
+				),
+				true
+			).length
+		);
+		return equal;
 	};
 
 	/**
@@ -325,7 +347,7 @@
 					} );
 				} else {
 					// There is no panel, so embed the section in the root of the customizer
-					parentContainer = $( '#customize-theme-controls > ul' ); // @todo This should be defined elsewhere, and to be configurable
+					parentContainer = $( '#customize-theme-controls' ).children( 'ul' ); // @todo This should be defined elsewhere, and to be configurable
 					if ( ! section.container.parent().is( parentContainer ) ) {
 						parentContainer.append( section.container );
 					}
@@ -1888,43 +1910,54 @@
 		 */
 		api.reflowPaneContents = _.bind( function () {
 
-			var appendContainer, activeElement, rootNodes = [];
+			var appendContainer, activeElement, rootContainers, rootNodes = [], wasReflowed = false;
 
 			if ( document.activeElement ) {
 				activeElement = $( document.activeElement );
 			}
 
+			// Sort the sections within each panel
 			api.panel.each( function ( panel ) {
-				var sections = panel.sections();
+				var sections = panel.sections(),
+					sectionContainers = _.pluck( sections, 'container' );
 				rootNodes.push( panel );
 				appendContainer = panel.container.find( 'ul:first' );
-				// @todo Skip doing any DOM manipulation if the ordering is already correct
-				_( sections ).each( function ( section ) {
-					appendContainer.append( section.container );
-				} );
+				if ( ! areElementListsEqual( sectionContainers, appendContainer.children( '[id]' ) ) ) {
+					_( sections ).each( function ( section ) {
+						appendContainer.append( section.container );
+					} );
+					wasReflowed = true;
+				}
 			} );
 
+			// Sort the controls within each section
 			api.section.each( function ( section ) {
-				var controls = section.controls();
+				var controls = section.controls(),
+					controlContainers = _.pluck( controls, 'container' );
 				if ( ! section.panel() ) {
 					rootNodes.push( section );
 				}
 				appendContainer = section.container.find( 'ul:first' );
-				// @todo Skip doing any DOM manipulation if the ordering is already correct
-				_( controls ).each( function ( control ) {
-					appendContainer.append( control.container );
-				} );
+				if ( ! areElementListsEqual( controlContainers, appendContainer.children( '[id]' ) ) ) {
+					_( controls ).each( function ( control ) {
+						appendContainer.append( control.container );
+					} );
+					wasReflowed = true;
+				}
 			} );
 
-			// Sort the root elements
+			// Sort the root panels and sections
 			rootNodes.sort( function ( a, b ) {
 				return a.priority() - b.priority();
 			} );
-			appendContainer = $( '#customize-theme-controls > ul' );
-			// @todo Skip doing any DOM manipulation if the ordering is already correct
-			_( rootNodes ).each( function ( rootNode ) {
-				appendContainer.append( rootNode.container );
-			} );
+			rootContainers = _.pluck( rootNodes, 'container' );
+			appendContainer = $( '#customize-theme-controls' ).children( 'ul' ); // @todo This should be defined elsewhere, and to be configurable
+			if ( ! areElementListsEqual( rootContainers, appendContainer.children() ) ) {
+				_( rootNodes ).each( function ( rootNode ) {
+					appendContainer.append( rootNode.container );
+				} );
+				wasReflowed = true;
+			}
 
 			// Now re-trigger the active Value callbacks to that the panels and sections can decide whether they can be rendered
 			api.panel.each( function ( panel ) {
@@ -1936,7 +1969,8 @@
 				section.active.callbacks.fireWith( section.active, [ value, value ] );
 			} );
 
-			if ( activeElement ) {
+			// Restore focus if there was a reflow and there was an active (focused) element
+			if ( wasReflowed && activeElement ) {
 				activeElement.focus();
 			}
 		}, api );
