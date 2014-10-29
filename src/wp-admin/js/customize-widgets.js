@@ -1676,7 +1676,7 @@
 		 * @returns {object|false} widget_form control instance, or false on error
 		 */
 		addWidget: function( widgetId ) {
-			var self = this, controlHtml, $widget, controlType = 'widget_form', $control, controlConstructor,
+			var self = this, controlHtml, $widget, controlType = 'widget_form', controlContainer, controlConstructor,
 				parsedWidgetId = parseWidgetId( widgetId ),
 				widgetNumber = parsedWidgetId.number,
 				widgetIdBase = parsedWidgetId.id_base,
@@ -1708,32 +1708,28 @@
 
 			$widget = $( controlHtml );
 
-			// @todo need to pass this in as the control's 'content' property
-			$control = $( '<li/>' )
+			controlContainer = $( '<li/>' )
 				.addClass( 'customize-control' )
 				.addClass( 'customize-control-' + controlType )
 				.append( $widget );
 
 			// Remove icon which is visible inside the panel
-			$control.find( '> .widget-icon' ).remove();
+			controlContainer.find( '> .widget-icon' ).remove();
 
 			if ( widget.get( 'is_multi' ) ) {
-				$control.find( 'input[name="widget_number"]' ).val( widgetNumber );
-				$control.find( 'input[name="multi_number"]' ).val( widgetNumber );
+				controlContainer.find( 'input[name="widget_number"]' ).val( widgetNumber );
+				controlContainer.find( 'input[name="multi_number"]' ).val( widgetNumber );
 			}
 
-			widgetId = $control.find( '[name="widget-id"]' ).val();
+			widgetId = controlContainer.find( '[name="widget-id"]' ).val();
 
-			$control.hide(); // to be slid-down below
+			controlContainer.hide(); // to be slid-down below
 
 			settingId = 'widget_' + widget.get( 'id_base' );
 			if ( widget.get( 'is_multi' ) ) {
 				settingId += '[' + widgetNumber + ']';
 			}
-			$control.attr( 'id', 'customize-control-' + settingId.replace( /\]/g, '' ).replace( /\[/g, '-' ) );
-
-			// @todo Eliminate this
-			this.container.after( $control );
+			controlContainer.attr( 'id', 'customize-control-' + settingId.replace( /\]/g, '' ).replace( /\[/g, '-' ) );
 
 			// Only create setting if it doesn't already exist (if we're adding a pre-existing inactive widget)
 			isExistingWidget = api.has( settingId );
@@ -1751,6 +1747,7 @@
 					settings: {
 						'default': settingId
 					},
+					content: controlContainer,
 					sidebar_id: self.params.sidebar_id,
 					widget_id: widgetId,
 					widget_id_base: widget.get( 'id_base' ),
@@ -1790,7 +1787,7 @@
 				this.setting( sidebarWidgets );
 			}
 
-			$control.slideDown( function() {
+			controlContainer.slideDown( function() {
 				if ( isExistingWidget ) {
 					widgetFormControl.expand();
 					widgetFormControl.updateWidget( {
