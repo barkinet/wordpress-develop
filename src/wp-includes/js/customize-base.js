@@ -316,12 +316,28 @@ window.wp = window.wp || {};
 			return this.add( id, new this.defaultConstructor( api.Class.applicator, slice.call( arguments, 1 ) ) );
 		},
 
+		/**
+		 * Iterate over each value in the collection.
+		 *
+		 * @param {Function} callback, passed the value, key, and context
+		 * @param {Object} [context] defaults to this
+		 * @returns {wp.customize.Values}
+		 */
 		each: function( callback, context ) {
-			context = typeof context === 'undefined' ? this : context;
+			context = ( typeof context === 'undefined' ? this : context );
+			return _.each( this._value, callback, context );
+		},
 
-			$.each( this._value, function( key, obj ) {
-				callback.call( context, obj, key );
-			});
+		/**
+		 * Run a callback on each value and return an array of the return values.
+		 *
+		 * @param {Function} callback
+		 * @param {Object} [context] defaults to this
+		 * @param {Array} Return the results of applying the iteratee to each element.
+		 */
+		map: function ( callback, context ) {
+			context = ( typeof context === 'undefined' ? this : context );
+			return _.map( this._value, callback, context );
 		},
 
 		remove: function( id ) {
