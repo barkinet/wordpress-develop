@@ -331,9 +331,9 @@ window.wp = window.wp || {};
 		/**
 		 * Run a callback on each value and return an array of the return values.
 		 *
-		 * @param {Function} callback
+		 * @param {Function} callback, passed the value, key, and context
 		 * @param {Object} [context] defaults to this
-		 * @param {Array} Return the results of applying the iteratee to each element.
+		 * @returns {Array} Return the results of applying the callback to each element.
 		 */
 		map: function ( callback, context ) {
 			context = ( typeof context === 'undefined' ? this : context );
