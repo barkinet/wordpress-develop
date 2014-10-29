@@ -343,11 +343,11 @@
 			var section = this;
 
 			// Expand/Collapse accordion sections on click.
-			section.container.find( '.accordion-section-title' ).on( 'click keydown', function( e ) {
-				if ( isKeydownButNotEnterEvent( e ) ) {
+			section.container.find( '.accordion-section-title' ).on( 'click keydown', function( event ) {
+				if ( isKeydownButNotEnterEvent( event ) ) {
 					return;
 				}
-				e.preventDefault(); // Keep this AFTER the key filter above
+				event.preventDefault(); // Keep this AFTER the key filter above
 
 				if ( section.expanded() ) {
 					section.collapse();
@@ -463,11 +463,11 @@
 			var meta, panel = this;
 
 			// Expand/Collapse accordion sections on click.
-			panel.container.find( '.accordion-section-title' ).on( 'click keydown', function( e ) {
-				if ( isKeydownButNotEnterEvent( e ) ) {
+			panel.container.find( '.accordion-section-title' ).on( 'click keydown', function( event ) {
+				if ( isKeydownButNotEnterEvent( event ) ) {
 					return;
 				}
-				e.preventDefault(); // Keep this AFTER the key filter above
+				event.preventDefault(); // Keep this AFTER the key filter above
 
 				if ( ! panel.expanded() ) {
 					panel.expand();
@@ -476,11 +476,11 @@
 
 			meta = panel.container.find( '.panel-meta:first' );
 
-			meta.find( '> .accordion-section-title' ).on( 'click keydown', function( e ) {
-				if ( isKeydownButNotEnterEvent( e ) ) {
+			meta.find( '> .accordion-section-title' ).on( 'click keydown', function( event ) {
+				if ( isKeydownButNotEnterEvent( event ) ) {
 					return;
 				}
-				e.preventDefault(); // Keep this AFTER the key filter above
+				event.preventDefault(); // Keep this AFTER the key filter above
 
 				if ( meta.hasClass( 'cannot-expand' ) ) {
 					return;
@@ -1711,11 +1711,11 @@
 		});
 
 		// Expand/Collapse the main customizer customize info
-		$( '#customize-info' ).find( '> .accordion-section-title' ).on( 'click keydown', function( e ) {
-			if ( isKeydownButNotEnterEvent( e ) ) {
+		$( '#customize-info' ).find( '> .accordion-section-title' ).on( 'click keydown', function( event ) {
+			if ( isKeydownButNotEnterEvent( event ) ) {
 				return;
 			}
-			e.preventDefault(); // Keep this AFTER the key filter above
+			event.preventDefault(); // Keep this AFTER the key filter above
 
 			var section = $( this ).parent(),
 				content = section.find( '.accordion-section-content:first' );
@@ -2013,12 +2013,12 @@
 		});
 
 		// Go back to the top-level Customizer accordion.
-		$( '#customize-header-actions' ).on( 'click keydown', '.control-panel-back', function( e ) {
-			if ( isKeydownButNotEnterEvent( e ) ) {
+		$( '#customize-header-actions' ).on( 'click keydown', '.control-panel-back', function( event ) {
+			if ( isKeydownButNotEnterEvent( event ) ) {
 				return;
 			}
 
-			e.preventDefault(); // Keep this AFTER the key filter above
+			event.preventDefault(); // Keep this AFTER the key filter above
 			api.panel.each( function ( panel ) {
 				panel.collapse();
 			});
