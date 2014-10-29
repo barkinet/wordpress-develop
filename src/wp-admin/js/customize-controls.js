@@ -1940,13 +1940,13 @@
 				activeElement.focus();
 			}
 		}, api );
+		api.bind( 'ready', api.reflowPaneContents );
 		api.reflowPaneContents = _.debounce( api.reflowPaneContents, 100 );
 		$( [ api.panel, api.section, api.control ] ).each( function ( i, values ) {
 			values.bind( 'add', api.reflowPaneContents );
 			values.bind( 'change', api.reflowPaneContents );
 			values.bind( 'remove', api.reflowPaneContents );
 		} );
-		api.bind( 'ready', api.reflowPaneContents );
 
 		// Check if preview url is valid and load the preview frame.
 		if ( api.previewer.previewUrl() ) {
