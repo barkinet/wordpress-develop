@@ -2,7 +2,8 @@
 
 jQuery( function( $ ) {
 
-	var control_id, control_label, control_type, control_content, control_data, mock_control, mock_control_instance;
+	var control_id, control_label, control_type, control_content, control_data, mock_control, mock_control_instance,
+	    section_id, section_content, section_data, mock_section, section_instance;
 
 	module( 'Customizer Control Model' );
 
@@ -58,6 +59,54 @@ jQuery( function( $ ) {
 
 	test( 'Blogname control instance has the right id when accessed from api.control().', function () {
 		equal( mock_control_instance.id , control_id );
+	});
+
+
+	module( 'Customizer Section Model' );
+
+	section_id = 'mock_title_tagline';
+	section_content = '<li id="accordion-section-title_tagline" class="control-section accordion-section"></li>';
+	section_data = {
+		content : section_content
+	};
+
+	mock_section = new wp.customize.Section( section_id , { params : section_data }	);
+
+	test( 'Section instance has the right id.', function () {
+		equal( mock_section.id , section_id );
+	});
+	test( 'Section instance has a priority of 100, the default if none is passed in the constructor.', function () {
+		equal( mock_section.priority() , 100 );
+	});
+
+	test( 'Section instance has the right content.', function () {
+		equal( mock_section.params.content , section_content );
+	});
+
+	test( 'Section instance is not expanded', function () {
+		equal( mock_section.expanded() , false );
+	});
+
+	test( 'Section instance is expanded after calling .focus()', function () {
+		mock_section.focus();
+		ok( mock_section.expanded() );
+	});
+
+	test( 'Section instance is collapsed after calling .collapse()', function () {
+		mock_section.collapse();
+		equal( mock_section.expanded() , false );
+	});
+
+	wp.customize.section.add( section_id , mock_section );
+
+	test( 'Section instance added to the wp.customize.section object', function () {
+		ok( wp.customize.section.has( section_id ) );
+	});
+
+	section_instance = wp.customize.section( section_id );
+
+	test( 'Section instance has right content when accessed from wp.customize.section()', function () {
+		equal( section_instance.params.content , section_content );
 	});
 
 });
