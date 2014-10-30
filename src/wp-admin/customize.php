@@ -33,6 +33,9 @@ if ( ! $return ) {
 	}
 }
 
+/**
+ * @var WP_Customize_Manager $wp_customize
+ */
 global $wp_scripts, $wp_customize;
 
 $registered = $wp_scripts->registered;
