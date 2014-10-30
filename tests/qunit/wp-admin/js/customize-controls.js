@@ -5,7 +5,7 @@ jQuery( function( $ ) {
 	var control_id, control_label, control_type, control_content, control_data, mock_control, mock_control_instance;
 
 	module( 'Customizer Control Model' );
-	
+
 	control_id = 'new_blogname';
 	control_label = 'Site Title';
 	control_type = 'text';
@@ -21,21 +21,21 @@ jQuery( function( $ ) {
 	mock_control = new wp.customize.Control( control_id ,
 						 { params : control_data,
 						   previewer : wp.customize.previewer
-						 }						 
+						 }
 	);
-	
+
 	test( 'Blogname control has the right id.', function () {
 		equal( mock_control.id , control_id );
 	});
-	
+
 	test( 'Blogname control has a priority of 10, the default if none is passed in the constructor.', function () {
 		equal( mock_control.priority() , 10 );
 	});
 
 	test( 'Blogname control has the right content.', function () {
 		equal( mock_control.params.content , control_content );
-	});		
-	
+	});
+
 	test( 'Blogname control is not active.', function () {
 		equal( mock_control.active() , undefined );
 	});
@@ -46,8 +46,7 @@ jQuery( function( $ ) {
 
 	test( 'Blogname control has the right selector.', function () {
 		equal( mock_control.selector , '#customize-control-new_blogname' );
-	});	
-
+	});
 	wp.customize.control.add( control_id , mock_control );
 
 	test( 'The blogname control instance was added to the control class.', function () {
@@ -55,7 +54,7 @@ jQuery( function( $ ) {
 	});
 
 	mock_control_instance = wp.customize.control( control_id );
-	
+
 	test( 'Blogname control instance has the right id when accessed from api.control().', function () {
 		equal( mock_control_instance.id , control_id );
 	});
