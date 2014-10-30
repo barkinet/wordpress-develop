@@ -3,14 +3,14 @@
 jQuery( function( $ ) {
 
 	var control_id, control_label, control_type, control_content, control_data, mock_control, mock_control_instance;
-    
-	module( 'Customizer Control Model' );
 
+	module( 'Customizer Control Model' );
+	
 	control_id = 'new_blogname';
 	control_label = 'Site Title';
 	control_type = 'text';
 	control_content = '<li id="customize-control-blogname" class="customize-control customize-control-text"></li>';
-	control_data =  {
+	control_data =	{
 		content : control_content,
 		description : "",
 		label : control_label,
