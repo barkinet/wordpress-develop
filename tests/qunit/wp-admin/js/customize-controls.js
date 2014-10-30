@@ -58,4 +58,5 @@ jQuery( function( $ ) {
 	test( 'Blogname control instance has the right id when accessed from api.control().', function () {
 		equal( mock_control_instance.id , control_id );
 	});
+
 });
