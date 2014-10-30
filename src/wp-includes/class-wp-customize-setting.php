@@ -10,18 +10,24 @@
  */
 class WP_Customize_Setting {
 	/**
+	 * Manager class instance.
+	 *
 	 * @access public
 	 * @var WP_Customize_Manager
 	 */
 	public $manager;
 
 	/**
+	 * ID for control.
+	 *
 	 * @access public
 	 * @var string
 	 */
 	public $id;
 
 	/**
+	 * Type of data that this setting represents.
+	 *
 	 * @access public
 	 * @var string
 	 */
@@ -30,6 +36,7 @@ class WP_Customize_Setting {
 	/**
 	 * Capability required to edit this setting.
 	 *
+	 * @access public
 	 * @var string
 	 */
 	public $capability = 'edit_theme_options';
@@ -41,17 +48,51 @@ class WP_Customize_Setting {
 	 * @var string
 	 */
 	public $theme_supports  = '';
-	public $default         = '';
-	public $transport       = 'refresh';
 
 	/**
-	 * Server-side sanitization callback for the setting's value.
+	 * Default value for setting when associated theme_mod/option/etc is absent.
 	 *
+	 * @access public
+	 * @var string
+	 */
+	public $default = '';
+
+	/**
+	 * Transport mechanism for updating the theme preview when a setting changes.
+	 *
+	 * The values 'refresh' and 'postMessage' have associated behaviors.
+	 *
+	 * @access public
+	 * @var string
+	 */
+	public $transport = 'refresh';
+
+	/**
+	 * Server-side sanitization callback for the setting's value when saved to the DB.
+	 *
+	 * This callback is automatically added as a filter for customize_sanitize_{$this->id}.
+	 *
+	 * @access public
 	 * @var callback
 	 */
-	public $sanitize_callback    = '';
+	public $sanitize_callback = '';
+
+	/**
+	 * Server-side sanitization callback for the setting's value exported to JS.
+	 *
+	 * This callback is automatically added as a filter for customize_sanitize_js_{$this->id}
+	 *
+	 * @access public
+	 * @var callback
+	 */
 	public $sanitize_js_callback = '';
 
+	/**
+	 * The ID parsed into its multidimensional parts.
+	 *
+	 * @access protected
+	 * @var array
+	 */
 	protected $id_data = array();
 
 	/**
@@ -78,27 +119,31 @@ class WP_Customize_Setting {
 	public function __construct( $manager, $id, $args = array() ) {
 		$keys = array_keys( get_object_vars( $this ) );
 		foreach ( $keys as $key ) {
-			if ( isset( $args[ $key ] ) )
+			if ( isset( $args[ $key ] ) ) {
 				$this->$key = $args[ $key ];
+			}
 		}
 
 		$this->manager = $manager;
 		$this->id = $id;
 
 		// Parse the ID for array keys.
-		$this->id_data[ 'keys' ] = preg_split( '/\[/', str_replace( ']', '', $this->id ) );
-		$this->id_data[ 'base' ] = array_shift( $this->id_data[ 'keys' ] );
+		$this->id_data['keys'] = preg_split( '/\[/', str_replace( ']', '', $this->id ) );
+		$this->id_data['base'] = array_shift( $this->id_data['keys'] );
 
 		// Rebuild the ID.
-		$this->id = $this->id_data[ 'base' ];
-		if ( ! empty( $this->id_data[ 'keys' ] ) )
-			$this->id .= '[' . implode( '][', $this->id_data[ 'keys' ] ) . ']';
+		$this->id = $this->id_data['base'];
+		if ( ! empty( $this->id_data['keys'] ) ) {
+			$this->id .= '[' . implode( '][', $this->id_data['keys'] ) . ']';
+		}
 
-		if ( $this->sanitize_callback )
+		if ( $this->sanitize_callback ) {
 			add_filter( "customize_sanitize_{$this->id}", $this->sanitize_callback, 10, 2 );
+		}
 
-		if ( $this->sanitize_js_callback )
+		if ( $this->sanitize_js_callback ) {
 			add_filter( "customize_sanitize_js_{$this->id}", $this->sanitize_js_callback, 10, 2 );
+		}
 
 		return $this;
 	}
@@ -109,16 +154,16 @@ class WP_Customize_Setting {
 	 * @since 3.4.0
 	 */
 	public function preview() {
-		switch( $this->type ) {
+		switch ( $this->type ) {
 			case 'theme_mod' :
-				add_filter( 'theme_mod_' . $this->id_data[ 'base' ], array( $this, '_preview_filter' ) );
+				add_filter( 'theme_mod_' . $this->id_data['base'], array( $this, '_preview_filter' ) );
 				break;
 			case 'option' :
-				if ( empty( $this->id_data[ 'keys' ] ) )
-					add_filter( 'pre_option_' . $this->id_data[ 'base' ], array( $this, '_preview_filter' ) );
-				else {
-					add_filter( 'option_' . $this->id_data[ 'base' ], array( $this, '_preview_filter' ) );
-					add_filter( 'default_option_' . $this->id_data[ 'base' ], array( $this, '_preview_filter' ) );
+				if ( empty( $this->id_data['keys'] ) ) {
+					add_filter( 'pre_option_' . $this->id_data['base'], array( $this, '_preview_filter' ) );
+				} else {
+					add_filter( 'option_' . $this->id_data['base'], array( $this, '_preview_filter' ) );
+					add_filter( 'default_option_' . $this->id_data['base'], array( $this, '_preview_filter' ) );
 				}
 				break;
 			default :
@@ -159,7 +204,7 @@ class WP_Customize_Setting {
 	 * @return mixed New or old value.
 	 */
 	public function _preview_filter( $original ) {
-		return $this->multidimensional_replace( $original, $this->id_data[ 'keys' ], $this->post_value() );
+		return $this->multidimensional_replace( $original, $this->id_data['keys'], $this->post_value() );
 	}
 
 	/**
@@ -173,8 +218,9 @@ class WP_Customize_Setting {
 	public final function save() {
 		$value = $this->post_value();
 
-		if ( ! $this->check_capabilities() || ! isset( $value ) )
+		if ( ! $this->check_capabilities() || ! isset( $value ) ) {
 			return false;
+		}
 
 		/**
 		 * Fires when the WP_Customize_Setting::save() method is called.
@@ -186,9 +232,10 @@ class WP_Customize_Setting {
 		 *
 		 * @param WP_Customize_Setting $this {@see WP_Customize_Setting} instance.
 		 */
-		do_action( 'customize_save_' . $this->id_data[ 'base' ], $this );
+		do_action( 'customize_save_' . $this->id_data['base'], $this );
 
 		$this->update( $value );
+		return true;
 	}
 
 	/**
@@ -201,16 +248,18 @@ class WP_Customize_Setting {
 	 */
 	public final function post_value( $default = null ) {
 		// Check for a cached value
-		if ( isset( $this->_post_value ) )
+		if ( isset( $this->_post_value ) ) {
 			return $this->_post_value;
+		}
 
 		// Call the manager for the post value
 		$result = $this->manager->post_value( $this );
 
-		if ( isset( $result ) )
+		if ( isset( $result ) ) {
 			return $this->_post_value = $result;
-		else
+		} else {
 			return $default;
+		}
 	}
 
 	/**
@@ -244,7 +293,7 @@ class WP_Customize_Setting {
 	 * @return mixed The result of saving the value.
 	 */
 	protected function update( $value ) {
-		switch( $this->type ) {
+		switch ( $this->type ) {
 			case 'theme_mod' :
 				return $this->_update_theme_mod( $value );
 
@@ -274,18 +323,23 @@ class WP_Customize_Setting {
 	 * @since 3.4.0
 	 *
 	 * @param mixed $value The value to update.
-	 * @return mixed The result of saving the value.
+	 * @return bool The result of saving the value.
 	 */
 	protected function _update_theme_mod( $value ) {
 		// Handle non-array theme mod.
-		if ( empty( $this->id_data[ 'keys' ] ) )
-			return set_theme_mod( $this->id_data[ 'base' ], $value );
+		if ( empty( $this->id_data['keys'] ) ) {
+			set_theme_mod( $this->id_data['base'], $value );
+			return true;
+		}
 
 		// Handle array-based theme mod.
-		$mods = get_theme_mod( $this->id_data[ 'base' ] );
-		$mods = $this->multidimensional_replace( $mods, $this->id_data[ 'keys' ], $value );
-		if ( isset( $mods ) )
-			return set_theme_mod( $this->id_data[ 'base' ], $mods );
+		$mods = get_theme_mod( $this->id_data['base'] );
+		$mods = $this->multidimensional_replace( $mods, $this->id_data['keys'], $value );
+		if ( isset( $mods ) ) {
+			set_theme_mod( $this->id_data['base'], $mods );
+			return true;
+		}
+		return false;
 	}
 
 	/**
@@ -298,14 +352,17 @@ class WP_Customize_Setting {
 	 */
 	protected function _update_option( $value ) {
 		// Handle non-array option.
-		if ( empty( $this->id_data[ 'keys' ] ) )
-			return update_option( $this->id_data[ 'base' ], $value );
+		if ( empty( $this->id_data['keys'] ) ) {
+			return update_option( $this->id_data['base'], $value );
+		}
 
 		// Handle array-based options.
-		$options = get_option( $this->id_data[ 'base' ] );
-		$options = $this->multidimensional_replace( $options, $this->id_data[ 'keys' ], $value );
-		if ( isset( $options ) )
-			return update_option( $this->id_data[ 'base' ], $options );
+		$options = get_option( $this->id_data['base'] );
+		$options = $this->multidimensional_replace( $options, $this->id_data['keys'], $value );
+		if ( isset( $options ) ) {
+			return update_option( $this->id_data['base'], $options );
+		}
+		return false;
 	}
 
 	/**
@@ -317,7 +374,7 @@ class WP_Customize_Setting {
 	 */
 	public function value() {
 		// Get the callback that corresponds to the setting type.
-		switch( $this->type ) {
+		switch ( $this->type ) {
 			case 'theme_mod' :
 				$function = 'get_theme_mod';
 				break;
@@ -339,16 +396,17 @@ class WP_Customize_Setting {
 				 *
 				 * @param mixed $default The setting default value. Default empty.
 				 */
-				return apply_filters( 'customize_value_' . $this->id_data[ 'base' ], $this->default );
+				return apply_filters( 'customize_value_' . $this->id_data['base'], $this->default );
 		}
 
 		// Handle non-array value
-		if ( empty( $this->id_data[ 'keys' ] ) )
-			return $function( $this->id_data[ 'base' ], $this->default );
+		if ( empty( $this->id_data['keys'] ) ) {
+			return $function( $this->id_data['base'], $this->default );
+		}
 
 		// Handle array-based value
-		$values = $function( $this->id_data[ 'base' ] );
-		return $this->multidimensional_get( $values, $this->id_data[ 'keys' ], $this->default );
+		$values = $function( $this->id_data['base'] );
+		return $this->multidimensional_get( $values, $this->id_data['keys'], $this->default );
 	}
 
 	/**
@@ -372,8 +430,9 @@ class WP_Customize_Setting {
 		 */
 		$value = apply_filters( "customize_sanitize_js_{$this->id}", $this->value(), $this );
 
-		if ( is_string( $value ) )
-			return html_entity_decode( $value, ENT_QUOTES, 'UTF-8');
+		if ( is_string( $value ) ) {
+			return html_entity_decode( $value, ENT_QUOTES, 'UTF-8' );
+		}
 
 		return $value;
 	}
@@ -386,11 +445,13 @@ class WP_Customize_Setting {
 	 * @return bool False if theme doesn't support the setting or user can't change setting, otherwise true.
 	 */
 	public final function check_capabilities() {
-		if ( $this->capability && ! call_user_func_array( 'current_user_can', (array) $this->capability ) )
+		if ( $this->capability && ! call_user_func_array( 'current_user_can', (array) $this->capability ) ) {
 			return false;
+		}
 
-		if ( $this->theme_supports && ! call_user_func_array( 'current_theme_supports', (array) $this->theme_supports ) )
+		if ( $this->theme_supports && ! call_user_func_array( 'current_theme_supports', (array) $this->theme_supports ) ) {
 			return false;
+		}
 
 		return true;
 	}
@@ -400,36 +461,42 @@ class WP_Customize_Setting {
 	 *
 	 * @since 3.4.0
 	 *
-	 * @param $root
-	 * @param $keys
+	 * @param array $root
+	 * @param null|array $keys
 	 * @param bool $create Default is false.
 	 * @return null|array Keys are 'root', 'node', and 'key'.
 	 */
 	final protected function multidimensional( &$root, $keys, $create = false ) {
-		if ( $create && empty( $root ) )
+		if ( $create && empty( $root ) ) {
 			$root = array();
+		}
 
-		if ( ! isset( $root ) || empty( $keys ) )
-			return;
+		if ( ! isset( $root ) || empty( $keys ) ) {
+			return null;
+		}
 
 		$last = array_pop( $keys );
 		$node = &$root;
 
 		foreach ( $keys as $key ) {
-			if ( $create && ! isset( $node[ $key ] ) )
+			if ( $create && ! isset( $node[ $key ] ) ) {
 				$node[ $key ] = array();
+			}
 
-			if ( ! is_array( $node ) || ! isset( $node[ $key ] ) )
-				return;
+			if ( ! is_array( $node ) || ! isset( $node[ $key ] ) ) {
+				return null;
+			}
 
 			$node = &$node[ $key ];
 		}
 
-		if ( $create && ! isset( $node[ $last ] ) )
+		if ( $create && ! isset( $node[ $last ] ) ) {
 			$node[ $last ] = array();
+		}
 
-		if ( ! isset( $node[ $last ] ) )
-			return;
+		if ( ! isset( $node[ $last ] ) ) {
+			return null;
+		}
 
 		return array(
 			'root' => &$root,
@@ -445,19 +512,22 @@ class WP_Customize_Setting {
 	 *
 	 * @param $root
 	 * @param $keys
+	 * @param $value
 	 * @param mixed $value The value to update.
-	 * @return
+	 * @return mixed
 	 */
 	final protected function multidimensional_replace( $root, $keys, $value ) {
-		if ( ! isset( $value ) )
+		if ( ! isset( $value ) ) {
 			return $root;
-		elseif ( empty( $keys ) ) // If there are no keys, we're replacing the root.
+		} elseif ( empty( $keys ) ) { // If there are no keys, we're replacing the root.
 			return $value;
+		}
 
 		$result = $this->multidimensional( $root, $keys, true );
 
-		if ( isset( $result ) )
+		if ( isset( $result ) ) {
 			$result['node'][ $result['key'] ] = $value;
+		}
 
 		return $root;
 	}
@@ -468,13 +538,14 @@ class WP_Customize_Setting {
 	 * @since 3.4.0
 	 *
 	 * @param $root
-	 * @param $keys
+	 * @param null|array $keys
 	 * @param mixed $default A default value which is used as a fallback. Default is null.
 	 * @return mixed The requested value or the default value.
 	 */
 	final protected function multidimensional_get( $root, $keys, $default = null ) {
-		if ( empty( $keys ) ) // If there are no keys, test the root.
+		if ( empty( $keys ) ) { // If there are no keys, test the root.
 			return isset( $root ) ? $root : $default;
+		}
 
 		$result = $this->multidimensional( $root, $keys );
 		return isset( $result ) ? $result['node'][ $result['key'] ] : $default;
@@ -507,9 +578,16 @@ class WP_Customize_Setting {
 class WP_Customize_Filter_Setting extends WP_Customize_Setting {
 
 	/**
+	 * Override WP_Customize_Setting::update() to no-op.
+	 *
 	 * @since 3.4.0
+	 *
+	 * @param mixed $value
+	 * @return bool
 	 */
-	public function update( $value ) {}
+	public function update( $value ) {
+		return true;
+	}
 }
 
 /**
@@ -528,19 +606,28 @@ final class WP_Customize_Header_Image_Setting extends WP_Customize_Setting {
 	 * @since 3.4.0
 	 *
 	 * @param $value
+	 * @return bool
 	 */
 	public function update( $value ) {
+		/**
+		 * @var Custom_Image_Header $custom_image_header
+		 */
 		global $custom_image_header;
 
-		// If the value doesn't exist (removed or random),
-		// use the header_image value.
-		if ( ! $value )
-			$value = $this->manager->get_setting('header_image')->post_value();
+		/*
+		 * If the value doesn't exist (removed or random),
+		 * use the header_image value.
+		 */
+		if ( ! $value ) {
+			$value = $this->manager->get_setting( 'header_image' )->post_value();
+		}
 
-		if ( is_array( $value ) && isset( $value['choice'] ) )
+		if ( is_array( $value ) && isset( $value['choice'] ) ) {
 			$custom_image_header->set_header_image( $value['choice'] );
-		else
+		} else {
 			$custom_image_header->set_header_image( $value );
+		}
+		return true;
 	}
 }
 
@@ -558,8 +645,10 @@ final class WP_Customize_Background_Image_Setting extends WP_Customize_Setting {
 	 * @since 3.4.0
 	 *
 	 * @param $value
+	 * @return bool
 	 */
 	public function update( $value ) {
 		remove_theme_mod( 'background_image_thumb' );
+		return true;
 	}
 }

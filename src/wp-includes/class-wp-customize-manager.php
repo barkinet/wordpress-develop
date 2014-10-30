@@ -417,7 +417,7 @@ final class WP_Customize_Manager {
 	 *
 	 * @since 3.4.0
 	 *
-	 * @return array
+	 * @return WP_Customize_Setting[]
 	 */
 	public function settings() {
 		return $this->settings;
@@ -428,7 +428,7 @@ final class WP_Customize_Manager {
 	 *
 	 * @since 3.4.0
 	 *
-	 * @return array
+	 * @return WP_Customize_Control[]
 	 */
 	public function controls() {
 		return $this->controls;
@@ -450,7 +450,7 @@ final class WP_Customize_Manager {
 	 *
 	 * @since 3.4.0
 	 *
-	 * @return array
+	 * @return WP_Customize_Section[]
 	 */
 	public function sections() {
 		return $this->sections;
@@ -462,7 +462,7 @@ final class WP_Customize_Manager {
 	 * @since 4.0.0
 	 * @access public
 	 *
-	 * @return array Panels.
+	 * @return WP_Customize_Panel[]
 	 */
 	public function panels() {
 		return $this->panels;
