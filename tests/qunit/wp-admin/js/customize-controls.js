@@ -47,6 +47,7 @@ jQuery( function( $ ) {
 	test( 'Blogname control has the right selector.', function () {
 		equal( mock_control.selector , '#customize-control-new_blogname' );
 	});
+
 	wp.customize.control.add( control_id , mock_control );
 
 	test( 'The blogname control instance was added to the control class.', function () {
