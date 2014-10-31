@@ -3104,6 +3104,20 @@ function htmlentities2($myHTML) {
 }
 
 /**
+ * Decode all (HTML) entities into characters in the blog's charset.
+ *
+ * Useful to export a string into JavaScript, passing into wp_json_encode()
+ *
+ * @since 4.1.0
+ *
+ * @param string $string  The text with encoded entities.
+ * @return string  Decoded text.
+ */
+function wp_decode_entities( $string ) {
+	return html_entity_decode( $string, ENT_QUOTES, get_bloginfo( 'charset' ) );
+}
+
+/**
  * Escape single quotes, htmlspecialchar " < > &, and fix line endings.
  *
  * Escapes text strings for echoing in JS. It is intended to be used for inline JS
