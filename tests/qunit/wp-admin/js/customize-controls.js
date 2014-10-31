@@ -2,111 +2,172 @@
 
 jQuery( function( $ ) {
 
-	var control_id, control_label, control_type, control_content, control_data, mock_control, mock_control_instance,
-	    section_id, section_content, section_data, mock_section, section_instance;
+	var controlId, controlLabel, controlType, controlContent, controlDescription, controlData, mockControl,
+	    mockControlInstance, controlExpectedValues, sectionId, sectionContent, sectionData, mockSection,
+	    sectionInstance, sectionExpectedValues, panelId, panelTitle, panelDescription, panelContent, panelData,
+	    mockPanel, panelExpectedValues, testCustomizerModel;
+
+	testCustomizerModel = function( model, expectedValues ) {
+		var type =  expectedValues.type || "";
+
+		if ( expectedValues.hasOwnProperty( 'id' ) ) {
+			test( type + ' instance has the right id' , function () {
+				equal( model.id , expectedValues.id );
+			});
+		}
+		if ( expectedValues.hasOwnProperty( 'title') ) {
+			test( type + ' instance has the right title.', function () {
+				equal( model.params.title , expectedValues.title );
+			});
+		}
+		if ( expectedValues.hasOwnProperty( 'description' ) ) {
+			test( type + ' instance has the right description.', function () {
+				equal( model.params.description , expectedValues.description );
+			});
+		}
+		if ( expectedValues.hasOwnProperty( 'content' ) ) {
+			test( type + ' instance has the right content.', function () {
+				equal( model.params.content , expectedValues.content );
+			});
+		}
+
+		if ( expectedValues.hasOwnProperty( 'priority' ) ) {
+			test( type + ' instance has the right priority.', function () {
+				equal( model.priority() , expectedValues.priority );
+			});
+		}
+
+		if ( expectedValues.textExpanded ) {
+			test( type + ' instance is not expanded', function () {
+				equal( model.expanded() , false );
+			});
+
+			test( type + ' instance is expanded after calling .expanded()', function () {
+				model.expand();
+				ok( model.expanded() );
+			});
+
+			test( type + ' instance is collapsed after calling .collapse()', function () {
+				model.collapse();
+				equal( model.expanded() , false );
+			});
+		}
+
+	};
+
 
 	module( 'Customizer Control Model' );
 
-	control_id = 'new_blogname';
-	control_label = 'Site Title';
-	control_type = 'text';
-	control_content = '<li id="customize-control-blogname" class="customize-control customize-control-text"></li>';
-	control_data =	{
-		content : control_content,
-		description : "",
-		label : control_label,
+	controlId = 'new_blogname';
+	controlLabel = 'Site Title';
+	controlType = 'text';
+	controlContent = '<li id="customize-control-blogname" class="customize-control customize-control-text"></li>';
+	controlDescription = 'Test control description';
+
+	controlData = {
+		content : controlContent,
+		description : controlDescription,
+		label : controlLabel,
 		settings : { default : 'blogname' },
-		type : control_type
+		type : controlType
 	};
 
-	mock_control = new wp.customize.Control( control_id ,
-						 { params : control_data,
-						   previewer : wp.customize.previewer
-						 }
+	mockControl = new wp.customize.Control( controlId ,
+						{ params : controlData,
+						  previewer : wp.customize.previewer
+						}
 	);
 
-	test( 'Blogname control has the right id.', function () {
-		equal( mock_control.id , control_id );
+	controlExpectedValues = {
+		type : 'Control',
+		content : controlContent,
+		descrption : controlDescription,
+		label : controlLabel,
+		id : controlId,
+		priority : 10,
+		textExpanded : false
+	};
+
+	testCustomizerModel( mockControl , controlExpectedValues );
+
+	test( 'Control instance does not yet belong to a section.', function () {
+		equal( mockControl.section() , undefined );
 	});
 
-	test( 'Blogname control has a priority of 10, the default if none is passed in the constructor.', function () {
-		equal( mock_control.priority() , 10 );
+	test( 'Control instance has the right selector.', function () {
+		equal( mockControl.selector , '#customize-control-new_blogname' );
 	});
 
-	test( 'Blogname control has the right content.', function () {
-		equal( mock_control.params.content , control_content );
+	wp.customize.control.add( controlId , mockControl );
+
+	test( 'Control instance was added to the control class.', function () {
+		ok( wp.customize.control.has( controlId ) );
 	});
 
-	test( 'Blogname control is not active.', function () {
-		equal( mock_control.active() , undefined );
-	});
+	mockControlInstance = wp.customize.control( controlId );
 
-	test( 'Blogname control does not yet belong to a section.', function () {
-		equal( mock_control.section() , undefined );
-	});
-
-	test( 'Blogname control has the right selector.', function () {
-		equal( mock_control.selector , '#customize-control-new_blogname' );
-	});
-
-	wp.customize.control.add( control_id , mock_control );
-
-	test( 'The blogname control instance was added to the control class.', function () {
-		ok( wp.customize.control.has( control_id ) );
-	});
-
-	mock_control_instance = wp.customize.control( control_id );
-
-	test( 'Blogname control instance has the right id when accessed from api.control().', function () {
-		equal( mock_control_instance.id , control_id );
+	test( 'Control instance has the right id when accessed from api.control().', function () {
+		equal( mockControlInstance.id , controlId );
 	});
 
 
 	module( 'Customizer Section Model' );
 
-	section_id = 'mock_title_tagline';
-	section_content = '<li id="accordion-section-title_tagline" class="control-section accordion-section"></li>';
-	section_data = {
-		content : section_content
+	sectionId = 'mock_title_tagline';
+	sectionContent = '<li id="accordion-section-title_tagline" class="control-section accordion-section"></li>';
+	sectionData = {
+		content : sectionContent
 	};
 
-	mock_section = new wp.customize.Section( section_id , { params : section_data }	);
+	mockSection = new wp.customize.Section( sectionId , { params : sectionData }	);
 
-	test( 'Section instance has the right id.', function () {
-		equal( mock_section.id , section_id );
-	});
-	test( 'Section instance has a priority of 100, the default if none is passed in the constructor.', function () {
-		equal( mock_section.priority() , 100 );
-	});
+	sectionExpectedValues = {
+		type : 'Section',
+		id : sectionId,
+		content : sectionContent,
+		priority : 100,
+		testExpanded : true
+	};
 
-	test( 'Section instance has the right content.', function () {
-		equal( mock_section.params.content , section_content );
-	});
+	testCustomizerModel( mockSection , sectionExpectedValues );
 
-	test( 'Section instance is not expanded', function () {
-		equal( mock_section.expanded() , false );
-	});
-
-	test( 'Section instance is expanded after calling .focus()', function () {
-		mock_section.focus();
-		ok( mock_section.expanded() );
-	});
-
-	test( 'Section instance is collapsed after calling .collapse()', function () {
-		mock_section.collapse();
-		equal( mock_section.expanded() , false );
-	});
-
-	wp.customize.section.add( section_id , mock_section );
+	wp.customize.section.add( sectionId , mockSection );
 
 	test( 'Section instance added to the wp.customize.section object', function () {
-		ok( wp.customize.section.has( section_id ) );
+		ok( wp.customize.section.has( sectionId ) );
 	});
 
-	section_instance = wp.customize.section( section_id );
+	sectionInstance = wp.customize.section( sectionId );
 
 	test( 'Section instance has right content when accessed from wp.customize.section()', function () {
-		equal( section_instance.params.content , section_content );
+		equal( sectionInstance.params.content , sectionContent );
 	});
+
+
+	module( 'Customizer Panel Model' );
+
+	panelId = 'mockPanelId';
+	panelTitle = 'Mock Panel Title';
+	panelDescription = 'Mock panel description';
+	panelContent = '<li id="accordion-panel-widgets" class="control-section control-panel accordion-section">';
+	panelData = {
+		content : panelContent,
+		title : panelTitle,
+		description : panelDescription
+	};
+
+	mockPanel = new wp.customize.Panel( panelId , { params : panelData }	);
+
+	panelExpectedValues = {
+		type : 'Panel',
+		id : panelId,
+		title : panelTitle ,
+		description : panelDescription,
+		content : panelContent,
+		priority : 100,
+		testExpanded : true
+	};
+
+	testCustomizerModel( mockPanel , panelExpectedValues );
 
 });
