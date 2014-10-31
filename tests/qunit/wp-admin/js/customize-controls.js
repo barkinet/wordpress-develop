@@ -30,13 +30,11 @@ jQuery( function( $ ) {
 				equal( model.params.content , expectedValues.content );
 			});
 		}
-
 		if ( expectedValues.hasOwnProperty( 'priority' ) ) {
 			test( type + ' instance has the right priority.', function () {
 				equal( model.priority() , expectedValues.priority );
 			});
 		}
-
 		if ( expectedValues.textExpanded ) {
 			test( type + ' instance is not expanded', function () {
 				equal( model.expanded() , false );
@@ -119,7 +117,7 @@ jQuery( function( $ ) {
 		content : sectionContent
 	};
 
-	mockSection = new wp.customize.Section( sectionId , { params : sectionData }	);
+	mockSection = new wp.customize.Section( sectionId , { params : sectionData } );
 
 	sectionExpectedValues = {
 		type : 'Section',
