@@ -223,8 +223,8 @@ class WP_Customize_Control {
 		$this->json['active']      = $this->active();
 		$this->json['section']     = $this->section;
 		$this->json['content']     = $this->get_content();
-		$this->json['label']       = html_entity_decode( $this->label );
-		$this->json['description'] = html_entity_decode( $this->description );
+		$this->json['label']       = html_entity_decode( $this->label, ENT_QUOTES, get_bloginfo( 'charset' ) );
+		$this->json['description'] = html_entity_decode( $this->description, ENT_QUOTES, get_bloginfo( 'charset' ) );
 	}
 
 	/**

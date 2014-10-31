@@ -372,8 +372,9 @@ class WP_Customize_Setting {
 		 */
 		$value = apply_filters( "customize_sanitize_js_{$this->id}", $this->value(), $this );
 
-		if ( is_string( $value ) )
-			return html_entity_decode( $value, ENT_QUOTES, 'UTF-8');
+		if ( is_string( $value ) ) {
+			$value = html_entity_decode( $value, ENT_QUOTES, get_bloginfo( 'charset' ) );
+		}
 
 		return $value;
 	}
