@@ -3114,7 +3114,11 @@ function htmlentities2($myHTML) {
  * @return string  Decoded text.
  */
 function wp_decode_entities( $string ) {
-	return html_entity_decode( $string, ENT_QUOTES, get_bloginfo( 'charset' ) );
+	$quote_style = ENT_QUOTES;
+	if ( defined( 'ENT_HTML5' ) ) {
+		$quote_style |= ENT_HTML5;
+	}
+	return html_entity_decode( $string, $quote_style, get_bloginfo( 'charset' ) );
 }
 
 /**
