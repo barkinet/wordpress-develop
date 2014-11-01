@@ -152,10 +152,20 @@ $menu[60] = array( __('Appearance'), $appearance_cap, 'themes.php', '', 'menu-to
 
 	$customize_url = add_query_arg( 'return', urlencode( wp_unslash( $_SERVER['REQUEST_URI'] ) ), 'customize.php' );
 	$submenu['themes.php'][6] = array( __( 'Customize' ), 'customize', $customize_url, '', 'hide-if-no-customize' );
-	unset( $customize_url );
+
 	if ( current_theme_supports( 'menus' ) || current_theme_supports( 'widgets' ) ) {
 		$submenu['themes.php'][10] = array(__( 'Menus' ), 'edit_theme_options', 'nav-menus.php');
 	}
+	if ( current_theme_supports( 'custom-header' ) ) {
+		$customize_header_url = add_query_arg( 'autofocus[section]', 'header_image', $customize_url );
+		$submenu['themes.php'][15] = array( __( 'Header' ), $appearance_cap, $customize_header_url, '', 'hide-if-no-customize' ); // @todo deep-link
+	}
+	if ( current_theme_supports( 'custom-background' ) ) {
+		$customize_background_url = add_query_arg( 'autofocus[section]', 'background_image', $customize_url );
+		$submenu['themes.php'][20] = array( __( 'Background' ), $appearance_cap, $customize_background_url, '', 'hide-if-no-customize' ); // @todo deep-link
+	}
+
+	unset( $customize_url );
 
 unset( $appearance_cap );
 
