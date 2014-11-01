@@ -697,7 +697,7 @@ function wp_admin_bar_appearance_menu( $wp_admin_bar ) {
 			'parent' => 'appearance',
 			'id'     => 'customize-background',
 			'title'  => __( 'Background' ),
-			'href'   => add_query_arg( urlencode( 'autofocus[section]' ), 'background_image', $customize_url ), // urlencode() needed due to #16859
+			'href'   => add_query_arg( urlencode( 'autofocus[control]' ), 'background_image', $customize_url ), // urlencode() needed due to #16859
 			'meta'   => array(
 				'class' => 'hide-if-no-customize',
 			),
@@ -718,7 +718,7 @@ function wp_admin_bar_appearance_menu( $wp_admin_bar ) {
 			'parent' => 'appearance',
 			'id'     => 'customize-header',
 			'title'  => __( 'Header' ),
-			'href'   => add_query_arg( urlencode( 'autofocus[section]' ), 'header_image', $customize_url ), // urlencode() needed due to #16859
+			'href'   => add_query_arg( urlencode( 'autofocus[control]' ), 'header_image', $customize_url ), // urlencode() needed due to #16859
 			'meta'   => array(
 				'class' => 'hide-if-no-customize',
 			),
