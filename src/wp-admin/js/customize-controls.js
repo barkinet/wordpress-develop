@@ -1,8 +1,6 @@
 /* globals _wpCustomizeHeader, _wpMediaViewsL10n */
 (function( exports, $ ){
-	var bubbleChildValueChanges, Container, focus, isKeydownButNotEnterEvent, areElementListsEqual, api = wp.customize;
-
-	// @todo Move private helper functions to wp.customize.utils so they can be unit tested
+	var Container, focus, api = wp.customize;
 
 	/**
 	 * @constructor
@@ -33,12 +31,17 @@
 	});
 
 	/**
+	 * Utility function namespace
+	 */
+	api.utils = {};
+
+	/**
 	 * Watch all changes to Value properties, and bubble changes to parent Values instance
 	 *
 	 * @param {wp.customize.Class} instance
 	 * @param {Array} properties  The names of the Value instances to watch.
 	 */
-	bubbleChildValueChanges = function ( instance, properties ) {
+	api.utils.bubbleChildValueChanges = function ( instance, properties ) {
 		$.each( properties, function ( i, key ) {
 			instance[ key ].bind( function ( to, from ) {
 				if ( instance.parent && to !== from ) {
@@ -47,6 +50,38 @@
 			} );
 		} );
 	};
+
+	/**
+	 * Return whether the supplied Event object is for a keydown event but not the Enter key.
+	 *
+	 * @param {jQuery.Event} event
+	 * @returns {boolean}
+	 */
+	api.utils.isKeydownButNotEnterEvent = function ( event ) {
+		return ( 'keydown' === event.type && 13 !== event.which );
+	};
+
+	/**
+	 * Return whether the two lists of elements are the same and are in the same order.
+	 *
+	 * @param {Array|jQuery} listA
+	 * @param {Array|jQuery} listB
+	 * @returns {boolean}
+	 */
+	api.utils.areElementListsEqual = function ( listA, listB ) {
+		var equal = (
+			listA.length === listB.length && // if lists are different lengths, then naturally they are not equal
+			-1 === _.map( // are there any false values in the list returned by map?
+				_.zip( listA, listB ), // pair up each element between the two lists
+				function ( pair ) {
+					return $( pair[0] ).is( pair[1] ); // compare to see if each pair are equal
+				}
+			).indexOf( false ) // check for presence of false in map's return value
+		);
+		return equal;
+	};
+
+	/* End api.utils functions */	
 
 	/**
 	 * Expand a panel, section, or control and focus on the first focusable element.
@@ -75,37 +110,7 @@
 		} else {
 			params.completeCallback();
 		}
-	};
-
-	/**
-	 * Return whether the supplied Event object is for a keydown event but not the Enter key.
-	 *
-	 * @param {jQuery.Event} event
-	 * @returns {boolean}
-	 */
-	isKeydownButNotEnterEvent = function ( event ) {
-		return ( 'keydown' === event.type && 13 !== event.which );
-	};
-
-	/**
-	 * Return whether the two lists of elements are the same and are in the same order.
-	 *
-	 * @param {Array|jQuery} listA
-	 * @param {Array|jQuery} listB
-	 * @returns {boolean}
-	 */
-	areElementListsEqual = function ( listA, listB ) {
-		var equal = (
-			listA.length === listB.length && // if lists are different lengths, then naturally they are not equal
-			-1 === _.map( // are there any false values in the list returned by map?
-				_.zip( listA, listB ), // pair up each element between the two lists
-				function ( pair ) {
-					return $( pair[0] ).is( pair[1] ); // compare to see if each pair are equal
-				}
-			).indexOf( false ) // check for presence of false in map's return value
-		);
-		return equal;
-	};
+	};	
 
 	/**
 	 * Base class for Panel and Section
@@ -149,7 +154,7 @@
 
 			container.attachEvents();
 
-			bubbleChildValueChanges( container, [ 'priority', 'active' ] );
+			api.utils.bubbleChildValueChanges( container, [ 'priority', 'active' ] );
 
 			container.priority.set( isNaN( container.params.priority ) ? 100 : container.params.priority );
 			container.active.set( container.params.active );
@@ -316,7 +321,7 @@
 				$( section.container ).toggleClass( 'control-subsection', !! id );
 			});
 			section.panel.set( section.params.panel || '' );
-			bubbleChildValueChanges( section, [ 'panel' ] );
+			api.utils.bubbleChildValueChanges( section, [ 'panel' ] );
 
 			section.embed();
 			section.deferred.ready.done( function () {
@@ -366,7 +371,7 @@
 
 			// Expand/Collapse accordion sections on click.
 			section.container.find( '.accordion-section-title' ).on( 'click keydown', function( event ) {
-				if ( isKeydownButNotEnterEvent( event ) ) {
+				if ( api.utils.isKeydownButNotEnterEvent( event ) ) {
 					return;
 				}
 				event.preventDefault(); // Keep this AFTER the key filter above
@@ -486,7 +491,7 @@
 
 			// Expand/Collapse accordion sections on click.
 			panel.container.find( '.accordion-section-title' ).on( 'click keydown', function( event ) {
-				if ( isKeydownButNotEnterEvent( event ) ) {
+				if ( api.utils.isKeydownButNotEnterEvent( event ) ) {
 					return;
 				}
 				event.preventDefault(); // Keep this AFTER the key filter above
@@ -499,7 +504,7 @@
 			meta = panel.container.find( '.panel-meta:first' );
 
 			meta.find( '> .accordion-section-title' ).on( 'click keydown', function( event ) {
-				if ( isKeydownButNotEnterEvent( event ) ) {
+				if ( api.utils.isKeydownButNotEnterEvent( event ) ) {
 					return;
 				}
 				event.preventDefault(); // Keep this AFTER the key filter above
@@ -684,7 +689,7 @@
 			control.priority.set( isNaN( control.params.priority ) ? 10 : control.params.priority );
 			control.active.set( control.params.active );
 
-			bubbleChildValueChanges( control, [ 'section', 'priority', 'active' ] );
+			api.utils.bubbleChildValueChanges( control, [ 'section', 'priority', 'active' ] );
 
 			// Associate this control with its settings when they are created
 			settings = $.map( control.params.settings, function( value ) {
@@ -810,7 +815,7 @@
 
 			// Support the .dropdown class to open/close complex elements
 			this.container.on( 'click keydown', '.dropdown', function( event ) {
-				if ( isKeydownButNotEnterEvent( event ) ) {
+				if ( api.utils.isKeydownButNotEnterEvent( event ) ) {
 					return;
 				}
 
@@ -911,7 +916,7 @@
 
 			this.remover = this.container.find('.remove');
 			this.remover.on( 'click keydown', function( event ) {
-				if ( isKeydownButNotEnterEvent( event ) ) {
+				if ( api.utils.isKeydownButNotEnterEvent( event ) ) {
 					return;
 				}
 
@@ -984,7 +989,7 @@
 
 			// Bind tab switch events
 			this.library.children('ul').on( 'click keydown', 'li', function( event ) {
-				if ( isKeydownButNotEnterEvent( event ) ) {
+				if ( api.utils.isKeydownButNotEnterEvent( event ) ) {
 					return;
 				}
 
@@ -1003,7 +1008,7 @@
 
 			// Bind events to switch image urls.
 			this.library.on( 'click keydown', 'a', function( event ) {
-				if ( isKeydownButNotEnterEvent( event ) ) {
+				if ( api.utils.isKeydownButNotEnterEvent( event ) ) {
 					return;
 				}
 
@@ -1734,7 +1739,7 @@
 
 		// Expand/Collapse the main customizer customize info
 		$( '#customize-info' ).find( '> .accordion-section-title' ).on( 'click keydown', function( event ) {
-			if ( isKeydownButNotEnterEvent( event ) ) {
+			if ( api.utils.isKeydownButNotEnterEvent( event ) ) {
 				return;
 			}
 			event.preventDefault(); // Keep this AFTER the key filter above
@@ -1922,7 +1927,7 @@
 					sectionContainers = _.pluck( sections, 'container' );
 				rootNodes.push( panel );
 				appendContainer = panel.container.find( 'ul:first' );
-				if ( ! areElementListsEqual( sectionContainers, appendContainer.children( '[id]' ) ) ) {
+				if ( ! api.utils.areElementListsEqual( sectionContainers, appendContainer.children( '[id]' ) ) ) {
 					_( sections ).each( function ( section ) {
 						appendContainer.append( section.container );
 					} );
@@ -1938,7 +1943,7 @@
 					rootNodes.push( section );
 				}
 				appendContainer = section.container.find( 'ul:first' );
-				if ( ! areElementListsEqual( controlContainers, appendContainer.children( '[id]' ) ) ) {
+				if ( ! api.utils.areElementListsEqual( controlContainers, appendContainer.children( '[id]' ) ) ) {
 					_( controls ).each( function ( control ) {
 						appendContainer.append( control.container );
 					} );
@@ -1952,7 +1957,7 @@
 			} );
 			rootContainers = _.pluck( rootNodes, 'container' );
 			appendContainer = $( '#customize-theme-controls' ).children( 'ul' ); // @todo This should be defined elsewhere, and to be configurable
-			if ( ! areElementListsEqual( rootContainers, appendContainer.children() ) ) {
+			if ( ! api.utils.areElementListsEqual( rootContainers, appendContainer.children() ) ) {
 				_( rootNodes ).each( function ( rootNode ) {
 					appendContainer.append( rootNode.container );
 				} );
@@ -2048,7 +2053,7 @@
 
 		// Go back to the top-level Customizer accordion.
 		$( '#customize-header-actions' ).on( 'click keydown', '.control-panel-back', function( event ) {
-			if ( isKeydownButNotEnterEvent( event ) ) {
+			if ( api.utils.isKeydownButNotEnterEvent( event ) ) {
 				return;
 			}
 
@@ -2072,7 +2077,7 @@
 		});
 
 		$('.collapse-sidebar').on( 'click keydown', function( event ) {
-			if ( isKeydownButNotEnterEvent( event ) ) {
+			if ( api.utils.isKeydownButNotEnterEvent( event ) ) {
 				return;
 			}
 
