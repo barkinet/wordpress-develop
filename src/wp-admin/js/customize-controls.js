@@ -82,9 +82,9 @@
 	 *
 	 * If a.priority() === b.priority(), then sort by their respective params.instanceNumber.
 	 *
-	 * @param {wp.customize.Panel|wp.customize.Section|wp.customize.Control} a
-	 * @param {wp.customize.Panel|wp.customize.Section|wp.customize.Control} b
-	 * @return {int}
+	 * @param {(wp.customize.Panel|wp.customize.Section|wp.customize.Control)} a
+	 * @param {(wp.customize.Panel|wp.customize.Section|wp.customize.Control)} b
+	 * @returns {Number}
 	 */
 	stableSort = function ( a, b ) {
 		if ( a.priority() === b.priority() && typeof a.params.instanceNumber === 'number' && typeof b.params.instanceNumber === 'number' ) {
