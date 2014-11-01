@@ -6,7 +6,7 @@
 /**
  * @group formatting
  */
-class Tests_Formatting_DecodeEntities extends WP_UnitTestCase {
+class Tests_Formatting_WPDecodeEntities extends WP_UnitTestCase {
 
 	function setUp() {
 		parent::setUp();
