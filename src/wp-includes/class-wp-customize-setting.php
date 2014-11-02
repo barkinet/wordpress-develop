@@ -88,6 +88,16 @@ class WP_Customize_Setting {
 	public $sanitize_js_callback = '';
 
 	/**
+	 * jQuery selector for the element(s) on the frontend which render data.
+	 *
+	 * Multiple selectors may be separated by commas.
+	 *
+	 * @access public
+	 * @var string
+	 */
+	public $selector = '';
+
+	/**
 	 * The ID parsed into its multidimensional parts.
 	 *
 	 * @access protected
@@ -435,6 +445,19 @@ class WP_Customize_Setting {
 		}
 
 		return $value;
+	}
+
+	/**
+	 * Gather the parameters passed to client JavaScript via JSON.
+	 *
+	 * @since 4.1.0
+	 *
+	 * @return array The array to be exported to the client as JSON
+	 */
+	public function json() {
+		$array = wp_array_slice_assoc( (array) $this, array( 'transport', 'selector' ) );
+		$array['value'] = $this->js_value();
+		return $array;
 	}
 
 	/**

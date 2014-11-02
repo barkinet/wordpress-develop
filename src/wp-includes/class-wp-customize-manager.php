@@ -496,7 +496,6 @@ final class WP_Customize_Manager {
 	 */
 	public function customize_preview_settings() {
 		$settings = array(
-			'values'  => array(),
 			'channel' => wp_unslash( $_POST['customize_messenger_channel'] ),
 			'activePanels' => array(),
 			'activeSections' => array(),
@@ -510,9 +509,6 @@ final class WP_Customize_Manager {
 			);
 		}
 
-		foreach ( $this->settings as $id => $setting ) {
-			$settings['values'][ $id ] = $setting->js_value();
-		}
 		foreach ( $this->panels as $id => $panel ) {
 			$settings['activePanels'][ $id ] = $panel->active();
 		}

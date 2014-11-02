@@ -3,36 +3,39 @@
  *
  * Contains handlers to make Customizer preview reload changes asynchronously.
  */
-( function( $ ) {
+( function( $, api ) {
 	// Site title and description.
-	wp.customize( 'blogname', function( value ) {
+	api( 'blogname', function( value ) {
 		value.bind( function( to ) {
-			$( '.site-title a' ).text( to );
+			$( value.selector ).text( to );
 		} );
 	} );
-	wp.customize( 'blogdescription', function( value ) {
+	api( 'blogdescription', function( value ) {
 		value.bind( function( to ) {
-			$( '.site-description' ).text( to );
+			$( value.selector ).text( to );
 		} );
 	} );
 	// Header text color.
-	wp.customize( 'header_textcolor', function( value ) {
+	api( 'header_textcolor', 'blogname', 'blogdescription', function( value ) {
+
 		value.bind( function( to ) {
+			var titleDescriptionSelector = api( 'blogname' ).selector + ', ' + api( 'blogdescription' ).selector;
+
 			if ( 'blank' === to ) {
-				$( '.site-title, .site-description' ).css( {
+				$( titleDescriptionSelector ).css( {
 					'clip': 'rect(1px, 1px, 1px, 1px)',
 					'position': 'absolute'
 				} );
 			} else {
-				$( '.site-title,  .site-description' ).css( {
+				$( titleDescriptionSelector ).css( {
 					'clip': 'auto',
 					'position': 'static'
 				} );
 
-				$( '.site-title a' ).css( {
+				$( api( 'blogname' ).selector ).css( {
 					'color': to
 				} );
 			}
 		} );
 	} );
-} )( jQuery );
+} )( jQuery, wp.customize );

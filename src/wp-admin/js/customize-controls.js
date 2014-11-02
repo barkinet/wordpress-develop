@@ -1641,9 +1641,17 @@
 					self.send( 'active' );
 				});
 
+				var settings = {};
+				api.each( function ( setting, id) {
+					settings[ id ] = {
+						value: setting.get(),
+						selector: setting.selector
+					};
+				} );
+
 				this.send( 'sync', {
 					scroll:   self.scroll,
-					settings: api.get()
+					settings: settings
 				});
 			});
 
@@ -1855,10 +1863,11 @@
 
 		// Create Settings
 		$.each( api.settings.settings, function( id, data ) {
-			api.create( id, id, data.value, {
-				transport: data.transport,
+			var options = $.extend( {}, data, {
 				previewer: api.previewer
 			} );
+			delete options.value; // remove duplicate
+			api.create( id, id, data.value, options );
 		});
 
 		// Create Panels

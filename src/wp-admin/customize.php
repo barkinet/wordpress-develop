@@ -260,10 +260,7 @@ do_action( 'customize_controls_print_scripts' );
 
 	// Prepare Customize Setting objects to pass to Javascript.
 	foreach ( $wp_customize->settings() as $id => $setting ) {
-		$settings['settings'][ $id ] = array(
-			'value'     => $setting->js_value(),
-			'transport' => $setting->transport,
-		);
+		$settings['settings'][ $id ] = $setting->json();
 	}
 
 	// Prepare Customize Control objects to pass to JavaScript.

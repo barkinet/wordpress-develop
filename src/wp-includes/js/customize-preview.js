@@ -74,24 +74,32 @@
 			channel: api.settings.channel
 		});
 
-		preview.bind( 'settings', function( values ) {
-			$.each( values, function( id, value ) {
-				if ( api.has( id ) )
+		preview.bind( 'settings', function( settings ) {
+
+			$.each( settings, function( id, setting ) {
+				var value = setting.value;
+				delete setting.value;
+				if ( api.has( id ) ) {
 					api( id ).set( value );
-				else
-					api.create( id, value );
+				} else {
+					setting.id = id;
+					api.create( id, value, setting ); // Note this is an api.Value, not an api.Setting
+				}
 			});
 		});
 
-		preview.trigger( 'settings', api.settings.values );
-
+		/**
+		 * @todo Send an setting object instead of a key/value pair?
+		 */
 		preview.bind( 'setting', function( args ) {
 			var value;
 
+			// @todo Allow other args?
 			args = args.slice();
 
-			if ( value = api( args.shift() ) )
+			if ( value = api( args.shift() ) ) {
 				value.set.apply( value, args );
+			}
 		});
 
 		preview.bind( 'sync', function( events ) {
@@ -101,10 +109,11 @@
 			preview.send( 'synced' );
 		});
 
-        preview.bind( 'active', function() {
-            if ( api.settings.nonce )
-                preview.send( 'nonce', api.settings.nonce );
-        });
+		preview.bind( 'active', function() {
+			if ( api.settings.nonce ) {
+				preview.send( 'nonce', api.settings.nonce );
+			}
+		});
 
 		preview.send( 'ready', {
 			activePanels: api.settings.activePanels,
