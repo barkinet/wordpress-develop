@@ -154,7 +154,7 @@ jQuery( function( $ ) {
 		description : panelDescription
 	};
 
-	mockPanel = new wp.customize.Panel( panelId , { params : panelData }	);
+	mockPanel = new wp.customize.Panel( panelId , { params : panelData } );
 
 	panelExpectedValues = {
 		type : 'Panel',
