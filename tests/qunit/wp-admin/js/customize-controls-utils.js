@@ -2,7 +2,7 @@
 
 jQuery( function( $ ) {
 	var trueMockEvent, falseMockEvent, mockElementLists, $firstMockElement, $secondMockElement, $thirdMockElement,
-	    BubbleTester, BubbleTesterTwoValues, bubbleTesterParent, firstBubbleTester, secondBubbleTester;
+	    BubbleTester, BubbleTesterTwoValues, bubbleTesterParent, firstBubbleTester, secondBubbleTester, $newRoot;
 
 	module( 'Customizer Model Utility functions' );
 
@@ -105,6 +105,13 @@ jQuery( function( $ ) {
 
 	test( 'bubbleChildValueChanges passes a reference to its instance when two values are bound' , function() {
 		ok( secondBubbleTester.parent.instancePassedInTrigger instanceof BubbleTesterTwoValues );
+	});
+
+	$newRoot = $( '<div id="#new-theme-controls"></div>' );
+	wp.customize.utils.setRootOfCustomizer( $newRoot );
+
+	test( 'setRootOfCustomizer sets the new root' , function() {
+		equal( wp.customize.utils.getRootOfCustomizer() , $newRoot );
 	});
 
 });
