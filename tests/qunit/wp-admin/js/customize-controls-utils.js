@@ -2,7 +2,7 @@
 
 jQuery( function( $ ) {
 	var trueMockEvent, falseMockEvent, mockElementLists, $firstMockElement, $secondMockElement, $thirdMockElement,
-	    BubbleTester, bubbleTesterParent, firstBubbleTester;
+	    BubbleTester, BubbleTesterTwoValues, bubbleTesterParent, firstBubbleTester, secondBubbleTester;
 
 	module( 'Customizer Model Utility functions' );
 
