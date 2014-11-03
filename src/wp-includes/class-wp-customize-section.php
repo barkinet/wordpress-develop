@@ -287,3 +287,44 @@ class WP_Customize_Section {
 		<?php
 	}
 }
+
+/**
+ * Customizer section representing widget area (sidebar).
+ *
+ * @package WordPress
+ * @subpackage Customize
+ * @since 4.1.0
+ */
+class WP_Customize_Sidebar_Section extends WP_Customize_Section {
+
+	/**
+	 * @var string
+	 */
+	public $type = 'sidebar';
+
+	/**
+	 * @var string
+	 */
+	public $sidebar_id;
+
+	/**
+	 * @return array
+	 */
+	public function json() {
+		$json = parent::json();
+		$json['sidebarId'] = $this->sidebar_id;
+		return $json;
+	}
+
+	/**
+	 * Whether the current sidebar is rendered on the page.
+	 *
+	 * @since 4.0.0
+	 * @access public
+	 *
+	 * @return bool Whether sidebar is rendered.
+	 */
+	public function active_callback() {
+		return $this->manager->widgets->is_sidebar_rendered( $this->sidebar_id );
+	}
+}
