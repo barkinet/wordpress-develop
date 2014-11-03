@@ -168,4 +168,8 @@ jQuery( function( $ ) {
 
 	testCustomizerModel( mockPanel , panelExpectedValues );
 
+	test( 'Panel instance is not contextuallyActive', function () {
+		equal( mockPanel.isContextuallyActive() , false );
+	});
+
 });

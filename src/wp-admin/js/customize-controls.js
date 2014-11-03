@@ -81,7 +81,17 @@
 		return equal;
 	};
 
-	/* End api.utils functions */	
+	api.utils._rootOfCustomizer = $( '#customize-theme-controls' ).children( 'ul' );
+
+	api.utils.setRootOfCustomizer = function( $newRoot ) {
+		api.utils._rootOfCustomizer = $newRoot;
+	};
+
+	api.utils.getRootOfCustomizer = function() {
+		return api.utils._rootOfCustomizer;
+	};
+
+	/* End api.utils functions */
 
 	/**
 	 * Expand a panel, section, or control and focus on the first focusable element.
@@ -110,7 +120,7 @@
 		} else {
 			params.completeCallback();
 		}
-	};	
+	};
 
 	/**
 	 * Base class for Panel and Section
@@ -352,7 +362,7 @@
 					} );
 				} else {
 					// There is no panel, so embed the section in the root of the customizer
-					parentContainer = $( '#customize-theme-controls' ).children( 'ul' ); // @todo This should be defined elsewhere, and to be configurable
+					parentContainer = api.utils.getRootOfCustomizer(); // implements todo: This should be defined elsewhere, and to be configurable
 					if ( ! section.container.parent().is( parentContainer ) ) {
 						parentContainer.append( section.container );
 					}
@@ -475,7 +485,7 @@
 		 */
 		embed: function () {
 			var panel = this,
-				parentContainer = $( '#customize-theme-controls > ul' ); // @todo This should be defined elsewhere, and to be configurable
+				parentContainer = api.utils.getRootOfCustomizer(); // implements todo: This should be defined elsewhere, and to be configurable
 
 			if ( ! panel.container.parent().is( parentContainer ) ) {
 				parentContainer.append( panel.container );
@@ -574,7 +584,8 @@
 				overlay = section.closest( '.wp-full-overlay' ),
 				container = section.closest( '.accordion-container' ),
 				siblings = container.find( '.open' ),
-				topPanel = overlay.find( '#customize-theme-controls > ul > .accordion-section > .accordion-section-title' ).add( '#customize-info > .accordion-section-title' ),
+				$rootOfCustomizer = api.utils.getRootOfCustomizer(),
+				topPanel = overlay.find( $rootOfCustomizer ).find( '> .accordion-section > .accordion-section-title' ).add( '#customize-info > .accordion-section-title' ),
 				backBtn = overlay.find( '.control-panel-back' ),
 				panelTitle = section.find( '.accordion-section-title' ).first(),
 				content = section.find( '.control-panel-content' );
@@ -1956,7 +1967,7 @@
 				return a.priority() - b.priority();
 			} );
 			rootContainers = _.pluck( rootNodes, 'container' );
-			appendContainer = $( '#customize-theme-controls' ).children( 'ul' ); // @todo This should be defined elsewhere, and to be configurable
+			appendContainer = api.utils.getRootOfCustomizer(); // implements todo: This should be defined elsewhere, and to be configurable
 			if ( ! api.utils.areElementListsEqual( rootContainers, appendContainer.children() ) ) {
 				_( rootNodes ).each( function ( rootNode ) {
 					appendContainer.append( rootNode.container );
