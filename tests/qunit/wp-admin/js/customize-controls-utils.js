@@ -67,6 +67,27 @@ jQuery( function( $ ) {
 		{
 			parent : new bubbleTesterParent(),
 			fooValue : new wp.customize.Value(),
+		},
+		{
+			staticProperty : 'propertyValue'
+		}
+	);
+
+	test( 'bubbleChildValueChanges notifies parent of change' , function() {
+		firstBubbleTester = new BubbleTester();
+		wp.customize.utils.bubbleChildValueChanges( firstBubbleTester , [ 'fooValue' ] );
+		firstBubbleTester.fooValue.set( 'new value' );
+		ok( firstBubbleTester.parent.wasChangeTriggered );
+	});
+
+	test( 'bubbleChildValueChanges passes a reference to its instance' , function() {
+		ok( firstBubbleTester.parent.instancePassedInTrigger instanceof BubbleTester );
+	});
+
+	BubbleTesterTwoValues = wp.customize.Class.extend(
+		{
+			parent : new bubbleTesterParent(),
+			exampleValue : new wp.customize.Value(),
 			barValue : new wp.customize.Value(),
 		},
 		{
@@ -74,16 +95,16 @@ jQuery( function( $ ) {
 		}
 	);
 
-	firstBubbleTester = new BubbleTester();
-	wp.customize.utils.bubbleChildValueChanges( firstBubbleTester , [ 'fooValue' ] );
-	firstBubbleTester.fooValue.set( 'new value' );
+	secondBubbleTester = new BubbleTesterTwoValues();
+	wp.customize.utils.bubbleChildValueChanges( secondBubbleTester , [ 'exampleValue' , 'barValue' ] );
+	secondBubbleTester.barValue.set( 'new value' );
 
-	test( 'bubbleChildValueChanges notifies parent of change' , function() {
-		ok( firstBubbleTester.parent.wasChangeTriggered );
+	test( 'bubbleChildValueChanges notifies parent of change when two values are bound' , function() {
+		ok( secondBubbleTester.parent.wasChangeTriggered );
 	});
 
-	test( 'bubbleChildValueChanges sends its instance to its parent' , function() {
-		ok( firstBubbleTester.parent.instancePassedInTrigger instanceof BubbleTester );
+	test( 'bubbleChildValueChanges passes a reference to its instance when two values are bound' , function() {
+		ok( secondBubbleTester.parent.instancePassedInTrigger instanceof BubbleTesterTwoValues );
 	});
 
 });
