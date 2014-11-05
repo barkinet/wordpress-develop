@@ -260,6 +260,16 @@ class WP_Comment_Query {
 	public $date_query = false;
 
 	/**
+	 * @var array
+	 */
+	public $query_vars;
+
+	/**
+	 * @var array
+	 */
+	public $comments;
+
+	/**
 	 * Make private/protected methods readable for backwards compatibility.
 	 *
 	 * @since 4.0.0
@@ -2194,7 +2204,7 @@ function wp_update_comment($commentarr) {
  * @staticvar bool $_defer
  *
  * @param bool $defer
- * @return unknown
+ * @return bool
  */
 function wp_defer_comment_counting($defer=null) {
 	static $_defer = false;

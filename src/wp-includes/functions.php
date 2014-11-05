@@ -803,7 +803,7 @@ function add_query_arg() {
  * @since 1.5.0
  *
  * @param string|array $key   Query key or keys to remove.
- * @param bool         $query Optional. When false uses the $_SERVER value. Default false.
+ * @param bool|string  $query Optional. When false uses the $_SERVER value. Default false.
  * @return string New URL query string.
  */
 function remove_query_arg( $key, $query = false ) {
@@ -4740,7 +4740,9 @@ function reset_mbstring_encoding() {
 }
 
 /**
- * Alternative to filter_var( $var, FILTER_VALIDATE_BOOLEAN ).
+ * Filter/validate a variable as a boolean.
+ *
+ * Alternative to `filter_var( $var, FILTER_VALIDATE_BOOLEAN )`.
  *
  * @since 4.0.0
  *
@@ -4752,7 +4754,7 @@ function wp_validate_boolean( $var ) {
 		return $var;
 	}
 
-	if ( 'false' === $var ) {
+	if ( is_string( $var ) && 'false' === strtolower( $var ) ) {
 		return false;
 	}
 
