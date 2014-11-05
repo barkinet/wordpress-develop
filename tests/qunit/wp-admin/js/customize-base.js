@@ -1,7 +1,7 @@
 /* global wp */
 
 jQuery( function( $ ) {
-	var FooSuperClass, BarSubClass, foo, bar, ConstructorTestClass, newConstructor, constructorTest;
+	var FooSuperClass, BarSubClass, foo, bar, ConstructorTestClass, newConstructor, constructorTest, $mockElement, mockString;
 
 	module( 'Customize Base: Class' );
 
@@ -80,7 +80,8 @@ jQuery( function( $ ) {
 		equal( bar.extended( FooSuperClass ), true );
 	});
 
-	// Implements @todo : Test Class.constructor() manipulation
+
+	// Implements todo : Test Class.constructor() manipulation
 	module( 'Customize Base: Constructor Manipulation' );
 
 	newConstructor = function ( instanceProps ) {
@@ -112,7 +113,24 @@ jQuery( function( $ ) {
 	test( 'ConstructorTestClass instance constructorTest extended Class', function () {
 		equal( constructorTest.extended( wp.customize.Class ), true );
 	});
+
 	test( 'ConstructorTestClass instance constructorTest has the added instance property', function () {
 		equal( constructorTest.instanceProp , 'instancePropValue' );
 	});
+
+
+	module( 'Customize Base: wp.customizer.ensure' );
+
+	$mockElement = $( '<div id="mockElement"></div>' );
+
+	test( 'Handles jQuery argument' , function() {
+		equal( wp.customize.ensure( $mockElement ) , $mockElement );
+	});
+
+	mockString = '<div class="mockString"></div>';
+
+	test( 'Handles string argument' , function() {
+		ok( wp.customize.ensure( mockString ) instanceof jQuery );
+	});
+
 });
