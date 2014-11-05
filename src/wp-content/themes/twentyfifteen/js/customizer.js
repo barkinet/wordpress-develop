@@ -6,14 +6,14 @@
 
 ( function( $ ) {
 	// Site title and description.
-	wp.customize( 'blogname', function( value ) {
-		value.bind( function( to ) {
-			$( '.site-title a' ).text( to );
+	wp.customize( 'blogname', function( setting ) {
+		setting.bind( function( to ) {
+			$( setting.selector ).text( to );
 		} );
 	} );
-	wp.customize( 'blogdescription', function( value ) {
-		value.bind( function( to ) {
-			$( '.site-description' ).text( to );
+	wp.customize( 'blogdescription', function( setting ) {
+		setting.bind( function( to ) {
+			$( setting.selector ).text( to );
 		} );
 	} );
 } )( jQuery );

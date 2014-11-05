@@ -18,7 +18,9 @@ function twentyfifteen_customize_register( $wp_customize ) {
 	$color_scheme = twentyfifteen_get_color_scheme();
 
 	$wp_customize->get_setting( 'blogname' )->transport         = 'postMessage';
+	$wp_customize->get_setting( 'blogname' )->selector          = '.site-title a';
 	$wp_customize->get_setting( 'blogdescription' )->transport  = 'postMessage';
+	$wp_customize->get_setting( 'blogdescription' )->selector   = '.site-description';
 	$wp_customize->get_setting( 'background_color' )->transport = 'refresh';
 
 	// Add color scheme setting and control.
