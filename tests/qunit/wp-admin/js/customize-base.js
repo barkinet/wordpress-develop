@@ -1,7 +1,8 @@
 /* global wp */
 
 jQuery( function( $ ) {
-	var FooSuperClass, BarSubClass, foo, bar, ConstructorTestClass, newConstructor, constructorTest, $mockElement, mockString;
+	var FooSuperClass, BarSubClass, foo, bar, ConstructorTestClass, newConstructor, constructorTest, $mockElement, mockString,
+	firstInitialValue, firstValueInstance, wasCallbackFired, mockValueCallback;
 
 	module( 'Customize Base: Class' );
 
@@ -131,6 +132,31 @@ jQuery( function( $ ) {
 
 	test( 'Handles string argument' , function() {
 		ok( wp.customize.ensure( mockString ) instanceof jQuery );
+	});
+
+
+	module( 'Customize Base: Value Class' );
+
+	firstInitialValue = true;
+	firstValueInstance = new wp.customize.Value( firstInitialValue );
+
+	test( 'Initialized with the right value' , function() {
+		equal( firstValueInstance.get() , firstInitialValue );
+	});
+
+	test( '.set() works' , function() {
+		firstValueInstance.set( false );
+		equal( firstValueInstance.get() , false );
+	});
+
+	test( '.bind() adds new callback that fires on set()' , function() {
+		wasCallbackFired = false;
+		mockValueCallback = function() {
+			wasCallbackFired = true;
+		};
+		firstValueInstance.bind( mockValueCallback );
+		firstValueInstance.set( 'newValue' );
+		ok( wasCallbackFired );
 	});
 
 });
