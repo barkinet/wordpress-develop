@@ -16,33 +16,9 @@
  */
 function twentyfourteen_customize_register( $wp_customize ) {
 	// Add postMessage support for site title and description.
-	$wp_customize->get_setting( 'blogname' )->transport          = 'postMessage';
-	$wp_customize->get_setting( 'blogname' )->selector           = '.site-title a';
-	$wp_customize->get_setting( 'blogdescription' )->transport   = 'postMessage';
-	$wp_customize->get_setting( 'blogdescription' )->selector    = '.site-description';
+	$wp_customize->get_setting( 'blogname' )->transport         = 'postMessage';
+	$wp_customize->get_setting( 'blogdescription' )->transport  = 'postMessage';
 	$wp_customize->get_setting( 'header_textcolor' )->transport = 'postMessage';
-
-	/*
-	@todo Allow this more convenient syntax
-	$wp_customize->update_settings( array(
-		'blog_name' => array(
-			'transport' => 'postMessage',
-			'selector' => '.site-title a',
-		),
-		'blogdescription' => array(
-			'transport' => 'postMessage',
-			'selector' => '.site-description',
-		),
-		'background_color' => array(
-			'transport' => 'postMessage',
-			'selector' => '.site-title a',
-		),
-		'header_textcolor' => array(
-			'transport' => 'postMessage',
-		)
-	) );
-	*/
-
 
 	// Rename the label to "Site Title Color" because this only affects the site title in this theme.
 	$wp_customize->get_control( 'header_textcolor' )->label = __( 'Site Title Color', 'twentyfourteen' );
