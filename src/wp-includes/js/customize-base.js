@@ -325,6 +325,14 @@ window.wp = window.wp || {};
 			});
 		},
 
+		map: function( callback, context ) {
+			context = typeof context === 'undefined' ? this : context;
+
+			return $.map( this._value, function( obj, key ) {
+				return callback.call( context, obj, key );
+			});
+		},
+
 		remove: function( id ) {
 			var value;
 

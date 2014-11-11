@@ -64,8 +64,9 @@
 
 	$( function() {
 		api.settings = window._wpCustomizeSettings;
-		if ( ! api.settings )
+		if ( ! api.settings ) {
 			return;
+		}
 
 		var preview, bg;
 
@@ -74,31 +75,22 @@
 			channel: api.settings.channel
 		});
 
-		preview.bind( 'settings', function( settings ) {
+		preview.bind( 'settings', function ( settings ) {
 
-			$.each( settings, function( id, setting ) {
+			$.each( settings, function( i, setting ) {
 				var value = setting.value;
 				delete setting.value;
-				if ( api.has( id ) ) {
-					api( id ).set( value );
+				if ( api.has( setting.id ) ) {
+					api( setting.id ).set( value );
 				} else {
-					setting.id = id;
-					api.create( id, value, setting ); // Note this is an api.Value, not an api.Setting
+					api.create( setting.id, value, setting ); // Note this is an api.Value, not an api.Setting
 				}
 			});
 		});
 
-		/**
-		 * @todo Send an setting object instead of a key/value pair?
-		 */
-		preview.bind( 'setting', function( args ) {
-			var value;
-
-			// @todo Allow other args?
-			args = args.slice();
-
-			if ( value = api( args.shift() ) ) {
-				value.set.apply( value, args );
+		preview.bind( 'setting', function ( setting ) {
+			if ( api.has( setting.id ) ) {
+				api( setting.id ).set( setting.value );
 			}
 		});
 

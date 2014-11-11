@@ -22,12 +22,32 @@
 
 			this.bind( this.preview );
 		},
+
+		/**
+		 * Prepare data for sending to preview.
+		 *
+		 * @return {Object}
+		 */
+		toPreview: function () {
+			var setting = {
+				id: this.id,
+				value: this.get(),
+				selector: this.selector
+			};
+			return setting;
+		},
+
+		/**
+		 *
+		 * @returns {*}
+		 */
 		preview: function() {
 			switch ( this.transport ) {
 				case 'refresh':
 					return this.previewer.refresh();
 				case 'postMessage':
-					return this.previewer.send( 'setting', [ this.id, this() ] );
+				case 'partialRefresh':
+					return this.previewer.send( 'setting', this.toPreview() );
 			}
 		}
 	});
@@ -1644,8 +1664,9 @@
 			this.loading.done( function() {
 				// 'this' is the loading frame
 				this.bind( 'synced', function() {
-					if ( self.preview )
+					if ( self.preview ) {
 						self.preview.destroy();
+					}
 					self.preview = this;
 					delete self.loading;
 
@@ -1656,17 +1677,11 @@
 					self.send( 'active' );
 				});
 
-				var settings = {};
-				api.each( function ( setting, id) {
-					settings[ id ] = {
-						value: setting.get(),
-						selector: setting.selector
-					};
-				} );
-
 				this.send( 'sync', {
 					scroll:   self.scroll,
-					settings: settings
+					settings: api.map( function ( setting ) {
+						return setting.toPreview();
+					})
 				});
 			});
 
