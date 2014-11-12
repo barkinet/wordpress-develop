@@ -632,7 +632,7 @@ class wpdb {
 	 * @return mixed The private member
 	 */
 	public function __get( $name ) {
-		if ( 'col_info' == $name )
+		if ( 'col_info' === $name )
 			$this->load_col_info();
 
 		return $this->$name;
@@ -1322,12 +1322,21 @@ class wpdb {
 		$this->rows_affected = $this->num_rows = 0;
 		$this->last_error  = '';
 
-		if ( is_resource( $this->result ) ) {
-			if ( $this->use_mysqli ) {
-				mysqli_free_result( $this->result );
-			} else {
-				mysql_free_result( $this->result );
+		if ( $this->use_mysqli && $this->result instanceof mysqli_result ) {
+			mysqli_free_result( $this->result );
+			$this->result = null;
+
+			// Sanity check before using the handle
+			if ( empty( $this->dbh ) || !( $this->dbh instanceof mysqli ) ) {
+				return;
 			}
+
+			// Clear out any results from a multi-query
+			while ( mysqli_more_results( $this->dbh ) ) {
+				mysqli_next_result( $this->dbh );
+			}
+		} else if ( is_resource( $this->result ) ) {
+			mysql_free_result( $this->result );
 		}
 	}
 

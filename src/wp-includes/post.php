@@ -1069,7 +1069,7 @@ function get_post_status_object( $post_status ) {
  * @see register_post_status()
  *
  * @param array|string $args     Optional. Array or string of post status arguments to compare against
- *                               properties of the global $wp_post_statuses objects. Default empty array.
+ *                               properties of the global `$wp_post_statuses objects`. Default empty array.
  * @param string       $output   Optional. The type of output to return, either 'names' or 'objects'. Default 'names'.
  * @param string       $operator Optional. The logical operation to perform. 'or' means only one element
  *                               from the array needs to match; 'and' means all elements must match.
@@ -4278,17 +4278,19 @@ function get_page_by_title( $page_title, $output = OBJECT, $post_type = 'page' )
  *
  * @since 1.5.1
  *
- * @param int   $page_id Page ID.
- * @param array $pages   List of pages' objects.
+ * @param int   $page_id    Page ID.
+ * @param array $pages      List of pages' objects.
+ * @param bool  $ancestors  Whether to check a page's ancestors.
  * @return array List of page children.
  */
-function get_page_children($page_id, $pages) {
+function get_page_children( $page_id, $pages, $ancestors = true ) {
 	$page_list = array();
 	foreach ( (array) $pages as $page ) {
-		if ( $page->post_parent == $page_id || in_array( $page_id, $page->ancestors ) ) {
+		if ( $page->post_parent == $page_id || ( $ancestors && in_array( $page_id, $page->ancestors ) ) ) {
 			$page_list[] = $page;
-			if ( $children = get_page_children($page->ID, $pages) )
-				$page_list = array_merge($page_list, $children);
+			if ( $children = get_page_children( $page->ID, $pages, false ) ) {
+				$page_list = array_merge( $page_list, $children );
+			}
 		}
 	}
 	return $page_list;
@@ -5325,7 +5327,7 @@ function get_lastpostdate( $timezone = 'server' ) {
 }
 
 /**
- * Retrieve last post modified date depending on timezone.
+ * Get the timestamp of the last time any post was modified.
  *
  * The server timezone is the default and is the difference between GMT and
  * server time. The 'blog' value is just when the last post was modified. The
@@ -5333,9 +5335,12 @@ function get_lastpostdate( $timezone = 'server' ) {
  *
  * @since 1.2.0
  *
- * @param string $timezone The location to get the time. Accepts 'gmt', 'blog', or 'server'.
+ * @param string $timezone Optional. The timezone for the timestamp. Uses the server's internal timezone.
+ *                         Accepts 'server', 'blog', 'gmt'. or 'server'. 'server' uses the server's
+ *                         internal timezone. 'blog' uses the `post_modified` field, which proxies
+ *                         to the timezone set for the site. 'gmt' uses the `post_modified_gmt` field.
  *                         Default 'server'.
- * @return string The date the post was last modified.
+ * @return string The timestamp.
  */
 function get_lastpostmodified( $timezone = 'server' ) {
 	$lastpostmodified = _get_last_post_time( $timezone, 'modified' );
@@ -5351,19 +5356,21 @@ function get_lastpostmodified( $timezone = 'server' ) {
 	 *
 	 * @param string $lastpostmodified Date the last post was modified.
 	 * @param string $timezone         Location to use for getting the post modified date.
+	 *                                 See {@see get_lastpostmodified()} for accepted `$timezone` values.
 	 */
 	return apply_filters( 'get_lastpostmodified', $lastpostmodified, $timezone );
 }
 
 /**
- * Retrieve latest post date data based on timezone.
+ * Get the timestamp of the last time any post was modified or published.
  *
- * @access private
  * @since 3.1.0
+ * @access private
  *
- * @param string $timezone The location to get the time. Accepts 'gmt', 'blog', or 'server'.
- * @param string $field Field to check. Can be 'date' or 'modified'.
- * @return string The date.
+ * @param string $timezone The timezone for the timestamp. See {@see get_lastpostmodified()}
+ *                         for information on accepted values.
+ * @param string $field    Post field to check. Accepts 'date' or 'modified'.
+ * @return string The timestamp.
  */
 function _get_last_post_time( $timezone, $field ) {
 	global $wpdb;

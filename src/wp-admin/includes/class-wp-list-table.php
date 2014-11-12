@@ -247,13 +247,14 @@ class WP_List_Table {
 	}
 
 	/**
-	 * Access the pagination args
+	 * Access the pagination args.
 	 *
 	 * @since 3.1.0
 	 * @access public
 	 *
-	 * @param string $key
-	 * @return int
+	 * @param string $key Pagination argument to retrieve. Common values include 'total_items',
+	 *                    'total_pages', 'per_page', or 'infinite_scroll'.
+	 * @return int Number of items that correspond to the given pagination argument.
 	 */
 	public function get_pagination_arg( $key ) {
 		if ( 'page' == $key )
@@ -610,10 +611,11 @@ class WP_List_Table {
 		/**
 		 * Filter the number of items to be displayed on each page of the list table.
 		 *
-		 * The dynamic hook name, $option, refers to the per page option depending
-		 * on the type of list table in use. Possible values may include:
-		 * 'edit_comments_per_page', 'sites_network_per_page', 'site_themes_network_per_page',
-		 * 'themes_netework_per_page', 'users_network_per_page', 'edit_{$post_type}', etc.
+		 * The dynamic hook name, $option, refers to the `per_page` option depending
+		 * on the type of list table in use. Possible values include: 'edit_comments_per_page',
+		 * 'sites_network_per_page', 'site_themes_network_per_page', 'themes_network_per_page',
+		 * 'users_network_per_page', 'edit_post_per_page', 'edit_page_per_page',
+		 * 'edit_{$post_type}_per_page', etc.
 		 *
 		 * @since 2.9.0
 		 *

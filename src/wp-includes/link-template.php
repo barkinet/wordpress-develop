@@ -1513,7 +1513,7 @@ function get_adjacent_post( $in_same_term = false, $excluded_terms = '', $previo
 		}
 
 		if ( ! empty( $excluded_terms ) ) {
-			$where .= " AND p.ID NOT IN ( SELECT object_id FROM $wpdb->term_relationships WHERE term_taxonomy_id IN (" . implode( $excluded_terms, ',' ) . ') )';
+			$where .= " AND p.ID NOT IN ( SELECT tr.object_id FROM $wpdb->term_relationships tr LEFT JOIN $wpdb->term_taxonomy tt ON (tr.term_taxonomy_id = tt.term_taxonomy_id) WHERE tt.term_id IN (" . implode( $excluded_terms, ',' ) . ') )';
 		}
 	}
 
@@ -2333,8 +2333,7 @@ function get_the_pagination( $args = array() ) {
 		// Set up paginated links.
 		$links = paginate_links( $args );
 
-		// _navigation_markup() expects string,
-		// paginate_links() can return an array
+		// `navigation_markup()` expects a string, `paginate_links()` can return an array.
 		if ( $links && ! is_array( $links ) ) {
 			$navigation = _navigation_markup( $links, 'pagination' );
 		}

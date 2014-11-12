@@ -1649,7 +1649,6 @@ function get_terms( $taxonomies, $args = '' ) {
 
 	// Save queries by not crawling the tree in the case of multiple taxes or a flat tax.
 	if ( ! $single_taxonomy || ! is_taxonomy_hierarchical( reset( $taxonomies ) ) ) {
-		$args['child_of'] = false;
 		$args['hierarchical'] = false;
 		$args['pad_counts'] = false;
 	}
@@ -2054,6 +2053,8 @@ function term_exists( $term, $taxonomy = '', $parent = null ) {
 	$else_where = 't.name = %s';
 	$where_fields = array($slug);
 	$else_where_fields = array($term);
+	$orderby = 'ORDER BY t.term_id ASC';
+	$limit = 'LIMIT 1';
 	if ( !empty($taxonomy) ) {
 		if ( is_numeric( $parent ) ) {
 			$parent = (int) $parent;
@@ -2066,16 +2067,16 @@ function term_exists( $term, $taxonomy = '', $parent = null ) {
 		$where_fields[] = $taxonomy;
 		$else_where_fields[] = $taxonomy;
 
-		if ( $result = $wpdb->get_row( $wpdb->prepare("SELECT tt.term_id, tt.term_taxonomy_id FROM $wpdb->terms AS t INNER JOIN $wpdb->term_taxonomy as tt ON tt.term_id = t.term_id WHERE $where AND tt.taxonomy = %s", $where_fields), ARRAY_A) )
+		if ( $result = $wpdb->get_row( $wpdb->prepare("SELECT tt.term_id, tt.term_taxonomy_id FROM $wpdb->terms AS t INNER JOIN $wpdb->term_taxonomy as tt ON tt.term_id = t.term_id WHERE $where AND tt.taxonomy = %s $orderby $limit", $where_fields), ARRAY_A) )
 			return $result;
 
-		return $wpdb->get_row( $wpdb->prepare("SELECT tt.term_id, tt.term_taxonomy_id FROM $wpdb->terms AS t INNER JOIN $wpdb->term_taxonomy as tt ON tt.term_id = t.term_id WHERE $else_where AND tt.taxonomy = %s", $else_where_fields), ARRAY_A);
+		return $wpdb->get_row( $wpdb->prepare("SELECT tt.term_id, tt.term_taxonomy_id FROM $wpdb->terms AS t INNER JOIN $wpdb->term_taxonomy as tt ON tt.term_id = t.term_id WHERE $else_where AND tt.taxonomy = %s $orderby $limit", $else_where_fields), ARRAY_A);
 	}
 
-	if ( $result = $wpdb->get_var( $wpdb->prepare("SELECT term_id FROM $wpdb->terms as t WHERE $where", $where_fields) ) )
+	if ( $result = $wpdb->get_var( $wpdb->prepare("SELECT term_id FROM $wpdb->terms as t WHERE $where $orderby $limit", $where_fields) ) )
 		return $result;
 
-	return $wpdb->get_var( $wpdb->prepare("SELECT term_id FROM $wpdb->terms as t WHERE $else_where", $else_where_fields) );
+	return $wpdb->get_var( $wpdb->prepare("SELECT term_id FROM $wpdb->terms as t WHERE $else_where $orderby $limit", $else_where_fields) );
 }
 
 /**
@@ -2843,44 +2844,31 @@ function wp_insert_term( $term, $taxonomy, $args = array() ) {
 		}
 	}
 
-	if ( $term_id = term_exists($slug) ) {
-		$existing_term = $wpdb->get_row( $wpdb->prepare( "SELECT name FROM $wpdb->terms WHERE term_id = %d", $term_id), ARRAY_A );
-		// We've got an existing term in the same taxonomy, which matches the name of the new term:
-		if ( is_taxonomy_hierarchical($taxonomy) && $existing_term['name'] == $name && $exists = term_exists( (int) $term_id, $taxonomy ) ) {
-			// Hierarchical, and it matches an existing term, Do not allow same "name" in the same level.
-			$siblings = get_terms($taxonomy, array('fields' => 'names', 'get' => 'all', 'parent' => $parent ) );
-			if ( in_array($name, $siblings) ) {
-				if ( $slug_provided ) {
-					return new WP_Error( 'term_exists', __( 'A term with the name and slug provided already exists with this parent.' ), $exists['term_id'] );
-				} else {
-					return new WP_Error( 'term_exists', __( 'A term with the name provided already exists with this parent.' ), $exists['term_id'] );
+	// Terms with duplicate names are not allowed at the same level of a taxonomy hierarchy.
+	if ( $exists = term_exists( $slug, $taxonomy ) ) {
+		$existing_term = get_term( $exists['term_id'], $taxonomy );
+
+		if ( $name === $existing_term->name ) {
+
+			if ( is_taxonomy_hierarchical( $taxonomy ) ) {
+				$siblings = get_terms( $taxonomy, array( 'fields' => 'names', 'get' => 'all', 'parent' => $parent ) );
+				if ( in_array( $name, $siblings ) ) {
+					return new WP_Error( 'term_exists', __( 'A term with the name and slug already exists with this parent.' ), $exists['term_id'] );
 				}
+
 			} else {
-				$slug = wp_unique_term_slug($slug, (object) $args);
-				if ( false === $wpdb->insert( $wpdb->terms, compact( 'name', 'slug', 'term_group' ) ) ) {
-					return new WP_Error('db_insert_error', __('Could not insert term into the database'), $wpdb->last_error);
-				}
-				$term_id = (int) $wpdb->insert_id;
+				return new WP_Error( 'term_exists', __( 'A term with the name and slug already exists in this taxonomy.' ), $exists['term_id'] );
 			}
-		} elseif ( $existing_term['name'] != $name ) {
-			// We've got an existing term, with a different name, Create the new term.
-			$slug = wp_unique_term_slug($slug, (object) $args);
-			if ( false === $wpdb->insert( $wpdb->terms, compact( 'name', 'slug', 'term_group' ) ) ) {
-				return new WP_Error('db_insert_error', __('Could not insert term into the database'), $wpdb->last_error);
-			}
-			$term_id = (int) $wpdb->insert_id;
-		} elseif ( $exists = term_exists( (int) $term_id, $taxonomy ) )  {
-			// Same name, same slug.
-			return new WP_Error( 'term_exists', __( 'A term with the name and slug provided already exists.' ), $exists['term_id'] );
 		}
-	} else {
-		// This term does not exist at all in the database, Create it.
-		$slug = wp_unique_term_slug($slug, (object) $args);
-		if ( false === $wpdb->insert( $wpdb->terms, compact( 'name', 'slug', 'term_group' ) ) ) {
-			return new WP_Error('db_insert_error', __('Could not insert term into the database'), $wpdb->last_error);
-		}
-		$term_id = (int) $wpdb->insert_id;
 	}
+
+	$slug = wp_unique_term_slug( $slug, (object) $args );
+
+	if ( false === $wpdb->insert( $wpdb->terms, compact( 'name', 'slug', 'term_group' ) ) ) {
+		return new WP_Error( 'db_insert_error', __( 'Could not insert term into the database' ), $wpdb->last_error );
+	}
+
+	$term_id = (int) $wpdb->insert_id;
 
 	// Seems unreachable, However, Is used in the case that a term name is provided, which sanitizes to an empty string.
 	if ( empty($slug) ) {
@@ -2901,6 +2889,24 @@ function wp_insert_term( $term, $taxonomy, $args = array() ) {
 	}
 	$wpdb->insert( $wpdb->term_taxonomy, compact( 'term_id', 'taxonomy', 'description', 'parent') + array( 'count' => 0 ) );
 	$tt_id = (int) $wpdb->insert_id;
+
+	/*
+	 * Sanity check: if we just created a term with the same parent + taxonomy + slug but a higher term_id than
+	 * an existing term, then we have unwittingly created a duplicate term. Delete the dupe, and use the term_id
+	 * and term_taxonomy_id of the older term instead. Then return out of the function so that the "create" hooks
+	 * are not fired.
+	 */
+	$duplicate_term = $wpdb->get_row( $wpdb->prepare( "SELECT t.term_id, tt.term_taxonomy_id FROM $wpdb->terms t INNER JOIN $wpdb->term_taxonomy tt ON ( tt.term_id = t.term_id ) WHERE t.slug = %s AND tt.parent = %d AND tt.taxonomy = %s AND t.term_id < %d AND tt.term_taxonomy_id != %d", $slug, $parent, $taxonomy, $term_id, $tt_id ) );
+	if ( $duplicate_term ) {
+		$wpdb->delete( $wpdb->terms, array( 'term_id' => $term_id ) );
+		$wpdb->delete( $wpdb->term_taxonomy, array( 'term_taxonomy_id' => $tt_id ) );
+
+		$term_id = (int) $duplicate_term->term_id;
+		$tt_id   = (int) $duplicate_term->term_taxonomy_id;
+
+		clean_term_cache( $term_id, $taxonomy );
+		return array( 'term_id' => $term_id, 'term_taxonomy_id' => $tt_id );
+	}
 
 	/**
 	 * Fires immediately after a new term is created, before the term cache is cleaned.
@@ -3210,6 +3216,11 @@ function wp_unique_term_slug($slug, $term) {
 	if ( ! term_exists( $slug ) )
 		return $slug;
 
+	// As of 4.1, duplicate slugs are allowed as long as they're in different taxonomies.
+	if ( get_option( 'db_version' ) >= 30133 && ! get_term_by( 'slug', $slug, $term->taxonomy ) ) {
+		return $slug;
+	}
+
 	// If the taxonomy supports hierarchy and the term has a parent, make the slug unique
 	// by incorporating parent slugs.
 	if ( is_taxonomy_hierarchical($term->taxonomy) && !empty($term->parent) ) {
@@ -3373,6 +3384,14 @@ function wp_update_term( $term_id, $taxonomy, $args = array() ) {
 			return new WP_Error('duplicate_term_slug', sprintf(__('The slug &#8220;%s&#8221; is already in use by another term'), $slug));
 	}
 
+	$tt_id = $wpdb->get_var( $wpdb->prepare( "SELECT tt.term_taxonomy_id FROM $wpdb->term_taxonomy AS tt INNER JOIN $wpdb->terms AS t ON tt.term_id = t.term_id WHERE tt.taxonomy = %s AND t.term_id = %d", $taxonomy, $term_id) );
+
+	// Check whether this is a shared term that needs splitting.
+	$_term_id = _split_shared_term( $term_id, $tt_id );
+	if ( ! is_wp_error( $_term_id ) ) {
+		$term_id = $_term_id;
+	}
+
 	/**
 	 * Fires immediately before the given terms are edited.
 	 *
@@ -3397,8 +3416,6 @@ function wp_update_term( $term_id, $taxonomy, $args = array() ) {
 	 * @param string $taxonomy Taxonomy slug.
 	 */
 	do_action( 'edited_terms', $term_id, $taxonomy );
-
-	$tt_id = $wpdb->get_var( $wpdb->prepare( "SELECT tt.term_taxonomy_id FROM $wpdb->term_taxonomy AS tt INNER JOIN $wpdb->terms AS t ON tt.term_id = t.term_id WHERE tt.taxonomy = %s AND t.term_id = %d", $taxonomy, $term_id) );
 
 	/**
 	 * Fires immediate before a term-taxonomy relationship is updated.
@@ -4029,6 +4046,62 @@ function _update_generic_term_count( $terms, $taxonomy ) {
 }
 
 /**
+ * Create a new term for a term_taxonomy item that currently shares its term.
+ *
+ * @since 4.1.0
+ * @access private
+ *
+ * @param int   $term_id          ID of the shared term.
+ * @param int   $term_taxonomy_id ID of the term taxonomy item to receive a new term.
+ * @param array $shared_tts       Sibling term taxonomies, used for busting caches.
+ * @return int  Term ID.
+ */
+function _split_shared_term( $term_id, $term_taxonomy_id ) {
+	global $wpdb;
+
+	// Don't try to split terms if database schema does not support shared slugs.
+	$current_db_version = get_option( 'db_version' );
+	if ( $current_db_version < 30133 ) {
+		return $term_id;
+	}
+
+	// If there are no shared term_taxonomy rows, there's nothing to do here.
+	$shared_tt_count = $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM $wpdb->term_taxonomy tt WHERE tt.term_id = %d AND tt.term_taxonomy_id != %d", $term_id, $term_taxonomy_id ) );
+	if ( ! $shared_tt_count ) {
+		return $term_id;
+	}
+
+	// Pull up data about the currently shared slug, which we'll use to populate the new one.
+	$shared_term = $wpdb->get_row( $wpdb->prepare( "SELECT t.* FROM $wpdb->terms t WHERE t.term_id = %d", $term_id ) );
+
+	$new_term_data = array(
+		'name' => $shared_term->name,
+		'slug' => $shared_term->slug,
+		'term_group' => $shared_term->term_group,
+	);
+
+	if ( false === $wpdb->insert( $wpdb->terms, $new_term_data ) ) {
+		return new WP_Error( 'db_insert_error', __( 'Could not split shared term.' ), $wpdb->last_error );
+	}
+
+	$new_term_id = (int) $wpdb->insert_id;
+
+	// Update the existing term_taxonomy to point to the newly created term.
+	$wpdb->update( $wpdb->term_taxonomy,
+		array( 'term_id' => $new_term_id ),
+		array( 'term_taxonomy_id' => $term_taxonomy_id )
+	);
+
+	// Clean the cache for term taxonomies formerly shared with the current term.
+	$shared_term_taxonomies = $wpdb->get_row( $wpdb->prepare( "SELECT taxonomy FROM $wpdb->term_taxonomy WHERE term_id = %d", $term_id ) );
+	foreach ( (array) $shared_term_taxonomies as $shared_term_taxonomy ) {
+		clean_term_cache( $term_id, $shared_term_taxonomy );
+	}
+
+	return $new_term_id;
+}
+
+/**
  * Generate a permalink for a taxonomy term archive.
  *
  * @since 2.5.0
@@ -4131,16 +4204,18 @@ function get_term_link( $term, $taxonomy = '') {
  * post without specifying the Post ID. You can also use it outside the Loop to
  * display the taxonomies for a specific post.
  *
- * The available defaults are:
- * 'post' : default is 0. The post ID to get taxonomies of.
- * 'before' : default is empty string. Display before taxonomies list.
- * 'sep' : default is empty string. Separate every taxonomy with value in this.
- * 'after' : default is empty string. Display this after the taxonomies list.
- * 'template' : The template to use for displaying the taxonomy terms.
- *
  * @since 2.5.0
  *
- * @param array $args Override the defaults.
+ * @param array $args {
+ *     Arguments about which post to use and how to format the output. Shares all of the arguments supported by
+ *     {@link get_the_taxonomies()}, in addition to the following.
+ *
+ *     @type  int|WP_Post $post   Post ID or object to get taxonomies of. Default current post.
+ *     @type  string      $before Displays before the taxonomies. Default empty string.
+ *     @type  string      $sep    Separates each taxonomy. Default is a space.
+ *     @type  string      $after  Displays after the taxonomies. Default empty string.
+ * }
+ * @param array $args See {@link get_the_taxonomies()} for a description of arguments and their defaults.
  */
 function the_taxonomies( $args = array() ) {
 	$defaults = array(
@@ -4148,8 +4223,6 @@ function the_taxonomies( $args = array() ) {
 		'before' => '',
 		'sep' => ' ',
 		'after' => '',
-		/* translators: %s: taxonomy label, %l: list of term links */
-		'template' => __( '%s: %l.' )
 	);
 
 	$r = wp_parse_args( $args, $defaults );
@@ -4166,15 +4239,24 @@ function the_taxonomies( $args = array() ) {
  * @since 2.5.0
  *
  * @param int|WP_Post $post Optional. Post ID or WP_Post object. Default is global $post.
- * @param array $args Override the defaults.
+ * @param array $args {
+ *     Arguments about how to format the list of taxonomies.
+ *
+ *     @type string $template      Template for displaying a taxonomy label and list of terms.
+ *                                 Default is "Label: Terms."
+ *     @type string $term_template Template for displaying a single term in the list. Default is the term name
+ *                                 linked to its archive.
+ * }
  * @return array List of taxonomies.
  */
 function get_the_taxonomies( $post = 0, $args = array() ) {
 	$post = get_post( $post );
 
 	$args = wp_parse_args( $args, array(
-		/* translators: %s: taxonomy label, %l: list of term links */
+		/* translators: %s: taxonomy label, %l: list of terms formatted as per $term_template */
 		'template' => __( '%s: %l.' ),
+		/* translators: %1$s: term link, %2$s: term name */
+		'term_template' => '<a href="%1$s">%2$s</a>',
 	) );
 
 	$taxonomies = array();
@@ -4194,6 +4276,9 @@ function get_the_taxonomies( $post = 0, $args = array() ) {
 		if ( empty( $t['template'] ) ) {
 			$t['template'] = $args['template'];
 		}
+		if ( empty( $t['term_template'] ) ) {
+			$t['term_template'] = $args['term_template'];
+		}
 
 		$terms = get_object_term_cache( $post->ID, $taxonomy );
 		if ( false === $terms ) {
@@ -4202,7 +4287,7 @@ function get_the_taxonomies( $post = 0, $args = array() ) {
 		$links = array();
 
 		foreach ( $terms as $term ) {
-			$links[] = "<a href='" . esc_attr( get_term_link( $term ) ) . "'>$term->name</a>";
+			$links[] = wp_sprintf( $t['term_template'], esc_attr( get_term_link( $term ) ), $term->name );
 		}
 		if ( $links ) {
 			$taxonomies[$taxonomy] = wp_sprintf( $t['template'], $t['label'], $links, $terms );
@@ -4262,11 +4347,20 @@ function is_object_in_term( $object_id, $taxonomy, $terms = null ) {
 		$strs =& $terms;
 
 	foreach ( $object_terms as $object_term ) {
-		if ( $ints && in_array( $object_term->term_id, $ints ) ) return true; // If int, check against term_id
+		// If term is an int, check against term_ids only.
+		if ( $ints && in_array( $object_term->term_id, $ints ) ) {
+			return true;
+		}
+
 		if ( $strs ) {
-			if ( in_array( $object_term->term_id, $strs ) ) return true;
-			if ( in_array( $object_term->name, $strs ) )    return true;
-			if ( in_array( $object_term->slug, $strs ) )    return true;
+			// Only check numeric strings against term_id, to avoid false matches due to type juggling.
+			$numeric_strs = array_map( 'intval', array_filter( $strs, 'is_numeric' ) );
+			if ( in_array( $object_term->term_id, $numeric_strs, true ) ) {
+				return true;
+			}
+
+			if ( in_array( $object_term->name, $strs ) ) return true;
+			if ( in_array( $object_term->slug, $strs ) ) return true;
 		}
 	}
 
