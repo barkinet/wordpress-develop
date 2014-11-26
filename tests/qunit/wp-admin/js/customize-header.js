@@ -128,4 +128,5 @@ jQuery( function() {
 
 		equal(this.model.shouldBeCropped(), false);
 	});
+
 });

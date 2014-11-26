@@ -1,8 +1,6 @@
 /* globals _wpCustomizeHeader, _wpMediaViewsL10n */
 (function( exports, $ ){
-	var bubbleChildValueChanges, Container, focus, isKeydownButNotEnterEvent, areElementListsEqual, prioritySort, api = wp.customize;
-
-	// @todo Move private helper functions to wp.customize.utils so they can be unit tested
+	var Container, focus, api = wp.customize;
 
 	/**
 	 * @class
@@ -33,12 +31,17 @@
 	});
 
 	/**
+	 * Utility function namespace
+	 */
+	api.utils = {};
+
+	/**
 	 * Watch all changes to Value properties, and bubble changes to parent Values instance
 	 *
 	 * @param {wp.customize.Class} instance
 	 * @param {Array} properties  The names of the Value instances to watch.
 	 */
-	bubbleChildValueChanges = function ( instance, properties ) {
+	api.utils.bubbleChildValueChanges = function ( instance, properties ) {
 		$.each( properties, function ( i, key ) {
 			instance[ key ].bind( function ( to, from ) {
 				if ( instance.parent && to !== from ) {
@@ -46,6 +49,16 @@
 				}
 			} );
 		} );
+	};
+
+	api.utils._rootOfCustomizer = $( '#customize-theme-controls' ).children( 'ul' );
+
+	api.utils.setRootOfCustomizer = function( $newRoot ) {
+		api.utils._rootOfCustomizer = $newRoot;
+	};
+
+	api.utils.getRootOfCustomizer = function() {
+		return api.utils._rootOfCustomizer;
 	};
 
 	/**
@@ -86,7 +99,7 @@
 	 * @param {(wp.customize.Panel|wp.customize.Section|wp.customize.Control)} b
 	 * @returns {Number}
 	 */
-	prioritySort = function ( a, b ) {
+	api.utils.prioritySort = function ( a, b ) {
 		if ( a.priority() === b.priority() && typeof a.params.instanceNumber === 'number' && typeof b.params.instanceNumber === 'number' ) {
 			return a.params.instanceNumber - b.params.instanceNumber;
 		} else {
@@ -100,7 +113,7 @@
 	 * @param {jQuery.Event} event
 	 * @returns {boolean}
 	 */
-	isKeydownButNotEnterEvent = function ( event ) {
+	api.utils.isKeydownButNotEnterEvent = function ( event ) {
 		return ( 'keydown' === event.type && 13 !== event.which );
 	};
 
@@ -111,7 +124,7 @@
 	 * @param {Array|jQuery} listB
 	 * @returns {boolean}
 	 */
-	areElementListsEqual = function ( listA, listB ) {
+	api.utils.areElementListsEqual = function ( listA, listB ) {
 		var equal = (
 			listA.length === listB.length && // if lists are different lengths, then naturally they are not equal
 			-1 === _.map( // are there any false values in the list returned by map?
@@ -164,7 +177,7 @@
 
 			container.attachEvents();
 
-			bubbleChildValueChanges( container, [ 'priority', 'active' ] );
+			api.utils.bubbleChildValueChanges( container, [ 'priority', 'active' ] );
 
 			container.priority.set( isNaN( container.params.priority ) ? 100 : container.params.priority );
 			container.active.set( container.params.active );
@@ -191,7 +204,7 @@
 					children.push( child );
 				}
 			} );
-			children.sort( prioritySort );
+			children.sort( api.utils.prioritySort );
 			return children;
 		},
 
@@ -333,7 +346,7 @@
 				$( section.container ).toggleClass( 'control-subsection', !! id );
 			});
 			section.panel.set( section.params.panel || '' );
-			bubbleChildValueChanges( section, [ 'panel' ] );
+			api.utils.bubbleChildValueChanges( section, [ 'panel' ] );
 
 			section.embed();
 			section.deferred.embedded.done( function () {
@@ -364,7 +377,7 @@
 					} );
 				} else {
 					// There is no panel, so embed the section in the root of the customizer
-					parentContainer = $( '#customize-theme-controls' ).children( 'ul' ); // @todo This should be defined elsewhere, and to be configurable
+					parentContainer = api.utils.getRootOfCustomizer(); // implements todo: This should be defined elsewhere, and to be configurable
 					if ( ! section.container.parent().is( parentContainer ) ) {
 						parentContainer.append( section.container );
 					}
@@ -383,7 +396,7 @@
 
 			// Expand/Collapse accordion sections on click.
 			section.container.find( '.accordion-section-title' ).on( 'click keydown', function( event ) {
-				if ( isKeydownButNotEnterEvent( event ) ) {
+				if ( api.utils.isKeydownButNotEnterEvent( event ) ) {
 					return;
 				}
 				event.preventDefault(); // Keep this AFTER the key filter above
@@ -487,7 +500,7 @@
 		 */
 		embed: function () {
 			var panel = this,
-				parentContainer = $( '#customize-theme-controls > ul' ); // @todo This should be defined elsewhere, and to be configurable
+				parentContainer = api.utils.getRootOfCustomizer(); // implements todo: This should be defined elsewhere, and to be configurable
 
 			if ( ! panel.container.parent().is( parentContainer ) ) {
 				parentContainer.append( panel.container );
@@ -503,7 +516,7 @@
 
 			// Expand/Collapse accordion sections on click.
 			panel.container.find( '.accordion-section-title' ).on( 'click keydown', function( event ) {
-				if ( isKeydownButNotEnterEvent( event ) ) {
+				if ( api.utils.isKeydownButNotEnterEvent( event ) ) {
 					return;
 				}
 				event.preventDefault(); // Keep this AFTER the key filter above
@@ -516,7 +529,7 @@
 			meta = panel.container.find( '.panel-meta:first' );
 
 			meta.find( '> .accordion-section-title' ).on( 'click keydown', function( event ) {
-				if ( isKeydownButNotEnterEvent( event ) ) {
+				if ( api.utils.isKeydownButNotEnterEvent( event ) ) {
 					return;
 				}
 				event.preventDefault(); // Keep this AFTER the key filter above
@@ -586,7 +599,8 @@
 				overlay = section.closest( '.wp-full-overlay' ),
 				container = section.closest( '.accordion-container' ),
 				siblings = container.find( '.open' ),
-				topPanel = overlay.find( '#customize-theme-controls > ul > .accordion-section > .accordion-section-title' ).add( '#customize-info > .accordion-section-title' ),
+				$rootOfCustomizer = api.utils.getRootOfCustomizer(),
+				topPanel = overlay.find( $rootOfCustomizer ).find( '> .accordion-section > .accordion-section-title' ).add( '#customize-info > .accordion-section-title' ),
 				backBtn = overlay.find( '.control-panel-back' ),
 				panelTitle = section.find( '.accordion-section-title' ).first(),
 				content = section.find( '.control-panel-content' );
@@ -718,7 +732,7 @@
 			control.priority.set( isNaN( control.params.priority ) ? 10 : control.params.priority );
 			control.active.set( control.params.active );
 
-			bubbleChildValueChanges( control, [ 'section', 'priority', 'active' ] );
+			api.utils.bubbleChildValueChanges( control, [ 'section', 'priority', 'active' ] );
 
 			// Associate this control with its settings when they are created
 			settings = $.map( control.params.settings, function( value ) {
@@ -850,7 +864,7 @@
 
 			// Support the .dropdown class to open/close complex elements
 			this.container.on( 'click keydown', '.dropdown', function( event ) {
-				if ( isKeydownButNotEnterEvent( event ) ) {
+				if ( api.utils.isKeydownButNotEnterEvent( event ) ) {
 					return;
 				}
 
@@ -933,7 +947,7 @@
 		 * When the control's DOM structure is ready,
 		 * set up internal event bindings.
 		 */
- 		ready: function() {
+		ready: function() {
 			var control = this;
 			// Shortcut so that we don't have to use _.bind every time we add a callback.
 			_.bindAll( control, 'restoreDefault', 'removeFile', 'openFrame', 'select' );
@@ -954,7 +968,7 @@
 		openFrame: function( event ) {
 			if ( event.type === 'keydown' &&  13 !== event.which ) { // enter
 				return;
- 			}
+			}
 
 			event.preventDefault();
 
@@ -982,11 +996,11 @@
 					text: this.params.button_labels.frame_button
 				},
 				multiple: false
- 			});
+			});
 
 			// When a file is selected, run a callback.
 			this.frame.on( 'select', this.select );
- 		},
+		},
 
 		/**
 		 * Callback handler for when an attachment is selected in the media modal.
@@ -1006,14 +1020,14 @@
 		 * Reset the setting to the default value.
 		 */
 		restoreDefault: function( event ) {
-			if ( event.type === 'keydown' &&  13 !== event.which ) { // enter
+			if ( api.utils.isKeydownButNotEnterEvent( event ) ) {
 				return;
 			}
 			event.preventDefault();
 
 			this.params.attachment = this.params.defaultAttachment;
 			this.setting( this.params.defaultAttachment.url );
- 		},
+		},
 
 		/**
 		 * Called when the "Remove" link is clicked. Empties the setting.
@@ -1023,20 +1037,20 @@
 		removeFile: function( event ) {
 			if ( event.type === 'keydown' &&  13 !== event.which ) { // enter
 				return;
- 			}
+			}
 			event.preventDefault();
 
 			this.params.attachment = {};
 			this.setting( '' );
 			this.renderContent(); // Not bound to setting change when emptying.
- 		},
+		},
 
 		// @deprecated
 		success: function() {},
 
 		// @deprecated
 		removerVisibility: function() {}
- 	});
+	});
 
 	/**
 	 * A control for uploading images.
@@ -1766,7 +1780,7 @@
 
 		// Expand/Collapse the main customizer customize info
 		$( '#customize-info' ).find( '> .accordion-section-title' ).on( 'click keydown', function( event ) {
-			if ( isKeydownButNotEnterEvent( event ) ) {
+			if ( api.utils.isKeydownButNotEnterEvent( event ) ) {
 				return;
 			}
 			event.preventDefault(); // Keep this AFTER the key filter above
@@ -1954,7 +1968,7 @@
 					sectionContainers = _.pluck( sections, 'container' );
 				rootNodes.push( panel );
 				appendContainer = panel.container.find( 'ul:first' );
-				if ( ! areElementListsEqual( sectionContainers, appendContainer.children( '[id]' ) ) ) {
+				if ( ! api.utils.areElementListsEqual( sectionContainers, appendContainer.children( '[id]' ) ) ) {
 					_( sections ).each( function ( section ) {
 						appendContainer.append( section.container );
 					} );
@@ -1970,7 +1984,7 @@
 					rootNodes.push( section );
 				}
 				appendContainer = section.container.find( 'ul:first' );
-				if ( ! areElementListsEqual( controlContainers, appendContainer.children( '[id]' ) ) ) {
+				if ( ! api.utils.areElementListsEqual( controlContainers, appendContainer.children( '[id]' ) ) ) {
 					_( controls ).each( function ( control ) {
 						appendContainer.append( control.container );
 					} );
@@ -1979,10 +1993,10 @@
 			} );
 
 			// Sort the root panels and sections
-			rootNodes.sort( prioritySort );
+			rootNodes.sort( api.utils.prioritySort );
 			rootContainers = _.pluck( rootNodes, 'container' );
-			appendContainer = $( '#customize-theme-controls' ).children( 'ul' ); // @todo This should be defined elsewhere, and to be configurable
-			if ( ! areElementListsEqual( rootContainers, appendContainer.children() ) ) {
+			appendContainer = api.utils.getRootOfCustomizer(); // implements todo: This should be defined elsewhere, and to be configurable
+			if ( ! api.utils.areElementListsEqual( rootContainers, appendContainer.children() ) ) {
 				_( rootNodes ).each( function ( rootNode ) {
 					appendContainer.append( rootNode.container );
 				} );
@@ -2078,7 +2092,7 @@
 
 		// Go back to the top-level Customizer accordion.
 		$( '#customize-header-actions' ).on( 'click keydown', '.control-panel-back', function( event ) {
-			if ( isKeydownButNotEnterEvent( event ) ) {
+			if ( api.utils.isKeydownButNotEnterEvent( event ) ) {
 				return;
 			}
 
@@ -2102,7 +2116,7 @@
 		});
 
 		$('.collapse-sidebar').on( 'click keydown', function( event ) {
-			if ( isKeydownButNotEnterEvent( event ) ) {
+			if ( api.utils.isKeydownButNotEnterEvent( event ) ) {
 				return;
 			}
 
