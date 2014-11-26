@@ -170,7 +170,7 @@
 
 			container.priority.set( isNaN( container.params.priority ) ? 100 : container.params.priority );
 			container.active.set( container.params.active );
-			container.expanded.set( false ); // @todo True if deeplinking?
+			container.expanded.set( false );
 		},
 
 		/**
