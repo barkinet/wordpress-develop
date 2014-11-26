@@ -2,7 +2,7 @@
 
 jQuery( function( $ ) {
 	var trueMockEvent, falseMockEvent, mockElementLists, $firstMockElement, $secondMockElement, $thirdMockElement,
-	    BubbleTester, BubbleTesterTwoValues, bubbleTesterParent, firstBubbleTester, secondBubbleTester, $newRoot;
+		BubbleTester, BubbleTesterTwoValues, bubbleTesterParent, firstBubbleTester, secondBubbleTester, $newRoot;
 
 	module( 'Customizer Model Utility functions' );
 
@@ -23,7 +23,6 @@ jQuery( function( $ ) {
 	test( 'isKeydownButNotEnterEvent returns false' , function () {
 		equal( wp.customize.utils.isKeydownButNotEnterEvent( falseMockEvent ) , false );
 	});
-
 
 	$firstMockElement = $( '<div id="foo"></div>' );
 	$secondMockElement = $( '<li id="bar"></li>' );
@@ -55,18 +54,18 @@ jQuery( function( $ ) {
 
 
 	bubbleTesterParent = function() {
-			this.trigger = function( event , instance ) {
-					this.wasChangeTriggered = true;
-					this.instancePassedInTrigger = instance;
-			};
-			this.wasChangeTriggered = false;
-			this.instancePassedInTrigger = {};
+		this.trigger = function( event , instance ) {
+			this.wasChangeTriggered = true;
+			this.instancePassedInTrigger = instance;
+		};
+		this.wasChangeTriggered = false;
+		this.instancePassedInTrigger = {};
 	};
 
 	BubbleTester = wp.customize.Class.extend(
 		{
 			parent : new bubbleTesterParent(),
-			fooValue : new wp.customize.Value(),
+			fooValue : new wp.customize.Value()
 		},
 		{
 			staticProperty : 'propertyValue'
@@ -88,7 +87,7 @@ jQuery( function( $ ) {
 		{
 			parent : new bubbleTesterParent(),
 			exampleValue : new wp.customize.Value(),
-			barValue : new wp.customize.Value(),
+			barValue : new wp.customize.Value()
 		},
 		{
 			staticProperty : 'propertyValue'
