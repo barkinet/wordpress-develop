@@ -142,7 +142,7 @@
 			container.container = $( container.params.content );
 
 			container.deferred = {
-				ready: new $.Deferred()
+				embedded: new $.Deferred()
 			};
 			container.priority = new api.Value();
 			container.active = new api.Value();
@@ -338,7 +338,7 @@
 			bubbleChildValueChanges( section, [ 'panel' ] );
 
 			section.embed();
-			section.deferred.ready.done( function () {
+			section.deferred.embedded.done( function () {
 				section.ready();
 			});
 		},
@@ -356,12 +356,12 @@
 					// The panel has been supplied, so wait until the panel object is registered
 					api.panel( panelId, function ( panel ) {
 						// The panel has been registered, wait for it to become ready/initialized
-						panel.deferred.ready.done( function () {
+						panel.deferred.embedded.done( function () {
 							parentContainer = panel.container.find( 'ul:first' );
 							if ( ! section.container.parent().is( parentContainer ) ) {
 								parentContainer.append( section.container );
 							}
-							section.deferred.ready.resolve(); // @todo Better to use `embedded` instead of `ready`
+							section.deferred.embedded.resolve();
 						});
 					} );
 				} else {
@@ -370,7 +370,7 @@
 					if ( ! section.container.parent().is( parentContainer ) ) {
 						parentContainer.append( section.container );
 					}
-					section.deferred.ready.resolve();
+					section.deferred.embedded.resolve();
 				}
 			};
 			section.panel.bind( inject );
@@ -479,7 +479,7 @@
 			var panel = this;
 			Container.prototype.initialize.call( panel, id, options );
 			panel.embed();
-			panel.deferred.ready.done( function () {
+			panel.deferred.embedded.done( function () {
 				panel.ready();
 			});
 		},
@@ -494,7 +494,7 @@
 			if ( ! panel.container.parent().is( parentContainer ) ) {
 				parentContainer.append( panel.container );
 			}
-			panel.deferred.ready.resolve();
+			panel.deferred.embedded.resolve();
 		},
 
 		/**
@@ -676,7 +676,7 @@
 			control.container = control.params.content ? $( control.params.content ) : $( control.selector );
 
 			control.deferred = {
-				ready: new $.Deferred()
+				embedded: new $.Deferred()
 			};
 			control.section = new api.Value();
 			control.priority = new api.Value();
@@ -739,7 +739,7 @@
 				control.embed();
 			}) );
 
-			control.deferred.ready.done( function () {
+			control.deferred.embedded.done( function () {
 				control.ready();
 			});
 		},
@@ -760,13 +760,13 @@
 				// Wait for the section to be registered
 				api.section( sectionId, function ( section ) {
 					// Wait for the section to be ready/initialized
-					section.deferred.ready.done( function () {
+					section.deferred.embedded.done( function () {
 						parentContainer = section.container.find( 'ul:first' );
 						if ( ! control.container.parent().is( parentContainer ) ) {
 							parentContainer.append( control.container );
 							control.renderContent();
 						}
-						control.deferred.ready.resolve(); // @todo Better to use `embedded` instead of `ready`
+						control.deferred.embedded.resolve();
 					});
 				});
 			};
@@ -1930,7 +1930,7 @@
 			if ( id && api[ type ]( id ) ) {
 				instance = api[ type ]( id );
 				// Wait until the element is embedded in the DOM
-				instance.deferred.ready.done( function () {
+				instance.deferred.embedded.done( function () {
 					// Wait until the preview has activated and so active panels, sections, controls have been set
 					api.previewer.deferred.active.done( function () {
 						instance.focus();
