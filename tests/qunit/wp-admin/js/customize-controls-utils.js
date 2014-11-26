@@ -107,10 +107,10 @@ jQuery( function( $ ) {
 	});
 
 	$newRoot = $( '<div id="#new-theme-controls"></div>' );
-	wp.customize.utils.setRootOfCustomizer( $newRoot );
+	wp.customize.utils.setContainerRootElement( $newRoot );
 
-	test( 'setRootOfCustomizer sets the new root' , function() {
-		equal( wp.customize.utils.getRootOfCustomizer() , $newRoot );
+	test( 'setContainerRootElement sets the new root' , function() {
+		ok( wp.customize.utils.getContainerRootElement().is( $newRoot ) );
 	});
 
 });

@@ -1,6 +1,6 @@
 /* globals _wpCustomizeHeader, _wpMediaViewsL10n */
 (function( exports, $ ){
-	var Container, focus, api = wp.customize;
+	var Container, focus, containerRootElement, api = wp.customize;
 
 	/**
 	 * @class
@@ -51,14 +51,22 @@
 		} );
 	};
 
-	api.utils._rootOfCustomizer = $( '#customize-theme-controls' ).children( 'ul' );
-
-	api.utils.setRootOfCustomizer = function( $newRoot ) {
-		api.utils._rootOfCustomizer = $newRoot;
+	/**
+	 * Set the element which serves as the root container for the Customizer UI.
+	 *
+	 * @param {Element|jQuery} rootElement
+	 */
+	api.utils.setContainerRootElement = function( rootElement ) {
+		containerRootElement = $( rootElement );
 	};
 
-	api.utils.getRootOfCustomizer = function() {
-		return api.utils._rootOfCustomizer;
+	/**
+	 * Get the element which serves as the root container for the Customizer UI.
+	 *
+	 * @returns {jQuery}
+	 */
+	api.utils.getContainerRootElement = function() {
+		return containerRootElement;
 	};
 
 	/**
@@ -377,7 +385,7 @@
 					} );
 				} else {
 					// There is no panel, so embed the section in the root of the customizer
-					parentContainer = api.utils.getRootOfCustomizer(); // implements todo: This should be defined elsewhere, and to be configurable
+					parentContainer = api.utils.getContainerRootElement(); // implements todo: This should be defined elsewhere, and to be configurable
 					if ( ! section.container.parent().is( parentContainer ) ) {
 						parentContainer.append( section.container );
 					}
@@ -500,7 +508,7 @@
 		 */
 		embed: function () {
 			var panel = this,
-				parentContainer = api.utils.getRootOfCustomizer(); // implements todo: This should be defined elsewhere, and to be configurable
+				parentContainer = api.utils.getContainerRootElement(); // implements todo: This should be defined elsewhere, and to be configurable
 
 			if ( ! panel.container.parent().is( parentContainer ) ) {
 				parentContainer.append( panel.container );
@@ -599,8 +607,8 @@
 				overlay = section.closest( '.wp-full-overlay' ),
 				container = section.closest( '.accordion-container' ),
 				siblings = container.find( '.open' ),
-				$rootOfCustomizer = api.utils.getRootOfCustomizer(),
-				topPanel = overlay.find( $rootOfCustomizer ).find( '> .accordion-section > .accordion-section-title' ).add( '#customize-info > .accordion-section-title' ),
+				$ContainerRootElement = api.utils.getContainerRootElement(),
+				topPanel = overlay.find( $ContainerRootElement ).find( '> .accordion-section > .accordion-section-title' ).add( '#customize-info > .accordion-section-title' ),
 				backBtn = overlay.find( '.control-panel-back' ),
 				panelTitle = section.find( '.accordion-section-title' ).first(),
 				content = section.find( '.control-panel-content' );
@@ -1752,10 +1760,12 @@
 	$( function() {
 		api.settings = window._wpCustomizeSettings;
 		api.l10n = window._wpCustomizeControlsL10n;
+		api.utils.setContainerRootElement( $( '#customize-theme-controls' ).children( 'ul:first' ) );
 
 		// Check if we can run the Customizer.
-		if ( ! api.settings )
+		if ( ! api.settings ) {
 			return;
+		}
 
 		// Redirect to the fallback preview if any incompatibilities are found.
 		if ( ! $.support.postMessage || ( ! $.support.cors && api.settings.isCrossDomain ) )
@@ -1995,7 +2005,7 @@
 			// Sort the root panels and sections
 			rootNodes.sort( api.utils.prioritySort );
 			rootContainers = _.pluck( rootNodes, 'container' );
-			appendContainer = api.utils.getRootOfCustomizer(); // implements todo: This should be defined elsewhere, and to be configurable
+			appendContainer = api.utils.getContainerRootElement(); // implements todo: This should be defined elsewhere, and to be configurable
 			if ( ! api.utils.areElementListsEqual( rootContainers, appendContainer.children() ) ) {
 				_( rootNodes ).each( function ( rootNode ) {
 					appendContainer.append( rootNode.container );
