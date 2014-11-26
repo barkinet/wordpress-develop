@@ -155,13 +155,11 @@
 				args = $.extend( {}, container.defaultActiveArguments, args );
 				active = ( active && container.isContextuallyActive() );
 				container.onChangeActive( active, args );
-				// @todo trigger 'activated' and 'deactivated' events based on the expanded param?
 			});
 			container.expanded.bind( function ( expanded ) {
 				var args = container.expandedArgumentsQueue.shift();
 				args = $.extend( {}, container.defaultExpandedArguments, args );
 				container.onChangeExpanded( expanded, args );
-				// @todo trigger 'expanded' and 'collapsed' events based on the expanded param?
 			});
 
 			container.attachEvents();
