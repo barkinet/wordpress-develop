@@ -1184,10 +1184,11 @@ final class WP_Customize_Manager {
 		// #WP19627
 
 		$this->add_section( 'static_front_page', array(
-			'title'          => __( 'Static Front Page' ),
-		//	'theme_supports' => 'static-front-page',
-			'priority'       => 120,
-			'description'    => __( 'Your theme supports a static front page.' ),
+			'title'           => __( 'Static Front Page' ),
+		//	'theme_supports'  => 'static-front-page',
+			'priority'        => 120,
+			'description'     => __( 'Your theme supports a static front page.' ),
+			'active_callback' => 'is_front_page',
 		) );
 
 		$this->add_setting( 'show_on_front', array(
