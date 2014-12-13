@@ -63,26 +63,26 @@ jQuery( function() {
 	controlDescription = 'Test control description';
 
 	controlData = {
-		content : controlContent,
-		description : controlDescription,
-		label : controlLabel,
-		settings : { 'default' : 'blogname' },
-		type : controlType
+		content: controlContent,
+		description: controlDescription,
+		label: controlLabel,
+		settings: { 'default': 'blogname' },
+		type: controlType
 	};
 
 	mockControl = new wp.customize.Control( controlId, {
-		params : controlData,
-		previewer : wp.customize.previewer
+		params: controlData,
+		previewer: wp.customize.previewer
 	});
 
 	controlExpectedValues = {
-		type : 'Control',
-		content : controlContent,
-		description : controlDescription,
-		label : controlLabel,
-		id : controlId,
-		priority : 10,
-		textExpanded : false
+		type: 'Control',
+		content: controlContent,
+		description: controlDescription,
+		label: controlLabel,
+		id: controlId,
+		priority: 10,
+		textExpanded: false
 	};
 
 	testCustomizerModel( mockControl, controlExpectedValues );
@@ -113,17 +113,17 @@ jQuery( function() {
 	sectionId = 'mock_title_tagline';
 	sectionContent = '<li id="accordion-section-title_tagline" class="control-section accordion-section"></li>';
 	sectionData = {
-		content : sectionContent
+		content: sectionContent
 	};
 
-	mockSection = new wp.customize.Section( sectionId, { params : sectionData } );
+	mockSection = new wp.customize.Section( sectionId, { params: sectionData } );
 
 	sectionExpectedValues = {
-		type : 'Section',
-		id : sectionId,
-		content : sectionContent,
-		priority : 100,
-		testExpanded : true
+		type: 'Section',
+		id: sectionId,
+		content: sectionContent,
+		priority: 100,
+		testExpanded: true
 	};
 
 	testCustomizerModel( mockSection, sectionExpectedValues );
@@ -148,21 +148,21 @@ jQuery( function() {
 	panelDescription = 'Mock panel description';
 	panelContent = '<li id="accordion-panel-widgets" class="control-section control-panel accordion-section">';
 	panelData = {
-		content : panelContent,
-		title : panelTitle,
-		description : panelDescription
+		content: panelContent,
+		title: panelTitle,
+		description: panelDescription
 	};
 
-	mockPanel = new wp.customize.Panel( panelId, { params : panelData } );
+	mockPanel = new wp.customize.Panel( panelId, { params: panelData } );
 
 	panelExpectedValues = {
-		type : 'Panel',
-		id : panelId,
-		title : panelTitle,
-		description : panelDescription,
-		content : panelContent,
-		priority : 100,
-		testExpanded : true
+		type: 'Panel',
+		id: panelId,
+		title: panelTitle,
+		description: panelDescription,
+		content: panelContent,
+		priority: 100,
+		testExpanded: true
 	};
 
 	testCustomizerModel( mockPanel, panelExpectedValues );
