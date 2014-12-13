@@ -53,6 +53,38 @@ jQuery( function() {
 
 	};
 
+	module( 'Customizer Section Model' );
+
+	sectionId = 'mock_title_tagline';
+	sectionContent = '<li id="accordion-section-title_tagline" class="control-section accordion-section"></li>';
+	sectionData = {
+		content: sectionContent
+	};
+
+	mockSection = new wp.customize.Section( sectionId, { params: sectionData } );
+
+	sectionExpectedValues = {
+		type: 'Section',
+		id: sectionId,
+		content: sectionContent,
+		priority: 100,
+		testExpanded: true
+	};
+
+	testCustomizerModel( mockSection, sectionExpectedValues );
+
+	wp.customize.section.add( sectionId, mockSection );
+
+	test( 'Section instance added to the wp.customize.section object', function () {
+		ok( wp.customize.section.has( sectionId ) );
+	});
+
+	sectionInstance = wp.customize.section( sectionId );
+
+	test( 'Section instance has right content when accessed from wp.customize.section()', function () {
+		equal( sectionInstance.params.content, sectionContent );
+	});
+
 
 	module( 'Customizer Control Model' );
 
@@ -106,40 +138,6 @@ jQuery( function() {
 	test( 'Control instance has the right id when accessed from api.control().', function () {
 		equal( mockControlInstance.id, controlId );
 	});
-
-
-	module( 'Customizer Section Model' );
-
-	sectionId = 'mock_title_tagline';
-	sectionContent = '<li id="accordion-section-title_tagline" class="control-section accordion-section"></li>';
-	sectionData = {
-		content: sectionContent
-	};
-
-	mockSection = new wp.customize.Section( sectionId, { params: sectionData } );
-
-	sectionExpectedValues = {
-		type: 'Section',
-		id: sectionId,
-		content: sectionContent,
-		priority: 100,
-		testExpanded: true
-	};
-
-	testCustomizerModel( mockSection, sectionExpectedValues );
-
-	wp.customize.section.add( sectionId, mockSection );
-
-	test( 'Section instance added to the wp.customize.section object', function () {
-		ok( wp.customize.section.has( sectionId ) );
-	});
-
-	sectionInstance = wp.customize.section( sectionId );
-
-	test( 'Section instance has right content when accessed from wp.customize.section()', function () {
-		equal( sectionInstance.params.content, sectionContent );
-	});
-
 
 	module( 'Customizer Panel Model' );
 
