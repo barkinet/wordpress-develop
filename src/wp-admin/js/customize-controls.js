@@ -913,6 +913,13 @@
 		 */
 		deactivate: Container.prototype.deactivate,
 
+		/**
+		 * Re-use _toggleActive from Container class.
+		 *
+		 * @access private
+		 */
+		_toggleActive: Container.prototype._toggleActive,
+
 		dropdownInit: function() {
 			var control      = this,
 				statuses     = this.container.find('.dropdown-status'),
