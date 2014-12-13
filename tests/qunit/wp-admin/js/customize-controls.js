@@ -35,7 +35,7 @@ jQuery( function() {
 				equal( model.priority(), expectedValues.priority );
 			});
 		}
-		if ( expectedValues.textExpanded ) {
+		if ( expectedValues.testExpanded ) {
 			test( type + ' instance is not expanded', function () {
 				equal( model.expanded(), false );
 			});
@@ -82,7 +82,7 @@ jQuery( function() {
 		label: controlLabel,
 		id: controlId,
 		priority: 10,
-		textExpanded: false
+		testExpanded: false
 	};
 
 	testCustomizerModel( mockControl, controlExpectedValues );
