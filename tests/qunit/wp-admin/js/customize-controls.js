@@ -11,33 +11,33 @@ jQuery( function() {
 		var type =  expectedValues.type || '';
 
 		if ( expectedValues.hasOwnProperty( 'id' ) ) {
-			test( type + ' instance has the right id' , function () {
-				equal( model.id , expectedValues.id );
+			test( type + ' instance has the right id', function () {
+				equal( model.id, expectedValues.id );
 			});
 		}
 		if ( expectedValues.hasOwnProperty( 'title') ) {
 			test( type + ' instance has the right title.', function () {
-				equal( model.params.title , expectedValues.title );
+				equal( model.params.title, expectedValues.title );
 			});
 		}
 		if ( expectedValues.hasOwnProperty( 'description' ) ) {
 			test( type + ' instance has the right description.', function () {
-				equal( model.params.description , expectedValues.description );
+				equal( model.params.description, expectedValues.description );
 			});
 		}
 		if ( expectedValues.hasOwnProperty( 'content' ) ) {
 			test( type + ' instance has the right content.', function () {
-				equal( model.params.content , expectedValues.content );
+				equal( model.params.content, expectedValues.content );
 			});
 		}
 		if ( expectedValues.hasOwnProperty( 'priority' ) ) {
 			test( type + ' instance has the right priority.', function () {
-				equal( model.priority() , expectedValues.priority );
+				equal( model.priority(), expectedValues.priority );
 			});
 		}
 		if ( expectedValues.textExpanded ) {
 			test( type + ' instance is not expanded', function () {
-				equal( model.expanded() , false );
+				equal( model.expanded(), false );
 			});
 
 			test( type + ' instance is expanded after calling .expanded()', function () {
@@ -47,7 +47,7 @@ jQuery( function() {
 
 			test( type + ' instance is collapsed after calling .collapse()', function () {
 				model.collapse();
-				equal( model.expanded() , false );
+				equal( model.expanded(), false );
 			});
 		}
 
@@ -70,7 +70,7 @@ jQuery( function() {
 		type : controlType
 	};
 
-	mockControl = new wp.customize.Control( controlId , {
+	mockControl = new wp.customize.Control( controlId, {
 		params : controlData,
 		previewer : wp.customize.previewer
 	});
@@ -85,17 +85,17 @@ jQuery( function() {
 		textExpanded : false
 	};
 
-	testCustomizerModel( mockControl , controlExpectedValues );
+	testCustomizerModel( mockControl, controlExpectedValues );
 
 	test( 'Control instance does not yet belong to a section.', function () {
-		equal( mockControl.section() , undefined );
+		equal( mockControl.section(), undefined );
 	});
 
 	test( 'Control instance has the right selector.', function () {
-		equal( mockControl.selector , '#customize-control-new_blogname' );
+		equal( mockControl.selector, '#customize-control-new_blogname' );
 	});
 
-	wp.customize.control.add( controlId , mockControl );
+	wp.customize.control.add( controlId, mockControl );
 
 	test( 'Control instance was added to the control class.', function () {
 		ok( wp.customize.control.has( controlId ) );
@@ -104,7 +104,7 @@ jQuery( function() {
 	mockControlInstance = wp.customize.control( controlId );
 
 	test( 'Control instance has the right id when accessed from api.control().', function () {
-		equal( mockControlInstance.id , controlId );
+		equal( mockControlInstance.id, controlId );
 	});
 
 
@@ -116,7 +116,7 @@ jQuery( function() {
 		content : sectionContent
 	};
 
-	mockSection = new wp.customize.Section( sectionId , { params : sectionData } );
+	mockSection = new wp.customize.Section( sectionId, { params : sectionData } );
 
 	sectionExpectedValues = {
 		type : 'Section',
@@ -126,9 +126,9 @@ jQuery( function() {
 		testExpanded : true
 	};
 
-	testCustomizerModel( mockSection , sectionExpectedValues );
+	testCustomizerModel( mockSection, sectionExpectedValues );
 
-	wp.customize.section.add( sectionId , mockSection );
+	wp.customize.section.add( sectionId, mockSection );
 
 	test( 'Section instance added to the wp.customize.section object', function () {
 		ok( wp.customize.section.has( sectionId ) );
@@ -137,7 +137,7 @@ jQuery( function() {
 	sectionInstance = wp.customize.section( sectionId );
 
 	test( 'Section instance has right content when accessed from wp.customize.section()', function () {
-		equal( sectionInstance.params.content , sectionContent );
+		equal( sectionInstance.params.content, sectionContent );
 	});
 
 
@@ -153,21 +153,21 @@ jQuery( function() {
 		description : panelDescription
 	};
 
-	mockPanel = new wp.customize.Panel( panelId , { params : panelData } );
+	mockPanel = new wp.customize.Panel( panelId, { params : panelData } );
 
 	panelExpectedValues = {
 		type : 'Panel',
 		id : panelId,
-		title : panelTitle ,
+		title : panelTitle,
 		description : panelDescription,
 		content : panelContent,
 		priority : 100,
 		testExpanded : true
 	};
 
-	testCustomizerModel( mockPanel , panelExpectedValues );
+	testCustomizerModel( mockPanel, panelExpectedValues );
 
 	test( 'Panel instance is not contextuallyActive', function () {
-		equal( mockPanel.isContextuallyActive() , false );
+		equal( mockPanel.isContextuallyActive(), false );
 	});
 });
