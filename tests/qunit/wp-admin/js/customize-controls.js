@@ -78,7 +78,7 @@ jQuery( function() {
 	controlExpectedValues = {
 		type : 'Control',
 		content : controlContent,
-		descrption : controlDescription,
+		description : controlDescription,
 		label : controlLabel,
 		id : controlId,
 		priority : 10,
