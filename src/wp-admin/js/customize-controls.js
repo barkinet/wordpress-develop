@@ -252,7 +252,9 @@
 			if ( ! $.contains( document, this.container ) ) {
 				// jQuery.fn.slideUp is not hiding an element if it is not in the DOM
 				this.container.toggle( active );
-				args.completeCallback();
+				if ( args.completeCallback ) {
+					args.completeCallback();
+				}
 			} else if ( active ) {
 				this.container.stop( true, true ).slideDown( duration, args.completeCallback );
 			} else {
@@ -878,7 +880,9 @@
 			if ( ! $.contains( document, this.container ) ) {
 				// jQuery.fn.slideUp is not hiding an element if it is not in the DOM
 				this.container.toggle( active );
-				args.completeCallback();
+				if ( args.completeCallback ) {
+					args.completeCallback();
+				}
 			} else if ( active ) {
 				this.container.slideDown( args.duration, args.completeCallback );
 			} else {
