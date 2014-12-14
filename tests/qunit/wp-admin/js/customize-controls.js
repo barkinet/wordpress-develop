@@ -6,11 +6,7 @@ jQuery( window ).load( function (){
 	var controlId, controlLabel, controlType, controlContent, controlDescription, controlData, mockControl,
 		mockControlInstance, controlExpectedValues, sectionId, sectionContent, sectionData, mockSection,
 		sectionInstance, sectionExpectedValues, panelId, panelTitle, panelDescription, panelContent, panelData,
-		mockPanel, panelExpectedValues, testCustomizerModel, customizerRootElement, settingId, settingValue, mockSetting;
-
-	customizerRootElement = $( '<div id="customize-theme-controls"><ul></ul></div>' );
-	customizerRootElement.css( { position: 'absolute', top: -1000 } ); // remove from view
-	$( document.body ).append( customizerRootElement );
+		mockPanel, panelExpectedValues, testCustomizerModel, settingId, settingValue, mockSetting;
 
 	testCustomizerModel = function( model, expectedValues ) {
 		if ( ! expectedValues.type || ! wp.customize[ expectedValues.type ] ) {
@@ -79,6 +75,69 @@ jQuery( window ).load( function (){
 		}
 
 	};
+
+	module( 'Customizer Setting in Fixture' );
+	test( 'Setting has fixture value', function () {
+		equal( wp.customize( 'fixture-setting' )(), 'Lorem Ipsum' );
+	} );
+
+	module( 'Customizer Control in Fixture' );
+	test( 'Control exists', function () {
+		ok( wp.customize.control.has( 'fixture-control' ) );
+	} );
+	test( 'Control has the fixture setting', function () {
+		var control = wp.customize.control( 'fixture-control' );
+		equal( control.setting(), 'Lorem Ipsum' );
+		equal( control.setting.id, 'fixture-setting' );
+	} );
+	test( 'Control has the section fixture section ID', function () {
+		var control = wp.customize.control( 'fixture-control' );
+		equal( control.section(), 'fixture-section' );
+	} );
+
+	module( 'Customizer Section in Fixture' );
+	test( 'Fixture section exists', function () {
+		ok( wp.customize.section.has( 'fixture-section' ) );
+	} );
+	test( 'Fixture section has control among controls()', function () {
+		var section = wp.customize.section( 'fixture-section' );
+		equal( section.controls().length, 1 );
+		equal( section.controls()[0].id, 'fixture-control' );
+	} );
+	test( 'Fixture section has control among controls()', function () {
+		var section = wp.customize.section( 'fixture-section' );
+		equal( section.panel(), 'fixture-panel' );
+	} );
+
+	module( 'Customizer Panel in Fixture' );
+	test( 'Fixture panel exists', function () {
+		ok( wp.customize.panel.has( 'fixture-panel' ) );
+	} );
+	test( 'Fixture section has control among controls()', function () {
+		var panel = wp.customize.panel( 'fixture-panel' );
+		equal( panel.sections().length, 1 );
+		equal( panel.sections()[0].id, 'fixture-section' );
+	} );
+	test( 'Panel is not expanded by default', function () {
+		var panel = wp.customize.panel( 'fixture-panel' );
+		ok( ! panel.expanded() );
+	} );
+	test( 'Panel is not expanded by default', function () {
+		var panel = wp.customize.panel( 'fixture-panel' );
+		ok( ! panel.expanded() );
+	} );
+	test( 'Focusing on a control will expand the panel and section', function () {
+		var panel, section, control;
+		panel = wp.customize.panel( 'fixture-panel' );
+		section = wp.customize.section( 'fixture-section' );
+		control = wp.customize.control( 'fixture-control' );
+		ok( ! panel.expanded() );
+		ok( ! section.expanded() );
+		control.focus();
+		ok( section.expanded() );
+		ok( panel.expanded() );
+	} );
+
 
 	module( 'Dynamically-created Customizer Setting Model' );
 	settingId = 'new_blogname';
