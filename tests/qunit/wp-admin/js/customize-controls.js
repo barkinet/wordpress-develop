@@ -13,7 +13,13 @@ jQuery( function( $ ) {
 	$( document.body ).append( customizerRootElement );
 
 	testCustomizerModel = function( model, expectedValues ) {
-		var type =  expectedValues.type || '';
+		if ( ! expectedValues.type || ! wp.customize[ expectedValues.type ] ) {
+			throw new Error( 'Must pass value type in expectedValues.' );
+		}
+		var type = expectedValues.type;
+		test( 'Model extends proper type', function () {
+			ok( model.extended( wp.customize[ type ] ) );
+		} );
 
 		if ( expectedValues.hasOwnProperty( 'id' ) ) {
 			test( type + ' instance has the right id', function () {
@@ -40,7 +46,7 @@ jQuery( function( $ ) {
 				equal( model.priority(), expectedValues.priority );
 			});
 		}
-		if ( expectedValues.testExpanded ) {
+		if ( type === 'Panel' || type === 'Section' ) {
 			test( type + ' instance is not expanded', function () {
 				equal( model.expanded(), false );
 			});
@@ -90,8 +96,7 @@ jQuery( function( $ ) {
 		type: 'Section',
 		id: sectionId,
 		content: sectionContent,
-		priority: 100,
-		testExpanded: true
+		priority: 100
 	};
 
 	testCustomizerModel( mockSection, sectionExpectedValues );
@@ -143,8 +148,7 @@ jQuery( function( $ ) {
 		description: controlDescription,
 		label: controlLabel,
 		id: controlId,
-		priority: 10,
-		testExpanded: false
+		priority: 10
 	};
 
 	testCustomizerModel( mockControl, controlExpectedValues );
@@ -200,8 +204,7 @@ jQuery( function( $ ) {
 		title: panelTitle,
 		description: panelDescription,
 		content: panelContent,
-		priority: 100,
-		testExpanded: true
+		priority: 100
 	};
 
 	testCustomizerModel( mockPanel, panelExpectedValues );
