@@ -80,7 +80,7 @@ jQuery( function( $ ) {
 
 	};
 
-	module( 'Customizer Setting Model' );
+	module( 'Dynamically-created Customizer Setting Model' );
 	settingId = 'new_blogname';
 	settingValue = 'Hello World';
 
@@ -98,7 +98,7 @@ jQuery( function( $ ) {
 		equal( mockSetting.id, settingId );
 	} );
 
-	module( 'Customizer Section Model' );
+	module( 'Dynamically-created Customizer Section Model' );
 
 	sectionId = 'mock_title_tagline';
 	sectionContent = '<li id="accordion-section-mock_title_tagline" class="control-section accordion-section"></li>';
@@ -139,7 +139,7 @@ jQuery( function( $ ) {
 		equal( sectionInstance.controls().length, 0 );
 	});
 
-	module( 'Customizer Control Model' );
+	module( 'Dynamically-created Customizer Control Model' );
 
 	controlId = 'new_blogname';
 	controlLabel = 'Site Title';
@@ -203,7 +203,12 @@ jQuery( function( $ ) {
 		equal( mockControl.deferred.embedded.state(), 'resolved' );
 	});
 
-	module( 'Customizer Panel Model' );
+	test( 'Control is now available on section.controls()', function () {
+		equal( sectionInstance.controls().length, 1 );
+		equal( sectionInstance.controls()[0], mockControl );
+	});
+
+	module( 'Dynamically-created Customizer Panel Model' );
 
 	panelId = 'mockPanelId';
 	panelTitle = 'Mock Panel Title';
