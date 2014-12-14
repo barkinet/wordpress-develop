@@ -1,6 +1,6 @@
 /* global wp */
 
-jQuery( function( $ ) {
+jQuery( window ).load( function (){
 	'use strict';
 
 	var controlId, controlLabel, controlType, controlContent, controlDescription, controlData, mockControl,
