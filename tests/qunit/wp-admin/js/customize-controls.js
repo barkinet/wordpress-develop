@@ -8,6 +8,10 @@ jQuery( function( $ ) {
 		sectionInstance, sectionExpectedValues, panelId, panelTitle, panelDescription, panelContent, panelData,
 		mockPanel, panelExpectedValues, testCustomizerModel, customizerRootElement, settingId, settingValue, mockSetting;
 
+	customizerRootElement = $( '<div id="customize-theme-controls"><ul></ul></div>' );
+	customizerRootElement.css( { position: 'absolute', top: -1000 } ); // remove from view
+	$( document.body ).append( customizerRootElement );
+
 	testCustomizerModel = function( model, expectedValues ) {
 		var type =  expectedValues.type || '';
 
