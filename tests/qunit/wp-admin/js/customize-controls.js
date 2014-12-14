@@ -92,6 +92,10 @@ jQuery( function( $ ) {
 
 	testCustomizerModel( mockSection, sectionExpectedValues );
 
+	test( 'Section has been embedded', function () {
+		equal( mockSection.deferred.embedded.state(), 'resolved' );
+	} );
+
 	wp.customize.section.add( sectionId, mockSection );
 
 	test( 'Section instance added to the wp.customize.section object', function () {
@@ -104,6 +108,9 @@ jQuery( function( $ ) {
 		equal( sectionInstance.params.content, sectionContent );
 	});
 
+	test( 'Section instance has no children yet', function () {
+		equal( sectionInstance.controls().length, 0 );
+	});
 
 	module( 'Customizer Control Model' );
 
@@ -117,7 +124,7 @@ jQuery( function( $ ) {
 		content: controlContent,
 		description: controlDescription,
 		label: controlLabel,
-		settings: { 'default': 'blogname' },
+		settings: { 'default': 'new_blogname' },
 		type: controlType
 	};
 
@@ -141,6 +148,9 @@ jQuery( function( $ ) {
 	test( 'Control instance does not yet belong to a section.', function () {
 		equal( mockControl.section(), undefined );
 	});
+	test( 'Control has not been embedded yet', function () {
+		equal( mockControl.deferred.embedded.state(), 'pending' );
+	} );
 
 	test( 'Control instance has the right selector.', function () {
 		equal( mockControl.selector, '#customize-control-new_blogname' );
@@ -156,6 +166,14 @@ jQuery( function( $ ) {
 
 	test( 'Control instance has the right id when accessed from api.control().', function () {
 		equal( mockControlInstance.id, controlId );
+	});
+
+	test( 'Control section can be set as expected', function () {
+		mockControl.section( mockSection.id );
+		equal( mockControl.section(), mockSection.id );
+	});
+	test( 'Associating a control with a section allows it to be embedded', function () {
+		equal( mockControl.deferred.embedded.state(), 'resolved' );
 	});
 
 	module( 'Customizer Panel Model' );
