@@ -46,19 +46,35 @@ jQuery( function( $ ) {
 				equal( model.priority(), expectedValues.priority );
 			});
 		}
-		if ( type === 'Panel' || type === 'Section' ) {
-			test( type + ' instance is not expanded', function () {
-				equal( model.expanded(), false );
+		if ( expectedValues.hasOwnProperty( 'active' ) ) {
+			test( type + ' instance has the right active state.', function () {
+				equal( model.active(), expectedValues.active );
 			});
+		}
+		test( type + ' can be deactivated', function () {
+			model.activate();
+			model.deactivate();
+			equal( model.active(), false );
+			model.activate();
+			equal( model.active(), true );
+			ok(true);
+		});
 
-			test( type + ' instance is expanded after calling .expanded()', function () {
-				model.expand();
-				ok( model.expanded() );
-			});
+		if ( type === 'Panel' || type === 'Section' ) {
+			if ( expectedValues.hasOwnProperty( 'expanded' ) ) {
+				test( type + ' instance has the right expanded state.', function () {
+					equal( model.expanded(), expectedValues.expanded );
+				} );
+			}
 
 			test( type + ' instance is collapsed after calling .collapse()', function () {
 				model.collapse();
-				equal( model.expanded(), false );
+				ok( ! model.expanded() );
+			});
+
+			test( type + ' instance is expanded after calling .expand()', function () {
+				model.expand();
+				ok( model.expanded() );
 			});
 		}
 
@@ -85,9 +101,10 @@ jQuery( function( $ ) {
 	module( 'Customizer Section Model' );
 
 	sectionId = 'mock_title_tagline';
-	sectionContent = '<li id="accordion-section-title_tagline" class="control-section accordion-section"></li>';
+	sectionContent = '<li id="accordion-section-mock_title_tagline" class="control-section accordion-section"></li>';
 	sectionData = {
-		content: sectionContent
+		content: sectionContent,
+		active: true
 	};
 
 	mockSection = new wp.customize.Section( sectionId, { params: sectionData } );
@@ -96,7 +113,8 @@ jQuery( function( $ ) {
 		type: 'Section',
 		id: sectionId,
 		content: sectionContent,
-		priority: 100
+		priority: 100,
+		active: true // @todo This should default to true
 	};
 
 	testCustomizerModel( mockSection, sectionExpectedValues );
@@ -134,7 +152,8 @@ jQuery( function( $ ) {
 		description: controlDescription,
 		label: controlLabel,
 		settings: { 'default': 'new_blogname' },
-		type: controlType
+		type: controlType,
+		active: true // @todo This should default to true
 	};
 
 	mockControl = new wp.customize.Control( controlId, {
@@ -193,7 +212,8 @@ jQuery( function( $ ) {
 	panelData = {
 		content: panelContent,
 		title: panelTitle,
-		description: panelDescription
+		description: panelDescription,
+		active: true // @todo This should default to true
 	};
 
 	mockPanel = new wp.customize.Panel( panelId, { params: panelData } );
@@ -204,7 +224,8 @@ jQuery( function( $ ) {
 		title: panelTitle,
 		description: panelDescription,
 		content: panelContent,
-		priority: 100
+		priority: 100,
+		active: true
 	};
 
 	testCustomizerModel( mockPanel, panelExpectedValues );
