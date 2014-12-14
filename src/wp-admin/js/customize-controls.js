@@ -189,7 +189,7 @@
 			api.utils.bubbleChildValueChanges( container, [ 'priority', 'active' ] );
 
 			container.priority.set( isNaN( container.params.priority ) ? 100 : container.params.priority );
-			container.active.set( container.params.active );
+			container.active.set( container.params.active ); // @todo if undefined, this should default to true?
 			container.expanded.set( false );
 		},
 
@@ -786,7 +786,7 @@
 
 			control.section.set( control.params.section );
 			control.priority.set( isNaN( control.params.priority ) ? 10 : control.params.priority );
-			control.active.set( control.params.active );
+			control.active.set( control.params.active ); // @todo if undefined, this should default to true?
 
 			api.utils.bubbleChildValueChanges( control, [ 'section', 'priority', 'active' ] );
 
