@@ -1,11 +1,12 @@
 /* global wp */
 
-jQuery( function() {
+jQuery( function( $ ) {
+	'use strict';
 
 	var controlId, controlLabel, controlType, controlContent, controlDescription, controlData, mockControl,
 		mockControlInstance, controlExpectedValues, sectionId, sectionContent, sectionData, mockSection,
 		sectionInstance, sectionExpectedValues, panelId, panelTitle, panelDescription, panelContent, panelData,
-		mockPanel, panelExpectedValues, testCustomizerModel;
+		mockPanel, panelExpectedValues, testCustomizerModel, customizerRootElement, settingId, settingValue, mockSetting;
 
 	testCustomizerModel = function( model, expectedValues ) {
 		var type =  expectedValues.type || '';
@@ -52,6 +53,24 @@ jQuery( function() {
 		}
 
 	};
+
+	module( 'Customizer Setting Model' );
+	settingId = 'new_blogname';
+	settingValue = 'Hello World';
+
+	test( 'Create a new setting', function () {
+		mockSetting = wp.customize.create(
+			settingId,
+			settingId,
+			settingValue,
+			{
+				transport: 'refresh',
+				previewer: wp.customize.previewer
+			}
+		);
+		equal( mockSetting(), settingValue );
+		equal( mockSetting.id, settingId );
+	} );
 
 	module( 'Customizer Section Model' );
 
