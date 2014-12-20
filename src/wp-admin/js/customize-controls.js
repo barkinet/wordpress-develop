@@ -1655,39 +1655,8 @@
 				active: $.Deferred()
 			};
 
-			/*
-			 * Wrap this.refresh to prevent it from hammering the servers:
-			 *
-			 * If refresh is called once and no other refresh requests are
-			 * loading, trigger the request immediately.
-			 *
-			 * If refresh is called while another refresh request is loading,
-			 * debounce the refresh requests:
-			 * 1. Stop the loading request (as it is instantly outdated).
-			 * 2. Trigger the new request once refresh hasn't been called for
-			 *    self.refreshBuffer milliseconds.
-			 */
-			this.refresh = (function( self ) {
-				var refresh  = self.refresh,
-					callback = function() {
-						timeout = null;
-						refresh.call( self );
-					},
-					timeout;
-
-				return function() {
-					if ( typeof timeout !== 'number' ) {
-						if ( self.loading ) {
-							self.abort();
-						} else {
-							return callback();
-						}
-					}
-
-					clearTimeout( timeout );
-					timeout = setTimeout( callback, self.refreshBuffer );
-				};
-			})( this );
+			// Wrap this.refresh to prevent it from hammering the servers.
+			this.refresh = _.debounce( _.bind( this.refresh, this ), this.refreshBuffer );
 
 			this.container   = api.ensure( params.container );
 			this.allowedUrls = params.allowedUrls;
