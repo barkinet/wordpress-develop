@@ -695,15 +695,7 @@ final class WP_Customize_Manager {
 			status_header( 500 );
 			$this->wp_send_json_error( $data );
 		} else {
-			$output = '';
-			while ( ob_get_level() > 0 ) {
-				$output = ob_get_clean() . $output;
-			}
-			echo '<script>';
-			echo 'document.open();';
-			printf( 'document.write( %s );', wp_json_encode( $output ) );
-			echo 'document.close();';
-			echo '</script>';
+			wp_ob_end_flush_all();
 		}
 	}
 
