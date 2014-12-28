@@ -156,7 +156,7 @@
 		} );
 
 		api.preview.bind( 'reload', function () {
-			window.location.reload( true );
+			window.location.reload();
 		});
 
 		/* Custom Backgrounds */
