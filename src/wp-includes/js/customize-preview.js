@@ -38,27 +38,62 @@
 
 			api.Messenger.prototype.initialize.call( this, params, options );
 
+			// TODO: self.send( 'url', wp.customize.settings.requestUri );
+
 			this.body = $( document.body );
+
+			// Limit the URL to internal, front-end links.
+			//
+			// If the frontend and the admin are served from the same domain, load the
+			// preview over ssl if the Customizer is being loaded over ssl. This avoids
+			// insecure content warnings. This is not attempted if the admin and frontend
+			// are on different domains to avoid the case where the frontend doesn't have
+			// ssl certs.
 			this.body.on( 'click.preview', 'a', function( event ) {
-				event.preventDefault();
-				self.send( 'scroll', 0 );
-				self.send( 'url', $(this).prop('href') );
+				var result, to = $( this ).prop( 'href' );
+
+				// @todo Instead of preventDefault and bailing, should we instead show an AYS/confirm dialog?
+
+				// Check for URLs that include "/wp-admin/" or end in "/wp-admin".
+				// Strip hashes and query strings before testing.
+				if ( /\/wp-admin(\/|$)/.test( to.replace( /[#?].*$/, '' ) ) ) {
+					event.preventDefault();
+					return;
+				}
+
+				// Attempt to match the URL to the control frame's scheme
+				// and check if it's allowed. If not, try the original URL.
+				$.each([ to.replace( /^https?/, self.scheme() ), to ], function( i, url ) {
+					$.each( self.allowedUrls, function( i, allowed ) {
+						var path;
+
+						allowed = allowed.replace( /\/+$/, '' );
+						path = url.replace( allowed, '' );
+
+						if ( 0 === url.indexOf( allowed ) && /^([/#?]|$)/.test( path ) ) {
+							result = url;
+							return false;
+						}
+					});
+					if ( result ) {
+						return false;
+					}
+				});
+
+				// If we found a matching result, return it. If not, bail.
+				if ( ! result ) {
+					event.preventDefault();
+				}
 			});
 
-			// You cannot submit forms.
-			// @todo: Allow form submissions by mixing $_POST data with the customize setting $_POST data.
 			this.body.on( 'submit.preview', 'form', function( event ) {
-				event.preventDefault();
+				// @todo If this.action is going to another domain, then we should abort.
+				// @todo: inject form fields for persistent Customizer query vars before submission
 			});
+
+			// @todo: hook into jQuery's Ajax beforeSend to inject the persistent query vars
 
 			this.window = $( window );
-			this.window.on( 'scroll.preview', debounce( function() {
-				self.send( 'scroll', self.window.scrollTop() );
-			}, 200 ));
-
-			this.bind( 'scroll', function( distance ) {
-				self.window.scrollTop( distance );
-			});
 		}
 	});
 
@@ -73,6 +108,11 @@
 			url: window.location.href,
 			channel: api.settings.channel
 		});
+
+		if ( api.settings.error ) {
+			api.preview.send( 'error', api.settings.error );
+			return;
+		}
 
 		api.preview.bind( 'settings', function( values ) {
 			$.each( values, function( id, value ) {
@@ -114,6 +154,10 @@
 			activeSections: api.settings.activeSections,
 			activeControls: api.settings.activeControls
 		} );
+
+		api.preview.bind( 'reload', function () {
+			window.location.reload( true );
+		});
 
 		/* Custom Backgrounds */
 		bg = $.map(['color', 'image', 'position_x', 'repeat', 'attachment'], function( prop ) {

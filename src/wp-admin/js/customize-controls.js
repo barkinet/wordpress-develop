@@ -1427,48 +1427,32 @@
 		sensitivity: 2000,
 
 		initialize: function( params, options ) {
-			var deferred = $.Deferred();
-
-			// This is the promise object.
-			deferred.promise( this );
+			var self = this;
 
 			this.container = params.container;
-			this.signature = params.signature;
 
 			$.extend( params, { channel: api.PreviewFrame.uuid() });
 
 			api.Messenger.prototype.initialize.call( this, params, options );
 
-			this.add( 'previewUrl', params.previewUrl );
-
 			this.query = $.extend( params.query || {}, { customize_messenger_channel: this.channel() });
 
-			this.run( deferred );
-		},
+			// Create the iframe and set URL
+			this.iframe = $( '<iframe />' );
+			this.iframe.one( 'load', function () {
+				self.targetWindow( this.contentWindow );
+			} );
 
-		run: function( deferred ) {
-			var self   = this,
-				loaded = false,
-				ready  = false;
+			// @todo We need the preview to always send this fail message regardless of auth state
+			this.bind( 'error', function ( error ) {
 
-			if ( this._ready ) {
-				this.unbind( 'ready', this._ready );
-			}
-
-			this._ready = function() {
-				ready = true;
-
-				if ( loaded ) {
-					deferred.resolveWith( self );
+				if ( 'unauthorized' === error || '-1' === error ) {
+					// @todo self.login()
 				}
-			};
-
-			this.bind( 'ready', this._ready );
+			});
 
 			this.bind( 'ready', function ( data ) {
-				if ( ! data ) {
-					return;
-				}
+				data = data || {};
 
 				/*
 				 * Walk over all panels, sections, and controls and set their
@@ -1488,75 +1472,35 @@
 				} );
 			} );
 
-			this.request = $.ajax( this.previewUrl(), {
-				type: 'POST',
-				data: this.query,
-				xhrFields: {
-					withCredentials: true
-				}
-			} );
+			this.container.append( this.iframe );
+		},
 
-			this.request.fail( function() {
-				deferred.rejectWith( self, [ 'request failure' ] );
-			});
+		/**
+		 * Append the query to the current query applied.
+		 *
+		 * @param {object} [extraQuery]
+		 * @returns {string}
+		 */
+		getPreviewUrl: function ( url, extraQuery ) {
+			var matches, path, queryString, query, fragment;
+			query = $.extend( {}, this.query, extraQuery || {} );
 
-			this.request.done( function( response ) {
-				var location = self.request.getResponseHeader('Location'),
-					signature = self.signature,
-					index;
+			delete query.customized; // @todo: This needs to be stored in transaction and then the transaction ID should be sent instead
 
-				// Check if the location response header differs from the current URL.
-				// If so, the request was redirected; try loading the requested page.
-				if ( location && location !== self.previewUrl() ) {
-					deferred.rejectWith( self, [ 'redirect', location ] );
-					return;
-				}
+			matches = url.match( /^(.+?)(\?.*?)?(#.*)?$/ );
+			path = matches[1];
+			queryString = matches[2] || '?';
+			fragment = matches[3] || '';
+			if ( '?' !== queryString ) {
+				queryString += '&';
+			}
+			// @todo We need to append the Customize transaction ID, and the
+			queryString += $.param( query );
+			return path + queryString + fragment;
+		},
 
-				// Check if the user is not logged in.
-				if ( '0' === response ) {
-					self.login( deferred );
-					return;
-				}
-
-				// Check for cheaters.
-				if ( '-1' === response ) {
-					deferred.rejectWith( self, [ 'cheatin' ] );
-					return;
-				}
-
-				// Check for a signature in the request.
-				index = response.lastIndexOf( signature );
-				if ( -1 === index || index < response.lastIndexOf('</html>') ) {
-					deferred.rejectWith( self, [ 'unsigned' ] );
-					return;
-				}
-
-				// Strip the signature from the request.
-				response = response.slice( 0, index ) + response.slice( index + signature.length );
-
-				// Create the iframe and inject the html content.
-				self.iframe = $('<iframe />').appendTo( self.container );
-
-				// Bind load event after the iframe has been added to the page;
-				// otherwise it will fire when injected into the DOM.
-				self.iframe.one( 'load', function() {
-					loaded = true;
-
-					if ( ready ) {
-						deferred.resolveWith( self );
-					} else {
-						setTimeout( function() {
-							deferred.rejectWith( self, [ 'ready timeout' ] );
-						}, self.sensitivity );
-					}
-				});
-
-				self.targetWindow( self.iframe[0].contentWindow );
-
-				self.targetWindow().document.open();
-				self.targetWindow().document.write( response );
-				self.targetWindow().document.close();
-			});
+		load: function ( url, query ) {
+			this.iframe.prop( 'src', this.getPreviewUrl( url, query ) );
 		},
 
 		login: function( deferred ) {
@@ -1591,15 +1535,7 @@
 		},
 
 		destroy: function() {
-			api.Messenger.prototype.destroy.call( this );
-			this.request.abort();
-
-			if ( this.iframe )
-				this.iframe.remove();
-
-			delete this.request;
-			delete this.iframe;
-			delete this.targetWindow;
+			throw new Error( 'We should not be destroying anymore.' );
 		}
 	});
 
@@ -1671,50 +1607,41 @@
 				return match ? match[0] : '';
 			});
 
-			// Limit the URL to internal, front-end links.
-			//
-			// If the frontend and the admin are served from the same domain, load the
-			// preview over ssl if the Customizer is being loaded over ssl. This avoids
-			// insecure content warnings. This is not attempted if the admin and frontend
-			// are on different domains to avoid the case where the frontend doesn't have
-			// ssl certs.
+			this.add( 'previewUrl', params.previewUrl );
 
-			this.add( 'previewUrl', params.previewUrl ).setter( function( to ) {
-				var result;
-
-				// Check for URLs that include "/wp-admin/" or end in "/wp-admin".
-				// Strip hashes and query strings before testing.
-				if ( /\/wp-admin(\/|$)/.test( to.replace( /[#?].*$/, '' ) ) )
-					return null;
-
-				// Attempt to match the URL to the control frame's scheme
-				// and check if it's allowed. If not, try the original URL.
-				$.each([ to.replace( rscheme, self.scheme() ), to ], function( i, url ) {
-					$.each( self.allowedUrls, function( i, allowed ) {
-						var path;
-
-						allowed = allowed.replace( /\/+$/, '' );
-						path = url.replace( allowed, '' );
-
-						if ( 0 === url.indexOf( allowed ) && /^([/#?]|$)/.test( path ) ) {
-							result = url;
-							return false;
-						}
-					});
-					if ( result )
-						return false;
-				});
-
-				// If we found a matching result, return it. If not, bail.
-				return result ? result : null;
+			this.iframe = new api.PreviewFrame({
+				url: this.url(),
+				// @todo unused url: this.url(),
+				//previewUrl: this.previewUrl(),
+				//query:      this.query() || {},
+				container:  this.container
 			});
 
 			// Refresh the preview when the URL is changed (but not yet).
 			this.previewUrl.bind( this.refresh );
 
-			this.scroll = 0;
-			this.bind( 'scroll', function( distance ) {
-				this.scroll = distance;
+			this.iframe.bind( 'synced', function() {
+				self.targetWindow( this.targetWindow() ); // @todo This should never be changing
+				self.channel( this.channel() );
+
+				self.deferred.active.resolve();
+				self.send( 'active' );
+			});
+
+			// Need to wait until we send preview-ready
+			this.iframe.bind( 'ready', function () {
+				self.iframe.send( 'sync', {
+					// @todo: Why no url being sent here?
+					settings: api.get()
+				});
+			});
+
+			this.iframe.bind( 'error', function ( reason ) {
+				if ( 'logged out' === reason ) {
+					self.login().done( self.refresh );
+				} else if ( 'cheatin' === reason ) {
+					self.cheatin();
+				}
 			});
 
 			// Update the URL when the iframe sends a URL message.
@@ -1728,63 +1655,26 @@
 
 		query: function() {},
 
+		/**
+		 * @deprecated
+		 */
 		abort: function() {
-			if ( this.loading ) {
-				this.loading.destroy();
-				delete this.loading;
-			}
+			throw new Error( 'Previewer.abort() is now a no-op' );
 		},
 
+		/**
+		 * Alias for refresh.
+		 */
+		load: function () {
+			this.iframe.load( this.previewUrl(), this.query() );
+		},
+
+		/**
+		 * This method will load the iframe with the current previewUrl().
+		 * As such, it is more appropriately named 'load'
+		 */
 		refresh: function() {
-			var self = this;
-
-			this.abort();
-
-			this.loading = new api.PreviewFrame({
-				url:        this.url(),
-				previewUrl: this.previewUrl(),
-				query:      this.query() || {},
-				container:  this.container,
-				signature:  this.signature
-			});
-
-			this.loading.done( function() {
-				// 'this' is the loading frame
-				this.bind( 'synced', function() {
-					if ( self.preview )
-						self.preview.destroy();
-					self.preview = this;
-					delete self.loading;
-
-					self.targetWindow( this.targetWindow() );
-					self.channel( this.channel() );
-
-					self.deferred.active.resolve();
-					self.send( 'active' );
-				});
-
-				this.send( 'sync', {
-					scroll:   self.scroll,
-					settings: api.get()
-				});
-			});
-
-			this.loading.fail( function( reason, location ) {
-				if ( 'redirect' === reason && location )
-					self.previewUrl( location );
-
-				if ( 'logged out' === reason ) {
-					if ( self.preview ) {
-						self.preview.destroy();
-						delete self.preview;
-					}
-
-					self.login().done( self.refresh );
-				}
-
-				if ( 'cheatin' === reason )
-					self.cheatin();
-			});
+			this.iframe.send( 'reload' );
 		},
 
 		login: function() {
@@ -1804,7 +1694,7 @@
 
 			iframe = $('<iframe src="' + api.settings.url.login + '" />').appendTo( this.container );
 
-			messenger.targetWindow( iframe[0].contentWindow );
+			messenger.targetWindow( iframe[0].contentWindow ); // @todo this should never be changing
 
 			messenger.bind( 'login', function() {
 				iframe.remove();
@@ -2112,11 +2002,10 @@
 		} );
 
 		// Check if preview url is valid and load the preview frame.
-		if ( api.previewer.previewUrl() ) {
-			api.previewer.refresh();
-		} else {
+		if ( ! api.previewer.previewUrl() ) {
 			api.previewer.previewUrl( api.settings.url.home );
 		}
+		api.previewer.load();
 
 		// Save and activated states
 		(function() {
