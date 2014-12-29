@@ -33,6 +33,10 @@ if ( ! $return ) {
 	}
 }
 
+/**
+ * @var WP_Scripts $wp_scripts
+ * @var WP_Customize_Manager $wp_customize
+ */
 global $wp_scripts, $wp_customize;
 
 $registered = $wp_scripts->registered;
@@ -194,45 +198,6 @@ do_action( 'customize_controls_print_scripts' );
 	 */
 	do_action( 'customize_controls_print_footer_scripts' );
 
-	/*
-	 * If the frontend and the admin are served from the same domain, load the
-	 * preview over ssl if the Customizer is being loaded over ssl. This avoids
-	 * insecure content warnings. This is not attempted if the admin and frontend
-	 * are on different domains to avoid the case where the frontend doesn't have
-	 * ssl certs. Domain mapping plugins can allow other urls in these conditions
-	 * using the customize_allowed_urls filter.
-	 */
-
-	$allowed_urls = array( home_url('/') );
-	$admin_origin = parse_url( admin_url() );
-	$home_origin  = parse_url( home_url() );
-	$cross_domain = ( strtolower( $admin_origin[ 'host' ] ) != strtolower( $home_origin[ 'host' ] ) );
-
-	if ( is_ssl() && ! $cross_domain )
-		$allowed_urls[] = home_url( '/', 'https' );
-
-	/**
-	 * Filter the list of URLs allowed to be clicked and followed in the Customizer preview.
-	 *
-	 * @since 3.4.0
-	 *
-	 * @param array $allowed_urls An array of allowed URLs.
-	 */
-	$allowed_urls = array_unique( apply_filters( 'customize_allowed_urls', $allowed_urls ) );
-
-	$fallback_url = add_query_arg( array(
-		'preview'        => 1,
-		'template'       => $wp_customize->get_template(),
-		'stylesheet'     => $wp_customize->get_stylesheet(),
-		'preview_iframe' => true,
-		'TB_iframe'      => 'true'
-	), home_url( '/' ) );
-
-	$login_url = add_query_arg( array(
-		'interim-login' => 1,
-		'customize-login' => 1
-	), wp_login_url() );
-
 	// Prepare Customizer settings to pass to JavaScript.
 	$settings = array(
 		'theme'    => array(
@@ -244,11 +209,11 @@ do_action( 'customize_controls_print_scripts' );
 			'parent'        => esc_url_raw( admin_url() ),
 			'activated'     => esc_url_raw( admin_url( 'themes.php?activated=true&previewed' ) ),
 			'ajax'          => esc_url_raw( admin_url( 'admin-ajax.php', 'relative' ) ),
-			'allowed'       => array_map( 'esc_url_raw', $allowed_urls ),
-			'isCrossDomain' => $cross_domain,
-			'fallback'      => esc_url_raw( $fallback_url ),
+			'allowed'       => array_map( 'esc_url_raw', $wp_customize->get_allowed_urls() ),
+			'isCrossDomain' => $wp_customize->is_cross_domain(),
+			'fallback'      => esc_url_raw( $wp_customize->get_fallback_url() ),
 			'home'          => esc_url_raw( home_url( '/' ) ),
-			'login'         => esc_url_raw( $login_url ),
+			'login'         => esc_url_raw( add_query_arg( array( 'interim-login' => 1, 'customize-login' => 1 ), wp_login_url() ) ),
 		),
 		'browser'  => array(
 			'mobile' => wp_is_mobile(),

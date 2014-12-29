@@ -118,6 +118,71 @@ final class WP_Customize_Manager {
 	}
 
 	/**
+	 * Whether the URL of the preview is different than the domain of the admin.
+	 *
+	 * @since 4.2.0
+	 *
+	 * @return bool
+	 */
+	public function is_cross_domain() {
+		$admin_origin = parse_url( admin_url() );
+		$home_origin  = parse_url( home_url() );
+		$cross_domain = ( strtolower( $admin_origin['host'] ) !== strtolower( $home_origin['host'] ) );
+		return $cross_domain;
+	}
+
+	/**
+	 * Get the URLs that are previewable, those which are allowed to be navigated to within the Preview.
+	 *
+	 * If the frontend and the admin are served from the same domain, load the
+	 * preview over ssl if the Customizer is being loaded over ssl. This avoids
+	 * insecure content warnings. This is not attempted if the admin and frontend
+	 * are on different domains to avoid the case where the frontend doesn't have
+	 * ssl certs. Domain mapping plugins can allow other urls in these conditions
+	 * using the customize_allowed_urls filter.
+	 *
+	 * @since 4.2.0
+	 *
+	 * @return array
+	 */
+	public function get_allowed_urls() {
+		$allowed_urls = array( home_url( '/' ) );
+
+		if ( is_ssl() && ! $this->is_cross_domain() ) {
+			$allowed_urls[] = home_url( '/', 'https' );
+		}
+
+		/**
+		 * Filter the list of URLs allowed to be clicked and followed in the Customizer preview.
+		 *
+		 * @since 3.4.0
+		 *
+		 * @param array $allowed_urls An array of allowed URLs.
+		 */
+		$allowed_urls = array_unique( apply_filters( 'customize_allowed_urls', $allowed_urls ) );
+
+		return $allowed_urls;
+	}
+
+	/**
+	 * Get the fallback URL for the Customizer.
+	 *
+	 * @since 4.2.0
+	 *
+	 * @return string
+	 */
+	public function get_fallback_url( ){
+		$fallback_url = add_query_arg( array(
+			'preview'        => 1,
+			'template'       => $this->get_template(),
+			'stylesheet'     => $this->get_stylesheet(),
+			'preview_iframe' => true,
+			'TB_iframe'      => 'true',
+		), home_url( '/' ) );
+		return $fallback_url;
+	}
+
+	/**
 	 * Custom wp_die wrapper. Returns either the standard message for UI
 	 * or the AJAX message.
 	 *
