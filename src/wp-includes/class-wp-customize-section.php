@@ -107,7 +107,7 @@ class WP_Customize_Section {
 	 *
 	 * @since 3.4.0
 	 * @access public
-	 * @var array
+	 * @var WP_Customize_Control[]
 	 */
 	public $controls;
 

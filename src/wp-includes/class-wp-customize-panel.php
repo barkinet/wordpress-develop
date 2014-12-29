@@ -98,7 +98,7 @@ class WP_Customize_Panel {
 	 *
 	 * @since 4.0.0
 	 * @access public
-	 * @var array
+	 * @var WP_Customize_Section[]
 	 */
 	public $sections;
 
