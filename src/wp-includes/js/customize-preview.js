@@ -1,27 +1,6 @@
 /*global wp, _, jQuery */
 (function( exports, $ ){
-	var api = wp.customize,
-		debounce;
-
-	/**
-	 * Returns a debounced version of the function.
-	 *
-	 * @todo Require Underscore.js for this file and retire this.
-	 */
-	debounce = function( fn, delay, context ) {
-		var timeout;
-		return function() {
-			var args = arguments;
-
-			context = context || this;
-
-			clearTimeout( timeout );
-			timeout = setTimeout( function() {
-				timeout = null;
-				fn.apply( context, args );
-			}, delay );
-		};
-	};
+	var api = wp.customize;
 
 	/**
 	 * @constructor
