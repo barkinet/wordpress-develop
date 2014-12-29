@@ -96,9 +96,9 @@
 				return true;
 			}
 
-			// Check for URLs that include "/wp-admin/" or end in "/wp-admin".
+			// Check for URLs that include "/wp-admin/" or end in "/wp-admin", or which are for /wp-login.php
 			// Strip hashes and query strings before testing.
-			if ( /\/wp-admin(\/|$)/.test( url.replace( /[#?].*$/, '' ) ) ) {
+			if ( /\/wp-admin(\/|$)|\/wp-login\.php/.test( url.replace( /[#?].*$/, '' ) ) ) {
 				return false;
 			}
 
