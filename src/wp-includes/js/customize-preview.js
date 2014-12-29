@@ -132,21 +132,21 @@
 		 * @returns {{wp_customize: string, nonce: string, theme: string, customize_messenger_channel: string}}
 		 */
 		getPersistentQueryVars: function () {
-			var queryVars = {
+			return {
 				'wp_customize': 'on',
 				'nonce': this.nonce,
 				'theme': this.theme,
 				'customize_messenger_channel': this.channel()
 				// @todo customize_transaction_id
 			};
-			return queryVars;
 		}
 	});
 
 	$( function() {
 		api.settings = window._wpCustomizeSettings;
-		if ( ! api.settings )
+		if ( ! api.settings ) {
 			return;
+		}
 
 		var bg;
 
@@ -165,10 +165,11 @@
 
 		api.preview.bind( 'settings', function( values ) {
 			$.each( values, function( id, value ) {
-				if ( api.has( id ) )
+				if ( api.has( id ) ) {
 					api( id ).set( value );
-				else
+				} else {
 					api.create( id, value );
+				}
 			});
 		});
 
@@ -179,8 +180,9 @@
 
 			args = args.slice();
 
-			if ( value = api( args.shift() ) )
+			if ( value = api( args.shift() ) ) {
 				value.set.apply( value, args );
+			}
 		});
 
 		api.preview.bind( 'sync', function( events ) {
@@ -228,8 +230,9 @@
 				// See get_body_class() in /wp-includes/post-template.php
 				body.toggleClass( 'custom-background', !! ( color() || image() ) );
 
-				if ( color() )
+				if ( color() ) {
 					css += 'background-color: ' + color() + ';';
+				}
 
 				if ( image() ) {
 					css += 'background-image: url("' + image() + '");';
