@@ -30,13 +30,15 @@
 
 			this.body = $( document.body );
 
-			// Limit the URL to internal, front-end links.
-			//
-			// If the frontend and the admin are served from the same domain, load the
-			// preview over ssl if the Customizer is being loaded over ssl. This avoids
-			// insecure content warnings. This is not attempted if the admin and frontend
-			// are on different domains to avoid the case where the frontend doesn't have
-			// ssl certs.
+			/*
+			 * Limit the URL to internal, front-end links.
+			 *
+			 * If the frontend and the admin are served from the same domain, load the
+			 * preview over ssl if the Customizer is being loaded over ssl. This avoids
+			 * insecure content warnings. This is not attempted if the admin and frontend
+			 * are on different domains to avoid the case where the frontend doesn't have
+			 * ssl certs.
+			 */
 			this.body.on( 'click.preview', 'a', function( event ) {
 				var to = $( this ).prop( 'href' );
 
@@ -54,7 +56,7 @@
 					el.addClass( 'customize-preview-not-allowed' );
 					el.prop( 'title', api.settings.l10n.previewNotAllowed );
 				}
-			} );
+			});
 
 			this.body.on( 'submit.preview', 'form', function( event ) {
 				var form = $( this );
@@ -64,13 +66,13 @@
 				}
 
 				// Inject the needed query parameters into the form
-				_.each( self.getPersistentQueryVars(), function ( value, key ) {
+				_.each( self.getPersistentQueryVars(), function ( value, name ) {
 					var input;
-					if ( ! form[ key ] ) {
-						input = $( '<input>', { type: 'hidden', name: key, value: value } );
+					if ( ! form[ name ] ) {
+						input = $( '<input>', { type: 'hidden', name: name, value: value } );
 						form.append( input );
 					}
-				} );
+				});
 			});
 
 			// @todo: hook into jQuery's Ajax beforeSend to inject the persistent query vars
