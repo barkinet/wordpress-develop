@@ -1583,8 +1583,7 @@
 		 *  - previewUrl - the URL of preview frame
 		 */
 		initialize: function( params, options ) {
-			var self = this,
-				rscheme = /^https?/;
+			var self = this;
 
 			$.extend( this, options || {} );
 			this.deferred = {
@@ -1596,16 +1595,10 @@
 
 			this.container   = api.ensure( params.container );
 			this.allowedUrls = params.allowedUrls;
-			this.signature   = params.signature;
 
 			params.url = window.location.href;
 
 			api.Messenger.prototype.initialize.call( this, params );
-
-			this.add( 'scheme', this.origin() ).link( this.origin ).setter( function( to ) {
-				var match = to.match( rscheme );
-				return match ? match[0] : '';
-			});
 
 			this.add( 'previewUrl', params.previewUrl );
 
@@ -1779,8 +1772,7 @@
 			container:   '#customize-preview',
 			form:        '#customize-controls',
 			previewUrl:  api.settings.url.preview,
-			allowedUrls: api.settings.url.allowed,
-			signature:   'WP_CUSTOMIZER_SIGNATURE'
+			allowedUrls: api.settings.url.allowed
 		}, {
 
 			nonce: api.settings.nonce,

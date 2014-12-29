@@ -1,3 +1,4 @@
+/*global wp, _, jQuery */
 (function( exports, $ ){
 	var api = wp.customize,
 		debounce;
@@ -37,6 +38,14 @@
 			var self = this;
 
 			api.Messenger.prototype.initialize.call( this, params, options );
+			this.nonce = params.nonce;
+			this.theme = params.theme;
+			this.allowedUrls = params.allowedUrls;
+
+			this.add( 'scheme', this.origin() ).link( this.origin ).setter( function( to ) {
+				var match = to.match( /^https?/ );
+				return match ? match[0] : '';
+			});
 
 			// TODO: self.send( 'url', wp.customize.settings.requestUri );
 
@@ -50,50 +59,106 @@
 			// are on different domains to avoid the case where the frontend doesn't have
 			// ssl certs.
 			this.body.on( 'click.preview', 'a', function( event ) {
-				var result, to = $( this ).prop( 'href' );
+				var to = $( this ).prop( 'href' );
 
 				// @todo Instead of preventDefault and bailing, should we instead show an AYS/confirm dialog?
 
-				// Check for URLs that include "/wp-admin/" or end in "/wp-admin".
-				// Strip hashes and query strings before testing.
-				if ( /\/wp-admin(\/|$)/.test( to.replace( /[#?].*$/, '' ) ) ) {
-					event.preventDefault();
-					return;
-				}
-
-				// Attempt to match the URL to the control frame's scheme
-				// and check if it's allowed. If not, try the original URL.
-				$.each([ to.replace( /^https?/, self.scheme() ), to ], function( i, url ) {
-					$.each( self.allowedUrls, function( i, allowed ) {
-						var path;
-
-						allowed = allowed.replace( /\/+$/, '' );
-						path = url.replace( allowed, '' );
-
-						if ( 0 === url.indexOf( allowed ) && /^([/#?]|$)/.test( path ) ) {
-							result = url;
-							return false;
-						}
-					});
-					if ( result ) {
-						return false;
-					}
-				});
-
-				// If we found a matching result, return it. If not, bail.
-				if ( ! result ) {
+				if ( ! self.isAllowedUrl( to ) ) {
 					event.preventDefault();
 				}
 			});
 
+			$( 'form[action], a[href]' ).each( function () {
+				var url, el = $( this );
+				url = el.prop( 'href' ) || el.prop( 'action' );
+				if ( url && ! self.isAllowedUrl( url ) ) {
+					el.addClass( 'customize-preview-not-allowed' );
+					el.prop( 'title', api.settings.l10n.previewNotAllowed );
+				}
+			} );
+
 			this.body.on( 'submit.preview', 'form', function( event ) {
-				// @todo If this.action is going to another domain, then we should abort.
-				// @todo: inject form fields for persistent Customizer query vars before submission
+				var form = $( this );
+				if ( ! self.isAllowedUrl( this.action ) ) {
+					event.preventDefault();
+					return;
+				}
+
+				// Inject the needed query parameters into the form
+				_.each( self.getPersistentQueryVars(), function ( value, key ) {
+					var input;
+					if ( ! form[ key ] ) {
+						input = $( '<input>', { type: 'hidden', name: key, value: value } );
+						form.append( input );
+					}
+				} );
 			});
 
 			// @todo: hook into jQuery's Ajax beforeSend to inject the persistent query vars
 
 			this.window = $( window );
+		},
+
+		/**
+		 * Return whether the supplied URL is among those allowed to be previewed.
+		 *
+		 * @since 4.2.0
+		 *
+		 * @param {string} url
+		 * @returns {boolean}
+		 */
+		isAllowedUrl: function ( url ) {
+			var self = this, result;
+			// @todo Instead of preventDefault and bailing, should we instead show an AYS/confirm dialog?
+
+			if ( /^javascript:/i.test( url ) ) {
+				return true;
+			}
+
+			// Check for URLs that include "/wp-admin/" or end in "/wp-admin".
+			// Strip hashes and query strings before testing.
+			if ( /\/wp-admin(\/|$)/.test( url.replace( /[#?].*$/, '' ) ) ) {
+				return false;
+			}
+
+			// Attempt to match the URL to the control frame's scheme
+			// and check if it's allowed. If not, try the original URL.
+			$.each([ url.replace( /^https?/, self.scheme() ), url ], function( i, url ) {
+				$.each( self.allowedUrls, function( i, allowed ) {
+					var path;
+
+					allowed = allowed.replace( /#.*$/, '' ); // Remove hash
+					allowed = allowed.replace( /\?.*$/, '' ); // Remove query
+					allowed = allowed.replace( /\/+$/, '' ); // Untrailing-slash
+					path = url.replace( allowed, '' );
+
+					if ( 0 === url.indexOf( allowed ) && /^([/#?]|$)/.test( path ) ) {
+						result = url;
+						return false;
+					}
+				});
+				if ( result ) {
+					return false;
+				}
+			});
+
+			return !! result;
+		},
+
+		/**
+		 * Get the query params that need to be included with each preview request.
+		 *
+		 * @returns {{wp_customize: string, nonce: string, theme: string, customize_messenger_channel: string}}
+		 */
+		getPersistentQueryVars: function () {
+			var queryVars = {
+				'wp_customize': 'on',
+				'nonce': this.nonce,
+				'theme': this.theme,
+				'customize_messenger_channel': this.channel()
+				// @todo customize_transaction_id
+			};
+			return queryVars;
 		}
 	});
 
@@ -106,9 +171,12 @@
 
 		api.preview = new api.Preview({
 			url: window.location.href,
-			channel: api.settings.channel
+			channel: api.settings.channel,
+			theme: api.settings.theme,
+			nonce: api.settings.nonce.preview,
+			allowedUrls: api.settings.url.allowed
+			// @todo: transaction_id
 		});
-
 		if ( api.settings.error ) {
 			api.preview.send( 'error', api.settings.error );
 			return;
@@ -142,7 +210,7 @@
 		});
 
 		api.preview.bind( 'active', function() {
-			if ( api.settings.nonce ) {
+			if ( 2 === api.settings.nonceTick ) {
 				api.preview.send( 'nonce', api.settings.nonce );
 			}
 

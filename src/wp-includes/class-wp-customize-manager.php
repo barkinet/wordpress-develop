@@ -50,6 +50,8 @@ final class WP_Customize_Manager {
 	protected $controls   = array();
 
 	protected $nonce_tick;
+	protected $preview_nonce;
+	protected $messenger_channel;
 
 	protected $customized;
 
@@ -209,7 +211,7 @@ final class WP_Customize_Manager {
 	 * @param mixed $error
 	 */
 	protected function wp_send_json_error( $error ) {
-		if ( ! isset( $_REQUEST['customize_messenger_channel'] ) ) {
+		if ( empty( $this->messenger_channel ) ) {
 			wp_send_json_error( $error );
 		} else {
 			header( 'Content-Type: text/html; charset=' . get_option( 'blog_charset' ) );
@@ -542,12 +544,17 @@ final class WP_Customize_Manager {
 	 */
 	public function customize_preview_init() {
 		$this->nonce_tick = check_ajax_referer( 'preview-customize_' . $this->get_stylesheet(), 'nonce' );
+		$this->preview_nonce = wp_create_nonce( 'preview-customize_' . $this->get_stylesheet() );
+		if ( isset( $_REQUEST['customize_messenger_channel'] ) ) {
+			$this->messenger_channel = wp_unslash( $_REQUEST['customize_messenger_channel'] );
+		}
 
 		$this->prepare_controls();
 
 		ob_start(); // need to ensure the Customizer sends it all at once so scroll position is maintained (hopefully)
 		wp_enqueue_script( 'customize-preview' );
 		add_action( 'wp_head', array( $this, 'customize_preview_html5' ) );
+		add_action( 'wp_print_styles', array( $this, 'print_preview_css' ), 1 );
 		add_action( 'wp_footer', array( $this, 'customize_preview_settings' ), 20 );
 		add_filter( 'wp_die_handler', array( $this, 'filter_preview_wp_die_handler' ), 11 );
 		remove_action( 'shutdown', 'wp_ob_end_flush_all', 1 );
@@ -635,6 +642,44 @@ final class WP_Customize_Manager {
 	}
 
 	/**
+	 * Insert default style for highlighted widget at early point so theme
+	 * stylesheet can override.
+	 *
+	 * @since 4.2.0
+	 * @access public
+	 *
+	 * @action wp_print_styles
+	 */
+	public function print_preview_css() {
+		?>
+		<style>
+		.customize-preview-not-allowed,
+		.customize-preview-not-allowed * {
+			cursor: not-allowed !important;
+		}
+		</style>
+		<?php
+	}
+
+	/**
+	 * Get the query vars that need to be persisted with each request in the preview.
+	 *
+	 * @since 4.2.0
+	 *
+	 * @return array
+	 */
+	public function get_preview_persisted_query_vars() {
+		$persisted_query_vars = array(
+			'customize_messenger_channel' => $this->messenger_channel,
+			'wp_customize' => 'on',
+			'theme' => $this->theme()->get_stylesheet(),
+			'nonce' => $this->preview_nonce,
+			// @todo 'customize_transaction_id' => null,
+		);
+		return $persisted_query_vars;
+	}
+
+	/**
 	 * Given a URL, add all query vars from $_GET which are requested.
 	 *
 	 * @since 4.2.0
@@ -643,13 +688,7 @@ final class WP_Customize_Manager {
 	 * @return string
 	 */
 	public function persist_preview_query_vars( $url ) {
-		$persisted_query_vars = array();
-		$keys = array( 'customize_messenger_channel', 'wp_customize', 'theme', 'nonce', 'customized' ); // @todo 'transaction' instead of 'customized'
-		foreach ( $keys as $key ) {
-			if ( isset( $_REQUEST[ $key ] ) ) {
-				$persisted_query_vars[ $key ] = urlencode( wp_unslash( $_REQUEST[ $key ] ) );
-			}
-		}
+		$persisted_query_vars = $this->get_preview_persisted_query_vars();
 		if ( ! empty( $persisted_query_vars ) ) {
 			$url = add_query_arg( $persisted_query_vars, $url );
 		}
@@ -668,20 +707,25 @@ final class WP_Customize_Manager {
 	public function customize_preview_settings( $extra_settings = array() ) {
 		$settings = array(
 			'values'  => array(),
-			'channel' => wp_unslash( $_REQUEST['customize_messenger_channel'] ),
+			'channel' => $this->messenger_channel,
+			'theme' => $this->theme()->get_stylesheet(),
+			'nonceTick' => $this->nonce_tick,
+			'nonce' => array(
+				'save' => wp_create_nonce( 'save-customize_' . $this->get_stylesheet() ),
+				'preview' => $this->preview_nonce,
+			),
+			'url' => array(
+				'allowed' => array_map( 'esc_url_raw', $this->get_allowed_urls() ),
+			),
 			'activePanels' => array(),
 			'activeSections' => array(),
 			'activeControls' => array(),
+			'l10n' => array(
+				'previewNotAllowed' => __( 'Not allowed in Customizer preview.' ),
+			),
 		);
 		if ( is_array( $extra_settings ) ) {
 			$settings = array_merge( $settings, $extra_settings );
-		}
-
-		if ( 2 == $this->nonce_tick ) {
-			$settings['nonce'] = array(
-				'save' => wp_create_nonce( 'save-customize_' . $this->get_stylesheet() ),
-				'preview' => wp_create_nonce( 'preview-customize_' . $this->get_stylesheet() )
-			);
 		}
 
 		foreach ( $this->settings as $id => $setting ) {
