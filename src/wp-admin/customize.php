@@ -198,8 +198,16 @@ do_action( 'customize_controls_print_scripts' );
 	 */
 	do_action( 'customize_controls_print_footer_scripts' );
 
+	$transaction_uuid = null;
+	if ( isset( $_REQUEST['customize_transaction_uuid'] ) && $wp_customize->is_valid_transaction_uuid( $_REQUEST['customize_transaction_uuid'] ) ) {
+		$transaction_uuid = $_REQUEST['customize_transaction_uuid'];
+	} else {
+		$transaction_uuid = $wp_customize->generate_transaction_uuid();
+	}
+
 	// Prepare Customizer settings to pass to JavaScript.
 	$settings = array(
+		'transaction_uuid' => $transaction_uuid,
 		'theme'    => array(
 			'stylesheet' => $wp_customize->get_stylesheet(),
 			'active'     => $wp_customize->is_theme_active(),
@@ -224,8 +232,9 @@ do_action( 'customize_controls_print_scripts' );
 		'panels'   => array(),
 		'sections' => array(),
 		'nonce'    => array(
+			'preview' => wp_create_nonce( 'preview-customize_' . $wp_customize->get_stylesheet() ),
+			'update'  => wp_create_nonce( 'update-customize-transaction' ), // @todo Should this have the stylesheet?
 			'save'    => wp_create_nonce( 'save-customize_' . $wp_customize->get_stylesheet() ),
-			'preview' => wp_create_nonce( 'preview-customize_' . $wp_customize->get_stylesheet() )
 		),
 		'autofocus' => array(),
 		'documentTitleTmpl' => $document_title_tmpl,

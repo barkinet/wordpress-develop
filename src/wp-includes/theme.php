@@ -1921,6 +1921,7 @@ function check_theme_switched() {
  * @since 3.4.0
  */
 function _wp_customize_include() {
+	// @todo Or if wp_customize_transaction?
 	if ( ! ( ( isset( $_REQUEST['wp_customize'] ) && 'on' == $_REQUEST['wp_customize'] )
 		|| ( is_admin() && 'customize.php' == basename( $_SERVER['PHP_SELF'] ) )
 	) )

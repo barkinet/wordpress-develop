@@ -15,6 +15,9 @@
  * @since 3.4.0
  */
 final class WP_Customize_Manager {
+
+	const TRANSACTION_POST_TYPE = 'wp_transaction';
+
 	/**
 	 * An instance of the theme being previewed.
 	 *
@@ -116,6 +119,8 @@ final class WP_Customize_Manager {
 		require( ABSPATH . WPINC . '/class-wp-customize-control.php' );
 		require( ABSPATH . WPINC . '/class-wp-customize-widgets.php' );
 
+		add_action( 'init', array( $this, 'register_post_type' ), 0 );
+
 		$this->widgets = new WP_Customize_Widgets( $this );
 
 		add_filter( 'wp_die_handler', array( $this, 'wp_die_handler' ) );
@@ -134,11 +139,26 @@ final class WP_Customize_Manager {
 		remove_action( 'admin_init', '_maybe_update_plugins' );
 		remove_action( 'admin_init', '_maybe_update_themes' );
 
+		add_action( 'wp_ajax_customize_update_transaction', array( $this, 'update_transaction' ) );
 		add_action( 'wp_ajax_customize_save', array( $this, 'save' ) );
 
 		add_action( 'customize_register',                 array( $this, 'register_controls' ) );
 		add_action( 'customize_controls_init',            array( $this, 'prepare_controls' ) );
 		add_action( 'customize_controls_enqueue_scripts', array( $this, 'enqueue_control_scripts' ) );
+	}
+
+	/**
+	 * Register the transaction post type.
+	 *
+	 * @since 4.2.0
+	 */
+	public function register_post_type() {
+		register_post_type( self::TRANSACTION_POST_TYPE, array(
+			'public' => false,
+			'supports' => array( 'author' ),
+			'_builtin' => true, /* internal use only. */
+			'delete_with_user' => false,
+		) );
 	}
 
 	/**
@@ -921,6 +941,125 @@ final class WP_Customize_Manager {
 	public function current_theme( $current_theme ) {
 		unset( $current_theme );
 		return $this->theme()->display( 'Name' );
+	}
+
+	/**
+	 * Generate a customizer transaction uuid
+	 *
+	 * @since 4.2.0
+	 *
+	 * @return string
+	 */
+	public function generate_transaction_uuid() {
+		// @todo Full UUID implementation
+		return md5( rand() );
+	}
+
+	/**
+	 * Determine whether the supplied UUID is in the right format.
+	 *
+	 * @param string $uuid
+	 *
+	 * @since 4.2.0
+	 *
+	 * @return bool
+	 */
+	public function is_valid_transaction_uuid( $uuid ) {
+		return 0 !== preg_match( '/^\w{32}$/', $uuid );
+	}
+
+	/**
+	 * Get the wp_customize_transaction post associated with the provided UUID, or null if it does not exist.
+	 *
+	 * @param string $transaction_uuid
+	 *
+	 * @return WP_Post|null
+	 */
+	public function get_transaction_post( $transaction_uuid ) {
+
+		$post_stati = array_merge(
+			array( 'any' ),
+			array_values( get_post_stati( array( 'exclude_from_search' => true ) ) )
+		);
+
+		add_action( 'pre_get_posts', array( $this, '_override_wp_query_is_single' ) );
+		$posts = get_posts( array(
+			'name' => $transaction_uuid,
+			'posts_per_page' => 1,
+			'post_type' => self::TRANSACTION_POST_TYPE,
+			'post_status' => $post_stati,
+		) );
+		remove_action( 'pre_get_posts', array( $this, '_override_wp_query_is_single' ) );
+
+		if ( empty( $posts ) ) {
+			return null;
+		}
+		return array_shift( $posts );
+	}
+
+	/**
+	 * This is needed to ensure that draft posts can be queried by name.
+	 *
+	 * @param WP_Query $query
+	 */
+	public function _override_wp_query_is_single( $query ) {
+		$query->is_single = false;
+	}
+
+	/**
+	 * Update the customize transaction.
+	 *
+	 * @since 4.2.0
+	 */
+	public function update_transaction() {
+		if ( ! check_ajax_referer( 'update-customize-transaction', 'nonce', false ) ) {
+			status_header( 400 );
+			wp_send_json_error( 'bad_nonce' );
+		}
+		if ( 'POST' !== $_SERVER['REQUEST_METHOD'] ) {
+			status_header( 405 );
+			wp_send_json_error( 'bad_method' );
+		}
+		if ( ! current_user_can( 'customize' ) ) {
+			status_header( 403 );
+			wp_send_json_error( 'customize_not_allowed' );
+		}
+		if ( ! isset( $_POST['customize_transaction_uuid'] ) ) {
+			status_header( 400 );
+			wp_send_json_error( 'missing_customize_transaction_uuid' );
+		}
+		$transaction_uuid = wp_unslash( $_POST['customize_transaction_uuid'] );
+		if ( ! $this->is_valid_transaction_uuid( $transaction_uuid ) ) {
+			status_header( 400 );
+			wp_send_json_error( 'bad_customize_transaction_uuid' );
+		}
+
+		$transaction_post = $this->get_transaction_post( $transaction_uuid );
+		if ( empty( $transaction_post ) ) {
+			$postarr = array(
+				'post_type' => self::TRANSACTION_POST_TYPE,
+				'post_name' => $transaction_uuid,
+				'post_status' => 'draft',
+				'post_author' => get_current_user_id(),
+			);
+			$r = wp_insert_post( $postarr, true );
+			if ( is_wp_error( $r ) ) {
+				status_header( 500 );
+				wp_send_json_error( 'create_transaction_failure' );
+			} else {
+				$transaction_id = $r;
+			}
+			$transaction_post = get_post( $transaction_id );
+		}
+
+		// @todo parse incoming customized JSON data and store in post_content?
+
+		$data = array(
+			'transaction_uuid' => $transaction_uuid,
+			'transaction_post_id' => $transaction_post->ID,
+		);
+		wp_send_json_success( $data );
+
 	}
 
 	/**
