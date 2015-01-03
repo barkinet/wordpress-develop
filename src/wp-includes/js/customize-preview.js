@@ -19,6 +19,7 @@
 			api.Messenger.prototype.initialize.call( this, params, options );
 			this.nonce = params.nonce;
 			this.theme = params.theme;
+			this.transactionUuid = params.transactionUuid;
 			this.allowedUrls = params.allowedUrls;
 
 			this.add( 'scheme', this.origin() ).link( this.origin ).setter( function( to ) {
@@ -136,8 +137,8 @@
 				'wp_customize': 'on',
 				'nonce': this.nonce,
 				'theme': this.theme,
-				'customize_messenger_channel': this.channel()
-				// @todo customize_transaction_id
+				'customize_messenger_channel': this.channel(),
+				'customize_transaction_uuid': this.transactionUuid
 			};
 		}
 	});
@@ -155,8 +156,8 @@
 			channel: api.settings.channel,
 			theme: api.settings.theme,
 			nonce: api.settings.nonce.preview,
-			allowedUrls: api.settings.url.allowed
-			// @todo: transaction_id
+			allowedUrls: api.settings.url.allowed,
+			transactionUuid: api.settings.transactionUuid
 		});
 		if ( api.settings.error ) {
 			api.preview.send( 'error', api.settings.error );

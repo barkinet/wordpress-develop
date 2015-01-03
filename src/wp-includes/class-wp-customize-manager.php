@@ -780,6 +780,7 @@ final class WP_Customize_Manager {
 		$settings = array(
 			'values'  => array(),
 			'channel' => $this->messenger_channel,
+			'transactionUuid' => $this->transaction_uuid,
 			'theme' => $this->theme()->get_stylesheet(),
 			'nonce' => $this->get_nonces(),
 			'url' => array(

@@ -207,7 +207,7 @@ do_action( 'customize_controls_print_scripts' );
 
 	// Prepare Customizer settings to pass to JavaScript.
 	$settings = array(
-		'transaction_uuid' => $transaction_uuid,
+		'transactionUuid' => $transaction_uuid,
 		'theme'    => array(
 			'stylesheet' => $wp_customize->get_stylesheet(),
 			'active'     => $wp_customize->is_theme_active(),

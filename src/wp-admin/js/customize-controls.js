@@ -1788,7 +1788,7 @@
 					wp_customize: 'on',
 					theme: api.settings.theme.stylesheet,
 					nonce: this.nonce.preview,
-					customize_transaction_uuid: api.settings.transaction_uuid
+					customize_transaction_uuid: api.settings.transactionUuid
 				};
 			},
 
