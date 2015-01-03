@@ -1603,7 +1603,6 @@
 
 			this.iframe = new api.PreviewFrame({
 				url: this.url(),
-				// @todo unused url: this.url(),
 				//previewUrl: this.previewUrl(),
 				//query:      this.query() || {},
 				container:  this.container
@@ -1787,7 +1786,6 @@
 				return {
 					wp_customize: 'on',
 					theme: api.settings.theme.stylesheet,
-					nonce: this.nonce.preview,
 					customize_transaction_uuid: api.settings.transactionUuid
 				};
 			},

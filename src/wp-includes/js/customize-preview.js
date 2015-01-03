@@ -130,12 +130,11 @@
 		/**
 		 * Get the query params that need to be included with each preview request.
 		 *
-		 * @returns {{wp_customize: string, nonce: string, theme: string, customize_messenger_channel: string}}
+		 * @returns {{wp_customize: string, theme: string, customize_messenger_channel: string}}
 		 */
 		getPersistentQueryVars: function () {
 			return {
 				'wp_customize': 'on',
-				'nonce': this.nonce,
 				'theme': this.theme,
 				'customize_messenger_channel': this.channel(),
 				'customize_transaction_uuid': this.transactionUuid
@@ -155,7 +154,6 @@
 			url: window.location.href,
 			channel: api.settings.channel,
 			theme: api.settings.theme,
-			nonce: api.settings.nonce.preview,
 			allowedUrls: api.settings.url.allowed,
 			transactionUuid: api.settings.transactionUuid
 		});
@@ -194,10 +192,7 @@
 		});
 
 		api.preview.bind( 'active', function() {
-			if ( 2 === api.settings.nonceTick ) {
-				api.preview.send( 'nonce', api.settings.nonce );
-			}
-
+			api.preview.send( 'nonce', api.settings.nonce );
 			api.preview.send( 'documentTitle', document.title );
 		});
 
