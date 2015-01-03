@@ -118,6 +118,8 @@ final class WP_Customize_Manager {
 
 		if ( isset( $_REQUEST['customize_transaction_uuid'] ) && $this->is_valid_transaction_uuid( $_REQUEST['customize_transaction_uuid'] ) ) {
 			$this->transaction_uuid = $_REQUEST['customize_transaction_uuid'];
+		} else {
+			$this->transaction_uuid = $this->generate_transaction_uuid();
 		}
 		$this->widgets = new WP_Customize_Widgets( $this );
 
@@ -552,6 +554,12 @@ final class WP_Customize_Manager {
 		 */
 		do_action( 'customize_register', $this );
 
+		if ( isset( $_REQUEST['customize_transaction_uuid'] ) && $this->is_valid_transaction_uuid( $_REQUEST['customize_transaction_uuid'] ) ) {
+			foreach ( $this->settings as $setting ) {
+				$setting->preview();
+			}
+		}
+
 		if ( $this->is_preview() && ! is_admin() ) {
 			$this->customize_preview_init();
 		}
@@ -585,18 +593,21 @@ final class WP_Customize_Manager {
 	 * @return string|null $post_value Sanitized value, or null if not supplied
 	 */
 	public function post_value( $setting ) {
-		if ( ! isset( $this->_post_values ) ) {
-			if ( isset( $_REQUEST['customized'] ) ) {
-				$this->_post_values = json_decode( wp_unslash( $_REQUEST['customized'] ), true );
-			} else {
+		$post_value = null;
+		if ( ! isset( $this->_post_values ) && $this->transaction_uuid ) {
+			$transaction_post = $this->get_transaction_post( $this->transaction_uuid );
+			if ( ! $transaction_post ) {
 				$this->_post_values = false;
+			} else {
+				$this->_post_values = json_decode( $transaction_post->post_content, true );
 			}
 		}
 
 		if ( isset( $this->_post_values[ $setting->id ] ) ) {
-			return $setting->sanitize( $this->_post_values[ $setting->id ] );
+			// Note that we do not call sanitize here because it has already been done when the transaction was updated
+			$post_value = $this->_post_values[ $setting->id ];
 		}
-		return null;
+		return $post_value;
 	}
 
 	/**
@@ -645,10 +656,6 @@ final class WP_Customize_Manager {
 			add_filter( $filter, array( $this, 'persist_preview_query_vars' ) );
 		}
 		// @todo add filter for the_content and the_excerpt
-
-		foreach ( $this->settings as $setting ) {
-			$setting->preview();
-		}
 
 		/**
 		 * Fires once the Customizer preview has initialized and JavaScript
@@ -780,7 +787,9 @@ final class WP_Customize_Manager {
 		$settings = array(
 			'values'  => array(),
 			'channel' => $this->messenger_channel,
-			'transactionUuid' => $this->transaction_uuid,
+			'transaction' => array(
+				'uuid' => $this->transaction_uuid,
+			),
 			'theme' => $this->theme()->get_stylesheet(),
 			'nonce' => $this->get_nonces(),
 			'url' => array(
@@ -1042,6 +1051,27 @@ final class WP_Customize_Manager {
 			wp_send_json_error( 'invalid_customize_transaction_uuid' );
 			return;
 		}
+		if ( empty( $_POST['customized'] ) ) {
+			status_header( 400 );
+			wp_send_json_error( 'missing_customized_json' );
+			return;
+		}
+
+		$transaction_data = array();
+		$post_values = json_decode( wp_unslash( $_REQUEST['customized'] ), true );
+		if ( empty( $post_values ) ) {
+			status_header( 400 );
+			wp_send_json_error( 'bad_customized_json' );
+			return;
+		}
+
+		foreach ( $this->settings as $setting ) {
+			if ( $setting->check_capabilities() && isset( $post_values[ $setting->id ] ) ) {
+				$post_value = $post_values[ $setting->id ];
+				$post_value = wp_slash( $post_value ); // WP_Customize_Setting::sanitize() erroneously does wp_unslash again
+				$transaction_data[ $setting->id ] = $setting->sanitize( $post_value );
+			}
+		}
 
 		$transaction_post = $this->get_transaction_post( $this->transaction_uuid );
 		if ( empty( $transaction_post ) ) {
@@ -1050,6 +1080,7 @@ final class WP_Customize_Manager {
 				'post_name' => $this->transaction_uuid,
 				'post_status' => 'draft',
 				'post_author' => get_current_user_id(),
+				'post_content' => wp_json_encode( $transaction_data ),
 			);
 			$r = wp_insert_post( $postarr, true );
 			if ( is_wp_error( $r ) ) {
@@ -1060,13 +1091,27 @@ final class WP_Customize_Manager {
 				$transaction_id = $r;
 			}
 			$transaction_post = get_post( $transaction_id );
+		} else {
+			$existing_transaction_data = json_decode( $transaction_post->post_content, true );
+			if ( $existing_transaction_data ) {
+				$transaction_data = array_merge( $existing_transaction_data, $transaction_data );
+			}
+			$postarr = array(
+				'ID' => $transaction_post->ID,
+				'post_content' => wp_slash( wp_json_encode( $transaction_data ) ),
+			);
+			$r = wp_update_post( $postarr, true );
+			if ( is_wp_error( $r ) ) {
+				status_header( 500 );
+				wp_send_json_error( 'update_transaction_failure' );
+				return;
+			}
 		}
-
-		// @todo parse incoming customized JSON data and store in post_content?
 
 		$data = array(
 			'transaction_uuid' => $this->transaction_uuid,
 			'transaction_post_id' => $transaction_post->ID,
+			'transaction_status' => get_post_status( $transaction_post->ID ),
 		);
 		wp_send_json_success( $data );
 	}

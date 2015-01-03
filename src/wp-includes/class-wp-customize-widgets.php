@@ -127,7 +127,7 @@ final class WP_Customize_Widgets {
 	public function setup_widget_addition_previews() {
 		$is_customize_preview = false;
 
-		if ( ! empty( $this->manager ) && ! is_admin() && ! empty( $this->manager->transaction_uuid ) ) {
+		if ( isset( $_REQUEST['customize_transaction_uuid'] ) && $this->manager->is_valid_transaction_uuid( $_REQUEST['customize_transaction_uuid'] ) ) {
 			$is_customize_preview = true;
 		}
 
@@ -147,9 +147,17 @@ final class WP_Customize_Widgets {
 		}
 
 		// Input from Customizer preview.
-		// @todo Grab the content from the $this->manager->get_transaction_post( $this->manager->transaction_uuid )
-		if ( isset( $_POST['customized'] ) ) {
-			$this->_customized = json_decode( $this->get_post_value( 'customized' ), true );
+		$transaction_data = array();
+		if ( $this->manager->transaction_uuid ) {
+			$transaction_post = $this->manager->get_transaction_post( $this->manager->transaction_uuid );
+			if ( $transaction_post ) {
+				$transaction_data = json_decode( $transaction_post->post_content, true );
+			}
+		}
+
+		// @todo Grab from json_decode( $this->manager->get_transaction_post( $this->manager->transaction_uuid )->post_content, false )
+		if ( ! empty( $transaction_data ) ) {
+			$this->_customized = $transaction_data;
 		} else { // Input from ajax widget update request.
 			$this->_customized = array();
 			$id_base = $this->get_post_value( 'id_base' );
@@ -528,12 +536,14 @@ final class WP_Customize_Widgets {
 		 * We have to register these settings later than customize_preview_init
 		 * so that other filters have had a chance to run.
 		 */
-		if ( did_action( 'customize_preview_init' ) ) {
+		if ( isset( $_REQUEST['customize_transaction_uuid'] ) && $this->manager->is_valid_transaction_uuid( $_REQUEST['customize_transaction_uuid'] ) ) {
 			foreach ( $new_setting_ids as $new_setting_id ) {
 				$this->manager->get_setting( $new_setting_id )->preview();
 			}
 		}
 		$this->remove_prepreview_filters();
+
+		add_filter( 'sidebars_widgets',   array( $this, 'preview_sidebars_widgets' ), 1 );
 	}
 
 	/**
@@ -975,7 +985,6 @@ final class WP_Customize_Widgets {
 	 * @access public
 	 */
 	public function customize_preview_init() {
-		add_filter( 'sidebars_widgets',   array( $this, 'preview_sidebars_widgets' ), 1 );
 		add_action( 'wp_enqueue_scripts', array( $this, 'customize_preview_enqueue' ) );
 		add_action( 'wp_print_styles',    array( $this, 'print_preview_css' ), 1 );
 		add_action( 'wp_footer',          array( $this, 'export_preview_data' ), 20 );

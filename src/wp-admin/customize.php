@@ -198,16 +198,14 @@ do_action( 'customize_controls_print_scripts' );
 	 */
 	do_action( 'customize_controls_print_footer_scripts' );
 
-	$transaction_uuid = null;
-	if ( isset( $_REQUEST['customize_transaction_uuid'] ) && $wp_customize->is_valid_transaction_uuid( $_REQUEST['customize_transaction_uuid'] ) ) {
-		$transaction_uuid = $_REQUEST['customize_transaction_uuid'];
-	} else {
-		$transaction_uuid = $wp_customize->generate_transaction_uuid();
-	}
+	$transaction_post = $wp_customize->get_transaction_post( $wp_customize->transaction_uuid );
 
 	// Prepare Customizer settings to pass to JavaScript.
 	$settings = array(
-		'transactionUuid' => $transaction_uuid,
+		'transaction' => array(
+			'uuid' => $wp_customize->transaction_uuid,
+			'status' => ( $transaction_post ? $transaction_post->post_status : null ),
+		),
 		'theme'    => array(
 			'stylesheet' => $wp_customize->get_stylesheet(),
 			'active'     => $wp_customize->is_theme_active(),

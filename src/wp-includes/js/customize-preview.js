@@ -155,7 +155,7 @@
 			channel: api.settings.channel,
 			theme: api.settings.theme,
 			allowedUrls: api.settings.url.allowed,
-			transactionUuid: api.settings.transactionUuid
+			transactionUuid: api.settings.transaction.uuid
 		});
 		if ( api.settings.error ) {
 			api.preview.send( 'error', api.settings.error );

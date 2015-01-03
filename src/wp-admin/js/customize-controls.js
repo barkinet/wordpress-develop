@@ -21,12 +21,47 @@
 			this.bind( this.preview );
 		},
 		preview: function() {
-			switch ( this.transport ) {
-				case 'refresh':
-					return this.previewer.refresh();
-				case 'postMessage':
-					return this.previewer.send( 'setting', [ this.id, this() ] );
+			var setting, customized, req, deferred;
+			setting = this;
+			deferred = $.Deferred();
+
+			this.previewer.send( 'setting', [ this.id, this() ] );
+			if ( 'postMessage' === this.transport ) {
+				deferred.notify( 'previewed' );
 			}
+
+			// @todo We should debounce the update requests
+			customized = {};
+			customized[ this.id ] = this();
+			req = wp.ajax.post( 'customize_update_transaction', {
+				nonce: api.settings.nonce.update,
+				wp_customize: 'on',
+				customized: JSON.stringify( customized ),
+				customize_transaction_uuid: api.settings.transaction.uuid
+			});
+			req.fail( function () {
+				deferred.reject.apply( deferred, arguments );
+			});
+
+			if ( 'postMessage' === setting.transport ) {
+				req.done( function () {
+					deferred.resolve();
+				} );
+			} else {
+				req.done( function ( info ) {
+					api.settings.transaction.status = info.transaction_status; // @todo Introduce a transactionStatus state/Value?
+
+					var onReady = function () {
+						deferred.notify( 'previewed' );
+						deferred.resolve();
+						setting.previewer.unbind( 'ready', onReady );
+					};
+					setting.previewer.bind( 'ready', onReady );
+					setting.previewer.refresh();
+				} );
+			}
+
+			return deferred;
 		}
 	});
 
@@ -1786,11 +1821,12 @@
 				return {
 					wp_customize: 'on',
 					theme: api.settings.theme.stylesheet,
-					customize_transaction_uuid: api.settings.transactionUuid
+					customize_transaction_uuid: api.settings.transaction.uuid
 				};
 			},
 
 			save: function() {
+				// @todo https://core.trac.wordpress.org/ticket/29098
 				var self  = this,
 					query = $.extend( this.query(), {
 						action: 'customize_save',
@@ -2019,7 +2055,7 @@
 			});
 
 			// Set default states.
-			saved( true );
+			saved( 'draft' !== api.settings.transaction.status );
 			activated( api.settings.theme.active );
 			processing( 0 );
 
