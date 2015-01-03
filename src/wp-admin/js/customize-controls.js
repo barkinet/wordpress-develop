@@ -1494,7 +1494,6 @@
 			if ( '?' !== queryString ) {
 				queryString += '&';
 			}
-			// @todo We need to append the Customize transaction ID, and the
 			queryString += $.param( query );
 			return path + queryString + fragment;
 		},
@@ -1787,9 +1786,9 @@
 
 				return {
 					wp_customize: 'on',
-					theme:      api.settings.theme.stylesheet,
-					customized: JSON.stringify( dirtyCustomized ),
-					nonce:      this.nonce.preview
+					theme: api.settings.theme.stylesheet,
+					nonce: this.nonce.preview,
+					customize_transaction_uuid: api.settings.transaction_uuid
 				};
 			},
 

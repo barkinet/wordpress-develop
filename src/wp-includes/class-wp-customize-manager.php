@@ -87,6 +87,11 @@ final class WP_Customize_Manager {
 	protected $messenger_channel;
 
 	/**
+	 * @var string
+	 */
+	public $transaction_uuid;
+
+	/**
 	 * @var array
 	 */
 	protected $customized;
@@ -121,6 +126,9 @@ final class WP_Customize_Manager {
 
 		add_action( 'init', array( $this, 'register_post_type' ), 0 );
 
+		if ( isset( $_REQUEST['customize_transaction_uuid'] ) && $this->is_valid_transaction_uuid( $_REQUEST['customize_transaction_uuid'] ) ) {
+			$this->transaction_uuid = $_REQUEST['customize_transaction_uuid'];
+		}
 		$this->widgets = new WP_Customize_Widgets( $this );
 
 		add_filter( 'wp_die_handler', array( $this, 'wp_die_handler' ) );
@@ -736,9 +744,9 @@ final class WP_Customize_Manager {
 		$persisted_query_vars = array(
 			'customize_messenger_channel' => $this->messenger_channel,
 			'wp_customize' => 'on',
+			'customize_transaction_uuid' => $this->transaction_uuid,
 			'theme' => $this->theme()->get_stylesheet(),
 			'nonce' => $this->preview_nonce,
-			// @todo 'customize_transaction_id' => null,
 		);
 		return $persisted_query_vars;
 	}
@@ -1020,30 +1028,29 @@ final class WP_Customize_Manager {
 		if ( ! check_ajax_referer( 'update-customize-transaction', 'nonce', false ) ) {
 			status_header( 400 );
 			wp_send_json_error( 'bad_nonce' );
+			return;
 		}
 		if ( 'POST' !== $_SERVER['REQUEST_METHOD'] ) {
 			status_header( 405 );
 			wp_send_json_error( 'bad_method' );
+			return;
 		}
 		if ( ! current_user_can( 'customize' ) ) {
 			status_header( 403 );
 			wp_send_json_error( 'customize_not_allowed' );
+			return;
 		}
-		if ( ! isset( $_POST['customize_transaction_uuid'] ) ) {
+		if ( empty( $this->transaction_uuid ) ) {
 			status_header( 400 );
-			wp_send_json_error( 'missing_customize_transaction_uuid' );
-		}
-		$transaction_uuid = wp_unslash( $_POST['customize_transaction_uuid'] );
-		if ( ! $this->is_valid_transaction_uuid( $transaction_uuid ) ) {
-			status_header( 400 );
-			wp_send_json_error( 'bad_customize_transaction_uuid' );
+			wp_send_json_error( 'invalid_customize_transaction_uuid' );
+			return;
 		}
 
-		$transaction_post = $this->get_transaction_post( $transaction_uuid );
+		$transaction_post = $this->get_transaction_post( $this->transaction_uuid );
 		if ( empty( $transaction_post ) ) {
 			$postarr = array(
 				'post_type' => self::TRANSACTION_POST_TYPE,
-				'post_name' => $transaction_uuid,
+				'post_name' => $this->transaction_uuid,
 				'post_status' => 'draft',
 				'post_author' => get_current_user_id(),
 			);
@@ -1051,6 +1058,7 @@ final class WP_Customize_Manager {
 			if ( is_wp_error( $r ) ) {
 				status_header( 500 );
 				wp_send_json_error( 'create_transaction_failure' );
+				return;
 			} else {
 				$transaction_id = $r;
 			}
@@ -1060,11 +1068,10 @@ final class WP_Customize_Manager {
 		// @todo parse incoming customized JSON data and store in post_content?
 
 		$data = array(
-			'transaction_uuid' => $transaction_uuid,
+			'transaction_uuid' => $this->transaction_uuid,
 			'transaction_post_id' => $transaction_post->ID,
 		);
 		wp_send_json_success( $data );
-
 	}
 
 	/**
