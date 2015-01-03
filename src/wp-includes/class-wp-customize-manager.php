@@ -72,16 +72,6 @@ final class WP_Customize_Manager {
 	protected $controls = array();
 
 	/**
-	 * @var int
-	 */
-	protected $nonce_tick;
-
-	/**
-	 * @var string
-	 */
-	protected $preview_nonce;
-
-	/**
 	 * @var string
 	 */
 	protected $messenger_channel;
@@ -615,8 +605,6 @@ final class WP_Customize_Manager {
 	 * @since 3.4.0
 	 */
 	public function customize_preview_init() {
-		$this->nonce_tick = check_ajax_referer( 'preview-customize_' . $this->get_stylesheet(), 'nonce' );
-		$this->preview_nonce = wp_create_nonce( 'preview-customize_' . $this->get_stylesheet() );
 		if ( isset( $_REQUEST['customize_messenger_channel'] ) ) {
 			$this->messenger_channel = wp_unslash( $_REQUEST['customize_messenger_channel'] );
 		}
@@ -745,10 +733,22 @@ final class WP_Customize_Manager {
 			'customize_messenger_channel' => $this->messenger_channel,
 			'wp_customize' => 'on',
 			'customize_transaction_uuid' => $this->transaction_uuid,
-			'theme' => $this->theme()->get_stylesheet(),
-			'nonce' => $this->preview_nonce,
+			'theme' => $this->theme()->get_stylesheet()
 		);
 		return $persisted_query_vars;
+	}
+
+	/**
+	 * @return array
+	 */
+	public function get_nonces() {
+		$nonces = array();
+		if ( current_user_can( 'customize' ) ) {
+			$nonces['update'] = wp_create_nonce( 'update-customize_' . $this->get_stylesheet() );
+			// @todo only provide save nonce if current_user_can( get_post_type_object( self::TRANSACTION_POST_TYPE )->cap->publish_posts )?
+			$nonces['save'] = wp_create_nonce( 'save-customize_' . $this->get_stylesheet() );
+		}
+		return $nonces;
 	}
 
 	/**
@@ -781,11 +781,7 @@ final class WP_Customize_Manager {
 			'values'  => array(),
 			'channel' => $this->messenger_channel,
 			'theme' => $this->theme()->get_stylesheet(),
-			'nonceTick' => $this->nonce_tick,
-			'nonce' => array(
-				'save' => wp_create_nonce( 'save-customize_' . $this->get_stylesheet() ),
-				'preview' => $this->preview_nonce,
-			),
+			'nonce' => $this->get_nonces(),
 			'url' => array(
 				'allowed' => array_map( 'esc_url_raw', $this->get_allowed_urls() ),
 			),
@@ -1025,7 +1021,7 @@ final class WP_Customize_Manager {
 	 * @since 4.2.0
 	 */
 	public function update_transaction() {
-		if ( ! check_ajax_referer( 'update-customize-transaction', 'nonce', false ) ) {
+		if ( ! check_ajax_referer( 'update-customize_' . $this->get_stylesheet(), 'nonce', false ) ) {
 			status_header( 400 );
 			wp_send_json_error( 'bad_nonce' );
 			return;

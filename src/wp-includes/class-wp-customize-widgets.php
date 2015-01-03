@@ -127,8 +127,8 @@ final class WP_Customize_Widgets {
 	public function setup_widget_addition_previews() {
 		$is_customize_preview = false;
 
-		if ( ! empty( $this->manager ) && ! is_admin() && 'on' === $this->get_post_value( 'wp_customize' ) ) {
-			$is_customize_preview = check_ajax_referer( 'preview-customize_' . $this->manager->get_stylesheet(), 'nonce', false );
+		if ( ! empty( $this->manager ) && ! is_admin() && ! empty( $this->manager->transaction_uuid ) ) {
+			$is_customize_preview = true;
 		}
 
 		$is_ajax_widget_update = false;
@@ -147,6 +147,7 @@ final class WP_Customize_Widgets {
 		}
 
 		// Input from Customizer preview.
+		// @todo Grab the content from the $this->manager->get_transaction_post( $this->manager->transaction_uuid )
 		if ( isset( $_POST['customized'] ) ) {
 			$this->_customized = json_decode( $this->get_post_value( 'customized' ), true );
 		} else { // Input from ajax widget update request.

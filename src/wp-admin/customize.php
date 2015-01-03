@@ -231,11 +231,7 @@ do_action( 'customize_controls_print_scripts' );
 		'controls' => array(),
 		'panels'   => array(),
 		'sections' => array(),
-		'nonce'    => array(
-			'preview' => wp_create_nonce( 'preview-customize_' . $wp_customize->get_stylesheet() ),
-			'update'  => wp_create_nonce( 'update-customize-transaction' ), // @todo Should this have the stylesheet?
-			'save'    => wp_create_nonce( 'save-customize_' . $wp_customize->get_stylesheet() ),
-		),
+		'nonce'    => $wp_customize->get_nonces(),
 		'autofocus' => array(),
 		'documentTitleTmpl' => $document_title_tmpl,
 	);
