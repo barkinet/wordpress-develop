@@ -951,8 +951,13 @@ final class WP_Customize_Manager {
 	 * @return string
 	 */
 	public function generate_transaction_uuid() {
-		// @todo Full UUID implementation
-		return md5( rand() );
+		return sprintf( '%04x%04x-%04x-%04x-%04x-%04x%04x%04x',
+			mt_rand( 0, 0xffff ), mt_rand( 0, 0xffff ),
+			mt_rand( 0, 0xffff ),
+			mt_rand( 0, 0x0fff ) | 0x4000,
+			mt_rand( 0, 0x3fff ) | 0x8000,
+			mt_rand( 0, 0xffff ), mt_rand( 0, 0xffff ), mt_rand( 0, 0xffff )
+		);
 	}
 
 	/**
@@ -965,7 +970,7 @@ final class WP_Customize_Manager {
 	 * @return bool
 	 */
 	public function is_valid_transaction_uuid( $uuid ) {
-		return 0 !== preg_match( '/^\w{32}$/', $uuid );
+		return 0 !== preg_match( '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/', $uuid );
 	}
 
 	/**
