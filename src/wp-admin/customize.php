@@ -198,13 +198,12 @@ do_action( 'customize_controls_print_scripts' );
 	 */
 	do_action( 'customize_controls_print_footer_scripts' );
 
-	$transaction_post = $wp_customize->get_transaction_post( $wp_customize->transaction_uuid );
-
 	// Prepare Customizer settings to pass to JavaScript.
+	// todo: Move this into a method on WP_Customize_Manager, as was done for the Customizer preview
 	$settings = array(
 		'transaction' => array(
-			'uuid' => $wp_customize->transaction_uuid,
-			'status' => ( $transaction_post ? $transaction_post->post_status : null ),
+			'uuid' => $wp_customize->transaction->uuid,
+			'status' => $wp_customize->transaction->status(),
 		),
 		'theme'    => array(
 			'stylesheet' => $wp_customize->get_stylesheet(),

@@ -127,17 +127,17 @@ final class WP_Customize_Widgets {
 	public function setup_widget_addition_previews() {
 		$is_customize_preview = false;
 
-		if ( isset( $_REQUEST['customize_transaction_uuid'] ) && $this->manager->is_valid_transaction_uuid( $_REQUEST['customize_transaction_uuid'] ) ) {
+		if ( ! $this->manager->transaction->saved() ) { // @todo This doesn't really make sense
 			$is_customize_preview = true;
 		}
 
 		$is_ajax_widget_update = false;
-		if ( $this->manager->doing_ajax() && 'update-widget' === $this->get_post_value( 'action' ) ) {
+		if ( $this->manager->doing_ajax( 'update-widget' ) ) {
 			$is_ajax_widget_update = check_ajax_referer( 'update-widget', 'nonce', false );
 		}
 
 		$is_ajax_customize_save = false;
-		if ( $this->manager->doing_ajax() && 'customize_save' === $this->get_post_value( 'action' ) ) {
+		if ( $this->manager->doing_ajax( 'customize_save' ) ) {
 			$is_ajax_customize_save = check_ajax_referer( 'save-customize_' . $this->manager->get_stylesheet(), 'nonce', false );
 		}
 
@@ -147,15 +147,7 @@ final class WP_Customize_Widgets {
 		}
 
 		// Input from Customizer preview.
-		$transaction_data = array();
-		if ( $this->manager->transaction_uuid ) {
-			$transaction_post = $this->manager->get_transaction_post( $this->manager->transaction_uuid );
-			if ( $transaction_post ) {
-				$transaction_data = json_decode( $transaction_post->post_content, true );
-			}
-		}
-
-		// @todo Grab from json_decode( $this->manager->get_transaction_post( $this->manager->transaction_uuid )->post_content, false )
+		$transaction_data = $this->manager->transaction->data();
 		if ( ! empty( $transaction_data ) ) {
 			$this->_customized = $transaction_data;
 		} else { // Input from ajax widget update request.
@@ -536,7 +528,7 @@ final class WP_Customize_Widgets {
 		 * We have to register these settings later than customize_preview_init
 		 * so that other filters have had a chance to run.
 		 */
-		if ( isset( $_REQUEST['customize_transaction_uuid'] ) && $this->manager->is_valid_transaction_uuid( $_REQUEST['customize_transaction_uuid'] ) ) {
+		if ( ! $this->manager->doing_ajax( 'customize_save' ) ) {
 			foreach ( $new_setting_ids as $new_setting_id ) {
 				$this->manager->get_setting( $new_setting_id )->preview();
 			}

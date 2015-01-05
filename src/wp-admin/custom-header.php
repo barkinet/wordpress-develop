@@ -1317,7 +1317,7 @@ wp_nonce_field( 'custom-header-options', '_wpnonce-custom-header-options' ); ?>
 	}
 
 	public function customize_set_last_used( $wp_customize ) {
-		$data = $wp_customize->get_setting( 'header_image_data' )->post_value();
+		$data = $wp_customize->get_setting( 'header_image_data' )->transaction_value();
 
 		if ( ! isset( $data['attachment_id'] ) ) {
 			return;

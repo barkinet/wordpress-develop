@@ -16,8 +16,6 @@
  */
 final class WP_Customize_Manager {
 
-	const TRANSACTION_POST_TYPE = 'wp_transaction';
-
 	/**
 	 * An instance of the theme being previewed.
 	 *
@@ -77,14 +75,9 @@ final class WP_Customize_Manager {
 	protected $messenger_channel;
 
 	/**
-	 * @var string
+	 * @var WP_Customize_Transaction
 	 */
-	public $transaction_uuid;
-
-	/**
-	 * @var array
-	 */
-	protected $customized;
+	public $transaction;
 
 	/**
 	 * Controls that may be rendered from JS templates.
@@ -96,31 +89,26 @@ final class WP_Customize_Manager {
 	protected $registered_control_types = array();
 
 	/**
-	 * $_REQUEST values for Customize Settings.
-	 *
-	 * @var array
-	 */
-	private $_post_values;
-
-	/**
 	 * Constructor.
 	 *
 	 * @since 3.4.0
+	 *
+	 * @param string $transaction_uuid
 	 */
-	public function __construct() {
+	public function __construct( $transaction_uuid = null ) {
+		require( ABSPATH . WPINC . '/class-wp-customize-transaction.php' );
 		require( ABSPATH . WPINC . '/class-wp-customize-setting.php' );
 		require( ABSPATH . WPINC . '/class-wp-customize-panel.php' );
 		require( ABSPATH . WPINC . '/class-wp-customize-section.php' );
 		require( ABSPATH . WPINC . '/class-wp-customize-control.php' );
 		require( ABSPATH . WPINC . '/class-wp-customize-widgets.php' );
 
-		add_action( 'init', array( $this, 'register_post_type' ), 0 );
-
-		if ( isset( $_REQUEST['customize_transaction_uuid'] ) && $this->is_valid_transaction_uuid( $_REQUEST['customize_transaction_uuid'] ) ) {
-			$this->transaction_uuid = $_REQUEST['customize_transaction_uuid'];
-		} else {
-			$this->transaction_uuid = $this->generate_transaction_uuid();
+		if ( isset( $_REQUEST['customize_messenger_channel'] ) ) {
+			// @todo Is this needed anymore?
+			$this->messenger_channel = wp_unslash( $_REQUEST['customize_messenger_channel'] );
 		}
+
+		$this->transaction = new WP_Customize_Transaction( $this, $transaction_uuid );
 		$this->widgets = new WP_Customize_Widgets( $this );
 
 		add_filter( 'wp_die_handler', array( $this, 'wp_die_handler' ) );
@@ -145,28 +133,29 @@ final class WP_Customize_Manager {
 	}
 
 	/**
-	 * Register the transaction post type.
-	 *
-	 * @since 4.2.0
-	 */
-	public function register_post_type() {
-		register_post_type( self::TRANSACTION_POST_TYPE, array(
-			'public' => false,
-			'supports' => array( 'author' ),
-			'_builtin' => true, /* internal use only. */
-			'delete_with_user' => false,
-		) );
-	}
-
-	/**
-	 * Return true if it's an AJAX request.
+	 * Return true if it's an AJAX request, optionally specified.
 	 *
 	 * @since 3.4.0
 	 *
+	 * @param string|null $action whether the supplied Ajax action is being run.
+	 *
 	 * @return bool
 	 */
-	public function doing_ajax() {
-		return isset( $_REQUEST['customized'] ) || ( defined( 'DOING_AJAX' ) && DOING_AJAX );
+	public function doing_ajax( $action = null ) {
+		$doing_ajax = ( defined( 'DOING_AJAX' ) && DOING_AJAX );
+		if ( ! $doing_ajax ) {
+			return false;
+		}
+
+		if ( $action ) {
+			if ( ! isset( $_REQUEST['action'] ) ) {
+				return false;
+			} else if ( wp_unslash( $_REQUEST['action'] ) !== $action ) {
+				return false;
+			}
+		}
+
+		return true;
 	}
 
 	/**
@@ -335,7 +324,10 @@ final class WP_Customize_Manager {
 			$this->wp_die( 0 );
 		}
 
-		show_admin_bar( false );
+		// Hide the admin bar if we're embedded in the Customizer iframe
+		if ( $this->messenger_channel ) {
+			show_admin_bar( false );
+		}
 
 		if ( ! current_user_can( 'customize' ) ) {
 			$this->wp_die( -1 );
@@ -551,7 +543,15 @@ final class WP_Customize_Manager {
 		 */
 		do_action( 'customize_register', $this );
 
-		if ( isset( $_REQUEST['customize_transaction_uuid'] ) && $this->is_valid_transaction_uuid( $_REQUEST['customize_transaction_uuid'] ) ) {
+		/*
+		 * Note that we need to preview the settings outside the Customizer preview
+		 * and in the Customizer pane itself so that loading a previous transaction
+		 * into the Customizer. We have to prevent the previews from being added
+		 * in the case of a customize_save action because then update_option()
+		 * may short-circuit because it will detect that there are no changes to
+		 * make.
+		 */
+		if ( ! $this->doing_ajax( 'customize_save' ) ) {
 			foreach ( $this->settings as $setting ) {
 				$setting->preview();
 			}
@@ -567,25 +567,14 @@ final class WP_Customize_Manager {
 	 *
 	 * @since 3.4.0
 	 *
+	 * @deprecated
+	 *
 	 * @param WP_Customize_Setting $setting A WP_Customize_Setting derived object
 	 * @return string|null $post_value Sanitized value, or null if not supplied
 	 */
 	public function post_value( $setting ) {
-		$post_value = null;
-		if ( ! isset( $this->_post_values ) && $this->transaction_uuid ) {
-			$transaction_post = $this->get_transaction_post( $this->transaction_uuid );
-			if ( ! $transaction_post ) {
-				$this->_post_values = false;
-			} else {
-				$this->_post_values = json_decode( $transaction_post->post_content, true );
-			}
-		}
-
-		if ( isset( $this->_post_values[ $setting->id ] ) ) {
-			// Note that we do not call sanitize here because it has already been done when the transaction was updated
-			$post_value = $this->_post_values[ $setting->id ];
-		}
-		return $post_value;
+		_deprecated_function( __FUNCTION__, '0.4.2', 'WP_Customize_Manager::transaction::get()' );
+		return $this->transaction->get( $setting );
 	}
 
 	/**
@@ -594,10 +583,6 @@ final class WP_Customize_Manager {
 	 * @since 3.4.0
 	 */
 	public function customize_preview_init() {
-		if ( isset( $_REQUEST['customize_messenger_channel'] ) ) {
-			$this->messenger_channel = wp_unslash( $_REQUEST['customize_messenger_channel'] );
-		}
-
 		$this->prepare_controls();
 
 		ob_start(); // need to ensure the Customizer sends it all at once so scroll position is maintained (hopefully)
@@ -717,8 +702,8 @@ final class WP_Customize_Manager {
 		$persisted_query_vars = array(
 			'customize_messenger_channel' => $this->messenger_channel,
 			'wp_customize' => 'on',
-			'customize_transaction_uuid' => $this->transaction_uuid,
-			'theme' => $this->theme()->get_stylesheet()
+			'customize_transaction_uuid' => $this->transaction->uuid,
+			'theme' => $this->theme()->get_stylesheet(), // @todo Eliminate this. Opt for including in customizerd.
 		);
 		return $persisted_query_vars;
 	}
@@ -766,7 +751,7 @@ final class WP_Customize_Manager {
 			'values'  => array(),
 			'channel' => $this->messenger_channel,
 			'transaction' => array(
-				'uuid' => $this->transaction_uuid,
+				'uuid' => $this->transaction->uuid,
 			),
 			'theme' => $this->theme()->get_stylesheet(),
 			'nonce' => $this->get_nonces(),
@@ -936,74 +921,6 @@ final class WP_Customize_Manager {
 	}
 
 	/**
-	 * Generate a customizer transaction uuid
-	 *
-	 * @since 4.2.0
-	 *
-	 * @return string
-	 */
-	public function generate_transaction_uuid() {
-		return sprintf( '%04x%04x-%04x-%04x-%04x-%04x%04x%04x',
-			mt_rand( 0, 0xffff ), mt_rand( 0, 0xffff ),
-			mt_rand( 0, 0xffff ),
-			mt_rand( 0, 0x0fff ) | 0x4000,
-			mt_rand( 0, 0x3fff ) | 0x8000,
-			mt_rand( 0, 0xffff ), mt_rand( 0, 0xffff ), mt_rand( 0, 0xffff )
-		);
-	}
-
-	/**
-	 * Determine whether the supplied UUID is in the right format.
-	 *
-	 * @param string $uuid
-	 *
-	 * @since 4.2.0
-	 *
-	 * @return bool
-	 */
-	public function is_valid_transaction_uuid( $uuid ) {
-		return 0 !== preg_match( '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/', $uuid );
-	}
-
-	/**
-	 * Get the wp_customize_transaction post associated with the provided UUID, or null if it does not exist.
-	 *
-	 * @param string $transaction_uuid
-	 *
-	 * @return WP_Post|null
-	 */
-	public function get_transaction_post( $transaction_uuid ) {
-
-		$post_stati = array_merge(
-			array( 'any' ),
-			array_values( get_post_stati( array( 'exclude_from_search' => true ) ) )
-		);
-
-		add_action( 'pre_get_posts', array( $this, '_override_wp_query_is_single' ) );
-		$posts = get_posts( array(
-			'name' => $transaction_uuid,
-			'posts_per_page' => 1,
-			'post_type' => self::TRANSACTION_POST_TYPE,
-			'post_status' => $post_stati,
-		) );
-		remove_action( 'pre_get_posts', array( $this, '_override_wp_query_is_single' ) );
-
-		if ( empty( $posts ) ) {
-			return null;
-		}
-		return array_shift( $posts );
-	}
-
-	/**
-	 * This is needed to ensure that draft posts can be queried by name.
-	 *
-	 * @param WP_Query $query
-	 */
-	public function _override_wp_query_is_single( $query ) {
-		$query->is_single = false;
-	}
-
-	/**
 	 * Update the customize transaction.
 	 *
 	 * @since 4.2.0
@@ -1024,7 +941,7 @@ final class WP_Customize_Manager {
 			wp_send_json_error( 'customize_not_allowed' );
 			return;
 		}
-		if ( empty( $this->transaction_uuid ) ) {
+		if ( empty( $_REQUEST['customize_transaction_uuid'] ) ) {
 			status_header( 400 );
 			wp_send_json_error( 'invalid_customize_transaction_uuid' );
 			return;
@@ -1035,63 +952,32 @@ final class WP_Customize_Manager {
 			return;
 		}
 
-		$transaction_data = array();
-		$post_values = json_decode( wp_unslash( $_REQUEST['customized'] ), true );
-		if ( empty( $post_values ) ) {
+		$customized = json_decode( wp_unslash( $_REQUEST['customized'] ), true );
+		if ( empty( $customized ) ) {
 			status_header( 400 );
 			wp_send_json_error( 'bad_customized_json' );
 			return;
 		}
 
 		foreach ( $this->settings as $setting ) {
-			if ( $setting->check_capabilities() && isset( $post_values[ $setting->id ] ) ) {
-				$post_value = $post_values[ $setting->id ];
-				$post_value = wp_slash( $post_value ); // WP_Customize_Setting::sanitize() erroneously does wp_unslash again
-				$transaction_data[ $setting->id ] = $setting->sanitize( $post_value );
+			if ( $setting->check_capabilities() && isset( $customized[ $setting->id ] ) ) {
+				$this->transaction->set( $setting, $customized[ $setting->id ] );
 			}
 		}
 
-		$transaction_post = $this->get_transaction_post( $this->transaction_uuid );
-		if ( empty( $transaction_post ) ) {
-			$postarr = array(
-				'post_type' => self::TRANSACTION_POST_TYPE,
-				'post_name' => $this->transaction_uuid,
-				'post_status' => 'draft',
-				'post_author' => get_current_user_id(),
-				'post_content' => wp_json_encode( $transaction_data ),
-			);
-			$r = wp_insert_post( $postarr, true );
-			if ( is_wp_error( $r ) ) {
-				status_header( 500 );
-				wp_send_json_error( 'create_transaction_failure' );
-				return;
-			} else {
-				$transaction_id = $r;
-			}
-			$transaction_post = get_post( $transaction_id );
-		} else {
-			$existing_transaction_data = json_decode( $transaction_post->post_content, true );
-			if ( $existing_transaction_data ) {
-				$transaction_data = array_merge( $existing_transaction_data, $transaction_data );
-			}
-			$postarr = array(
-				'ID' => $transaction_post->ID,
-				'post_content' => wp_slash( wp_json_encode( $transaction_data ) ),
-			);
-			$r = wp_update_post( $postarr, true );
-			if ( is_wp_error( $r ) ) {
-				status_header( 500 );
-				wp_send_json_error( 'update_transaction_failure' );
-				return;
-			}
+		$r = $this->transaction->save();
+		if ( is_wp_error( $r ) ) {
+			status_header( 500 );
+			wp_send_json_error( $r->get_error_message() );
+			return;
 		}
 
-		$data = array(
-			'transaction_uuid' => $this->transaction_uuid,
-			'transaction_post_id' => $transaction_post->ID,
-			'transaction_status' => get_post_status( $transaction_post->ID ),
+		$response = array(
+			'transaction_uuid' => $this->transaction->uuid,
+			'transaction_settings' => $this->transaction->data(), // send back sanitized settings so that the UI can be updated to reflect the PHP-sanitized values
 		);
-		wp_send_json_success( $data );
+
+		wp_send_json_success( $response );
 	}
 
 	/**
@@ -1126,7 +1012,8 @@ final class WP_Customize_Manager {
 		 */
 		do_action( 'customize_save', $this );
 
-		foreach ( $this->settings as $setting ) {
+		// @todo This should be replaced with $this->transaction->save( 'publish' )
+		foreach ( $this->transaction->settings() as $setting ) {
 			$setting->save();
 		}
 
@@ -1455,6 +1342,13 @@ final class WP_Customize_Manager {
 	 * @since 3.4.0
 	 */
 	public function register_controls() {
+
+		// @todo?
+		// $this->add_setting( 'theme', array(
+		// 	'default' => get_option( 'stylesheet' ),
+		// 	'type' => 'option',
+		// 	'capability' => 'switch_themes',
+		// ) );
 
 		/* Control Types (custom control classes) */
 		$this->register_control_type( 'WP_Customize_Color_Control' );

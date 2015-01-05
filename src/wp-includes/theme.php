@@ -764,7 +764,7 @@ function switch_theme( $stylesheet ) {
 
 	$_sidebars_widgets = null;
 	if ( 'wp_ajax_customize_save' === current_action() ) {
-		$_sidebars_widgets = $wp_customize->post_value( $wp_customize->get_setting( 'old_sidebars_widgets_data' ) );
+		$_sidebars_widgets = $wp_customize->transaction_value( $wp_customize->get_setting( 'old_sidebars_widgets_data' ) );
 	} elseif ( is_array( $sidebars_widgets ) ) {
 		$_sidebars_widgets = $sidebars_widgets;
 	}
@@ -1918,6 +1918,9 @@ function check_theme_switched() {
  *
  * Fires when ?wp_customize=on or on wp-admin/customize.php.
  *
+ * @todo Should this be included in load.php instead?
+ * @todo Should there be a function for initializing the Customizer?
+ *
  * @since 3.4.0
  */
 function _wp_customize_include() {
@@ -1927,9 +1930,12 @@ function _wp_customize_include() {
 	) )
 		return;
 
-	require( ABSPATH . WPINC . '/class-wp-customize-manager.php' );
+	require_once( ABSPATH . WPINC . '/class-wp-customize-manager.php' );
+
+	$uuid = isset( $_REQUEST['customize_transaction_uuid'] ) ? $_REQUEST['customize_transaction_uuid'] : null;
+
 	// Init Customize class
-	$GLOBALS['wp_customize'] = new WP_Customize_Manager;
+	$GLOBALS['wp_customize'] = new WP_Customize_Manager( $uuid );
 }
 add_action( 'plugins_loaded', '_wp_customize_include' );
 

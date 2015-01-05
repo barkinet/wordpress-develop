@@ -108,6 +108,21 @@ function create_initial_post_types() {
 		'query_var' => false,
 	) );
 
+	register_post_type( 'wp_transaction', array(
+		'labels' => array(
+			'name' => __( 'Transactions' ),
+			'singular_name' => __( 'Transaction' ),
+		),
+		'public' => false,
+		'_builtin' => true, /* internal use only. don't use this when registering your own post type. */
+		'capability_type' => 'post',
+		'map_meta_cap' => true,
+		'hierarchical' => false,
+		'rewrite' => false,
+		'delete_with_user' => false,
+		'supports' => array( 'author', 'revisions' ),
+	) );
+
 	register_post_status( 'publish', array(
 		'label'       => _x( 'Published', 'post' ),
 		'public'      => true,

@@ -96,14 +96,6 @@ class WP_Customize_Setting {
 	protected $id_data = array();
 
 	/**
-	 * Cached and sanitized $_POST value for the setting.
-	 *
-	 * @access private
-	 * @var mixed
-	 */
-	private $_post_value;
-
-	/**
 	 * Constructor.
 	 *
 	 * Any supplied $args override class property defaults.
@@ -204,7 +196,7 @@ class WP_Customize_Setting {
 	 * @return mixed New or old value.
 	 */
 	public function _preview_filter( $original ) {
-		return $this->multidimensional_replace( $original, $this->id_data['keys'], $this->post_value() );
+		return $this->multidimensional_replace( $original, $this->id_data['keys'], $this->transaction_value() );
 	}
 
 	/**
@@ -213,14 +205,16 @@ class WP_Customize_Setting {
 	 *
 	 * @since 3.4.0
 	 *
-	 * @return false|null False if cap check fails or value isn't set.
+	 * @return bool False if cap check fails or value isn't set.
 	 */
 	public final function save() {
-		$value = $this->post_value();
+		$value = $this->transaction_value();
 
-		if ( ! $this->check_capabilities() || ! isset( $value ) ) {
-			return false;
-		}
+		/*
+		 * Note that in 3.4.0 there was a check_capabilities() call here. This is
+		 * no longer needed because the Customizer only allows settings to be
+		 * saved into it if they have the necessary capability.
+		 */
 
 		/**
 		 * Fires when the WP_Customize_Setting::save() method is called.
@@ -243,23 +237,34 @@ class WP_Customize_Setting {
 	 *
 	 * @since 3.4.0
 	 *
+	 * @deprecated
+	 *
 	 * @param mixed $default A default value which is used as a fallback. Default is null.
 	 * @return mixed The default value on failure, otherwise the sanitized value.
 	 */
 	public final function post_value( $default = null ) {
-		// Check for a cached value
-		if ( isset( $this->_post_value ) ) {
-			return $this->_post_value;
+		_deprecated_function( __FUNCTION__, '0.4.2', 'WP_Customize_Setting::transaction_value()' );
+		return $this->transaction_value( $default );
+	}
+
+	/**
+	 * Obtain the sanitized value for the setting in the loaded transaction.
+	 *
+	 * @since 4.2.0
+	 *
+	 * @param mixed $default A default value which is used as a fallback. Default is null.
+	 * @return mixed The default value on failure, otherwise the sanitized value.
+	 */
+	public final function transaction_value( $default = null ) {
+
+		// Call the manager for the transaction value
+		$value = $this->manager->transaction->get( $this );
+
+		if ( is_null( $value ) ) {
+			$value = $default;
 		}
 
-		// Call the manager for the post value
-		$result = $this->manager->post_value( $this );
-
-		if ( isset( $result ) ) {
-			return $this->_post_value = $result;
-		} else {
-			return $default;
-		}
+		return $value;
 	}
 
 	/**
@@ -619,7 +624,7 @@ final class WP_Customize_Header_Image_Setting extends WP_Customize_Setting {
 		 * use the header_image value.
 		 */
 		if ( ! $value ) {
-			$value = $this->manager->get_setting( 'header_image' )->post_value();
+			$value = $this->manager->get_setting( 'header_image' )->transaction_value();
 		}
 
 		if ( is_array( $value ) && isset( $value['choice'] ) ) {
