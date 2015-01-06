@@ -56,15 +56,15 @@ class WP_Customize_Transaction {
 			$this->uuid = self::generate_uuid();
 		}
 
-		$this->post = $this->get_post();
-		if ( ! $this->post ) {
+		$post = $this->post();
+		if ( ! $post ) {
 			$this->data = array();
 		} else {
-			$this->data = json_decode( $this->post->post_content, true );
+			$this->data = json_decode( $post->post_content, true );
 
 			// For back-compat
 			if ( empty( $_POST['customized'] ) ) {
-				$_POST['customized'] = wp_slash( $this->post->post_content );
+				$_POST['customized'] = wp_slash( $post->post_content );
 			}
 		}
 	}
@@ -106,7 +106,10 @@ class WP_Customize_Transaction {
 	 *
 	 * @return WP_Post|null
 	 */
-	protected function get_post() {
+	public function post() {
+		if ( $this->post ) {
+			return $this->post;
+		}
 
 		$post_stati = array_merge(
 			array( 'any' ),
@@ -123,9 +126,11 @@ class WP_Customize_Transaction {
 		remove_action( 'pre_get_posts', array( $this, '_override_wp_query_is_single' ) );
 
 		if ( empty( $posts ) ) {
-			return null;
+			$this->post = null;
+		} else {
+			$this->post = array_shift( $posts );
 		}
-		return array_shift( $posts );
+		return $this->post;
 	}
 
 	/**
@@ -285,6 +290,7 @@ class WP_Customize_Transaction {
 			$postarr = array(
 				'ID' => $this->post->ID,
 				'post_content' => wp_slash( $post_content ),
+				'post_status' => $status,
 			);
 			$r = wp_update_post( $postarr, true );
 			if ( is_wp_error( $r ) ) {

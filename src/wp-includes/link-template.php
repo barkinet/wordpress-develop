@@ -139,6 +139,8 @@ function get_permalink( $id = 0, $leavename = false ) {
 		return get_page_link($post, $leavename, $sample);
 	elseif ( $post->post_type == 'attachment' )
 		return get_attachment_link( $post, $leavename );
+	elseif ( $post->post_type == 'wp_transaction' )
+		return home_url( sprintf( '?wp_customize=on&customize_transaction_uuid=%s', $post->post_name ) );
 	elseif ( in_array($post->post_type, get_post_types( array('_builtin' => false) ) ) )
 		return get_post_permalink($post, $leavename, $sample);
 
@@ -1160,25 +1162,34 @@ function get_post_type_archive_feed_link( $post_type, $feed = '' ) {
  *
  * @param int $id Optional. Post ID.
  * @param string $context Optional, defaults to display. How to write the '&', defaults to '&amp;'.
- * @return string The edit post link for the given post.
+ * @return string|null The edit post link for the given post.
  */
 function get_edit_post_link( $id = 0, $context = 'display' ) {
-	if ( ! $post = get_post( $id ) )
-		return;
-
-	if ( 'revision' === $post->post_type )
-		$action = '';
-	elseif ( 'display' == $context )
-		$action = '&amp;action=edit';
-	else
-		$action = '&action=edit';
+	$post = get_post( $id );
+	if ( ! $post ) {
+		return null;
+	}
 
 	$post_type_object = get_post_type_object( $post->post_type );
-	if ( !$post_type_object )
-		return;
+	if ( ! $post_type_object ) {
+		return null;
+	}
 
-	if ( !current_user_can( 'edit_post', $post->ID ) )
-		return;
+	if ( ! current_user_can( 'edit_post', $post->ID ) ) {
+		return null;
+	}
+
+	$edit_post_link = admin_url( $post_type_object->_edit_link );
+
+	if ( 'wp_transaction' === $post->post_type ) {
+		$edit_post_link = add_query_arg( array( 'customize_transaction_uuid' => $post->post_name ), $edit_post_link );
+	} else if ( 'revision' !== $post->post_type ) {
+		$edit_post_link = add_query_arg( array( 'action' => 'edit' ), $edit_post_link );
+	}
+
+	if ( 'display' === $context ) {
+		$edit_post_link = esc_attr( $edit_post_link );
+	}
 
 	/**
 	 * Filter the post edit link.
@@ -1190,7 +1201,7 @@ function get_edit_post_link( $id = 0, $context = 'display' ) {
 	 * @param string $context The link context. If set to 'display' then ampersands
 	 *                        are encoded.
 	 */
-	return apply_filters( 'get_edit_post_link', admin_url( sprintf( $post_type_object->_edit_link . $action, $post->ID ) ), $post->ID, $context );
+	return apply_filters( 'get_edit_post_link', $edit_post_link, $post->ID, $context );
 }
 
 /**

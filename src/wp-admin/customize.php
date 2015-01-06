@@ -39,6 +39,17 @@ if ( ! $return ) {
  */
 global $wp_scripts, $wp_customize;
 
+$transaction_post = $wp_customize->transaction->post();
+$transaction_post_type = get_post_type_object( 'wp_transaction' );
+$authorized = ( $transaction_post ?
+	current_user_can( $transaction_post_type->cap->edit_post, $transaction_post->ID )
+	:
+	current_user_can( $transaction_post_type->cap->create_posts )
+);
+if ( ! $authorized ) {
+	wp_die( __( 'Cheatin&#8217; uh?' ), 403 );
+}
+
 $registered = $wp_scripts->registered;
 $wp_scripts = new WP_Scripts;
 $wp_scripts->registered = $registered;
@@ -126,7 +137,14 @@ do_action( 'customize_controls_print_scripts' );
 
 		<div id="customize-header-actions" class="wp-full-overlay-header">
 			<?php
-				$save_text = $wp_customize->is_theme_active() ? __( 'Save &amp; Publish' ) : __( 'Save &amp; Activate' );
+				if ( ! $wp_customize->is_theme_active() ) {
+					$save_text = __( 'Save &amp; Activate' );
+				} else if ( current_user_can( get_post_type_object( 'wp_transaction' )->cap->publish_posts ) ) {
+					$save_text = __( 'Save &amp; Publish' );
+				} else {
+					$save_text = __( 'Submit for Review' );
+				}
+
 				submit_button( $save_text, 'primary save', 'save', false );
 			?>
 			<span class="spinner"></span>

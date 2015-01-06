@@ -115,7 +115,18 @@ function create_initial_post_types() {
 		),
 		'public' => false,
 		'_builtin' => true, /* internal use only. don't use this when registering your own post type. */
-		'capability_type' => 'post',
+		'_edit_link' => 'customize.php', /* internal use only. don't use this when registering your own post type. */
+		'capability_type' => 'wp_transaction',
+		'capabilities' => array(
+			// @todo These need to be thought through more
+			'edit_post' => 'customize',
+			'read_post' => 'customize',
+			'delete_post' => 'customize',
+			'edit_posts' => 'customize',
+			'edit_others_posts' => 'customize',
+			'publish_posts' => 'customize',
+			'read_private_posts' => 'customize',
+		),
 		'map_meta_cap' => true,
 		'hierarchical' => false,
 		'rewrite' => false,

@@ -933,34 +933,40 @@ final class WP_Customize_Manager {
 		if ( ! check_ajax_referer( 'update-customize_' . $this->get_stylesheet(), 'nonce', false ) ) {
 			status_header( 400 );
 			wp_send_json_error( 'bad_nonce' );
-			return;
 		}
 		if ( 'POST' !== $_SERVER['REQUEST_METHOD'] ) {
 			status_header( 405 );
 			wp_send_json_error( 'bad_method' );
-			return;
 		}
 		if ( ! current_user_can( 'customize' ) ) {
 			status_header( 403 );
 			wp_send_json_error( 'customize_not_allowed' );
-			return;
 		}
 		if ( empty( $_REQUEST['customize_transaction_uuid'] ) ) {
 			status_header( 400 );
 			wp_send_json_error( 'invalid_customize_transaction_uuid' );
-			return;
 		}
 		if ( empty( $_POST['customized'] ) ) {
 			status_header( 400 );
 			wp_send_json_error( 'missing_customized_json' );
-			return;
 		}
 
 		$customized = json_decode( wp_unslash( $_REQUEST['customized'] ), true );
 		if ( empty( $customized ) ) {
 			status_header( 400 );
 			wp_send_json_error( 'bad_customized_json' );
-			return;
+		}
+
+		$transaction_post = $this->transaction->post();
+		$transaction_post_type = get_post_type_object( 'wp_transaction' );
+		$authorized = ( $transaction_post ?
+			current_user_can( $transaction_post_type->cap->edit_post, $transaction_post->ID )
+			:
+			current_user_can( $transaction_post_type->cap->create_posts )
+		);
+		if ( ! $authorized ) {
+			status_header( 403 );
+			wp_send_json_error( 'unauthorized' );
 		}
 
 		$new_setting_ids = array_diff( array_keys( $customized ), array_keys( $this->settings ) );
@@ -978,7 +984,6 @@ final class WP_Customize_Manager {
 		if ( is_wp_error( $r ) ) {
 			status_header( 500 );
 			wp_send_json_error( $r->get_error_message() );
-			return;
 		}
 
 		$response = array(
@@ -1011,6 +1016,18 @@ final class WP_Customize_Manager {
 			$this->start_previewing_theme();
 		}
 
+		$transaction_post = $this->transaction->post();
+		$transaction_post_type = get_post_type_object( 'wp_transaction' );
+		$authorized = ( $transaction_post ?
+			current_user_can( $transaction_post_type->cap->edit_post, $transaction_post->ID )
+			:
+			current_user_can( $transaction_post_type->cap->create_posts )
+		);
+		if ( ! $authorized ) {
+			status_header( 403 );
+			wp_send_json_error( 'unauthorized' );
+		}
+
 		/**
 		 * Fires once the theme has switched in the Customizer, but before settings
 		 * have been saved.
@@ -1021,10 +1038,12 @@ final class WP_Customize_Manager {
 		 */
 		do_action( 'customize_save', $this );
 
-		// @todo This should be replaced with $this->transaction->save( 'publish' )
-		foreach ( $this->transaction->settings() as $setting ) {
-			$setting->save();
+		if ( current_user_can( $transaction_post_type->cap->publish_posts ) ) {
+			$status = 'publish';
+		} else {
+			$status = 'pending';
 		}
+		$this->transaction->save( $status );
 
 		/**
 		 * Fires after Customize settings have been saved.

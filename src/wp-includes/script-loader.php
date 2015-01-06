@@ -386,7 +386,7 @@ function wp_default_scripts( &$scripts ) {
 	$scripts->add( 'customize-controls', "/wp-admin/js/customize-controls$suffix.js", array( 'customize-base' ), false, 1 );
 	did_action( 'init' ) && $scripts->localize( 'customize-controls', '_wpCustomizeControlsL10n', array(
 		'activate'  => __( 'Save &amp; Activate' ),
-		'save'      => __( 'Save &amp; Publish' ),
+		'save'      => current_user_can( get_post_type_object( 'wp_transaction' )->cap->publish_posts ) ? __( 'Save &amp; Publish' ) : __( 'Submit for Review' ),
 		'saveAlert' => __( 'The changes you made will be lost if you navigate away from this page.' ),
 		'saved'     => __( 'Saved' ),
 		'cancel'    => __( 'Cancel' ),
