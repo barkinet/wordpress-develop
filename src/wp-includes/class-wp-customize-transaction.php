@@ -298,28 +298,14 @@ class WP_Customize_Transaction {
 			}
 		}
 
-		// @todo: if $status === 'publish', then call update() on each of the settings
-		if ( 'publish' === get_post_status( $this->post->ID ) ) {
-			foreach ( $this->settings() as $setting ) {
-				$setting->save();
-			}
-		}
+		/*
+		 * See _wp_customize_transaction_publish() in theme.php for the behaviors
+		 * associated with the publish_wp_transaction action. The logic is
+		 * located there to facilitate scheduling wp_transaction posts for
+		 * future-publishing, which happens during WP Cron when the Customizer
+		 * is not normally booted up.
+		 */
 
 		return null;
-	}
-
-	/**
-	 * @todo We need to hook into the publish_wp_transaction action to save all the settings in the transaction in the case of scheduled transactions
-	 *
-	 * @param int $post_id
-	 * @param WP_Post $post
-	 */
-	public function publish_transaction( $post_id, $post ) {
-		unset( $post_id );
-		if ( self::POST_TYPE === $post->post_type ) {
-			// @todo $transaction = new self( $post->post_name );
-			// @todo initialize the Customizer with $post as the transaction, not anything from the $_REQUEST var
-			// @todo: load the Customizer, load all settings, then call save() or update() on each
-		}
 	}
 }

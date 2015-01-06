@@ -46,6 +46,7 @@ $authorized = ( $transaction_post ?
 	:
 	current_user_can( $transaction_post_type->cap->create_posts )
 );
+// @todo if the user is not authorized, then redirect to the permalink instead?
 if ( ! $authorized ) {
 	wp_die( __( 'Cheatin&#8217; uh?' ), 403 );
 }

@@ -1924,7 +1924,7 @@ function check_theme_switched() {
  * @since 3.4.0
  */
 function _wp_customize_include() {
-	// @todo Or if wp_customize_transaction?
+	// @todo Or if isset( $_REQUEST['customize_transaction_uuid'] )?
 	if ( ! ( ( isset( $_REQUEST['wp_customize'] ) && 'on' == $_REQUEST['wp_customize'] )
 		|| ( is_admin() && 'customize.php' == basename( $_SERVER['PHP_SELF'] ) )
 	) )
@@ -1938,6 +1938,57 @@ function _wp_customize_include() {
 	$GLOBALS['wp_customize'] = new WP_Customize_Manager( $uuid );
 }
 add_action( 'plugins_loaded', '_wp_customize_include' );
+
+/**
+ * Handle publishing of wp_transaction posts.
+ *
+ * This is located here specifically to account for publishing transactions with
+ * future statuses. In this case we have to bootstrap the Customizer during Cron,
+ * perhaps even multiple times if more than one transaction post gets published
+ * at once.
+ *
+ * @since 4.2.0
+ *
+ * @param int $post_id
+ * @param WP_Post $post
+ */
+function _wp_customize_transaction_publish( $post_id, $post ) {
+	unset( $post_id );
+
+	/**
+	 * @var WP_Customize_Manager $wp_customize
+	 */
+	global $wp_customize;
+	$uuid = $post->post_name;
+	if ( empty( $wp_customize ) ) {
+		require_once( ABSPATH . WPINC . '/class-wp-customize-manager.php' );
+		$wp_customize = new WP_Customize_Manager( $uuid );
+	} else if ( $uuid !== $wp_customize->transaction->uuid ) {
+		$wp_customize->transaction = new WP_Customize_Transaction( $wp_customize, $uuid );
+	}
+	if ( ! did_action( 'customize_register' ) ) {
+		/*
+		 * When running from CLI or Cron, we have to remove the action because
+		 * it will get added with a default priority of 10, after themes and plugins
+		 * have already done add_action( 'customize_register' ), resulting in them
+		 * being called first at the priority 10. So we manually call the
+		 * prerequisite function WP_Customize_Manager::register_controls() and
+		 * remove it from being called when the customize_register action fires.
+		 */
+		remove_action( 'customize_register', array( $wp_customize, 'register_controls' ) );
+		$wp_customize->register_controls();
+
+		do_action( 'customize_register', $wp_customize );
+	}
+	// Add any dynamic settings in the new transaction which may have been loaded
+	$wp_customize->register_dynamic_settings();
+
+	foreach ( $wp_customize->transaction->settings() as $setting ) {
+		$setting->save();
+	}
+
+}
+add_action( 'publish_wp_transaction', '_wp_customize_transaction_publish', 10, 2 );
 
 /**
  * Adds settings for the customize-loader script.
