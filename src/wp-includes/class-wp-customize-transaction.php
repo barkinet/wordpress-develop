@@ -61,6 +61,11 @@ class WP_Customize_Transaction {
 			$this->data = array();
 		} else {
 			$this->data = json_decode( $this->post->post_content, true );
+
+			// For back-compat
+			if ( empty( $_POST['customized'] ) ) {
+				$_POST['customized'] = wp_slash( $this->post->post_content );
+			}
 		}
 	}
 
@@ -181,6 +186,7 @@ class WP_Customize_Transaction {
 	 * @return array
 	 */
 	public function data() {
+		// @todo just return $this->data; ?
 		$values = array();
 		foreach ( array_keys( $this->data ) as $setting_id ) {
 			$values[ $setting_id ] = $this->get( $setting_id );
@@ -202,7 +208,6 @@ class WP_Customize_Transaction {
 			if ( $setting ) {
 				$settings[] = $setting;
 			}
-			// @todo What should be the behavior whereby no setting exists? Should we create one on the fly? This would require storing the Setting config in the transaction along with the value.
 		}
 		return $settings;
 	}

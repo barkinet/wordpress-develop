@@ -128,6 +128,7 @@ final class WP_Customize_Manager {
 		add_action( 'wp_ajax_customize_save', array( $this, 'save' ) );
 
 		add_action( 'customize_register',                 array( $this, 'register_controls' ) );
+		add_action( 'customize_register',                 array( $this, 'register_dynamic_settings' ), 11 ); // allow code to create settings first
 		add_action( 'customize_controls_init',            array( $this, 'prepare_controls' ) );
 		add_action( 'customize_controls_enqueue_scripts', array( $this, 'enqueue_control_scripts' ) );
 	}
@@ -923,6 +924,9 @@ final class WP_Customize_Manager {
 	/**
 	 * Update the customize transaction.
 	 *
+	 * @todo In addition to the customized array, we should be passed an array of setting configs so that they can be re-created.
+	 * @todo What about settings that get deleted dynamically? They should be passed as well so they can be removed from the transaction.
+	 *
 	 * @since 4.2.0
 	 */
 	public function update_transaction() {
@@ -959,9 +963,14 @@ final class WP_Customize_Manager {
 			return;
 		}
 
+		$new_setting_ids = array_diff( array_keys( $customized ), array_keys( $this->settings ) );
+		$this->add_dynamic_settings( wp_array_slice_assoc( $customized, $new_setting_ids ) );
+
 		foreach ( $this->settings as $setting ) {
-			if ( $setting->check_capabilities() && isset( $customized[ $setting->id ] ) ) {
-				$this->transaction->set( $setting, $customized[ $setting->id ] );
+			// @todo delete settings that were deleted dynamically on the client (not just those which the user hasn't the cap to change)
+			if ( $setting->check_capabilities() && array_key_exists( $setting->id, $customized ) ) {
+				$value = $customized[ $setting->id ];
+				$this->transaction->set( $setting, $value );
 			}
 		}
 
@@ -987,7 +996,7 @@ final class WP_Customize_Manager {
 	 */
 	public function save() {
 		if ( ! $this->is_preview() ) {
-			die;
+			wp_send_json_error( 'not_preview' );
 		}
 
 		check_ajax_referer( 'save-customize_' . $this->get_stylesheet(), 'nonce' );
@@ -1046,6 +1055,60 @@ final class WP_Customize_Manager {
 		}
 
 		$this->settings[ $setting->id ] = $setting;
+	}
+
+	/**
+	 * Register any dynamically-created settings, such as those in a transaction that have no corresponding setting created.
+	 *
+	 * This is a mechanism to "wake up" settings that have been dynamically created
+	 * on the frontend and have been added to a transaction. When the transaction is
+	 * loaded, the dynamically-created settings then will get created and previewed
+	 * even though they are not directly created statically with code.
+	 *
+	 * @todo $customized should store more than just key/value, but also serialized settings. The update_transaction call should include the setting configs.
+	 *
+	 * @param array $customized mapping of settings IDs to values
+	 * @return WP_Customize_Setting[]
+	 */
+	public function add_dynamic_settings( $customized ) {
+		$new_settings = array();
+		foreach ( $customized as $setting_id => $value ) {
+			if ( isset( $this->settings[ $setting_id ] ) || $this->get_setting( $setting_id ) ) {
+				continue;
+			}
+			$setting_class = 'WP_Customize_Setting';
+			$args = false;
+
+			/**
+			 * Allow non-statically created settings to be constructed with custom WP_Customize_Setting subclass.
+			 *
+			 * @since 4.2.0
+			 *
+			 * @param string $class
+			 * @param string $setting_id
+			 */
+			$setting_class = apply_filters( 'customize_dynamic_setting_class', $setting_class, $setting_id );
+
+			/**
+			 * Filter a dynamic setting's constructor args.
+			 *
+			 * This filter must return an array, overriding the false default, to be
+			 *
+			 * @since 4.2.0
+			 *
+			 * @param false|array $args
+			 * @param string $setting_id
+			 */
+			$setting_args = apply_filters( 'customize_dynamic_setting_args', $args, $setting_id );
+
+			if ( false === $setting_args ) {
+				continue;
+			}
+			$setting = new $setting_class( $this, $setting_id, $setting_args );
+			$this->add_setting( $setting );
+			$new_settings[] = $setting;
+		}
+		return $new_settings;
 	}
 
 	/**
@@ -1610,6 +1673,15 @@ final class WP_Customize_Manager {
 			'section'    => 'static_front_page',
 			'type'       => 'dropdown-pages',
 		) );
+	}
+
+	/**
+	 * Add settings in the transaction that were not added with code, e.g. dynamically-created settings for Widgets
+	 *
+	 * @since 4.2.0
+	 */
+	public function register_dynamic_settings() {
+		$this->add_dynamic_settings( $this->transaction->data() );
 	}
 
 	/**

@@ -21,7 +21,7 @@
 			this.bind( this.preview );
 		},
 		preview: function() {
-			var setting, customized, req, deferred;
+			var setting, req, deferred;
 			setting = this;
 			deferred = $.Deferred();
 
@@ -30,15 +30,8 @@
 				deferred.notify( 'previewed' );
 			}
 
-			// @todo We should debounce the update requests
-			customized = {};
-			customized[ this.id ] = this();
-			req = wp.ajax.post( 'customize_update_transaction', {
-				nonce: api.settings.nonce.update,
-				wp_customize: 'on',
-				customized: JSON.stringify( customized ),
-				customize_transaction_uuid: api.settings.transaction.uuid
-			});
+			req = api.utils.updateTransaction();
+
 			req.fail( function () {
 				deferred.reject.apply( deferred, arguments );
 			});
@@ -69,6 +62,56 @@
 	 * Utility function namespace
 	 */
 	api.utils = {};
+
+	/**
+	 * Debounce the update requests, allowing setting changes made back-to-back to be sent together.
+	 *
+	 * @return {jQuery.Deferred}
+	 */
+	api.utils.updateTransaction = (function () {
+		var request, debouncedDeferreds = [];
+
+		request = _.debounce( function () {
+			var req, dirtyCustomized;
+
+			dirtyCustomized = {};
+			api.each( function ( value, key ) {
+				if ( value._dirty ) {
+					dirtyCustomized[ key ] = value();
+				}
+			} );
+
+			req = wp.ajax.post( 'customize_update_transaction', {
+				nonce: api.settings.nonce.update,
+				wp_customize: 'on',
+				customized: JSON.stringify( dirtyCustomized ),
+				customize_transaction_uuid: api.settings.transaction.uuid
+			});
+
+			req.done( function () {
+				var deferred;
+				while ( debouncedDeferreds.length ) {
+					deferred = debouncedDeferreds.shift();
+					deferred.resolveWith( req, arguments );
+				}
+			});
+			req.fail( function () {
+				var deferred;
+				while ( debouncedDeferreds.length ) {
+					deferred = debouncedDeferreds.shift();
+					deferred.rejectWith( req, arguments );
+				}
+			});
+
+		});
+
+		return function () {
+			var deferred = $.Deferred();
+			debouncedDeferreds.push( deferred );
+			request();
+			return deferred;
+		};
+	}());
 
 	/**
 	 * Watch all changes to Value properties, and bubble changes to parent Values instance
@@ -1811,13 +1854,6 @@
 			nonce: api.settings.nonce,
 
 			query: function() {
-				var dirtyCustomized = {};
-				api.each( function ( value, key ) {
-					if ( value._dirty ) {
-						dirtyCustomized[ key ] = value();
-					}
-				} );
-
 				return {
 					wp_customize: 'on',
 					theme: api.settings.theme.stylesheet,
@@ -2141,6 +2177,7 @@
 		});
 
 		// Prompt user with AYS dialog if leaving the Customizer with unsaved changes
+		// @todo Only do this if the URL lacks the permalink to the transaction UUID
 		$( window ).on( 'beforeunload', function () {
 			if ( ! api.state( 'saved' )() ) {
 				return api.l10n.saveAlert;

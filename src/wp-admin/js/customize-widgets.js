@@ -780,7 +780,8 @@
 			} );
 
 			// Remove loading indicators when the setting is saved and the preview updates
-			this.setting.previewer.channel.bind( 'synced', function() {
+			// @todo Previously this event was binding on this.setting.previewer.channel, but this no longer is working. Why?
+			this.setting.previewer.iframe.bind( 'synced', function() {
 				self.container.removeClass( 'previewer-loading' );
 			} );
 
@@ -989,11 +990,11 @@
 				this.container.addClass( 'widget-form-disabled' );
 			}
 
-			params = {};
-			params.action = 'update-widget';
-			params.wp_customize = 'on';
-			params.nonce = api.Widgets.data.nonce;
-			params.theme = api.settings.theme.stylesheet;
+			params = {
+				action: 'update-widget',
+				nonce: api.Widgets.data.nonce
+			};
+			$.extend( params, api.previewer.query() );
 
 			data = $.param( params );
 			$inputs = this._getInputs( $widgetContent );
