@@ -317,12 +317,34 @@ final class WP_Customize_Manager {
 	 * @since 3.4.0
 	 */
 	public function setup_theme() {
-		send_origin_headers();
+		send_origin_headers(); // @todo Is this necessary anymore?
 
+		// @todo Isn't this redundant?
 		if ( is_admin() && ! $this->doing_ajax() ) {
 			auth_redirect();
-		} elseif ( $this->doing_ajax() && ! is_user_logged_in() ) {
-			$this->wp_die( 0 );
+		}
+
+		/**
+		 * Allow anonymous access to Customizer preview to be configurable.
+		 *
+		 * Note that if no extant transaction has been specified in the request
+		 * then a cheatin' message will be shown regardless. Note that this filter
+		 * must be added in plugin because it gets applied in the setup_theme
+		 * action which is done before a theme is loaded.
+		 *
+		 * @since 4.2.0
+		 *
+		 * @param bool $anonymous_access_allowed
+		 */
+		$anonymous_access_allowed = apply_filters( 'customize_preview_anonymous_access_allowed', true );
+
+		/*
+		 * Only unauthenticated users to access the Customize preview if there is
+		 * a valid transaction loaded, i.e. if customize_transaction_uuid was supplied
+		 * and it corresponds to a wp_transaction post in the database.
+		 */
+		if ( ! is_admin() && ! is_user_logged_in() && ( ! $anonymous_access_allowed || ! $this->transaction->post() ) ) {
+			$this->wp_die( -1 );
 		}
 
 		// Hide the admin bar if we're embedded in the Customizer iframe
@@ -1059,7 +1081,7 @@ final class WP_Customize_Manager {
 
 		/**
 		 * Filter response data for a successful customize_save Ajax request.
-		 * 
+		 *
 		 * This filter does not apply if there was a nonce or authentication failure.
 		 *
 		 * @since 4.2.0
