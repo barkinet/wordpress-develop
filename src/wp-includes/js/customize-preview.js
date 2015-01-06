@@ -76,7 +76,20 @@
 				});
 			});
 
-			// @todo: hook into jQuery's Ajax beforeSend to inject the persistent query vars
+			// Inject persistent query vars into the Ajax request data
+			$.ajaxPrefilter( function ( options ) {
+				var a, query;
+				a = $( '<a>', { href: options.url } );
+				if ( self.isAllowedUrl( a.prop( 'href' ) ) && 'javascript' !== a.prop( 'protocol' ) ) {
+					query = a.prop( 'search' );
+					if ( query && '?' !== query ) {
+						query += '&';
+					}
+					query += $.param( self.getPersistentQueryVars() );
+					a.prop( 'search', query );
+					options.url = a.prop( 'href' );
+				}
+			} );
 
 			this.window = $( window );
 		},
@@ -99,7 +112,7 @@
 
 			// Check for URLs that include "/wp-admin/" or end in "/wp-admin", or which are for /wp-login.php
 			// Strip hashes and query strings before testing.
-			if ( /\/wp-admin(\/|$)|\/wp-login\.php/.test( url.replace( /[#?].*$/, '' ) ) ) {
+			if ( /\/wp-admin(\/(?!admin-ajax\.php)|$)|\/wp-login\.php/.test( url.replace( /[#?].*$/, '' ) ) ) {
 				return false;
 			}
 
@@ -143,6 +156,7 @@
 	});
 
 	$( function() {
+		// @todo DOM Ready may be too late to intercept Ajax initial requests
 		api.settings = window._wpCustomizeSettings;
 		if ( ! api.settings ) {
 			return;
