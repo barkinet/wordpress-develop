@@ -732,15 +732,10 @@ final class WP_Customize_Widgets {
 	 * @return array Array of sanitized widget IDs.
 	 */
 	public function sanitize_sidebar_widgets( $widget_ids ) {
-		global $wp_registered_widgets;
-
-		$widget_ids           = array_map( 'strval', (array) $widget_ids );
+		$widget_ids = array_map( 'strval', (array) $widget_ids );
 		$sanitized_widget_ids = array();
-
 		foreach ( $widget_ids as $widget_id ) {
-			if ( array_key_exists( $widget_id, $wp_registered_widgets ) ) {
-				$sanitized_widget_ids[] = $widget_id;
-			}
+			$sanitized_widget_ids[] = preg_replace( '/[^a-z0-9_\-]/', '', $widget_id );
 		}
 		return $sanitized_widget_ids;
 	}
