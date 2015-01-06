@@ -422,7 +422,7 @@ class WP_User {
 	 *
 	 * @since 2.0.0
 	 * @access private
-	 * @var array
+	 * @var object
 	 */
 	var $data;
 
@@ -521,13 +521,17 @@ class WP_User {
 			$id = 0;
 		}
 
-		if ( $id )
+		if ( $id ) {
 			$data = self::get_data_by( 'id', $id );
-		else
+		} else {
 			$data = self::get_data_by( 'login', $name );
+		}
 
-		if ( $data )
+		if ( $data ) {
 			$this->init( $data, $blog_id );
+		} else {
+			$this->data = new stdClass;
+		}
 	}
 
 	/**
@@ -985,7 +989,7 @@ class WP_User {
 		 * @since 2.0.0
 		 * @since 3.7.0 Added the user object.
 		 *
-		 * @param array   $allcaps An array of all the role's capabilities.
+		 * @param array   $allcaps An array of all the user's capabilities.
 		 * @param array   $caps    Actual capabilities for meta capability.
 		 * @param array   $args    Optional parameters passed to has_cap(), typically object ID.
 		 * @param WP_User $user    The user object.

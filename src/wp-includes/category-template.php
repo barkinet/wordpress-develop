@@ -287,36 +287,57 @@ function category_description( $category = 0 ) {
 /**
  * Display or retrieve the HTML dropdown list of categories.
  *
- * The list of arguments is below:
- *     'show_option_all' (string) - Text to display for showing all categories.
- *     'show_option_none' (string) - Text to display for showing no categories.
- *     'option_none_value' (mixed) - Value to use when no category is selected.
- *     'orderby' (string) default is 'ID' - What column to use for ordering the
- * categories.
- *     'order' (string) default is 'ASC' - What direction to order categories.
- *     'show_count' (bool|int) default is 0 - Whether to show how many posts are
- * in the category.
- *     'hide_empty' (bool|int) default is 1 - Whether to hide categories that
- * don't have any posts attached to them.
- *     'child_of' (int) default is 0 - See {@link get_categories()}.
- *     'exclude' (string) - See {@link get_categories()}.
- *     'echo' (bool|int) default is 1 - Whether to display or retrieve content.
- *     'depth' (int) - The max depth.
- *     'tab_index' (int) - Tab index for select element.
- *     'name' (string) - The name attribute value for select element.
- *     'id' (string) - The ID attribute value for select element. Defaults to name if omitted.
- *     'class' (string) - The class attribute value for select element.
- *     'selected' (int) - Which category ID is selected.
- *     'taxonomy' (string) - The name of the taxonomy to retrieve. Defaults to category.
- *
  * The 'hierarchical' argument, which is disabled by default, will override the
  * depth argument, unless it is true. When the argument is false, it will
  * display all of the categories. When it is enabled it will use the value in
  * the 'depth' argument.
  *
  * @since 2.1.0
+ * @since 4.2.0 Introduced the 'value_field' parameter.
  *
- * @param string|array $args Optional. Override default arguments.
+ * @param string|array $args {
+ *     Array of arguments.
+ *     @type string       $show_option_all   Optional. Text to display for showing all categories.
+ *                                           Default is an empty string.
+ *     @type string       $show_option_none  Optional. Text to display for showing no categories.
+ *                                           Default is an empty string.
+ *     @type string       $option_none_value Optional. Value to use when no category is selected.
+ *                                           Default is an empty string.
+ *     @type string       $orderby           Optional. Which column to use for ordering categories.
+ *                                           See {@see get_terms()} for list of accepted values. Default: 'id' (term_id).
+ *     @type string       $order             Optional. Whether to order terms in ascending or descending order.
+ *                                           Accepts 'ASC' or 'DESC'. Default 'ASC'.
+ *     @type bool         $pad_counts        Optional. See {@see get_terms()} for description. Default: false.
+ *     @type bool|int     $show_count        Optional. Whether to include post counts. Accepts 0, 1, or their bool
+ *                                           equivalents. Default 0.
+ *     @type bool|int     $hide_empty        Optional. Whether to hide categories that don't have any posts.
+ *                                           Accepts 0, 1, or their bool equivalents. Default 1.
+ *     @type int          $child_of          Optional. Term ID to retrieve child terms of. See {@see get_terms()}.
+ *                                           Default 0.
+ *     @type array|string $exclude           Optional. Array or comma/space-separated string of term ids to exclude.
+ *                                           If $include is non-empty, $exclude is ignored.
+ *                                           Default empty array.
+ *     @type bool|int     $echo              Optional. Whether to echo or return the generated markup. Accepts 0, 1,
+ *                                           or their bool equivalents. Default 1.
+ *     @type bool|int     $hierarchical      Optional. Whether to traverse the taxonomy hierarchy. Accepts 0, 1, or
+ *                                           their bool equivalents. Default: 0.
+ *     @type int          $depth             Optional. Maximum depth. Default 0.
+ *     @type int          $tab_index         Optional. Tab index for the select element. Default 0 (no tabindex).
+ *     @type string       $name              Optional. Value for the 'name' attribute of the select element.
+ *                                           Default: 'cat'.
+ *     @type string       $id                Optional. Value for the 'id' attribute of the select element.
+ *                                           Defaults to the value of $name.
+ *     @type string       $class             Optional. Value for the 'class' attribute of the select element.
+ *     @type int|string   $selected          Optional. Value of the option that should be selected.
+ *     @type string       $value_field       Optional. Term field that should be used to populate the 'value' attribute
+ *                                           of the option elements. Accepts any valid term field: 'term_id', 'name',
+ *                                           'slug', 'term_group', 'term_taxonomy_id', 'taxonomy', 'description',
+ *                                           'parent', 'count'. Default 'term_id'.
+ *     @type string       $taxonomy          Optional. Name of the category to retrieve. Default 'category'.
+ *     @type bool         $hide_if_empty     Optional. True to skip generating markup if no categories are found.
+ *                                           Default false (create select element even if no categories are found).
+ *
+ * }
  * @return string HTML content only if 'echo' argument is 0.
  */
 function wp_dropdown_categories( $args = '' ) {
@@ -330,7 +351,8 @@ function wp_dropdown_categories( $args = '' ) {
 		'name' => 'cat', 'id' => '',
 		'class' => 'postform', 'depth' => 0,
 		'tab_index' => 0, 'taxonomy' => 'category',
-		'hide_if_empty' => false, 'option_none_value' => -1
+		'hide_if_empty' => false, 'option_none_value' => -1,
+		'value_field' => 'term_id',
 	);
 
 	$defaults['selected'] = ( is_category() ) ? get_query_var( 'cat' ) : 0;
@@ -354,7 +376,12 @@ function wp_dropdown_categories( $args = '' ) {
 	if ( (int) $tab_index > 0 ) {
 		$tab_index_attribute = " tabindex=\"$tab_index\"";
 	}
-	$categories = get_terms( $r['taxonomy'], $r );
+
+	// Avoid clashes with the 'name' param of get_terms().
+	$get_terms_args = $r;
+	unset( $get_terms_args['name'] );
+	$categories = get_terms( $r['taxonomy'], $get_terms_args );
+
 	$name = esc_attr( $r['name'] );
 	$class = esc_attr( $r['class'] );
 	$id = $r['id'] ? esc_attr( $r['id'] ) : $name;
@@ -969,6 +996,11 @@ class Walker_Category extends Walker {
 			$category
 		);
 
+		// Don't generate an element if the category name is empty.
+		if ( ! $cat_name ) {
+			return;
+		}
+
 		$link = '<a href="' . esc_url( get_term_link( $category ) ) . '" ';
 		if ( $args['use_desc_for_title'] && ! empty( $category->description ) ) {
 			/**
@@ -1021,16 +1053,36 @@ class Walker_Category extends Walker {
 		}
 		if ( 'list' == $args['style'] ) {
 			$output .= "\t<li";
-			$class = 'cat-item cat-item-' . $category->term_id;
+			$css_classes = array(
+				'cat-item',
+				'cat-item-' . $category->term_id,
+			);
+
 			if ( ! empty( $args['current_category'] ) ) {
 				$_current_category = get_term( $args['current_category'], $category->taxonomy );
 				if ( $category->term_id == $args['current_category'] ) {
-					$class .=  ' current-cat';
+					$css_classes[] = 'current-cat';
 				} elseif ( $category->term_id == $_current_category->parent ) {
-					$class .=  ' current-cat-parent';
+					$css_classes[] = 'current-cat-parent';
 				}
 			}
-			$output .=  ' class="' . $class . '"';
+
+			/**
+			 * Filter the list of CSS classes to include with each category in the list.
+			 *
+			 * @since 4.2.0
+			 *
+			 * @see wp_list_categories()
+			 *
+			 * @param array  $css_classes    An array of CSS classes to be applied
+			 *                               to each list item.
+			 * @param object $category       Category data object.
+			 * @param int    $depth          Depth of page, used for padding.
+			 * @param array  $args           An array of arguments.
+			 */
+			$css_classes = implode( ' ', apply_filters( 'category_css_class', $css_classes, $category, $depth, $args ) );
+
+			$output .=  ' class="' . $css_classes . '"';
 			$output .= ">$link\n";
 		} else {
 			$output .= "\t$link<br />\n";
@@ -1090,7 +1142,8 @@ class Walker_CategoryDropdown extends Walker {
 	 * @param string $output   Passed by reference. Used to append additional content.
 	 * @param object $category Category data object.
 	 * @param int    $depth    Depth of category. Used for padding.
-	 * @param array  $args     Uses 'selected' and 'show_count' keys, if they exist. @see wp_dropdown_categories()
+	 * @param array  $args     Uses 'selected', 'show_count', and 'value_field' keys, if they exist.
+	 *                         See {@see wp_dropdown_categories()}.
 	 */
 	public function start_el( &$output, $category, $depth = 0, $args = array(), $id = 0 ) {
 		$pad = str_repeat('&nbsp;', $depth * 3);
@@ -1098,7 +1151,12 @@ class Walker_CategoryDropdown extends Walker {
 		/** This filter is documented in wp-includes/category-template.php */
 		$cat_name = apply_filters( 'list_cats', $category->name, $category );
 
-		$output .= "\t<option class=\"level-$depth\" value=\"".$category->term_id."\"";
+		if ( ! isset( $args['value_field'] ) || ! isset( $category->{$args['value_field']} ) ) {
+			$args['value_field'] = 'term_id';
+		}
+
+		$output .= "\t<option class=\"level-$depth\" value=\"" . esc_attr( $category->{$args['value_field']} ) . "\"";
+
 		if ( $category->term_id == $args['selected'] )
 			$output .= ' selected="selected"';
 		$output .= '>';

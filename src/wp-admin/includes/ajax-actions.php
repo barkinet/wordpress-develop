@@ -172,7 +172,7 @@ function wp_ajax_wp_compression_test() {
 		header( 'Last-Modified: ' . gmdate( 'D, d M Y H:i:s' ) . ' GMT' );
 		header( 'Cache-Control: no-cache, must-revalidate, max-age=0' );
 		header( 'Pragma: no-cache' );
-		header('Content-Type: application/x-javascript; charset=UTF-8');
+		header('Content-Type: application/javascript; charset=UTF-8');
 		$force_gzip = ( defined('ENFORCE_GZIP') && ENFORCE_GZIP );
 		$test_str = '"wpCompressionTest Lorem ipsum dolor sit amet consectetuer mollis sapien urna ut a. Eu nonummy condimentum fringilla tempor pretium platea vel nibh netus Maecenas. Hac molestie amet justo quis pellentesque est ultrices interdum nibh Morbi. Cras mattis pretium Phasellus ante ipsum ipsum ut sociis Suspendisse Lorem. Ante et non molestie. Porta urna Vestibulum egestas id congue nibh eu risus gravida sit. Ac augue auctor Ut et non a elit massa id sodales. Elit eu Nulla at nibh adipiscing mattis lacus mauris at tempus. Netus nibh quis suscipit nec feugiat eget sed lorem et urna. Pellentesque lacus at ut massa consectetuer ligula ut auctor semper Pellentesque. Ut metus massa nibh quam Curabitur molestie nec mauris congue. Volutpat molestie elit justo facilisis neque ac risus Ut nascetur tristique. Vitae sit lorem tellus et quis Phasellus lacus tincidunt nunc Fusce. Pharetra wisi Suspendisse mus sagittis libero lacinia Integer consequat ac Phasellus. Et urna ac cursus tortor aliquam Aliquam amet tellus volutpat Vestibulum. Justo interdum condimentum In augue congue tellus sollicitudin Quisque quis nibh."';
 
@@ -828,7 +828,7 @@ function wp_ajax_get_tagcloud() {
 	if ( ! $tax ) {
 		wp_die( 0 );
 	}
-	
+
 	if ( ! current_user_can( $tax->cap->assign_terms ) ) {
 		wp_die( -1 );
 	}
@@ -2159,11 +2159,17 @@ function wp_ajax_query_attachments() {
 		wp_send_json_error();
 
 	$query = isset( $_REQUEST['query'] ) ? (array) $_REQUEST['query'] : array();
-	$query = array_intersect_key( $query, array_flip( array(
+	$keys = array(
 		's', 'order', 'orderby', 'posts_per_page', 'paged', 'post_mime_type',
 		'post_parent', 'post__in', 'post__not_in', 'year', 'monthnum'
-	) ) );
+	);
+	foreach ( get_taxonomies_for_attachments( 'objects' ) as $t ) {
+		if ( $t->query_var && isset( $query[ $t->query_var ] ) ) {
+			$keys[] = $t->query_var;
+		}
+	}
 
+	$query = array_intersect_key( $query, array_flip( $keys ) );
 	$query['post_type'] = 'attachment';
 	if ( MEDIA_TRASH
 		&& ! empty( $_REQUEST['query']['post_status'] )
@@ -2755,7 +2761,7 @@ function wp_ajax_parse_media_shortcode() {
 
 		wp_print_scripts( 'wp-playlist' );
 	} else {
-		wp_print_scripts( 'wp-mediaelement' );
+		wp_print_scripts( array( 'froogaloop', 'wp-mediaelement' ) );
 	}
 
 	wp_send_json_success( array(
@@ -2793,7 +2799,7 @@ function wp_ajax_destroy_sessions() {
 		$message = __( 'You are now logged out everywhere else.' );
 	} else {
 		$sessions->destroy_all();
-		/* translators: 1: User's display name. */ 
+		/* translators: 1: User's display name. */
 		$message = sprintf( __( '%s has been logged out.' ), $user->display_name );
 	}
 

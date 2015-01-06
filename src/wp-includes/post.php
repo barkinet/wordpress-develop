@@ -2377,6 +2377,12 @@ function wp_count_posts( $type = 'post', $perm = '' ) {
 
 	$cache_key = _count_posts_cache_key( $type, $perm );
 
+	$counts = wp_cache_get( $cache_key, 'counts' );
+	if ( false !== $counts ) {
+		/** This filter is documented in wp-includes/post.php */
+		return apply_filters( 'wp_count_posts', $counts, $type, $perm );
+	}
+
 	$query = "SELECT post_status, COUNT( * ) AS num_posts FROM {$wpdb->posts} WHERE post_type = %s";
 	if ( 'readable' == $perm && is_user_logged_in() ) {
 		$post_type_object = get_post_type_object($type);
@@ -2388,17 +2394,15 @@ function wp_count_posts( $type = 'post', $perm = '' ) {
 	}
 	$query .= ' GROUP BY post_status';
 
-	$counts = wp_cache_get( $cache_key, 'counts' );
-	if ( false === $counts ) {
-		$results = (array) $wpdb->get_results( $wpdb->prepare( $query, $type ), ARRAY_A );
-		$counts = array_fill_keys( get_post_stati(), 0 );
+	$results = (array) $wpdb->get_results( $wpdb->prepare( $query, $type ), ARRAY_A );
+	$counts = array_fill_keys( get_post_stati(), 0 );
 
-		foreach ( $results as $row )
-			$counts[ $row['post_status'] ] = $row['num_posts'];
-
-		$counts = (object) $counts;
-		wp_cache_set( $cache_key, $counts, 'counts' );
+	foreach ( $results as $row ) {
+		$counts[ $row['post_status'] ] = $row['num_posts'];
 	}
+
+	$counts = (object) $counts;
+	wp_cache_set( $cache_key, $counts, 'counts' );
 
 	/**
 	 * Modify returned post counts by status for the current post type.
@@ -2504,11 +2508,14 @@ function wp_match_mime_types( $wildcard_mime_types, $real_mime_types ) {
 	$wild = '[-._a-z0-9]*';
 
 	foreach ( (array) $wildcard_mime_types as $type ) {
-		$regex = str_replace( '__wildcard__', $wild, preg_quote( str_replace( '*', '__wildcard__', $type ) ) );
-		$patternses[1][$type] = "^$regex$";
-		if ( false === strpos($type, '/') ) {
-			$patternses[2][$type] = "^$regex/";
-			$patternses[3][$type] = $regex;
+		$mimes = array_map( 'trim', explode( ',', $type ) );
+		foreach ( $mimes as $mime ) {
+			$regex = str_replace( '__wildcard__', $wild, preg_quote( str_replace( '*', '__wildcard__', $mime ) ) );
+			$patternses[][$type] = "^$regex$";
+			if ( false === strpos( $mime, '/' ) ) {
+				$patternses[][$type] = "^$regex/";
+				$patternses[][$type] = $regex;
+			}
 		}
 	}
 	asort( $patternses );
@@ -3449,11 +3456,11 @@ function wp_insert_post( $postarr, $wp_error = false ) {
 		if ( 'default' != $postarr['page_template'] && ! isset( $page_templates[ $postarr['page_template'] ] ) ) {
 			if ( $wp_error ) {
 				return new WP_Error('invalid_page_template', __('The page template is invalid.'));
-			} else {
-				return 0;
 			}
+			update_post_meta( $post_ID, '_wp_page_template', 'default' );
+		} else {
+			update_post_meta( $post_ID, '_wp_page_template', $postarr['page_template'] );
 		}
-		update_post_meta( $post_ID, '_wp_page_template', $postarr['page_template'] );
 	}
 
 	if ( 'attachment' !== $postarr['post_type'] ) {

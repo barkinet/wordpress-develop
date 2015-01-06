@@ -450,7 +450,7 @@ function register_taxonomy( $taxonomy, $object_type, $args = array() ) {
  * - separate_items_with_commas - This string isn't used on hierarchical taxonomies. Default is "Separate tags with commas", used in the meta box.
  * - add_or_remove_items - This string isn't used on hierarchical taxonomies. Default is "Add or remove tags", used in the meta box when JavaScript is disabled.
  * - choose_from_most_used - This string isn't used on hierarchical taxonomies. Default is "Choose from the most used tags", used in the meta box.
- * - not_found - This string isn't used on hierarchical taxonomies. Default is "No tags found", used in the meta box.
+ * - not_found - Default is "No tags found"/"No categories found", used in the meta box and taxonomy list table.
  *
  * Above, the first default value is for non-hierarchical taxonomies (like tags) and the second one is for hierarchical taxonomies (like categories).
  *
@@ -484,7 +484,7 @@ function get_taxonomy_labels( $tax ) {
 		'separate_items_with_commas' => array( __( 'Separate tags with commas' ), null ),
 		'add_or_remove_items' => array( __( 'Add or remove tags' ), null ),
 		'choose_from_most_used' => array( __( 'Choose from the most used tags' ), null ),
-		'not_found' => array( __( 'No tags found.' ), null ),
+		'not_found' => array( __( 'No tags found.' ), __( 'No categories found.' ) ),
 	);
 	$nohier_vs_hier_defaults['menu_name'] = $nohier_vs_hier_defaults['name'];
 
@@ -1548,6 +1548,7 @@ function get_term_to_edit( $id, $taxonomy ) {
  * along with the $args array.
  *
  * @since 2.3.0
+ * @since 4.2.0 Introduced 'name' parameter.
  *
  * @global wpdb $wpdb WordPress database abstraction object.
  *
@@ -1578,6 +1579,7 @@ function get_term_to_edit( $id, $taxonomy ) {
  *     @type string       $fields            Term fields to query for. Accepts 'all' (returns an array of
  *                                           term objects), 'ids' or 'names' (returns an array of integers
  *                                           or strings, respectively. Default 'all'.
+ *     @type string|array $name              Optional. Name or array of names to return term(s) for. Default empty.
  *     @type string|array $slug              Optional. Slug or array of slugs to return term(s) for. Default empty.
  *     @type bool         $hierarchical      Whether to include terms that have non-empty descendants (even
  *                                           if $hide_empty is set to true). Default true.
@@ -1618,7 +1620,7 @@ function get_terms( $taxonomies, $args = '' ) {
 
 	$defaults = array('orderby' => 'name', 'order' => 'ASC',
 		'hide_empty' => true, 'exclude' => array(), 'exclude_tree' => array(), 'include' => array(),
-		'number' => '', 'fields' => 'all', 'slug' => '', 'parent' => '',
+		'number' => '', 'fields' => 'all', 'name' => '', 'slug' => '', 'parent' => '',
 		'hierarchical' => true, 'child_of' => 0, 'get' => '', 'name__like' => '', 'description__like' => '',
 		'pad_counts' => false, 'offset' => '', 'search' => '', 'cache_domain' => 'core' );
 	$args = wp_parse_args( $args, $defaults );
@@ -1793,6 +1795,16 @@ function get_terms( $taxonomies, $args = '' ) {
 
 	if ( ! empty( $exclusions ) ) {
 		$where .= $exclusions;
+	}
+
+	if ( ! empty( $args['name'] ) ) {
+		if ( is_array( $args['name'] ) ) {
+			$name = array_map( 'sanitize_text_field', $args['name'] );
+			$where .= " AND t.name IN ('" . implode( "', '", $name ) . "')";
+		} else {
+			$name = sanitize_text_field( $args['name'] );
+			$where .= $wpdb->prepare( " AND t.name = %s", $name );
+		}
 	}
 
 	if ( ! empty( $args['slug'] ) ) {
@@ -3692,23 +3704,21 @@ function get_object_term_cache($id, $taxonomy) {
 }
 
 /**
- * Updates the cache for Term ID(s).
+ * Updates the cache for the given term object ID(s).
  *
- * Will only update the cache for terms not already cached.
+ * Note: Due to performance concerns, great care should be taken to only update
+ * term caches when necessary. Processing time can increase exponentially depending
+ * on both the number of passed term IDs and the number of taxonomies those terms
+ * belong to.
  *
- * The $object_ids expects that the ids be separated by commas, if it is a
- * string.
- *
- * It should be noted that update_object_term_cache() is very time extensive. It
- * is advised that the function is not called very often or at least not for a
- * lot of terms that exist in a lot of taxonomies. The amount of time increases
- * for each term and it also increases for each taxonomy the term belongs to.
+ * Caches will only be updated for terms not already cached.
  *
  * @since 2.3.0
  *
- * @param string|array $object_ids Single or list of term object ID(s)
- * @param array|string $object_type The taxonomy object type
- * @return null|false Null value is given with empty $object_ids. False if
+ * @param string|array $object_ids  Comma-separated list or array of term object IDs..
+ * @param array|string $object_type The taxonomy object type.
+ * @return null|false Null if `$object_ids` is empty, false if all of the terms in
+ *                    `$object_ids` are already cached.
  */
 function update_object_term_cache($object_ids, $object_type) {
 	if ( empty($object_ids) )

@@ -1865,7 +1865,6 @@
 				// @todo https://core.trac.wordpress.org/ticket/29098
 				var self  = this,
 					query = $.extend( this.query(), {
-						action: 'customize_save',
 						nonce:  this.nonce.save
 					} ),
 					processing = api.state( 'processing' ),
@@ -1875,7 +1874,7 @@
 				body.addClass( 'saving' );
 
 				submit = function () {
-					var request = $.post( api.settings.url.ajax, query );
+					var request = wp.ajax.post( 'customize_save', query );
 
 					api.trigger( 'save', request );
 
@@ -1883,28 +1882,33 @@
 						body.removeClass( 'saving' );
 					} );
 
-					request.done( function( response ) {
-						// Check if the user is logged out.
+					request.fail( function ( response ) {
 						if ( '0' === response ) {
+							response = 'not_logged_in';
+						} else if ( '-1' === response ) {
+							// Back-compat in case any other check_ajax_referer() call is dying
+							response = 'invalid_nonce';
+						}
+
+						if ( 'invalid_nonce' === response ) {
+							self.cheatin();
+						} else if ( 'not_logged_in' === response ) {
 							self.preview.iframe.hide();
 							self.login().done( function() {
 								self.save();
 								self.preview.iframe.show();
 							} );
-							return;
 						}
+						api.trigger( 'error', response );
+					} );
 
-						// Check for cheaters.
-						if ( '-1' === response ) {
-							self.cheatin();
-							return;
-						}
-
+					request.done( function( response ) {
 						// Clear setting dirty states
 						api.each( function ( value ) {
 							value._dirty = false;
 						} );
-						api.trigger( 'saved' );
+
+						api.trigger( 'saved', response );
 					} );
 				};
 
