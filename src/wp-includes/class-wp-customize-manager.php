@@ -1086,7 +1086,8 @@ final class WP_Customize_Manager {
 		 *
 		 * @since 4.2.0
 		 *
-		 * @param array $data
+		 * @param array                $data Additional information passed back to the 'saved'
+		 *                                   event on `wp.customize`.
 		 * @param WP_Customize_Manager $this WP_Customize_Manager instance.
 		 */
 		$response = apply_filters( 'customize_save_response', array(), $this );
@@ -1369,7 +1370,7 @@ final class WP_Customize_Manager {
 	 * @param {WP_Customize_Panel|WP_Customize_Section|WP_Customize_Control} $b Object B.
 	 * @return int
 	 */
-	protected final function _cmp_priority( $a, $b ) {
+	protected function _cmp_priority( $a, $b ) {
 		if ( $a->priority === $b->priority ) {
 			return $a->instance_number - $a->instance_number;
 		} else {
@@ -1656,7 +1657,7 @@ final class WP_Customize_Manager {
 		) );
 
 		if ( $menus ) {
-			$choices = array( 0 => __( '&mdash; Select &mdash;' ) );
+			$choices = array( '' => __( '&mdash; Select &mdash;' ) );
 			foreach ( $menus as $menu ) {
 				$choices[ $menu->term_id ] = wp_html_excerpt( $menu->name, 40, '&hellip;' );
 			}

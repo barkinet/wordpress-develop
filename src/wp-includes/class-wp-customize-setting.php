@@ -207,7 +207,7 @@ class WP_Customize_Setting {
 	 *
 	 * @return bool False if cap check fails or value isn't set.
 	 */
-	public final function save() {
+	final public function save() {
 		$value = $this->transaction_value();
 
 		/*
@@ -242,7 +242,7 @@ class WP_Customize_Setting {
 	 * @param mixed $default A default value which is used as a fallback. Default is null.
 	 * @return mixed The default value on failure, otherwise the sanitized value.
 	 */
-	public final function post_value( $default = null ) {
+	final public function post_value( $default = null ) {
 		_deprecated_function( __FUNCTION__, '0.4.2', 'WP_Customize_Setting::transaction_value()' );
 		return $this->transaction_value( $default );
 	}
@@ -449,7 +449,7 @@ class WP_Customize_Setting {
 	 *
 	 * @return bool False if theme doesn't support the setting or user can't change setting, otherwise true.
 	 */
-	public final function check_capabilities() {
+	final public function check_capabilities() {
 		if ( $this->capability && ! call_user_func_array( 'current_user_can', (array) $this->capability ) ) {
 			return false;
 		}

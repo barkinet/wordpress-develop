@@ -1366,7 +1366,7 @@ class wpdb {
 			while ( mysqli_more_results( $this->dbh ) ) {
 				mysqli_next_result( $this->dbh );
 			}
-		} else if ( is_resource( $this->result ) ) {
+		} elseif ( is_resource( $this->result ) ) {
 			mysql_free_result( $this->result );
 		}
 	}
@@ -1435,9 +1435,9 @@ class wpdb {
 
 				if ( $this->has_connected ) {
 					$attempt_fallback = false;
-				} else if ( defined( 'WP_USE_EXT_MYSQL' ) && ! WP_USE_EXT_MYSQL ) {
+				} elseif ( defined( 'WP_USE_EXT_MYSQL' ) && ! WP_USE_EXT_MYSQL ) {
 					$attempt_fallback = false;
-				} else if ( ! function_exists( 'mysql_connect' ) ) {
+				} elseif ( ! function_exists( 'mysql_connect' ) ) {
 					$attempt_fallback = false;
 				}
 
@@ -1475,7 +1475,7 @@ class wpdb {
 " ), htmlspecialchars( $this->dbhost, ENT_QUOTES ) ), 'db_connect_fail' );
 
 			return false;
-		} else if ( $this->dbh ) {
+		} elseif ( $this->dbh ) {
 			$this->has_connected = true;
 			$this->set_charset( $this->dbh );
 			$this->ready = true;
@@ -1600,6 +1600,9 @@ class wpdb {
 		// If we're writing to the database, make sure the query will write safely.
 		if ( $this->check_current_query && ! $this->check_ascii( $query ) ) {
 			$stripped_query = $this->strip_invalid_text_from_query( $query );
+			// strip_invalid_text_from_query() can perform queries, so we need
+			// to flush again, just to make sure everything is clear.
+			$this->flush();
 			if ( $stripped_query !== $query ) {
 				$this->insert_id = 0;
 				return false;
@@ -1673,7 +1676,7 @@ class wpdb {
 					$this->last_result[$num_rows] = $row;
 					$num_rows++;
 				}
-			} else if ( is_resource( $this->result ) ) {
+			} elseif ( is_resource( $this->result ) ) {
 				while ( $row = @mysql_fetch_object( $this->result ) ) {
 					$this->last_result[$num_rows] = $row;
 					$num_rows++;
@@ -2510,7 +2513,7 @@ class wpdb {
 	 * @return string|WP_Error The converted string, or a `WP_Error` object if the conversion fails.
 	 */
 	public function strip_invalid_text_for_column( $table, $column, $value ) {
-		if ( $this->check_ascii( $value ) || ! is_string( $value ) ) {
+		if ( ! is_string( $value ) || $this->check_ascii( $value ) ) {
 			return $value;
 		}
 
