@@ -90,6 +90,13 @@ $time_format = get_option('time_format');
 
 wp_enqueue_script( 'common' );
 
+// $pagenow is set in vars.php
+// The remaining variables are imported as globals elsewhere,
+//     declared as globals here
+global $pagenow, $hook_suffix, $plugin_page, $typenow, $taxnow;
+
+$page_hook = null;
+
 $editing = false;
 
 if ( isset($_GET['page']) ) {

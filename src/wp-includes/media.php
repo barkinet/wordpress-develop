@@ -359,7 +359,7 @@ function get_image_tag($id, $alt, $title, $align, $size='medium') {
  * @return array First item is the width, the second item is the height.
  */
 function wp_constrain_dimensions( $current_width, $current_height, $max_width=0, $max_height=0 ) {
-	if ( !$max_width and !$max_height )
+	if ( !$max_width && !$max_height )
 		return array( $current_width, $current_height );
 
 	$width_ratio = $height_ratio = 1.0;
@@ -2931,7 +2931,7 @@ function wp_enqueue_media( $args = array() ) {
 		   lack of plural support here, turn it into "selected: %d" then translate it.
 		 */
 		'selected'    => __( '%d selected' ),
-		'dragInfo'    => __( 'Drag and drop to reorder images.' ),
+		'dragInfo'    => __( 'Drag and drop to reorder media files.' ),
 
 		// Upload
 		'uploadFilesTitle'  => __( 'Upload Files' ),
