@@ -596,7 +596,7 @@ final class WP_Customize_Manager {
 	 * @return string|null $post_value Sanitized value, or null if not supplied
 	 */
 	public function post_value( $setting ) {
-		_deprecated_function( __FUNCTION__, '0.4.2', 'WP_Customize_Manager::transaction::get()' );
+		_deprecated_function( __METHOD__, '0.4.2', 'WP_Customize_Manager::transaction::get()' );
 		return $this->transaction->get( $setting );
 	}
 
@@ -662,7 +662,7 @@ final class WP_Customize_Manager {
 	 * @access public
 	 */
 	public function customize_preview_override_404_status() {
-		_doing_it_wrong( __FUNCTION__, 'No longer used', '4.2.0' );
+		_deprecated_function( __METHOD__, '4.2.0' );
 	}
 
 	/**
@@ -673,7 +673,7 @@ final class WP_Customize_Manager {
 	 * @since 3.4.0
 	 */
 	public function customize_preview_base() {
-		_doing_it_wrong( __FUNCTION__, 'No longer used', '4.2.0' );
+		_deprecated_function( __METHOD__, '4.2.0' );
 	}
 
 	/**
