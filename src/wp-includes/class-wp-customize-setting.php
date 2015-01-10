@@ -106,7 +106,6 @@ class WP_Customize_Setting {
 	 * @param string               $id      An specific ID of the setting. Can be a
 	 *                                      theme mod or option name.
 	 * @param array                $args    Setting arguments.
-	 * @return WP_Customize_Setting $setting
 	 */
 	public function __construct( $manager, $id, $args = array() ) {
 		$keys = array_keys( get_object_vars( $this ) );
@@ -136,8 +135,6 @@ class WP_Customize_Setting {
 		if ( $this->sanitize_js_callback ) {
 			add_filter( "customize_sanitize_js_{$this->id}", $this->sanitize_js_callback, 10, 2 );
 		}
-
-		return $this;
 	}
 
 	/**

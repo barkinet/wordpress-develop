@@ -53,7 +53,6 @@ class Custom_Background {
 	 * @since 3.0.0
 	 * @param callback $admin_header_callback
 	 * @param callback $admin_image_div_callback Optional custom image div output callback.
-	 * @return Custom_Background
 	 */
 	public function __construct($admin_header_callback = '', $admin_image_div_callback = '') {
 		$this->admin_header_callback = $admin_header_callback;
@@ -125,17 +124,20 @@ class Custom_Background {
 	 * @since 3.0.0
 	 */
 	public function init() {
-		if ( ! current_user_can('edit_theme_options') )
+		$page = add_theme_page( __( 'Background' ), __( 'Background' ), 'edit_theme_options', 'custom-background', array( $this, 'admin_page' ) );
+		if ( ! $page ) {
 			return;
+		}
 
-		$this->page = $page = add_theme_page(__('Background'), __('Background'), 'edit_theme_options', 'custom-background', array($this, 'admin_page'));
+		$this->page = $page;
 
-		add_action("load-$page", array($this, 'admin_load'));
-		add_action("load-$page", array($this, 'take_action'), 49);
-		add_action("load-$page", array($this, 'handle_upload'), 49);
+		add_action( "load-$page", array( $this, 'admin_load' ) );
+		add_action( "load-$page", array( $this, 'take_action' ), 49 );
+		add_action( "load-$page", array( $this, 'handle_upload' ), 49 );
 
-		if ( $this->admin_header_callback )
-			add_action("admin_head-$page", $this->admin_header_callback, 51);
+		if ( $this->admin_header_callback ) {
+			add_action( "admin_head-$page", $this->admin_header_callback, 51 );
+		}
 	}
 
 	/**
@@ -427,7 +429,7 @@ if ( current_theme_supports( 'custom-background', 'default-color' ) )
 		$overrides = array('test_form' => false);
 
 		$uploaded_file = $_FILES['import'];
-		$wp_filetype = wp_check_filetype_and_ext( $uploaded_file['tmp_name'], $uploaded_file['name'], false );
+		$wp_filetype = wp_check_filetype_and_ext( $uploaded_file['tmp_name'], $uploaded_file['name'] );
 		if ( ! wp_match_mime_types( 'image', $wp_filetype['type'] ) )
 			wp_die( __( 'The uploaded file is not a valid image. Please try again.' ) );
 
