@@ -151,12 +151,25 @@ class WP_Customize_Setting {
 	 *
 	 * @since 3.4.0
 	 * @uses WP_Customize_Setting::multidimensional_replace()
+	 * @uses WP_Customize_Setting::multidimensional_isset()
 	 *
 	 * @param mixed $original Old value.
 	 * @return mixed New or old value.
 	 */
 	public function _preview_filter( $original ) {
-		return $this->multidimensional_replace( $original, $this->id_data[ 'keys' ], $this->post_value() );
+		$undefined = new stdClass();
+		$value = $this->manager->post_value( $this, $undefined );
+		if ( $undefined === $value ) {
+			$is_default_option_filter = ( 'option' === $this->type && 'default_option_' . $this->id_data['base'] === current_filter() );
+			if ( $is_default_option_filter || ! $this->multidimensional_isset( $original, $this->id_data['keys'] ) ) {
+				$replaced = $this->multidimensional_replace( $original, $this->id_data['keys'], $this->default );
+			} else {
+				$replaced = $original;
+			}
+		} else {
+			$replaced = $this->multidimensional_replace( $original, $this->id_data['keys'], $value );
+		}
+		return $replaced;
 	}
 
 	/**
