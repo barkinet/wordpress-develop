@@ -100,12 +100,19 @@ class WP_Customize_Setting {
 			add_filter( "customize_sanitize_js_{$this->id}", $this->sanitize_js_callback, 10, 2 );
 	}
 
+	protected $_original_value;
+
 	/**
 	 * Handle previewing the setting.
 	 *
 	 * @since 3.4.0
 	 */
 	public function preview() {
+
+		if ( ! isset( $this->_original_value ) ) {
+			$this->_original_value = $this->value();
+		}
+
 		switch( $this->type ) {
 			case 'theme_mod' :
 				add_filter( 'theme_mod_' . $this->id_data[ 'base' ], array( $this, '_preview_filter' ) );
@@ -157,17 +164,12 @@ class WP_Customize_Setting {
 	 * @return mixed New or old value.
 	 */
 	public function _preview_filter( $original ) {
-		$undefined = new stdClass();
-		$value = $this->manager->post_value( $this, $undefined );
-		if ( $undefined === $value ) {
-			$is_default_option_filter = ( 'option' === $this->type && 'default_option_' . $this->id_data['base'] === current_filter() );
-			if ( $is_default_option_filter || ! $this->multidimensional_isset( $original, $this->id_data['keys'] ) ) {
-				$replaced = $this->multidimensional_replace( $original, $this->id_data['keys'], $this->default );
-			} else {
-				$replaced = $original;
-			}
+		$undefined = new stdClass(); // symbol hack
+		$post_value = $this->manager->post_value( $this, $undefined );
+		if ( $undefined === $post_value ) {
+			$replaced = $this->multidimensional_replace( $original, $this->id_data['keys'], $this->_original_value );
 		} else {
-			$replaced = $this->multidimensional_replace( $original, $this->id_data['keys'], $value );
+			$replaced = $this->multidimensional_replace( $original, $this->id_data['keys'], $post_value );
 		}
 		return $replaced;
 	}
