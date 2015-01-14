@@ -1,0 +1,207 @@
+<?php
+
+/**
+ * Tests specific to sites in multisite.
+ *
+ * @group customize
+ */
+class Tests_WP_Customize_Setting extends WP_UnitTestCase {
+
+	/**
+	 * @var WP_Customize_Manager
+	 */
+	protected $manager;
+
+	function setUp() {
+		parent::setUp();
+		require_once( ABSPATH . WPINC . '/class-wp-customize-manager.php' );
+		$GLOBALS['wp_customize'] = new WP_Customize_Manager(); // wpcs: override ok
+		$this->manager = $GLOBALS['wp_customize'];
+	}
+
+	function tearDown() {
+		parent::tearDown();
+		$this->manager = null;
+		unset( $GLOBALS['wp_customize'] );
+	}
+
+	function test_construct() {
+		$foo = new WP_Customize_Setting( $this->manager, 'foo' );
+		$this->assertEquals( $this->manager, $foo->manager );
+		$this->assertEquals( 'foo', $foo->id );
+		$this->assertEquals( 'theme_mod', $foo->type );
+		$this->assertEquals( 'edit_theme_options', $foo->capability );
+		$this->assertEquals( '', $foo->theme_supports );
+		$this->assertEquals( '', $foo->default );
+		$this->assertEquals( 'refresh', $foo->transport );
+		$this->assertEquals( '', $foo->sanitize_callback );
+		$this->assertEquals( '', $foo->sanitize_js_callback );
+		$this->assertFalse( has_filter( "customize_sanitize_{$foo->id}" ) );
+		$this->assertFalse( has_filter( "customize_sanitize_js_{$foo->id}" ) );
+
+		$args = array(
+			'type' => 'option',
+			'capability' => 'edit_posts',
+			'theme_supports' => 'widgets',
+			'default' => 'barbar',
+			'transport' => 'postMessage',
+			'sanitize_callback' => function ( $value ) { return $value . ':sanitize_callback'; },
+			'sanitize_js_callback' => function ( $value ) { return $value . ':sanitize_js_callback'; },
+		);
+		$bar = new WP_Customize_Setting( $this->manager, 'bar', $args );
+		$this->assertEquals( 'bar', $bar->id );
+		foreach ( $args as $key => $value ) {
+			$this->assertEquals( $value, $bar->$key );
+		}
+		$this->assertEquals( 10, has_filter( "customize_sanitize_{$bar->id}", $args['sanitize_callback'] ) );
+		$this->assertEquals( 10, has_filter( "customize_sanitize_js_{$bar->id}" ), $args['sanitize_js_callback'] );
+	}
+
+	function test_preview_standard_types_without_post_values() {
+
+		$undefined = new stdClass();
+		$types = array(
+			'option' => array(
+				'getter' => 'get_option',
+				'setter' => 'update_option',
+			),
+			'theme_mod' => array(
+				'getter' => 'get_theme_mod',
+				'setter' => 'set_theme_mod',
+			),
+		);
+
+		// Try non-multidimensional settings
+		foreach ( $types as $type => $type_options ) {
+			// See what effect the preview filter has on a non-existent setting (default value should be seen)
+			$name = "unset_$type";
+			$default = "default_$name";
+			$setting = new WP_Customize_Setting( $this->manager, $name, array(
+				'type' => $type,
+				'default' => $default,
+			) );
+			$this->assertEquals( $undefined, call_user_func( $type_options['getter'], $name, $undefined ) );
+			$this->assertEquals( $default, $setting->value() );
+			$setting->preview();
+			$this->assertEquals( $default, call_user_func( $type_options['getter'], $name, $undefined ) );
+			$this->assertEquals( $default, $setting->value() );
+
+			// See what effect the preview has on an extant setting (default value should not be seen)
+			$name = "set_$type";
+			$default = "default_$name";
+			$initial_value = "initial_value_$name";
+			call_user_func( $type_options['setter'], $name, $initial_value );
+			$setting = new WP_Customize_Setting( $this->manager, $name, array(
+				'type' => $type,
+				'default' => $default,
+			) );
+			$this->assertEquals( $initial_value, call_user_func( $type_options['getter'], $name ) );
+			$this->assertEquals( $initial_value, $setting->value() );
+			$setting->preview();
+			$this->assertEquals( 0, did_action( "customize_preview_{$setting->id}" ) ); // only applicable for custom types (not options or theme_mods)
+			$this->assertEquals( 0, did_action( "customize_preview_{$setting->type}" ) ); // only applicable for custom types (not options or theme_mods)
+			$this->assertEquals( $initial_value, call_user_func( $type_options['getter'], $name ) );
+			$this->assertEquals( $initial_value, $setting->value() );
+
+			// @todo What if we call the setter after preview() is called? If no post_value, should the new set value be stored? If that happens, then the following 3 assertions should be inverted
+			$overridden_value = "overridden_value_$name";
+			call_user_func( $type_options['setter'], $name, $overridden_value );
+			$this->assertEquals( $initial_value, call_user_func( $type_options['getter'], $name ) );
+			$this->assertEquals( $initial_value, $setting->value() );
+			$this->assertNotEquals( $overridden_value, $setting->value() );
+		}
+
+		// Try multidimensional settings
+		foreach ( $types as $type => $type_options ) {
+			// See what effect the preview filter has on a non-existent setting (default value should be seen)
+			$base_name = "multi_unset_$type";
+			$name = $base_name . '[foo]';
+			$default = "default_$name";
+			$setting = new WP_Customize_Setting( $this->manager, $name, array(
+				'type' => $type,
+				'default' => $default,
+			) );
+			$this->assertEquals( $undefined, call_user_func( $type_options['getter'], $base_name, $undefined ) );
+			$this->assertEquals( $default, $setting->value() );
+			$setting->preview();
+			$base_value = call_user_func( $type_options['getter'], $base_name, $undefined );
+			$this->assertArrayHasKey( 'foo', $base_value );
+			$this->assertEquals( $default, $base_value['foo'] );
+
+			// See what effect the preview has on an extant setting (default value should not be seen)
+			$base_name = "multi_set_$type";
+			$name = $base_name . '[foo]';
+			$default = "default_$name";
+			$initial_value = "initial_value_$name";
+			$base_initial_value = array( 'foo' => $initial_value, 'bar' => 'persisted' );
+			call_user_func( $type_options['setter'], $base_name, $base_initial_value );
+			$setting = new WP_Customize_Setting( $this->manager, $name, array(
+				'type' => $type,
+				'default' => $default,
+			) );
+			$base_value = call_user_func( $type_options['getter'], $base_name, array() );
+			$this->assertEquals( $initial_value, $base_value['foo'] );
+			$this->assertEquals( $initial_value, $setting->value() );
+			$setting->preview();
+			$this->assertEquals( 0, did_action( "customize_preview_{$setting->id}" ) ); // only applicable for custom types (not options or theme_mods)
+			$this->assertEquals( 0, did_action( "customize_preview_{$setting->type}" ) ); // only applicable for custom types (not options or theme_mods)
+			$base_value = call_user_func( $type_options['getter'], $base_name, array() );
+			$this->assertEquals( $initial_value, $base_value['foo'] );
+			$this->assertEquals( $initial_value, $setting->value() );
+
+			// @todo What if we call the setter after preview() is called? If no post_value, should the new set value be stored? If that happens, then the following 3 assertions should be inverted
+			$overridden_value = "overridden_value_$name";
+			call_user_func( $type_options['setter'], $name, array( 'foo' => $overridden_value, 'bar' => 'persisted' ) );
+			$this->assertEquals( $initial_value, call_user_func( $type_options['getter'], $base_name )['foo'] );
+			$this->assertEquals( $initial_value, $setting->value() );
+			$this->assertNotEquals( $overridden_value, $setting->value() );
+		}
+
+	}
+
+//	function test_preview_standard_types_with_post_values() {
+//		// @todo this is hacky. The manager should provide a mechanism to override the post_values
+//		$_POST['customized'] = wp_slash( wp_json_encode( array(
+//			'foo' => 'foo_default',
+//			'bar[baz]' => 'bar[baz]_default',
+//		) ) );
+//	}
+
+// @todo test custom types without post values
+// @todo test custom type with post value
+	// @todo test do_action( "customize_preview_{$this->id}", $this );
+	// @todo do_action( "customize_preview_{$this->type}", $this );
+
+//
+//	function test_save() {
+//		// @todo test do_action( 'customize_save_' . $this->id_data[ 'base' ], $this );
+//	}
+//
+//	function test_post_value() {
+//
+//	}
+//
+//	function test_sanitize( $value ) {
+//		// @todo apply_filters( "customize_sanitize_{$this->id}", $value, $this );
+//	}
+//
+//	// @todo function update( $value )
+//
+//	function test_value() {
+//		// @todo test apply_filters( 'customize_value_' . $this->id_data[ 'base' ], $this->default );
+//	}
+//
+//	function test_js_value() {
+//		// @todo test apply_filters( "customize_sanitize_js_{$this->id}", $this->value(), $this );
+//	}
+//
+//	function test_check_capabilities() {
+//
+//	}
+
+	// @todo final protected function multidimensional( &$root, $keys, $create = false )
+	// @todo final protected function multidimensional_replace( $root, $keys, $value )
+	// @todo final protected function multidimensional_get( $root, $keys, $default = null ) {
+	// @todo final protected function multidimensional_isset( $root, $keys )
+}
+
