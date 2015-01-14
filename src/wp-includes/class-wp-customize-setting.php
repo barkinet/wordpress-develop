@@ -158,7 +158,6 @@ class WP_Customize_Setting {
 	 *
 	 * @since 3.4.0
 	 * @uses WP_Customize_Setting::multidimensional_replace()
-	 * @uses WP_Customize_Setting::multidimensional_isset()
 	 *
 	 * @param mixed $original Old value.
 	 * @return mixed New or old value.
@@ -167,10 +166,11 @@ class WP_Customize_Setting {
 		$undefined = new stdClass(); // symbol hack
 		$post_value = $this->manager->post_value( $this, $undefined );
 		if ( $undefined === $post_value ) {
-			$replaced = $this->multidimensional_replace( $original, $this->id_data['keys'], $this->_original_value );
+			$value = $this->_original_value;
 		} else {
-			$replaced = $this->multidimensional_replace( $original, $this->id_data['keys'], $post_value );
+			$value = $post_value;
 		}
+		$replaced = $this->multidimensional_replace( $original, $this->id_data['keys'], $value );
 		return $replaced;
 	}
 
