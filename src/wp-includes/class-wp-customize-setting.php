@@ -435,8 +435,15 @@ class WP_Customize_Setting {
 			$node = &$node[ $key ];
 		}
 
-		if ( $create && ! isset( $node[ $last ] ) )
-			$node[ $last ] = array();
+		if ( $create ) {
+			if ( ! is_array( $node ) ) {
+				// account for an array overriding a string or object value
+				$node = array();
+			}
+			if ( ! isset( $node[ $last ] ) ) {
+				$node[ $last ] = array();
+			}
+		}
 
 		if ( ! isset( $node[ $last ] ) )
 			return;
