@@ -1306,12 +1306,16 @@ function wp_welcome_panel() {
 	<div class="welcome-panel-column welcome-panel-last">
 		<h4><?php _e( 'More Actions' ); ?></h4>
 		<ul>
-		<?php if ( current_theme_supports( 'widgets' ) || current_theme_supports( 'menus' ) ) : ?>
+		<?php
+		$show_widgets = ( current_theme_supports( 'widgets' ) && current_user_can( 'manage_widgets' ) );
+		$show_menus = ( current_theme_supports( 'menus' ) && current_user_can( 'manage_menus' ) );
+		?>
+		<?php if ( $show_widgets || $show_menus ) : ?>
 			<li><div class="welcome-icon welcome-widgets-menus"><?php
-				if ( current_theme_supports( 'widgets' ) && current_theme_supports( 'menus' ) ) {
+				if ( $show_widgets && $show_menus ) {
 					printf( __( 'Manage <a href="%1$s">widgets</a> or <a href="%2$s">menus</a>' ),
 						admin_url( 'widgets.php' ), admin_url( 'nav-menus.php' ) );
-				} elseif ( current_theme_supports( 'widgets' ) ) {
+				} elseif ( $show_widgets ) {
 					echo '<a href="' . admin_url( 'widgets.php' ) . '">' . __( 'Manage widgets' ) . '</a>';
 				} else {
 					echo '<a href="' . admin_url( 'nav-menus.php' ) . '">' . __( 'Manage menus' ) . '</a>';
