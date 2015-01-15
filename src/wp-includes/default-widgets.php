@@ -1348,8 +1348,12 @@ class WP_Widget_Tag_Cloud extends WP_Widget {
 		$menus = wp_get_nav_menus();
 
 		// If no menus exists, direct the user to go and create some.
-		if ( !$menus ) {
-			echo '<p>'. sprintf( __('No menus have been created yet. <a href="%s">Create some</a>.'), admin_url('nav-menus.php') ) .'</p>';
+		if ( ! $menus ) {
+			if ( current_user_can( 'manage_menus' ) ) {
+				echo '<p>'. sprintf( __( 'No menus have been created yet. <a href="%s">Create some</a>.' ), admin_url( 'nav-menus.php' ) ) . '</p>';
+			} else {
+				echo '<p>' . __( 'No menus have been created yet, and you do not have permission to create them.' ) . '</p>';
+			}
 			return;
 		}
 		?>
