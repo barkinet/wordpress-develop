@@ -1704,8 +1704,9 @@ function wp_ajax_find_posts() {
 function wp_ajax_widgets_order() {
 	check_ajax_referer( 'save-sidebar-widgets', 'savewidgets' );
 
-	if ( !current_user_can('edit_theme_options') )
+	if ( ! current_user_can( 'manage_widgets' ) ) {
 		wp_die( -1 );
+	}
 
 	unset( $_POST['savewidgets'], $_POST['action'] );
 
