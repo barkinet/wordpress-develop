@@ -19,8 +19,9 @@ if ( ! current_theme_supports( 'menus' ) && ! current_theme_supports( 'widgets' 
 	wp_die( __( 'Your theme does not support navigation menus or widgets.' ) );
 
 // Permissions Check
-if ( ! current_user_can('edit_theme_options') )
+if ( ! current_user_can( 'manage_menus' ) ) {
 	wp_die( __( 'Cheatin&#8217; uh?' ), 403 );
+}
 
 wp_enqueue_script( 'nav-menu' );
 

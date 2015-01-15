@@ -1335,7 +1335,7 @@ function map_meta_cap( $cap, $user_id ) {
 	case 'customize' :
 		$caps[] = 'edit_theme_options';
 		break;
-	case 'edit_nav_menus' :
+	case 'manage_menus' :
 		$caps[] = 'edit_theme_options';
 		break;
 	default:
