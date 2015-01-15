@@ -657,11 +657,9 @@ function wp_admin_bar_comments_menu( $wp_admin_bar ) {
 function wp_admin_bar_appearance_menu( $wp_admin_bar ) {
 	$wp_admin_bar->add_group( array( 'parent' => 'site-name', 'id' => 'appearance' ) );
 
-	if ( current_user_can( 'switch_themes' ) || current_user_can( 'edit_theme_options' ) )
-		$wp_admin_bar->add_menu( array( 'parent' => 'appearance', 'id' => 'themes', 'title' => __('Themes'), 'href' => admin_url('themes.php') ) );
-
-	if ( ! current_user_can( 'edit_theme_options' ) )
-		return;
+	if ( current_user_can( 'switch_themes' ) || current_user_can( 'edit_theme_options' ) ) {
+		$wp_admin_bar->add_menu( array( 'parent' => 'appearance', 'id' => 'themes', 'title' => __( 'Themes' ), 'href' => admin_url( 'themes.php' ) ) );
+	}
 
 	$current_url = ( is_ssl() ? 'https://' : 'http://' ) . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'];
 	$customize_url = add_query_arg( 'url', urlencode( $current_url ), wp_customize_url() );
@@ -678,7 +676,7 @@ function wp_admin_bar_appearance_menu( $wp_admin_bar ) {
 		add_action( 'wp_before_admin_bar_render', 'wp_customize_support_script' );
 	}
 
-	if ( current_theme_supports( 'widgets' )  ) {
+	if ( current_user_can( 'edit_theme_options' ) && current_theme_supports( 'widgets' ) ) {
 		$wp_admin_bar->add_menu( array( 
 			'parent' => 'appearance', 
 			'id'     => 'widgets', 
@@ -702,10 +700,11 @@ function wp_admin_bar_appearance_menu( $wp_admin_bar ) {
 		}
 	}
 
-	if ( current_theme_supports( 'menus' ) || current_theme_supports( 'widgets' ) )
-		$wp_admin_bar->add_menu( array( 'parent' => 'appearance', 'id' => 'menus', 'title' => __('Menus'), 'href' => admin_url('nav-menus.php') ) );
+	if ( current_user_can( 'manage_menus' ) && ( current_theme_supports( 'menus' ) || current_theme_supports( 'widgets' ) ) ) {
+		$wp_admin_bar->add_menu( array( 'parent' => 'appearance', 'id' => 'menus', 'title' => __( 'Menus' ), 'href' => admin_url( 'nav-menus.php' ) ) );
+	}
 
-	if ( current_theme_supports( 'custom-background' ) ) {
+	if ( current_user_can( 'edit_theme_options' ) && current_theme_supports( 'custom-background' ) ) {
 		$wp_admin_bar->add_menu( array(
 			'parent' => 'appearance',
 			'id'     => 'background',
@@ -729,7 +728,7 @@ function wp_admin_bar_appearance_menu( $wp_admin_bar ) {
 		}
 	}
 
-	if ( current_theme_supports( 'custom-header' ) ) {
+	if ( current_user_can( 'edit_theme_options' ) && current_theme_supports( 'custom-header' ) ) {
 		$wp_admin_bar->add_menu( array(
 			'parent' => 'appearance',
 			'id'     => 'header',
