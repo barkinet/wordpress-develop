@@ -93,8 +93,8 @@ unset($sub, $parent);
 foreach ( $menu as $id => $data ) {
 	if ( empty($submenu[$data[2]]) )
 		continue;
-	$subs = $submenu[$data[2]];
-	$first_sub = array_shift($subs);
+	$subs = $submenu[ $data[2] ];
+	$first_sub = array_shift( $subs );
 	$old_parent = $data[2];
 	$new_parent = $first_sub[2];
 	/*
@@ -102,8 +102,12 @@ foreach ( $menu as $id => $data ) {
 	 * make the first submenu the new parent.
 	 */
 	if ( $new_parent != $old_parent ) {
-		$_wp_real_parent_file[$old_parent] = $new_parent;
-		$menu[$id][2] = $new_parent;
+		$_wp_real_parent_file[ $old_parent ] = $new_parent;
+		$menu[ $id ][1] = $first_sub[1]; // capability
+		$menu[ $id ][2] = $first_sub[2]; // location
+		if ( empty( $subs ) ) {
+			$menu[ $id ][0] = $first_sub[0]; // label
+		}
 
 		foreach ($submenu[$old_parent] as $index => $data) {
 			$submenu[$new_parent][$index] = $submenu[$old_parent][$index];
