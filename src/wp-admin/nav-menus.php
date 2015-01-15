@@ -15,12 +15,16 @@ require_once( dirname( __FILE__ ) . '/admin.php' );
 // Load all the nav menu interface functions
 require_once( ABSPATH . 'wp-admin/includes/nav-menu.php' );
 
-if ( ! current_theme_supports( 'menus' ) && ! current_theme_supports( 'widgets' ) )
+if ( ! current_theme_supports( 'menus' ) && ! current_theme_supports( 'widgets' ) ) {
 	wp_die( __( 'Your theme does not support navigation menus or widgets.' ) );
+}
 
 // Permissions Check
 if ( ! current_user_can( 'manage_menus' ) ) {
 	wp_die( __( 'Cheatin&#8217; uh?' ), 403 );
+}
+if ( ! current_theme_supports( 'menus' ) && ! current_user_can( 'manage_widgets' ) ) {
+	wp_die( __( 'Your theme does not support navigation menus and you do not have permission to manage widgets.' ) );
 }
 
 wp_enqueue_script( 'nav-menu' );
