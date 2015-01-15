@@ -2017,7 +2017,7 @@ final class WP_Internal_Pointers {
 	}
 
 	public static function pointer_wp390_widgets() {
-		if ( ! current_theme_supports( 'widgets' ) ) {
+		if ( ! current_theme_supports( 'widgets' ) || ! current_user_can( 'manage_widgets' ) ) {
 			return;
 		}
 
