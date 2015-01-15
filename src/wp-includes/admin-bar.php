@@ -676,7 +676,7 @@ function wp_admin_bar_appearance_menu( $wp_admin_bar ) {
 		add_action( 'wp_before_admin_bar_render', 'wp_customize_support_script' );
 	}
 
-	if ( current_user_can( 'edit_theme_options' ) && current_theme_supports( 'widgets' ) ) {
+	if ( current_user_can( 'manage_widgets' ) && current_theme_supports( 'widgets' ) ) {
 		$wp_admin_bar->add_menu( array( 
 			'parent' => 'appearance', 
 			'id'     => 'widgets', 

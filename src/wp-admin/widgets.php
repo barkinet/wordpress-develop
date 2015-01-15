@@ -12,8 +12,9 @@ require_once( dirname( __FILE__ ) . '/admin.php' );
 /** WordPress Administration Widgets API */
 require_once(ABSPATH . 'wp-admin/includes/widgets.php');
 
-if ( ! current_user_can('edit_theme_options') )
+if ( ! current_user_can( 'manage_widgets' ) ) {
 	wp_die( __( 'Cheatin&#8217; uh?' ), 403 );
+}
 
 $widgets_access = get_user_setting( 'widgets_access' );
 if ( isset($_GET['widgets-access']) ) {

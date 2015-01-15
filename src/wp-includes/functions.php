@@ -3255,7 +3255,7 @@ function wp_widgets_add_menu() {
 	if ( ! current_theme_supports( 'widgets' ) )
 		return;
 
-	$submenu['themes.php'][7] = array( __( 'Widgets' ), 'edit_theme_options', 'widgets.php' );
+	$submenu['themes.php'][7] = array( __( 'Widgets' ), 'manage_widgets', 'widgets.php' );
 	ksort( $submenu['themes.php'], SORT_NUMERIC );
 }
 

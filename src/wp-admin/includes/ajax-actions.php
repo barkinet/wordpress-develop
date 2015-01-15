@@ -1738,8 +1738,9 @@ function wp_ajax_save_widget() {
 
 	check_ajax_referer( 'save-sidebar-widgets', 'savewidgets' );
 
-	if ( !current_user_can('edit_theme_options') || !isset($_POST['id_base']) )
+	if ( ! current_user_can( 'manage_widgets' ) || ! isset( $_POST['id_base'] ) ) {
 		wp_die( -1 );
+	}
 
 	unset( $_POST['savewidgets'], $_POST['action'] );
 

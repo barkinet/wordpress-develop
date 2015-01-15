@@ -437,6 +437,7 @@ final class WP_Customize_Widgets {
 			'title'       => __( 'Widgets' ),
 			'description' => __( 'Widgets are independent sections of content that can be placed into widgetized areas provided by your theme (commonly called sidebars).' ),
 			'priority'    => 110,
+			'capability'  => 'manage_widgets',
 		) );
 
 		foreach ( $sidebars_widgets as $sidebar_id => $sidebar_widget_ids ) {
@@ -469,6 +470,7 @@ final class WP_Customize_Widgets {
 						'priority' => array_search( $sidebar_id, array_keys( $wp_registered_sidebars ) ),
 						'panel' => 'widgets',
 						'sidebar_id' => $sidebar_id,
+						'capability' => 'manage_widgets',
 					);
 
 					/**
@@ -800,7 +802,7 @@ final class WP_Customize_Widgets {
 	public function get_setting_args( $id, $overrides = array() ) {
 		$args = array(
 			'type'       => 'option',
-			'capability' => 'edit_theme_options',
+			'capability' => 'manage_widgets',
 			'transport'  => 'refresh',
 			'default'    => array(),
 		);
@@ -1379,7 +1381,7 @@ final class WP_Customize_Widgets {
 
 		check_ajax_referer( 'update-widget', 'nonce' );
 
-		if ( ! current_user_can( 'edit_theme_options' ) ) {
+		if ( ! current_user_can( 'manage_widgets' ) ) {
 			wp_die( -1 );
 		}
 

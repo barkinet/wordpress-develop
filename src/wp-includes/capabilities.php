@@ -1338,6 +1338,9 @@ function map_meta_cap( $cap, $user_id ) {
 	case 'manage_menus' :
 		$caps[] = 'edit_theme_options';
 		break;
+	case 'manage_widgets' :
+		$caps[] = 'edit_theme_options';
+		break;
 	default:
 		// Handle meta capabilities for custom post types.
 		$post_type_meta_caps = _post_type_meta_capabilities();
