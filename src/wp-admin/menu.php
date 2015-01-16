@@ -157,12 +157,12 @@ $menu[60] = array( __('Appearance'), $appearance_cap, 'themes.php', '', 'menu-to
 		$submenu['themes.php'][10] = array(__( 'Menus' ), 'manage_menus', 'nav-menus.php');
 	}
 
-	if ( current_theme_supports( 'custom-header' ) && current_user_can( 'customize') ) {
+	if ( current_theme_supports( 'custom-header' ) && current_user_can( 'customize' ) && current_user_can( 'manage_custom_header' ) ) {
 		$customize_header_url = add_query_arg( 'autofocus[control]', 'header_image', $customize_url );
 		$submenu['themes.php'][15] = array( __( 'Header' ), $appearance_cap, $customize_header_url, '', 'hide-if-no-customize' );
 	}
 
-	if ( current_theme_supports( 'custom-background' ) && current_user_can( 'customize') ) {
+	if ( current_theme_supports( 'custom-background' ) && current_user_can( 'customize') && current_user_can( 'manage_custom_background' ) ) {
 		$customize_background_url = add_query_arg( 'autofocus[control]', 'background_image', $customize_url );
 		$submenu['themes.php'][20] = array( __( 'Background' ), $appearance_cap, $customize_background_url, '', 'hide-if-no-customize' );
 	}

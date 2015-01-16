@@ -61,7 +61,7 @@ class Custom_Background {
 	 * @since 3.0.0
 	 */
 	public function init() {
-		$page = add_theme_page( __( 'Background' ), __( 'Background' ), 'edit_theme_options', 'custom-background', array( $this, 'admin_page' ) );
+		$page = add_theme_page( __( 'Background' ), __( 'Background' ), 'manage_custom_background', 'custom-background', array( $this, 'admin_page' ) );
 		if ( ! $page ) {
 			return;
 		}
@@ -416,7 +416,7 @@ if ( current_theme_supports( 'custom-background', 'default-color' ) )
 	public function ajax_background_add() {
 		check_ajax_referer( 'background-add', 'nonce' );
 
-		if ( ! current_user_can( 'edit_theme_options' ) ) {
+		if ( ! current_user_can( 'manage_custom_background' ) ) {
 			wp_send_json_error();
 		}
 
@@ -454,7 +454,7 @@ if ( current_theme_supports( 'custom-background', 'default-color' ) )
 	 * @deprecated 3.5.0
 	 */
 	public function wp_set_background_image() {
-		if ( ! current_user_can('edit_theme_options') || ! isset( $_POST['attachment_id'] ) ) exit;
+		if ( ! current_user_can( 'manage_custom_background' ) || ! isset( $_POST['attachment_id'] ) ) exit;
 		$attachment_id = absint($_POST['attachment_id']);
 		/** This filter is documented in wp-admin/includes/media.php */
 		$sizes = array_keys(apply_filters( 'image_size_names_choose', array('thumbnail' => __('Thumbnail'), 'medium' => __('Medium'), 'large' => __('Large'), 'full' => __('Full Size')) ));

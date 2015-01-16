@@ -1026,11 +1026,13 @@ final class WP_Customize_Manager {
 		$this->add_section( 'colors', array(
 			'title'          => __( 'Colors' ),
 			'priority'       => 40,
+			'capability'     => '', // set to empty so that capability will be derived from contained controls (and their settings)
 		) );
 
 		$this->add_setting( 'header_textcolor', array(
 			'theme_supports' => array( 'custom-header', 'header-text' ),
 			'default'        => get_theme_support( 'custom-header', 'default-text-color' ),
+			'capability'     => 'manage_custom_header',
 
 			'sanitize_callback'    => array( $this, '_sanitize_header_textcolor' ),
 			'sanitize_js_callback' => 'maybe_hash_hex_color',
@@ -1055,6 +1057,7 @@ final class WP_Customize_Manager {
 		$this->add_setting( 'background_color', array(
 			'default'        => get_theme_support( 'custom-background', 'default-color' ),
 			'theme_supports' => 'custom-background',
+			'capability'     => 'manage_custom_background',
 
 			'sanitize_callback'    => 'sanitize_hex_color_no_hash',
 			'sanitize_js_callback' => 'maybe_hash_hex_color',
@@ -1072,16 +1075,19 @@ final class WP_Customize_Manager {
 			'title'          => __( 'Header Image' ),
 			'theme_supports' => 'custom-header',
 			'priority'       => 60,
+			'capability'     => '', // set to empty so that capability will be derived from contained controls (and their settings)
 		) );
 
 		$this->add_setting( new WP_Customize_Filter_Setting( $this, 'header_image', array(
 			'default'        => get_theme_support( 'custom-header', 'default-image' ),
 			'theme_supports' => 'custom-header',
+			'capability'     => 'manage_custom_header',
 		) ) );
 
 		$this->add_setting( new WP_Customize_Header_Image_Setting( $this, 'header_image_data', array(
 			// 'default'        => get_theme_support( 'custom-header', 'default-image' ),
 			'theme_supports' => 'custom-header',
+			'capability'     => 'manage_custom_header',
 		) ) );
 
 		$this->add_control( new WP_Customize_Header_Image_Control( $this ) );
@@ -1092,15 +1098,18 @@ final class WP_Customize_Manager {
 			'title'          => __( 'Background Image' ),
 			'theme_supports' => 'custom-background',
 			'priority'       => 80,
+			'capability'     => '', // set to empty so that capability will be derived from contained controls (and their settings)
 		) );
 
 		$this->add_setting( 'background_image', array(
 			'default'        => get_theme_support( 'custom-background', 'default-image' ),
 			'theme_supports' => 'custom-background',
+			'capability'     => 'manage_custom_background',
 		) );
 
 		$this->add_setting( new WP_Customize_Background_Image_Setting( $this, 'background_image_thumb', array(
 			'theme_supports' => 'custom-background',
+			'capability'     => 'manage_custom_background',
 		) ) );
 
 		$this->add_control( new WP_Customize_Background_Image_Control( $this ) );
@@ -1108,6 +1117,7 @@ final class WP_Customize_Manager {
 		$this->add_setting( 'background_repeat', array(
 			'default'        => get_theme_support( 'custom-background', 'default-repeat' ),
 			'theme_supports' => 'custom-background',
+			'capability'     => 'manage_custom_background',
 		) );
 
 		$this->add_control( 'background_repeat', array(
@@ -1125,11 +1135,13 @@ final class WP_Customize_Manager {
 		$this->add_setting( 'background_position_x', array(
 			'default'        => get_theme_support( 'custom-background', 'default-position-x' ),
 			'theme_supports' => 'custom-background',
+			'capability'     => 'manage_custom_background',
 		) );
 
 		$this->add_control( 'background_position_x', array(
 			'label'      => __( 'Background Position' ),
 			'section'    => 'background_image',
+			'capability' => 'manage_custom_background',
 			'type'       => 'radio',
 			'choices'    => array(
 				'left'       => __('Left'),
@@ -1141,6 +1153,7 @@ final class WP_Customize_Manager {
 		$this->add_setting( 'background_attachment', array(
 			'default'        => get_theme_support( 'custom-background', 'default-attachment' ),
 			'theme_supports' => 'custom-background',
+			'capability'     => 'manage_custom_background',
 		) );
 
 		$this->add_control( 'background_attachment', array(

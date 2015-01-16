@@ -704,7 +704,7 @@ function wp_admin_bar_appearance_menu( $wp_admin_bar ) {
 		$wp_admin_bar->add_menu( array( 'parent' => 'appearance', 'id' => 'menus', 'title' => __( 'Menus' ), 'href' => admin_url( 'nav-menus.php' ) ) );
 	}
 
-	if ( current_user_can( 'edit_theme_options' ) && current_theme_supports( 'custom-background' ) ) {
+	if ( current_user_can( 'manage_custom_background' ) && current_theme_supports( 'custom-background' ) ) {
 		$wp_admin_bar->add_menu( array(
 			'parent' => 'appearance',
 			'id'     => 'background',
@@ -728,7 +728,7 @@ function wp_admin_bar_appearance_menu( $wp_admin_bar ) {
 		}
 	}
 
-	if ( current_user_can( 'edit_theme_options' ) && current_theme_supports( 'custom-header' ) ) {
+	if ( current_user_can( 'manage_custom_header' ) && current_theme_supports( 'custom-header' ) ) {
 		$wp_admin_bar->add_menu( array(
 			'parent' => 'appearance',
 			'id'     => 'header',

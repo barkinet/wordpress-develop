@@ -70,7 +70,7 @@ class Custom_Image_Header {
 	 * @since 2.1.0
 	 */
 	public function init() {
-		$page = add_theme_page( __( 'Header' ), __( 'Header' ), 'edit_theme_options', 'custom-header', array( $this, 'admin_page' ) );
+		$page = add_theme_page( __( 'Header' ), __( 'Header' ), 'manage_custom_header', 'custom-header', array( $this, 'admin_page' ) );
 		if ( ! $page ) {
 			return;
 		}
@@ -184,11 +184,13 @@ class Custom_Image_Header {
 	 * @since 2.6.0
 	 */
 	public function take_action() {
-		if ( ! current_user_can('edit_theme_options') )
+		if ( ! current_user_can( 'manage_custom_header' ) ) {
 			return;
+		}
 
-		if ( empty( $_POST ) )
+		if ( empty( $_POST ) ) {
 			return;
+		}
 
 		$this->updated = true;
 
@@ -916,8 +918,9 @@ wp_nonce_field( 'custom-header-options', '_wpnonce-custom-header-options' ); ?>
 	 * @since 2.1.0
 	 */
 	public function admin_page() {
-		if ( ! current_user_can('edit_theme_options') )
-			wp_die(__('You do not have permission to customize headers.'));
+		if ( ! current_user_can( 'manage_custom_header' ) ) {
+			wp_die( __( 'You do not have permission to customize headers.' ) );
+		}
 		$step = $this->step();
 		if ( 2 == $step )
 			$this->step_2();
@@ -1147,7 +1150,7 @@ wp_nonce_field( 'custom-header-options', '_wpnonce-custom-header-options' ); ?>
 	public function ajax_header_crop() {
 		check_ajax_referer( 'image_editor-' . $_POST['id'], 'nonce' );
 
-		if ( ! current_user_can( 'edit_theme_options' ) ) {
+		if ( ! current_user_can( 'manage_custom_header' ) ) {
 			wp_send_json_error();
 		}
 
@@ -1204,7 +1207,7 @@ wp_nonce_field( 'custom-header-options', '_wpnonce-custom-header-options' ); ?>
 	public function ajax_header_add() {
 		check_ajax_referer( 'header-add', 'nonce' );
 
-		if ( ! current_user_can( 'edit_theme_options' ) ) {
+		if ( ! current_user_can( 'manage_custom_header' ) ) {
 			wp_send_json_error();
 		}
 
@@ -1230,7 +1233,7 @@ wp_nonce_field( 'custom-header-options', '_wpnonce-custom-header-options' ); ?>
 	public function ajax_header_remove() {
 		check_ajax_referer( 'header-remove', 'nonce' );
 
-		if ( ! current_user_can( 'edit_theme_options' ) ) {
+		if ( ! current_user_can( 'manage_custom_header' ) ) {
 			wp_send_json_error();
 		}
 
