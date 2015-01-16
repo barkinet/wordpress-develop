@@ -98,14 +98,6 @@ class Tests_Avatar extends WP_UnitTestCase {
 		$this->assertEquals( $url, $url2 );
 	}
 
-	/**
-	 * @ticket 21195
-	 */
-	public function test_get_avatar_url_bad_id() {
-		$this->assertFalse( get_avatar_url( false ) );
-		$this->assertFalse( get_avatar_url( 100000 ) );
-	}
-
 	protected $fakeURL;
 	/**
 	 * @ticket 21195
@@ -166,30 +158,30 @@ class Tests_Avatar extends WP_UnitTestCase {
 
 	public function test_get_avatar() {
 		$img = get_avatar( 1 );
-		$this->assertEquals( preg_match( '|^<img alt="[^"]*" src="[^"]*" class="[^"]*" height="[^"]*" width="[^"]*" />$|', $img ), 1 );
+		$this->assertEquals( preg_match( "|^<img alt='[^']*' src='[^']*' class='[^']*' height='[^']*' width='[^']*' />$|", $img ), 1 );
 	}
 
 	public function test_get_avatar_size() {
 		$size = '100';
 		$img = get_avatar( 1, $size );
-		$this->assertEquals( preg_match( '|^<img .*height="' . $size . '".*width="' . $size . '"|', $img ), 1 );
+		$this->assertEquals( preg_match( "|^<img .*height='$size'.*width='$size'|", $img ), 1 );
 	}
 
 	public function test_get_avatar_alt() {
 		$alt = 'Mr Hyde';
 		$img = get_avatar( 1, 96, '', $alt );
-		$this->assertEquals( preg_match( '|^<img alt="' . $alt . '"|', $img ), 1 );
+		$this->assertEquals( preg_match( "|^<img alt='$alt'|", $img ), 1 );
 	}
 
 	public function test_get_avatar_class() {
 		$class = 'first';
 		$img = get_avatar( 1, 96, '', '', array( 'class' => $class ) );
-		$this->assertEquals( preg_match( '|^<img .*class="[^"]*' . $class . '[^"]*"|', $img ), 1 );
+		$this->assertEquals( preg_match( "|^<img .*class='[^']*{$class}[^']*'|", $img ), 1 );
 	}
 
 	public function test_get_avatar_default_class() {
 		$img = get_avatar( 1, 96, '', '', array( 'force_default' => true ) );
-		$this->assertEquals( preg_match( '|^<img .*class="[^"]*avatar-default[^"]*"|', $img ), 1 );
+		$this->assertEquals( preg_match( "|^<img .*class='[^']*avatar-default[^']*'|", $img ), 1 );
 	}
 
 	public function test_get_avatar_force_display() {

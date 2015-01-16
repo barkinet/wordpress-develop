@@ -33,9 +33,8 @@ class WP_List_Table {
 	 *
 	 * @since 3.1.0
 	 * @var array
-	 * @access private
 	 */
-	private $_pagination_args = array();
+	protected $_pagination_args = array();
 
 	/**
 	 * The current screen
@@ -79,6 +78,13 @@ class WP_List_Table {
 	 * @var array
 	 */
 	protected $_column_headers;
+
+	protected $compat_fields = array( '_args', '_pagination_args', 'screen', '_actions', '_pagination' );
+
+	protected $compat_methods = array( 'set_pagination_args', 'get_views', 'get_bulk_actions', 'bulk_actions',
+		'row_actions', 'months_dropdown', 'view_switcher', 'comments_bubble', 'get_items_per_page', 'pagination',
+		'get_sortable_columns', 'get_column_info', 'get_table_classes', 'display_tablenav', 'extra_tablenav',
+		'single_row_columns' );
 
 	/**
 	 * Constructor.
@@ -149,7 +155,9 @@ class WP_List_Table {
 	 * @return mixed Property.
 	 */
 	public function __get( $name ) {
-		return $this->$name;
+		if ( in_array( $name, $this->compat_fields ) ) {
+			return $this->$name;
+		}
 	}
 
 	/**
@@ -158,12 +166,14 @@ class WP_List_Table {
 	 * @since 4.0.0
 	 * @access public
 	 *
-	 * @param string $name  Property to set.
+	 * @param string $name  Property to check if set.
 	 * @param mixed  $value Property value.
 	 * @return mixed Newly-set property.
 	 */
 	public function __set( $name, $value ) {
-		return $this->$name = $value;
+		if ( in_array( $name, $this->compat_fields ) ) {
+			return $this->$name = $value;
+		}
 	}
 
 	/**
@@ -176,7 +186,9 @@ class WP_List_Table {
 	 * @return bool Whether the property is set.
 	 */
 	public function __isset( $name ) {
-		return isset( $this->$name );
+		if ( in_array( $name, $this->compat_fields ) ) {
+			return isset( $this->$name );
+		}
 	}
 
 	/**
@@ -188,7 +200,9 @@ class WP_List_Table {
 	 * @param string $name Property to unset.
 	 */
 	public function __unset( $name ) {
-		unset( $this->$name );
+		if ( in_array( $name, $this->compat_fields ) ) {
+			unset( $this->$name );
+		}
 	}
 
 	/**
@@ -202,7 +216,10 @@ class WP_List_Table {
 	 * @return mixed|bool Return value of the callback, false otherwise.
 	 */
 	public function __call( $name, $arguments ) {
-		return call_user_func_array( array( $this, $name ), $arguments );
+		if ( in_array( $name, $this->compat_methods ) ) {
+			return call_user_func_array( array( $this, $name ), $arguments );
+		}
+		return false;
 	}
 
 	/**
@@ -936,7 +953,7 @@ class WP_List_Table {
 	 * @return array List of CSS classes for the table tag.
 	 */
 	protected function get_table_classes() {
-		return array( 'widefat', 'fixed', $this->_args['plural'] );
+		return array( 'widefat', 'fixed', 'striped', $this->_args['plural'] );
 	}
 
 	/**
@@ -1011,10 +1028,7 @@ class WP_List_Table {
 	 * @param object $item The current item
 	 */
 	public function single_row( $item ) {
-		static $row_class = '';
-		$row_class = ( $row_class == '' ? ' class="alternate"' : '' );
-
-		echo '<tr' . $row_class . '>';
+		echo '<tr>';
 		$this->single_row_columns( $item );
 		echo '</tr>';
 	}

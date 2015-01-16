@@ -778,8 +778,9 @@ function print_head_scripts() {
 		do_action( 'wp_print_scripts' );
 	}
 
-	if ( !is_a($wp_scripts, 'WP_Scripts') )
+	if ( ! ( $wp_scripts instanceof WP_Scripts ) ) {
 		$wp_scripts = new WP_Scripts();
+	}
 
 	script_concat_settings();
 	$wp_scripts->do_concat = $concatenate_scripts;
@@ -808,9 +809,9 @@ function print_head_scripts() {
 function print_footer_scripts() {
 	global $wp_scripts, $concatenate_scripts;
 
-	if ( !is_a($wp_scripts, 'WP_Scripts') )
+	if ( ! ( $wp_scripts instanceof WP_Scripts ) ) {
 		return array(); // No need to run if not instantiated.
-
+	}
 	script_concat_settings();
 	$wp_scripts->do_concat = $concatenate_scripts;
 	$wp_scripts->do_footer_items();
@@ -831,7 +832,9 @@ function print_footer_scripts() {
 }
 
 /**
- * @internal use
+ * Print scripts (internal use only)
+ *
+ * @ignore
  */
 function _print_scripts() {
 	global $wp_scripts, $compress_scripts;
@@ -857,21 +860,8 @@ function _print_scripts() {
 		echo "<script type='text/javascript' src='" . esc_attr($src) . "'></script>\n";
 	}
 
-	if ( ! empty( $wp_scripts->print_html ) ) {
+	if ( !empty($wp_scripts->print_html) )
 		echo $wp_scripts->print_html;
-	}
-
-	if ( ! empty( $wp_scripts->print_after_html ) ) {
-		if ( $wp_scripts->do_concat ) {
-			echo "<script type='text/javascript'>\n";
-			echo "/* <![CDATA[ */\n"; // not needed in HTML 5
-			echo trim( $wp_scripts->print_after_html ) . "\n";
-			echo "/* ]]> */\n";
-			echo "</script>\n";
-		} else {
-			echo $wp_scripts->print_after_html;
-		}
-	}
 }
 
 /**
@@ -890,9 +880,9 @@ function wp_print_head_scripts() {
 
 	global $wp_scripts;
 
-	if ( !is_a($wp_scripts, 'WP_Scripts') )
+	if ( ! ( $wp_scripts instanceof WP_Scripts ) ) {
 		return array(); // no need to run if nothing is queued
-
+	}
 	return print_head_scripts();
 }
 
@@ -945,8 +935,9 @@ function wp_enqueue_scripts() {
 function print_admin_styles() {
 	global $wp_styles, $concatenate_scripts;
 
-	if ( !is_a($wp_styles, 'WP_Styles') )
+	if ( ! ( $wp_styles instanceof WP_Styles ) ) {
 		$wp_styles = new WP_Styles();
+	}
 
 	script_concat_settings();
 	$wp_styles->do_concat = $concatenate_scripts;
@@ -975,8 +966,9 @@ function print_admin_styles() {
 function print_late_styles() {
 	global $wp_styles, $concatenate_scripts;
 
-	if ( !is_a($wp_styles, 'WP_Styles') )
+	if ( ! ( $wp_styles instanceof WP_Styles ) ) {
 		return;
+	}
 
 	$wp_styles->do_concat = $concatenate_scripts;
 	$wp_styles->do_footer_items();
@@ -997,7 +989,9 @@ function print_late_styles() {
 }
 
 /**
- * @internal use
+ * Print styles (internal use only)
+ *
+ * @ignore
  */
 function _print_styles() {
 	global $wp_styles, $compress_css;
@@ -1051,10 +1045,3 @@ function script_concat_settings() {
 			$compress_css = false;
 	}
 }
-
-add_action( 'wp_default_scripts', 'wp_default_scripts' );
-add_filter( 'wp_print_scripts', 'wp_just_in_time_script_localization' );
-add_filter( 'print_scripts_array', 'wp_prototype_before_jquery' );
-
-add_action( 'wp_default_styles', 'wp_default_styles' );
-add_filter( 'style_loader_src', 'wp_style_loader_src', 10, 2 );

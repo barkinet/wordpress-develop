@@ -2005,11 +2005,12 @@ function fix_phpmailer_messageid( $phpmailer ) {
  * @return bool
  */
 function is_user_spammy( $user = null ) {
-    if ( ! is_a( $user, 'WP_User' ) ) {
-		if ( $user )
+    if ( ! ( $user instanceof WP_User ) ) {
+		if ( $user ) {
 			$user = get_user_by( 'login', $user );
-		else
+		} else {
 			$user = wp_get_current_user();
+		}
 	}
 
 	return $user && isset( $user->spam ) && 1 == $user->spam;
@@ -2028,7 +2029,6 @@ function is_user_spammy( $user = null ) {
 function update_blog_public( $old_value, $value ) {
 	update_blog_status( get_current_blog_id(), 'public', (int) $value );
 }
-add_action('update_option_blog_public', 'update_blog_public', 10, 2);
 
 /**
  * Check whether a usermeta key has to do with the current blog.
@@ -2069,7 +2069,6 @@ function users_can_register_signup_filter() {
 
 	return false;
 }
-add_filter('option_users_can_register', 'users_can_register_signup_filter');
 
 /**
  * Ensure that the welcome message is not empty. Currently unused.
@@ -2098,7 +2097,6 @@ Thanks!
 	}
 	return $text;
 }
-add_filter( 'site_option_welcome_user_email', 'welcome_user_msg_filter' );
 
 /**
  * Whether to force SSL on content.

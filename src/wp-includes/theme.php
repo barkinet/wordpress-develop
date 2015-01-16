@@ -676,7 +676,6 @@ function preview_theme() {
 
 	ob_start( 'preview_theme_ob_filter' );
 }
-add_action('setup_theme', 'preview_theme');
 
 /**
  * Private function to modify the current template when previewing a theme
@@ -1663,7 +1662,6 @@ function _custom_header_background_just_in_time() {
 		}
 	}
 }
-add_action( 'wp_loaded', '_custom_header_background_just_in_time' );
 
 /**
  * Gets the theme support arguments passed when registering that support
@@ -1872,8 +1870,6 @@ function _delete_attachment_theme_mod( $id ) {
 		remove_theme_mod( 'background_image' );
 }
 
-add_action( 'delete_attachment', '_delete_attachment_theme_mod' );
-
 /**
  * Checks if a theme has been changed and runs 'after_switch_theme' hook on the next WP load
  *
@@ -1937,7 +1933,6 @@ function _wp_customize_include() {
 	// Init Customize class
 	$GLOBALS['wp_customize'] = new WP_Customize_Manager( $uuid );
 }
-add_action( 'plugins_loaded', '_wp_customize_include' );
 
 /**
  * Handle publishing of wp_transaction posts.
@@ -2024,7 +2019,6 @@ function _wp_customize_loader_settings() {
 
 	$wp_scripts->add_data( 'customize-loader', 'data', $script );
 }
-add_action( 'admin_enqueue_scripts', '_wp_customize_loader_settings' );
 
 /**
  * Returns a URL to load the Customizer.
@@ -2091,5 +2085,5 @@ function wp_customize_support_script() {
 function is_customize_preview() {
 	global $wp_customize;
 
-	return is_a( $wp_customize, 'WP_Customize_Manager' ) && $wp_customize->is_preview();
+	return ( $wp_customize instanceof WP_Customize_Manager ) && $wp_customize->is_preview();
 }

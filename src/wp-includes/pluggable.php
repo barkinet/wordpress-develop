@@ -260,7 +260,7 @@ function wp_mail( $to, $subject, $message, $headers = '', $attachments = array()
 	global $phpmailer;
 
 	// (Re)create it, if it's gone missing
-	if ( !is_object( $phpmailer ) || !is_a( $phpmailer, 'PHPMailer' ) ) {
+	if ( ! ( $phpmailer instanceof PHPMailer ) ) {
 		require_once ABSPATH . WPINC . '/class-phpmailer.php';
 		require_once ABSPATH . WPINC . '/class-smtp.php';
 		$phpmailer = new PHPMailer( true );
@@ -2181,7 +2181,7 @@ function get_avatar( $id_or_email, $size = 96, $default = '', $alt = '', $args =
 	}
 
 	$avatar = sprintf(
-		'<img alt="%s" src="%s" class="%s" height="%d" width="%d" />',
+		"<img alt='%s' src='%s' class='%s' height='%d' width='%d' />",
 		esc_attr( $args['alt'] ),
 		esc_url( $url ),
 		esc_attr( join( ' ', $class ) ),

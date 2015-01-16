@@ -90,7 +90,10 @@ class WP_Roles {
 	 * @return mixed|bool Return value of the callback, false otherwise.
 	 */
 	public function __call( $name, $arguments ) {
-		return call_user_func_array( array( $this, $name ), $arguments );
+		if ( '_init' === $name ) {
+			return call_user_func_array( array( $this, $name ), $arguments );
+		}
+		return false;
 	}
 
 	/**
@@ -517,7 +520,7 @@ class WP_User {
 			);
 		}
 
-		if ( is_a( $id, 'WP_User' ) ) {
+		if ( $id instanceof WP_User ) {
 			$this->init( $id->data, $blog_id );
 			return;
 		} elseif ( is_object( $id ) ) {

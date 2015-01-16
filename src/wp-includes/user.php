@@ -112,7 +112,7 @@ function wp_signon( $credentials = array(), $secure_cookie = '' ) {
  * @return WP_User|WP_Error WP_User on success, WP_Error on failure.
  */
 function wp_authenticate_username_password($user, $username, $password) {
-	if ( is_a( $user, 'WP_User' ) ) {
+	if ( $user instanceof WP_User ) {
 		return $user;
 	}
 
@@ -167,7 +167,7 @@ function wp_authenticate_username_password($user, $username, $password) {
  * @return WP_User|WP_Error WP_User on success, WP_Error on failure.
  */
 function wp_authenticate_cookie($user, $username, $password) {
-	if ( is_a( $user, 'WP_User' ) ) {
+	if ( $user instanceof WP_User ) {
 		return $user;
 	}
 
@@ -202,7 +202,7 @@ function wp_authenticate_cookie($user, $username, $password) {
  * @return WP_User|WP_Error WP_User on success, WP_Error if the user is considered a spammer.
  */
 function wp_authenticate_spam_check( $user ) {
-	if ( $user && is_a( $user, 'WP_User' ) && is_multisite() ) {
+	if ( $user instanceof WP_User && is_multisite() ) {
 		/**
 		 * Filter whether the user has been marked as a spammer.
 		 *
@@ -472,6 +472,8 @@ class WP_User_Query {
 	 * @var int
 	 */
 	private $total_users = 0;
+
+	private $compat_fields = array( 'results', 'total_users' );
 
 	// SQL clauses
 	public $query_fields;
@@ -928,7 +930,9 @@ class WP_User_Query {
 	 * @return mixed Property.
 	 */
 	public function __get( $name ) {
-		return $this->$name;
+		if ( in_array( $name, $this->compat_fields ) ) {
+			return $this->$name;
+		}
 	}
 
 	/**
@@ -937,12 +941,14 @@ class WP_User_Query {
 	 * @since 4.0.0
 	 * @access public
 	 *
-	 * @param string $name  Property to set.
+	 * @param string $name  Property to check if set.
 	 * @param mixed  $value Property value.
 	 * @return mixed Newly-set property.
 	 */
 	public function __set( $name, $value ) {
-		return $this->$name = $value;
+		if ( in_array( $name, $this->compat_fields ) ) {
+			return $this->$name = $value;
+		}
 	}
 
 	/**
@@ -955,7 +961,9 @@ class WP_User_Query {
 	 * @return bool Whether the property is set.
 	 */
 	public function __isset( $name ) {
-		return isset( $this->$name );
+		if ( in_array( $name, $this->compat_fields ) ) {
+			return isset( $this->$name );
+		}
 	}
 
 	/**
@@ -967,7 +975,9 @@ class WP_User_Query {
 	 * @param string $name Property to unset.
 	 */
 	public function __unset( $name ) {
-		unset( $this->$name );
+		if ( in_array( $name, $this->compat_fields ) ) {
+			unset( $this->$name );
+		}
 	}
 
 	/**
@@ -981,7 +991,10 @@ class WP_User_Query {
 	 * @return mixed|bool Return value of the callback, false otherwise.
 	 */
 	public function __call( $name, $arguments ) {
-		return call_user_func_array( array( $this, $name ), $arguments );
+		if ( 'get_search_sql' === $name ) {
+			return call_user_func_array( array( $this, $name ), $arguments );
+		}
+		return false;
 	}
 }
 
@@ -1697,9 +1710,9 @@ function validate_username( $username ) {
 function wp_insert_user( $userdata ) {
 	global $wpdb;
 
-	if ( is_a( $userdata, 'stdClass' ) ) {
+	if ( $userdata instanceof stdClass ) {
 		$userdata = get_object_vars( $userdata );
-	} elseif ( is_a( $userdata, 'WP_User' ) ) {
+	} elseif ( $userdata instanceof WP_User ) {
 		$userdata = $userdata->to_array();
 	}
 	// Are we updating or creating?
@@ -1956,10 +1969,11 @@ function wp_insert_user( $userdata ) {
  * @return int|WP_Error The updated user's ID or a WP_Error object if the user could not be updated.
  */
 function wp_update_user($userdata) {
-	if ( is_a( $userdata, 'stdClass' ) )
+	if ( $userdata instanceof stdClass ) {
 		$userdata = get_object_vars( $userdata );
-	elseif ( is_a( $userdata, 'WP_User' ) )
+	} elseif ( $userdata instanceof WP_User ) {
 		$userdata = $userdata->to_array();
+	}
 
 	$ID = (int) $userdata['ID'];
 

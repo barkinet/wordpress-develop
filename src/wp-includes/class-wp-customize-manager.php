@@ -1104,12 +1104,11 @@ final class WP_Customize_Manager {
 	 *                                        constructor.
 	 */
 	public function add_setting( $id, $args = array() ) {
-		if ( is_a( $id, 'WP_Customize_Setting' ) ) {
+		if ( $id instanceof WP_Customize_Setting ) {
 			$setting = $id;
 		} else {
 			$setting = new WP_Customize_Setting( $this, $id, $args );
 		}
-
 		$this->settings[ $setting->id ] = $setting;
 	}
 
@@ -1203,10 +1202,9 @@ final class WP_Customize_Manager {
 	 * @param array                     $args Optional. Panel arguments. Default empty array.
 	 */
 	public function add_panel( $id, $args = array() ) {
-		if ( is_a( $id, 'WP_Customize_Panel' ) ) {
+		if ( $id instanceof WP_Customize_Panel ) {
 			$panel = $id;
-		}
-		else {
+		} else {
 			$panel = new WP_Customize_Panel( $this, $id, $args );
 		}
 
@@ -1250,12 +1248,11 @@ final class WP_Customize_Manager {
 	 * @param array                       $args Section arguments.
 	 */
 	public function add_section( $id, $args = array() ) {
-		if ( is_a( $id, 'WP_Customize_Section' ) ) {
+		if ( $id instanceof WP_Customize_Section ) {
 			$section = $id;
 		} else {
 			$section = new WP_Customize_Section( $this, $id, $args );
 		}
-
 		$this->sections[ $section->id ] = $section;
 	}
 
@@ -1295,12 +1292,11 @@ final class WP_Customize_Manager {
 	 *                                          constructor.
 	 */
 	public function add_control( $id, $args = array() ) {
-		if ( is_a( $id, 'WP_Customize_Control' ) ) {
+		if ( $id instanceof WP_Customize_Control ) {
 			$control = $id;
 		} else {
 			$control = new WP_Customize_Control( $this, $id, $args );
 		}
-
 		$this->controls[ $control->id ] = $control;
 	}
 

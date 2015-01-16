@@ -44,9 +44,6 @@ function _wp_admin_bar_init() {
 
 	return true;
 }
-// Don't remove. Wrong way to disable.
-add_action( 'template_redirect', '_wp_admin_bar_init', 0 );
-add_action( 'admin_init', '_wp_admin_bar_init' );
 
 /**
  * Render the admin bar to the page based on the $wp_admin_bar->menu member var.
@@ -92,8 +89,6 @@ function wp_admin_bar_render() {
 	 */
 	do_action( 'wp_after_admin_bar_render' );
 }
-add_action( 'wp_footer', 'wp_admin_bar_render', 1000 );
-add_action( 'in_admin_header', 'wp_admin_bar_render', 0 );
 
 /**
  * Add the WordPress logo menu.
@@ -683,8 +678,29 @@ function wp_admin_bar_appearance_menu( $wp_admin_bar ) {
 		add_action( 'wp_before_admin_bar_render', 'wp_customize_support_script' );
 	}
 
-	if ( current_theme_supports( 'widgets' )  )
-		$wp_admin_bar->add_menu( array( 'parent' => 'appearance', 'id' => 'widgets', 'title' => __('Widgets'), 'href' => admin_url('widgets.php') ) );
+	if ( current_theme_supports( 'widgets' )  ) {
+		$wp_admin_bar->add_menu( array( 
+			'parent' => 'appearance', 
+			'id'     => 'widgets', 
+			'title'  => __( 'Widgets' ), 
+			'href'   => admin_url( 'widgets.php' ),
+			'meta'   => array(
+				'class' => 'hide-if-customize',
+			),
+		) );
+
+		if ( current_user_can( 'customize' ) ) {
+			$wp_admin_bar->add_menu( array( 
+				'parent' => 'appearance', 
+				'id'     => 'customize-widgets', 
+				'title'  => __( 'Widgets' ), 
+				'href'   => add_query_arg( urlencode( 'autofocus[panel]' ), 'widgets', $customize_url ), // urlencode() needed due to #16859
+				'meta'   => array(
+					'class' => 'hide-if-no-customize',
+				),
+			) );
+		}
+	}
 
 	if ( current_theme_supports( 'menus' ) || current_theme_supports( 'widgets' ) )
 		$wp_admin_bar->add_menu( array( 'parent' => 'appearance', 'id' => 'menus', 'title' => __('Menus'), 'href' => admin_url('nav-menus.php') ) );

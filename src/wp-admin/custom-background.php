@@ -20,27 +20,16 @@ class Custom_Background {
 	 *
 	 * @var callback
 	 * @since 3.0.0
-	 * @access private
 	 */
-	private $admin_header_callback;
+	public $admin_header_callback;
 
 	/**
 	 * Callback for header div.
 	 *
 	 * @var callback
 	 * @since 3.0.0
-	 * @access private
 	 */
-	private $admin_image_div_callback;
-
-	/**
-	 * Holds the page menu hook.
-	 *
-	 * @var string
-	 * @since 3.0.0
-	 * @access private
-	 */
-	private $page = '';
+	public $admin_image_div_callback;
 
 	/**
 	 * @var bool
@@ -67,58 +56,6 @@ class Custom_Background {
 	}
 
 	/**
-	 * Make private properties readable for backwards compatibility.
-	 *
-	 * @since 4.0.0
-	 * @access public
-	 *
-	 * @param string $name Property name.
-	 * @return mixed Property.
-	 */
-	public function __get( $name ) {
-		return $this->$name;
-	}
-
-	/**
-	 * Make private properties settable for backwards compatibility.
-	 *
-	 * @since 4.0.0
-	 * @access public
-	 *
-	 * @param string $name  Property to set.
-	 * @param mixed  $value Property value.
-	 * @return mixed Newly-set property.
-	 */
-	public function __set( $name, $value ) {
-		return $this->$name = $value;
-	}
-
-	/**
-	 * Make private properties checkable for backwards compatibility.
-	 *
-	 * @since 4.0.0
-	 * @access public
-	 *
-	 * @param string $name Property to check if set.
-	 * @return bool Whether the property is set.
-	 */
-	public function __isset( $name ) {
-		return isset( $this->$name );
-	}
-
-	/**
-	 * Make private properties un-settable for backwards compatibility.
-	 *
-	 * @since 4.0.0
-	 * @access public
-	 *
-	 * @param string $name Property to unset.
-	 */
-	public function __unset( $name ) {
-		unset( $this->$name );
-	}
-
-	/**
 	 * Set up the hooks for the Custom Background admin page.
 	 *
 	 * @since 3.0.0
@@ -128,8 +65,6 @@ class Custom_Background {
 		if ( ! $page ) {
 			return;
 		}
-
-		$this->page = $page;
 
 		add_action( "load-$page", array( $this, 'admin_load' ) );
 		add_action( "load-$page", array( $this, 'take_action' ), 49 );
@@ -278,8 +213,9 @@ class Custom_Background {
 		if ( $bgcolor = get_background_color() )
 			$background_styles .= 'background-color: #' . $bgcolor . ';';
 
-		if ( get_background_image() ) {
-			$background_image_thumb = esc_url( set_url_scheme( get_theme_mod( 'background_image_thumb', str_replace( '%', '%%', get_background_image() ) ) ) );
+		$background_image_thumb = get_background_image();
+		if ( $background_image_thumb ) {
+			$background_image_thumb = esc_url( set_url_scheme( get_theme_mod( 'background_image_thumb', str_replace( '%', '%%', $background_image_thumb ) ) ) );
 
 			// Background-image URL must be single quote, see below.
 			$background_styles .= ' background-image: url(\'' . $background_image_thumb . '\');'
@@ -288,7 +224,7 @@ class Custom_Background {
 		}
 	?>
 	<div id="custom-background-image" style="<?php echo $background_styles; ?>"><?php // must be double quote, see above ?>
-		<?php if ( get_background_image() ) { ?>
+		<?php if ( $background_image_thumb ) { ?>
 		<img class="custom-background-image" src="<?php echo $background_image_thumb; ?>" style="visibility:hidden;" alt="" /><br />
 		<img class="custom-background-image" src="<?php echo $background_image_thumb; ?>" style="visibility:hidden;" alt="" />
 		<?php } ?>
