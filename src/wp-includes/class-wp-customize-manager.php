@@ -1171,7 +1171,8 @@ final class WP_Customize_Manager {
 			'title'          => __( 'Navigation' ),
 			'theme_supports' => 'menus',
 			'priority'       => 100,
-			'description'    => sprintf( _n('Your theme supports %s menu. Select which menu you would like to use.', 'Your theme supports %s menus. Select which menu appears in each location.', $num_locations ), number_format_i18n( $num_locations ) ) . "\n\n" . __('You can edit your menu content on the Menus screen in the Appearance section.'),
+			'description'    => sprintf( _n( 'Your theme supports %s menu. Select which menu you would like to use.', 'Your theme supports %s menus. Select which menu appears in each location.', $num_locations ), number_format_i18n( $num_locations ) ) . "\n\n" . __( 'You can edit your menu content on the Menus screen in the Appearance section.' ),
+			'capability'     => 'manage_menus',
 		) );
 
 		if ( $menus ) {
@@ -1186,6 +1187,7 @@ final class WP_Customize_Manager {
 				$this->add_setting( $menu_setting_id, array(
 					'sanitize_callback' => 'absint',
 					'theme_supports'    => 'menus',
+					'capability'        => 'manage_menus',
 				) );
 
 				$this->add_control( $menu_setting_id, array(
