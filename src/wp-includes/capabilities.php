@@ -429,6 +429,7 @@ class WP_Role {
  * @property string $user_pass
  * @property string $user_registered
  * @property string $user_url
+ * @property string $spam
  */
 class WP_User {
 	/**
@@ -934,6 +935,8 @@ class WP_User {
 	public function add_cap( $cap, $grant = true ) {
 		$this->caps[$cap] = $grant;
 		update_user_meta( $this->ID, $this->cap_key, $this->caps );
+		$this->get_role_caps();
+		$this->update_user_level_from_caps();
 	}
 
 	/**
@@ -945,10 +948,13 @@ class WP_User {
 	 * @param string $cap Capability name.
 	 */
 	public function remove_cap( $cap ) {
-		if ( ! isset( $this->caps[$cap] ) )
+		if ( ! isset( $this->caps[ $cap ] ) ) {
 			return;
-		unset( $this->caps[$cap] );
+		}
+		unset( $this->caps[ $cap ] );
 		update_user_meta( $this->ID, $this->cap_key, $this->caps );
+		$this->get_role_caps();
+		$this->update_user_level_from_caps();
 	}
 
 	/**

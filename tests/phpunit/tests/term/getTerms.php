@@ -394,6 +394,44 @@ class Tests_Term_getTerms extends WP_UnitTestCase {
 		add_filter( 'wp_update_term_parent', 'wp_check_term_hierarchy_for_loops', 10, 3 );
 	}
 
+	/**
+	 * @covers ::_get_term_children
+	 * @ticket 24461
+	 */
+	public function test__get_term_children_handles_cycles() {
+		remove_filter( 'wp_update_term_parent', 'wp_check_term_hierarchy_for_loops', 10 );
+
+		$c1 = $this->factory->category->create();
+		$c2 = $this->factory->category->create( array( 'parent' => $c1 ) );
+		$c3 = $this->factory->category->create( array( 'parent' => $c2 ) );
+		wp_update_term( $c1, 'category', array( 'parent' => $c3 ) );
+
+		add_filter( 'wp_update_term_parent', 'wp_check_term_hierarchy_for_loops', 10, 3 );
+
+		$result = _get_term_children( $c1, array( $c1, $c2, $c3 ), 'category' );
+
+		$this->assertEqualSets( array( $c2, $c3 ), $result );
+	}
+
+	/**
+	 * @covers ::_get_term_children
+	 * @ticket 24461
+	 */
+	public function test__get_term_children_handles_cycles_when_terms_argument_contains_objects() {
+		remove_filter( 'wp_update_term_parent', 'wp_check_term_hierarchy_for_loops', 10 );
+
+		$c1 = $this->factory->category->create_and_get();
+		$c2 = $this->factory->category->create_and_get( array( 'parent' => $c1->term_id ) );
+		$c3 = $this->factory->category->create_and_get( array( 'parent' => $c2->term_id ) );
+		wp_update_term( $c1->term_id, 'category', array( 'parent' => $c3->term_id ) );
+
+		add_filter( 'wp_update_term_parent', 'wp_check_term_hierarchy_for_loops', 10, 3 );
+
+		$result = _get_term_children( $c1->term_id, array( $c1, $c2, $c3 ), 'category' );
+
+		$this->assertEqualSets( array( $c2, $c3 ), $result );
+	}
+
 	public function test_get_terms_by_slug() {
 		$t1 = $this->factory->tag->create( array( 'slug' => 'foo' ) );
 		$t2 = $this->factory->tag->create( array( 'slug' => 'bar' ) );
@@ -1037,6 +1075,73 @@ class Tests_Term_getTerms extends WP_UnitTestCase {
 		);
 		$actual = wp_list_pluck( $terms, 'term_id' );
 		$this->assertEqualSets( $expected, $actual );
+	}
+
+	public function test_pad_counts() {
+		register_taxonomy( 'wptests_tax_1', 'post', array( 'hierarchical' => true ) );
+
+		$posts = $this->factory->post->create_many( 3 );
+
+		$t1 = $this->factory->term->create( array(
+			'taxonomy' => 'wptests_tax_1',
+		) );
+		$t2 = $this->factory->term->create( array(
+			'taxonomy' => 'wptests_tax_1',
+			'parent' => $t1,
+		) );
+		$t3 = $this->factory->term->create( array(
+			'taxonomy' => 'wptests_tax_1',
+			'parent' => $t2,
+		) );
+
+		wp_set_object_terms( $posts[0], array( $t1 ), 'wptests_tax_1' );
+		wp_set_object_terms( $posts[1], array( $t2 ), 'wptests_tax_1' );
+		wp_set_object_terms( $posts[2], array( $t3 ), 'wptests_tax_1' );
+
+		$found = get_terms( 'wptests_tax_1', array(
+			'pad_counts' => true,
+		) );
+
+		$this->assertEqualSets( array( $t1, $t2, $t3 ), wp_list_pluck( $found, 'term_id' ) );
+
+		foreach ( $found as $f ) {
+			if ( $t1 == $f->term_id ) {
+				$this->assertSame( 3, $f->count );
+			} elseif ( $t2 == $f->term_id ) {
+				$this->assertSame( 2, $f->count );
+			} else {
+				$this->assertSame( 1, $f->count );
+			}
+		}
+	}
+
+	/**
+	 * @ticket 20635
+	 */
+	public function test_pad_counts_should_not_recurse_infinitely_when_term_hierarchy_has_a_loop() {
+		remove_filter( 'wp_update_term_parent', 'wp_check_term_hierarchy_for_loops', 10 );
+
+		$c1 = $this->factory->category->create();
+		$c2 = $this->factory->category->create( array( 'parent' => $c1 ) );
+		$c3 = $this->factory->category->create( array( 'parent' => $c2 ) );
+		wp_update_term( $c1, 'category', array( 'parent' => $c3 ) );
+
+		add_filter( 'wp_update_term_parent', 'wp_check_term_hierarchy_for_loops', 10, 3 );
+
+		$posts = $this->factory->post->create_many( 3 );
+		wp_set_post_terms( $posts[0], $c1, 'category' );
+		wp_set_post_terms( $posts[1], $c2, 'category' );
+		wp_set_post_terms( $posts[2], $c3, 'category' );
+
+		$terms = get_terms( 'category', array(
+			'pad_counts' => true,
+		) );
+
+		$this->assertEqualSets( array( $c1, $c2, $c3 ), wp_list_pluck( $terms, 'term_id' ) );
+
+		foreach ( $terms as $term ) {
+			$this->assertSame( 3, $term->count );
+		}
 	}
 
 	protected function create_hierarchical_terms_and_posts() {

@@ -934,7 +934,7 @@ function get_theme_mod( $name, $default = false ) {
  * @since 2.1.0
  *
  * @param string $name Theme modification name.
- * @param string $value theme modification value.
+ * @param mixed  $value theme modification value.
  */
 function set_theme_mod( $name, $value ) {
 	$mods = get_theme_mods();
@@ -1032,6 +1032,17 @@ function display_header_text() {
 
 	$text_color = get_theme_mod( 'header_textcolor', get_theme_support( 'custom-header', 'default-text-color' ) );
 	return 'blank' != $text_color;
+}
+
+/**
+ * Check whether a header image is set or not.
+ *
+ * @since 4.2.0
+ *
+ * @return bool
+ */
+function has_header_image() {
+	return (bool) get_header_image();
 }
 
 /**

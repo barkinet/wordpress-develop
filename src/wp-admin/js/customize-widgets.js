@@ -641,6 +641,12 @@
 						selectSidebarItem( selfSidebarItem );
 					}
 				} );
+
+				if ( 1 === $sidebarItems.length ) {
+					self.container.find( '.move-widget' ).hide();
+				} else {
+					self.container.find( '.move-widget' ).show();
+				}
 			};
 
 			updateAvailableSidebars();
@@ -1639,7 +1645,10 @@
 			});
 
 			if ( ! widgetControls.length ) {
+				this.container.find( '.reorder-toggle' ).hide();
 				return;
+			} else {
+				this.container.find( '.reorder-toggle' ).show();
 			}
 
 			$( widgetControls ).each( function () {

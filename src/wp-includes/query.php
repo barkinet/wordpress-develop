@@ -1271,6 +1271,7 @@ class WP_Query {
 	 *
 	 * @since 3.1.0
 	 * @access private
+	 * @var bool|string
 	 */
 	private $query_vars_hash = false;
 
@@ -3942,7 +3943,7 @@ class WP_Query {
 	 * @since 1.5.0
 	 * @access public
 	 *
-	 * @param string $query URL query string.
+	 * @param string|array $query URL query string or array of vars.
 	 */
 	public function __construct($query = '') {
 		if ( ! empty($query) ) {
