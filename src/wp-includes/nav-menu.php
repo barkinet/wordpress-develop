@@ -545,6 +545,11 @@ function wp_get_nav_menu_items( $menu, $args = array() ) {
 
 	static $fetched = array();
 
+	$items = apply_filters( 'temp_pre_wp_get_nav_menu_items', false, $menu, $args );
+	if ( false !== $items ) {
+		return $items;
+	}
+
 	$items = get_objects_in_term( $menu->term_id, 'nav_menu' );
 
 	if ( empty( $items ) )
