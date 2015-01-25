@@ -1185,6 +1185,11 @@ function get_edit_post_link( $id = 0, $context = 'display' ) {
 
 	$edit_post_link = admin_url( $post_type_object->_edit_link );
 
+	// Inject post ID into URL if called for
+	if ( false !== strpos( $edit_post_link, '%d' ) ) {
+		$edit_post_link = sprintf( $edit_post_link, $post->ID );
+	}
+
 	if ( 'wp_transaction' === $post->post_type ) {
 		$edit_post_link = add_query_arg( array( 'customize_transaction_uuid' => $post->post_name ), $edit_post_link );
 	} else if ( 'revision' !== $post->post_type ) {
