@@ -63,10 +63,33 @@ class WP_Customize_Transaction {
 			$this->data = json_decode( $post->post_content, true );
 
 			// For back-compat
-			if ( empty( $_POST['customized'] ) ) {
-				$_POST['customized'] = wp_slash( $post->post_content );
+			if ( ! did_action( 'setup_theme' ) ) {
+				/*
+				 * Note we have to defer until setup_theme since the transaction
+				 * can be set beforehand, and wp_magic_quotes() would not have
+				 * been called yet, resulting in a $_POST['customized'] that is
+				 * double-escaped.
+				 */
+				add_action( 'setup_theme', array( $this, 'populate_legacy_customized_post_var' ), 0 );
+			} else {
+				$this->populate_legacy_customized_post_var();
 			}
 		}
+	}
+
+	/**
+	 * Populate $_POST['customized'] wth the transaction's data for back-compat.
+	 *
+	 * Plugins used to have to dynamically register settings by inspecting the
+	 * $_POST['customized'] var and manually re-parse and inspect to see if it
+	 * contains settings that wouldn't be registered otherwise. This ensures
+	 * that these plugins will continue to work.
+	 *
+	 * @since 4.2.0
+	 */
+	public function populate_legacy_customized_post_var() {
+		$_POST['customized'] = add_magic_quotes( wp_json_encode( $this->data ) );
+		$_REQUEST['customized'] = $_POST['customized'];
 	}
 
 	/**
