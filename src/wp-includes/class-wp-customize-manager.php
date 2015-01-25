@@ -80,6 +80,15 @@ final class WP_Customize_Manager {
 	public $transaction;
 
 	/**
+	 * JSON-decoded value $_POST['customized'] if present in request.
+	 *
+	 * Used by WP_Customize_Manager::update_transaction().
+	 *
+	 * @var array|null
+	 */
+	public $post_data;
+
+	/**
 	 * Controls that may be rendered from JS templates.
 	 *
 	 * @since 4.1.0
@@ -108,6 +117,11 @@ final class WP_Customize_Manager {
 			$this->messenger_channel = wp_unslash( $_REQUEST['customize_messenger_channel'] );
 		}
 
+		if ( ! did_action( 'setup_theme' ) ) {
+			add_action( 'setup_theme', array( $this, 'store_post_data' ), 0 ); // note that WP_Customize_Transaction::populate_customized_post_var() happens next at priority 1
+		} else {
+			$this->store_post_data();
+		}
 		$this->transaction = new WP_Customize_Transaction( $this, $transaction_uuid );
 		$this->widgets = new WP_Customize_Widgets( $this );
 
@@ -307,6 +321,19 @@ final class WP_Customize_Manager {
 		status_header( $status );
 		$data = compact( 'message', 'title', 'args' );
 		$this->wp_send_json_error( $data );
+	}
+
+	/**
+	 * Decode and store any initial $_POST['customized'] data.
+	 *
+	 * The value is used by WP_Customize_Manager::update_transaction().
+	 *
+	 * @since 4.2.0
+	 */
+	public function store_post_data() {
+		if ( isset( $_POST['customized'] ) ) {
+			$this->post_data = json_decode( wp_unslash( $_POST['customized'] ), true );
+		}
 	}
 
 	/**
@@ -968,15 +995,9 @@ final class WP_Customize_Manager {
 			status_header( 400 );
 			wp_send_json_error( 'invalid_customize_transaction_uuid' );
 		}
-		if ( empty( $_POST['customized'] ) ) {
+		if ( empty( $this->post_data ) ) {
 			status_header( 400 );
 			wp_send_json_error( 'missing_customized_json' );
-		}
-
-		$customized = json_decode( wp_unslash( $_REQUEST['customized'] ), true );
-		if ( empty( $customized ) ) {
-			status_header( 400 );
-			wp_send_json_error( 'bad_customized_json' );
 		}
 
 		$transaction_post = $this->transaction->post();
@@ -991,13 +1012,13 @@ final class WP_Customize_Manager {
 			wp_send_json_error( 'unauthorized' );
 		}
 
-		$new_setting_ids = array_diff( array_keys( $customized ), array_keys( $this->settings ) );
-		$this->add_dynamic_settings( wp_array_slice_assoc( $customized, $new_setting_ids ) );
+		$new_setting_ids = array_diff( array_keys( $this->post_data ), array_keys( $this->settings ) );
+		$this->add_dynamic_settings( wp_array_slice_assoc( $this->post_data, $new_setting_ids ) );
 
 		foreach ( $this->settings as $setting ) {
 			// @todo delete settings that were deleted dynamically on the client (not just those which the user hasn't the cap to change)
-			if ( $setting->check_capabilities() && array_key_exists( $setting->id, $customized ) ) {
-				$value = $customized[ $setting->id ];
+			if ( $setting->check_capabilities() && array_key_exists( $setting->id, $this->post_data ) ) {
+				$value = $this->post_data[ $setting->id ];
 				$this->transaction->set( $setting, $value );
 			}
 		}

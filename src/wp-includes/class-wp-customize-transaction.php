@@ -60,19 +60,25 @@ class WP_Customize_Transaction {
 		if ( ! $post ) {
 			$this->data = array();
 		} else {
-			$this->data = json_decode( $post->post_content, true );
+			// for reason why base64 encoding is used, see WP_Customize_Transaction::save()
+			$this->data = json_decode( base64_decode( $post->post_content ), true );
 
-			// For back-compat
-			if ( ! did_action( 'setup_theme' ) ) {
-				/*
-				 * Note we have to defer until setup_theme since the transaction
-				 * can be set beforehand, and wp_magic_quotes() would not have
-				 * been called yet, resulting in a $_POST['customized'] that is
-				 * double-escaped.
-				 */
-				add_action( 'setup_theme', array( $this, 'populate_legacy_customized_post_var' ), 0 );
-			} else {
-				$this->populate_legacy_customized_post_var();
+			if ( ! empty( $this->data ) ) {
+				// For back-compat
+				if ( ! did_action( 'setup_theme' ) ) {
+					/*
+					 * Note we have to defer until setup_theme since the transaction
+					 * can be set beforehand, and wp_magic_quotes() would not have
+					 * been called yet, resulting in a $_POST['customized'] that is
+					 * double-escaped. Note that this happens at priority 1, which
+					 * is immediately after WP_Customize_Manager::store_customized_post_data
+					 * which happens at setup_theme priority 0, so that the initial
+					 * POST data can be preserved.
+					 */
+					add_action( 'setup_theme', array( $this, 'populate_customized_post_var' ), 1 );
+				} else {
+					$this->populate_customized_post_var();
+				}
 			}
 		}
 	}
@@ -85,9 +91,12 @@ class WP_Customize_Transaction {
 	 * contains settings that wouldn't be registered otherwise. This ensures
 	 * that these plugins will continue to work.
 	 *
+	 * Note that this can't be called prior to the setup_theme action or else
+	 * magic quotes may end up getting added twice.
+	 *
 	 * @since 4.2.0
 	 */
-	public function populate_legacy_customized_post_var() {
+	public function populate_customized_post_var() {
 		$_POST['customized'] = add_magic_quotes( wp_json_encode( $this->data ) );
 		$_REQUEST['customized'] = $_POST['customized'];
 	}
@@ -294,7 +303,17 @@ class WP_Customize_Transaction {
 		if ( defined( 'JSON_PRETTY_PRINT' ) ) {
 			$options |= JSON_PRETTY_PRINT;
 		}
+
 		$post_content = wp_json_encode( $this->data, $options );
+
+		/*
+		 * base64-encoding is used to prevent corruption of data due to slashing
+		 * and due to wp_kses and other formatting filters transforming the
+		 * content on save via the content_save_pre filter. This will ensure
+		 * that settings which contain HTML won't get corrupted when the user
+		 * cannot do unfiltered_html.
+		 */
+		$post_content = base64_encode( $post_content );
 
 		if ( ! $this->post ) {
 			$postarr = array(
