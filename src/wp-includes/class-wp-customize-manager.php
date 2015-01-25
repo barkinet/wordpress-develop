@@ -1146,7 +1146,9 @@ final class WP_Customize_Manager {
 			/**
 			 * Filter a dynamic setting's constructor args.
 			 *
-			 * This filter must return an array, overriding the false default, to be
+			 * For a dynamic setting to be registered, this filter must be employed
+			 * to override the default false value with an array of args to pass to
+			 * the WP_Customize_Setting constructor.
 			 *
 			 * @since 4.2.0
 			 *
