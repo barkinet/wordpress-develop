@@ -1120,15 +1120,14 @@ final class WP_Customize_Manager {
 	 * loaded, the dynamically-created settings then will get created and previewed
 	 * even though they are not directly created statically with code.
 	 *
-	 * @todo $customized should store more than just key/value, but also serialized settings. The update_transaction call should include the setting configs.
-	 *
 	 * @param array $customized mapping of settings IDs to values
 	 * @return WP_Customize_Setting[]
 	 */
 	public function add_dynamic_settings( $customized ) {
 		$new_settings = array();
 		foreach ( $customized as $setting_id => $value ) {
-			if ( isset( $this->settings[ $setting_id ] ) || $this->get_setting( $setting_id ) ) {
+			// Skip settings already created
+			if ( $this->get_setting( $setting_id ) ) {
 				continue;
 			}
 			$setting_class = 'WP_Customize_Setting';
