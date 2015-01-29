@@ -399,11 +399,15 @@ final class WP_Customize_Manager {
 	}
 
 	/**
-	 * Decode the $_POST['customized'] values, and cache in _post_values array.
+	 * Decode the $_POST['customized'] values for a specific Customize Setting.
 	 *
-	 * @since 4.1.1
+	 * @since 3.4.0
+	 *
+	 * @param WP_Customize_Setting $setting A WP_Customize_Setting derived object
+	 * @param mixed $default value returned $setting has no post value (added in 4.2.0).
+	 * @return string|mixed $post_value Sanitized value or the $default provided
 	 */
-	protected function parse_post_data() {
+	public function post_value( $setting, $default = null ) {
 		if ( ! isset( $this->_post_values ) ) {
 			if ( isset( $_POST['customized'] ) ) {
 				$this->_post_values = json_decode( wp_unslash( $_POST['customized'] ), true );
@@ -411,20 +415,8 @@ final class WP_Customize_Manager {
 				$this->_post_values = false;
 			}
 		}
-	}
 
-	/**
-	 * Get the post data value for a specific Customize Setting.
-	 *
-	 * @since 3.4.0
-	 *
-	 * @param WP_Customize_Setting $setting A WP_Customize_Setting derived object
-	 * @param mixed $default Value to return when setting value is posted
-	 * @return mixed $post_value Sanitized value
-	 */
-	public function post_value( $setting, $default = null ) {
-		$this->parse_post_data();
-		if ( is_array( $this->_post_values ) && array_key_exists( $setting->id, $this->_post_values ) ) {
+		if ( isset( $this->_post_values[ $setting->id ] ) ) {
 			return $setting->sanitize( $this->_post_values[ $setting->id ] );
 		} else {
 			return $default;
