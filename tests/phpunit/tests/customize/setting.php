@@ -12,11 +12,17 @@ class Tests_WP_Customize_Setting extends WP_UnitTestCase {
 	 */
 	protected $manager;
 
+	/**
+	 * @var stdClass an instance which serves as a symbol to do identity checks with
+	 */
+	public $undefined;
+
 	function setUp() {
 		parent::setUp();
 		require_once( ABSPATH . WPINC . '/class-wp-customize-manager.php' );
 		$GLOBALS['wp_customize'] = new WP_Customize_Manager(); // wpcs: override ok
 		$this->manager = $GLOBALS['wp_customize'];
+		$this->undefined = new stdClass();
 	}
 
 	function tearDown() {
@@ -86,7 +92,6 @@ class Tests_WP_Customize_Setting extends WP_UnitTestCase {
 
 		// @todo this is hacky. The manager should provide a mechanism to override the post_values
 		$_POST['customized'] = wp_slash( wp_json_encode( $this->post_data_overrides ) );
-		$undefined = new stdClass();
 
 		// Try non-multidimensional settings
 		foreach ( $this->standard_type_configs as $type => $type_options ) {
@@ -94,10 +99,10 @@ class Tests_WP_Customize_Setting extends WP_UnitTestCase {
 			$name = "unset_{$type}_without_post_value";
 			$default = "default_value_{$name}";
 			$setting = new WP_Customize_Setting( $this->manager, $name, compact( 'type', 'default' ) );
-			$this->assertEquals( $undefined, call_user_func( $type_options['getter'], $name, $undefined ) );
+			$this->assertEquals( $this->undefined, call_user_func( $type_options['getter'], $name, $this->undefined ) );
 			$this->assertEquals( $default, $setting->value() );
 			$setting->preview();
-			$this->assertEquals( $default, call_user_func( $type_options['getter'], $name, $undefined ), sprintf( 'Expected %s(%s) to return setting default: %s.', $type_options['getter'], $name, $default ) );
+			$this->assertEquals( $default, call_user_func( $type_options['getter'], $name, $this->undefined ), sprintf( 'Expected %s(%s) to return setting default: %s.', $type_options['getter'], $name, $default ) );
 			$this->assertEquals( $default, $setting->value() );
 
 			// Non-multidimensional: See what effect the preview has on an extant setting (default value should not be seen)
@@ -125,10 +130,10 @@ class Tests_WP_Customize_Setting extends WP_UnitTestCase {
 			$name = "unset_{$type}_overridden";
 			$default = "default_value_{$name}";
 			$setting = new WP_Customize_Setting( $this->manager, $name, compact( 'type', 'default' ) );
-			$this->assertEquals( $undefined, call_user_func( $type_options['getter'], $name, $undefined ) );
+			$this->assertEquals( $this->undefined, call_user_func( $type_options['getter'], $name, $this->undefined ) );
 			$this->assertEquals( $default, $setting->value() );
 			$setting->preview(); // activate post_data
-			$this->assertEquals( $this->post_data_overrides[ $name ], call_user_func( $type_options['getter'], $name, $undefined ) );
+			$this->assertEquals( $this->post_data_overrides[ $name ], call_user_func( $type_options['getter'], $name, $this->undefined ) );
 			$this->assertEquals( $this->post_data_overrides[ $name ], $setting->value() );
 
 			// Non-multidimensional: Test set setting being overridden by a post value
@@ -137,12 +142,12 @@ class Tests_WP_Customize_Setting extends WP_UnitTestCase {
 			$initial_value = "initial_value_{$name}";
 			call_user_func( $type_options['setter'], $name, $initial_value );
 			$setting = new WP_Customize_Setting( $this->manager, $name, compact( 'type', 'default' ) );
-			$this->assertEquals( $initial_value, call_user_func( $type_options['getter'], $name, $undefined ) );
+			$this->assertEquals( $initial_value, call_user_func( $type_options['getter'], $name, $this->undefined ) );
 			$this->assertEquals( $initial_value, $setting->value() );
 			$setting->preview(); // activate post_data
 			$this->assertEquals( 0, did_action( "customize_preview_{$setting->id}" ) ); // only applicable for custom types (not options or theme_mods)
 			$this->assertEquals( 0, did_action( "customize_preview_{$setting->type}" ) ); // only applicable for custom types (not options or theme_mods)
-			$this->assertEquals( $this->post_data_overrides[ $name ], call_user_func( $type_options['getter'], $name, $undefined ) );
+			$this->assertEquals( $this->post_data_overrides[ $name ], call_user_func( $type_options['getter'], $name, $this->undefined ) );
 			$this->assertEquals( $this->post_data_overrides[ $name ], $setting->value() );
 		}
 	}
@@ -153,7 +158,6 @@ class Tests_WP_Customize_Setting extends WP_UnitTestCase {
 	function test_preview_standard_types_multidimensional() {
 		// @todo this is hacky. The manager should provide a mechanism to override the post_values
 		$_POST['customized'] = wp_slash( wp_json_encode( $this->post_data_overrides ) );
-		$undefined = new stdClass();
 
 		foreach ( $this->standard_type_configs as $type => $type_options ) {
 			// Multidimensional: See what effect the preview filter has on a non-existent setting (default value should be seen)
@@ -161,10 +165,10 @@ class Tests_WP_Customize_Setting extends WP_UnitTestCase {
 			$name = $base_name . '[foo]';
 			$default = "default_value_{$name}";
 			$setting = new WP_Customize_Setting( $this->manager, $name, compact( 'type', 'default' ) );
-			$this->assertEquals( $undefined, call_user_func( $type_options['getter'], $base_name, $undefined ) );
+			$this->assertEquals( $this->undefined, call_user_func( $type_options['getter'], $base_name, $this->undefined ) );
 			$this->assertEquals( $default, $setting->value() );
 			$setting->preview();
-			$base_value = call_user_func( $type_options['getter'], $base_name, $undefined );
+			$base_value = call_user_func( $type_options['getter'], $base_name, $this->undefined );
 			$this->assertArrayHasKey( 'foo', $base_value );
 			$this->assertEquals( $default, $base_value['foo'] );
 
@@ -191,12 +195,12 @@ class Tests_WP_Customize_Setting extends WP_UnitTestCase {
 			$name = $base_name . '[foo]';
 			$default = "default_value_{$name}";
 			$setting = new WP_Customize_Setting( $this->manager, $name, compact( 'type', 'default' ) );
-			$this->assertEquals( $undefined, call_user_func( $type_options['getter'], $base_name, $undefined ) );
+			$this->assertEquals( $this->undefined, call_user_func( $type_options['getter'], $base_name, $this->undefined ) );
 			$this->assertEquals( $default, $setting->value() );
 			$setting->preview();
 			$this->assertEquals( 0, did_action( "customize_preview_{$setting->id}" ) ); // only applicable for custom types (not options or theme_mods)
 			$this->assertEquals( 0, did_action( "customize_preview_{$setting->type}" ) ); // only applicable for custom types (not options or theme_mods)
-			$base_value = call_user_func( $type_options['getter'], $base_name, $undefined );
+			$base_value = call_user_func( $type_options['getter'], $base_name, $this->undefined );
 			$this->assertArrayHasKey( 'foo', $base_value );
 			$this->assertEquals( $this->post_data_overrides[ $name ], $base_value['foo'] );
 
@@ -208,20 +212,20 @@ class Tests_WP_Customize_Setting extends WP_UnitTestCase {
 			$base_initial_value = array( 'foo' => $initial_value, 'bar' => 'persisted' );
 			call_user_func( $type_options['setter'], $base_name, $base_initial_value );
 			$setting = new WP_Customize_Setting( $this->manager, $name, compact( 'type', 'default' ) );
-			$base_value = call_user_func( $type_options['getter'], $base_name, $undefined );
+			$base_value = call_user_func( $type_options['getter'], $base_name, $this->undefined );
 			$this->arrayHasKey( 'foo', $base_value );
 			$this->arrayHasKey( 'bar', $base_value );
 			$this->assertEquals( $base_initial_value['foo'], $base_value['foo'] );
-			$this->assertEquals( $base_initial_value['bar'], call_user_func( $type_options['getter'], $base_name, $undefined )['bar'] );
+			$this->assertEquals( $base_initial_value['bar'], call_user_func( $type_options['getter'], $base_name, $this->undefined )['bar'] );
 			$this->assertEquals( $initial_value, $setting->value() );
 			$setting->preview();
 			$this->assertEquals( 0, did_action( "customize_preview_{$setting->id}" ) ); // only applicable for custom types (not options or theme_mods)
 			$this->assertEquals( 0, did_action( "customize_preview_{$setting->type}" ) ); // only applicable for custom types (not options or theme_mods)
-			$base_value = call_user_func( $type_options['getter'], $base_name, $undefined );
+			$base_value = call_user_func( $type_options['getter'], $base_name, $this->undefined );
 			$this->assertArrayHasKey( 'foo', $base_value );
 			$this->assertEquals( $this->post_data_overrides[ $name ], $base_value['foo'] );
-			$this->arrayHasKey( 'bar', call_user_func( $type_options['getter'], $base_name, $undefined ) );
-			$this->assertEquals( $base_initial_value['bar'], call_user_func( $type_options['getter'], $base_name, $undefined )['bar'] );
+			$this->arrayHasKey( 'bar', call_user_func( $type_options['getter'], $base_name, $this->undefined ) );
+			$this->assertEquals( $base_initial_value['bar'], call_user_func( $type_options['getter'], $base_name, $this->undefined )['bar'] );
 		}
 	}
 
@@ -235,7 +239,6 @@ class Tests_WP_Customize_Setting extends WP_UnitTestCase {
 
 		$custom_type_data_saved = array();
 		$custom_type_data_previewed = array();
-		$undefined = new stdClass();
 
 		$getter = function ( $name, $default = null ) use ( &$custom_type_data_saved, &$custom_type_data_previewed ) {
 			if ( did_action( "customize_preview_{$name}" ) && array_key_exists( $name, $custom_type_data_previewed ) ) {
@@ -252,12 +255,12 @@ class Tests_WP_Customize_Setting extends WP_UnitTestCase {
 			$custom_type_data_saved[ $name ] = $value;
 		};
 
-		add_action( "customize_preview_{$type}", function ( $setting ) use ( &$custom_type_data_previewed, $undefined ) {
+		add_action( "customize_preview_{$type}", function ( $setting ) use ( &$custom_type_data_previewed ) {
 			/**
 			 * @var WP_Customize_Setting $setting
 			 */
-			$previewed_value = $setting->post_value( $undefined );
-			if ( $undefined !== $previewed_value ) {
+			$previewed_value = $setting->post_value( $this->undefined );
+			if ( $this->undefined !== $previewed_value ) {
 				$custom_type_data_previewed[ $setting->id ] = $previewed_value;
 			}
 		} );
@@ -270,12 +273,12 @@ class Tests_WP_Customize_Setting extends WP_UnitTestCase {
 		add_filter( "customize_value_{$name}", function ( $default ) use ( $getter, $name ) {
 			return call_user_func( $getter, $name, $default );
 		} );
-		$this->assertEquals( $undefined, call_user_func( $getter, $name, $undefined ) );
+		$this->assertEquals( $this->undefined, call_user_func( $getter, $name, $this->undefined ) );
 		$this->assertEquals( $default, $setting->value() );
 		$setting->preview();
 		$this->assertEquals( 1, did_action( "customize_preview_{$setting->id}" ) );
 		$this->assertEquals( 1, did_action( "customize_preview_{$setting->type}" ) );
-		$this->assertEquals( $undefined, call_user_func( $getter, $name, $undefined ) ); // Note: for a non-custom type this is $default
+		$this->assertEquals( $this->undefined, call_user_func( $getter, $name, $this->undefined ) ); // Note: for a non-custom type this is $default
 		$this->assertEquals( $default, $setting->value() ); // should be same as above
 
 		// Custom type existing and no post value override
@@ -288,12 +291,12 @@ class Tests_WP_Customize_Setting extends WP_UnitTestCase {
 		add_filter( "customize_value_{$name}", function ( $default ) use ( $getter, $name ) {
 			return call_user_func( $getter, $name, $default );
 		} );
-		$this->assertEquals( $initial_value, call_user_func( $getter, $name, $undefined ) );
+		$this->assertEquals( $initial_value, call_user_func( $getter, $name, $this->undefined ) );
 		$this->assertEquals( $initial_value, $setting->value() );
 		$setting->preview();
 		$this->assertEquals( 1, did_action( "customize_preview_{$setting->id}" ) );
 		$this->assertEquals( 2, did_action( "customize_preview_{$setting->type}" ) );
-		$this->assertEquals( $initial_value, call_user_func( $getter, $name, $undefined ) ); // should be same as above
+		$this->assertEquals( $initial_value, call_user_func( $getter, $name, $this->undefined ) ); // should be same as above
 		$this->assertEquals( $initial_value, $setting->value() ); // should be same as above
 
 		// Custom type not existing and with a post value override
@@ -304,12 +307,12 @@ class Tests_WP_Customize_Setting extends WP_UnitTestCase {
 		add_filter( "customize_value_{$name}", function ( $default ) use ( $getter, $name ) {
 			return call_user_func( $getter, $name, $default );
 		} );
-		$this->assertEquals( $undefined, call_user_func( $getter, $name, $undefined ) );
+		$this->assertEquals( $this->undefined, call_user_func( $getter, $name, $this->undefined ) );
 		$this->assertEquals( $default, $setting->value() );
 		$setting->preview();
 		$this->assertEquals( 1, did_action( "customize_preview_{$setting->id}" ) );
 		$this->assertEquals( 3, did_action( "customize_preview_{$setting->type}" ) );
-		$this->assertEquals( $post_data_overrides[ $name ], call_user_func( $getter, $name, $undefined ) );
+		$this->assertEquals( $post_data_overrides[ $name ], call_user_func( $getter, $name, $this->undefined ) );
 		$this->assertEquals( $post_data_overrides[ $name ], $setting->value() );
 
 		// Custom type not existing and with a post value override
@@ -322,12 +325,12 @@ class Tests_WP_Customize_Setting extends WP_UnitTestCase {
 		add_filter( "customize_value_{$name}", function ( $default ) use ( $getter, $name ) {
 			return call_user_func( $getter, $name, $default );
 		} );
-		$this->assertEquals( $initial_value, call_user_func( $getter, $name, $undefined ) );
+		$this->assertEquals( $initial_value, call_user_func( $getter, $name, $this->undefined ) );
 		$this->assertEquals( $initial_value, $setting->value() );
 		$setting->preview();
 		$this->assertEquals( 1, did_action( "customize_preview_{$setting->id}" ) );
 		$this->assertEquals( 4, did_action( "customize_preview_{$setting->type}" ) );
-		$this->assertEquals( $post_data_overrides[ $name ], call_user_func( $getter, $name, $undefined ) );
+		$this->assertEquals( $post_data_overrides[ $name ], call_user_func( $getter, $name, $this->undefined ) );
 		$this->assertEquals( $post_data_overrides[ $name ], $setting->value() );
 
 	}
