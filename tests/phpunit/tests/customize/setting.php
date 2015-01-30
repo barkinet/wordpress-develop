@@ -229,6 +229,10 @@ class Tests_WP_Customize_Setting extends WP_UnitTestCase {
 		}
 	}
 
+	protected $custom_type_data_saved;
+
+	protected $custom_type_data_previewed;
+
 	function test_preview_custom_type() {
 		$type = 'custom_type';
 		$post_data_overrides = array(
@@ -237,31 +241,31 @@ class Tests_WP_Customize_Setting extends WP_UnitTestCase {
 		);
 		$_POST['customized'] = wp_slash( wp_json_encode( $post_data_overrides ) );
 
-		$custom_type_data_saved = array();
-		$custom_type_data_previewed = array();
+		$this->custom_type_data_saved = array();
+		$this->custom_type_data_previewed = array();
 
-		$getter = function ( $name, $default = null ) use ( &$custom_type_data_saved, &$custom_type_data_previewed ) {
-			if ( did_action( "customize_preview_{$name}" ) && array_key_exists( $name, $custom_type_data_previewed ) ) {
-				$value = $custom_type_data_previewed[ $name ];
-			} else if ( array_key_exists( $name, $custom_type_data_saved ) ) {
-				$value = $custom_type_data_saved[ $name ];
+		$getter = function ( $name, $default = null ) {
+			if ( did_action( "customize_preview_{$name}" ) && array_key_exists( $name, $this->custom_type_data_previewed ) ) {
+				$value = $this->custom_type_data_previewed[ $name ];
+			} else if ( array_key_exists( $name, $this->custom_type_data_saved ) ) {
+				$value = $this->custom_type_data_saved[ $name ];
 			} else {
 				$value = $default;
 			}
 			return $value;
 		};
 
-		$setter = function ( $name, $value ) use ( &$custom_type_data_saved ) {
-			$custom_type_data_saved[ $name ] = $value;
+		$setter = function ( $name, $value ) {
+			$this->custom_type_data_saved[ $name ] = $value;
 		};
 
-		add_action( "customize_preview_{$type}", function ( $setting ) use ( &$custom_type_data_previewed ) {
+		add_action( "customize_preview_{$type}", function ( $setting ) {
 			/**
 			 * @var WP_Customize_Setting $setting
 			 */
 			$previewed_value = $setting->post_value( $this->undefined );
 			if ( $this->undefined !== $previewed_value ) {
-				$custom_type_data_previewed[ $setting->id ] = $previewed_value;
+				$this->custom_type_data_previewed[ $setting->id ] = $previewed_value;
 			}
 		} );
 
@@ -333,6 +337,7 @@ class Tests_WP_Customize_Setting extends WP_UnitTestCase {
 		$this->assertEquals( $post_data_overrides[ $name ], call_user_func( $getter, $name, $this->undefined ) );
 		$this->assertEquals( $post_data_overrides[ $name ], $setting->value() );
 
+		unset( $this->custom_type_data_previewed, $this->custom_type_data_saved );
 	}
 
 	// @todo function test_save() {
