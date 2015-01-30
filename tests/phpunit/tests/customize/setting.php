@@ -343,6 +343,23 @@ class Tests_WP_Customize_Setting extends WP_UnitTestCase {
 		unset( $this->custom_type_data_previewed, $this->custom_type_data_saved );
 	}
 
+	/**
+	 * Test specific fix for setting's default value not applying on preview window
+	 *
+	 * @ticket 30988
+	 */
+	function test_non_posted_setting_applying_default_value_in_preview() {
+		$type = 'option';
+		$name = 'unset_option_without_post_value';
+		$default = "default_value_{$name}";
+		$setting = new WP_Customize_Setting( $this->manager, $name, compact( 'type', 'default' ) );
+		$this->assertEquals( $this->undefined, get_option( $name, $this->undefined ) );
+		$this->assertEquals( $default, $setting->value() );
+		$setting->preview();
+		$this->assertEquals( $default, get_option( $name, $this->undefined ), sprintf( 'Expected get_option(%s) to return setting default: %s.', $name, $default ) );
+		$this->assertEquals( $default, $setting->value() );
+	}
+
 	// @todo function test_save() {
 	// @todo test do_action( 'customize_save_' . $this->id_data[ 'base' ], $this );
 	// @todo test_post_value()
