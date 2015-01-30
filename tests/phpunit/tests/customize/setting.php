@@ -51,8 +51,8 @@ class Tests_WP_Customize_Setting extends WP_UnitTestCase {
 			'theme_supports' => 'widgets',
 			'default' => 'barbar',
 			'transport' => 'postMessage',
-			'sanitize_callback' => function ( $value ) { return $value . ':sanitize_callback'; },
-			'sanitize_js_callback' => function ( $value ) { return $value . ':sanitize_js_callback'; },
+			'sanitize_callback' => create_function( '$value', 'return $value . ":sanitize_callback";' ),
+			'sanitize_js_callback' => create_function( '$value', 'return $value . ":sanitize_js_callback";' ),
 		);
 		$bar = new WP_Customize_Setting( $this->manager, 'bar', $args );
 		$this->assertEquals( 'bar', $bar->id );
@@ -229,9 +229,42 @@ class Tests_WP_Customize_Setting extends WP_UnitTestCase {
 		}
 	}
 
+	/**
+	 * @var array storage for custom types that
+	 */
 	protected $custom_type_data_saved;
 
 	protected $custom_type_data_previewed;
+
+	function custom_type_getter( $name, $default = null ) {
+		if ( did_action( "customize_preview_{$name}" ) && array_key_exists( $name, $this->custom_type_data_previewed ) ) {
+			$value = $this->custom_type_data_previewed[ $name ];
+		} else if ( array_key_exists( $name, $this->custom_type_data_saved ) ) {
+			$value = $this->custom_type_data_saved[ $name ];
+		} else {
+			$value = $default;
+		}
+		return $value;
+	}
+
+	function custom_type_setter( $name, $value ) {
+		$this->custom_type_data_saved[ $name ] = $value;
+	}
+
+	function custom_type_value_filter( $default ) {
+		$name = preg_replace( '/^customize_value_/', '', current_filter() );
+		return $this->custom_type_getter( $name, $default );
+	}
+
+	/**
+	 * @var WP_Customize_Setting $setting
+	 */
+	function custom_type_preview( $setting ) {
+		$previewed_value = $setting->post_value( $this->undefined );
+		if ( $this->undefined !== $previewed_value ) {
+			$this->custom_type_data_previewed[ $setting->id ] = $previewed_value;
+		}
+	}
 
 	function test_preview_custom_type() {
 		$type = 'custom_type';
@@ -244,63 +277,37 @@ class Tests_WP_Customize_Setting extends WP_UnitTestCase {
 		$this->custom_type_data_saved = array();
 		$this->custom_type_data_previewed = array();
 
-		$getter = function ( $name, $default = null ) {
-			if ( did_action( "customize_preview_{$name}" ) && array_key_exists( $name, $this->custom_type_data_previewed ) ) {
-				$value = $this->custom_type_data_previewed[ $name ];
-			} else if ( array_key_exists( $name, $this->custom_type_data_saved ) ) {
-				$value = $this->custom_type_data_saved[ $name ];
-			} else {
-				$value = $default;
-			}
-			return $value;
-		};
-
-		$setter = function ( $name, $value ) {
-			$this->custom_type_data_saved[ $name ] = $value;
-		};
-
-		add_action( "customize_preview_{$type}", function ( $setting ) {
-			/**
-			 * @var WP_Customize_Setting $setting
-			 */
-			$previewed_value = $setting->post_value( $this->undefined );
-			if ( $this->undefined !== $previewed_value ) {
-				$this->custom_type_data_previewed[ $setting->id ] = $previewed_value;
-			}
-		} );
+		add_action( "customize_preview_{$type}", array( $this, custom_type_preview ) );
 
 		// Custom type not existing and no post value override
 		$name = "unset_{$type}_without_post_value";
 		$default = "default_value_{$name}";
 		$setting = new WP_Customize_Setting( $this->manager, $name, compact( 'type', 'default' ) );
 		// Note: #29316 will allow us to have one filter for all settings of a given type, which is what we need
-		add_filter( "customize_value_{$name}", function ( $default ) use ( $getter, $name ) {
-			return call_user_func( $getter, $name, $default );
-		} );
-		$this->assertEquals( $this->undefined, call_user_func( $getter, $name, $this->undefined ) );
+
+		add_filter( "customize_value_{$name}", array( $this, 'custom_type_value_filter' ) );
+		$this->assertEquals( $this->undefined, $this->custom_type_getter( $name, $this->undefined ) );
 		$this->assertEquals( $default, $setting->value() );
 		$setting->preview();
 		$this->assertEquals( 1, did_action( "customize_preview_{$setting->id}" ) );
 		$this->assertEquals( 1, did_action( "customize_preview_{$setting->type}" ) );
-		$this->assertEquals( $this->undefined, call_user_func( $getter, $name, $this->undefined ) ); // Note: for a non-custom type this is $default
+		$this->assertEquals( $this->undefined, $this->custom_type_getter( $name, $this->undefined ) ); // Note: for a non-custom type this is $default
 		$this->assertEquals( $default, $setting->value() ); // should be same as above
 
 		// Custom type existing and no post value override
 		$name = "set_{$type}_without_post_value";
 		$default = "default_value_{$name}";
 		$initial_value = "initial_value_{$name}";
-		call_user_func( $setter, $name, $initial_value );
+		$this->custom_type_setter( $name, $initial_value );
 		$setting = new WP_Customize_Setting( $this->manager, $name, compact( 'type', 'default' ) );
 		// Note: #29316 will allow us to have one filter for all settings of a given type, which is what we need
-		add_filter( "customize_value_{$name}", function ( $default ) use ( $getter, $name ) {
-			return call_user_func( $getter, $name, $default );
-		} );
-		$this->assertEquals( $initial_value, call_user_func( $getter, $name, $this->undefined ) );
+		add_filter( "customize_value_{$name}", array( $this, 'custom_type_value_filter' ) );
+		$this->assertEquals( $initial_value, $this->custom_type_getter( $name, $this->undefined ) );
 		$this->assertEquals( $initial_value, $setting->value() );
 		$setting->preview();
 		$this->assertEquals( 1, did_action( "customize_preview_{$setting->id}" ) );
 		$this->assertEquals( 2, did_action( "customize_preview_{$setting->type}" ) );
-		$this->assertEquals( $initial_value, call_user_func( $getter, $name, $this->undefined ) ); // should be same as above
+		$this->assertEquals( $initial_value, $this->custom_type_getter( $name, $this->undefined ) ); // should be same as above
 		$this->assertEquals( $initial_value, $setting->value() ); // should be same as above
 
 		// Custom type not existing and with a post value override
@@ -308,33 +315,29 @@ class Tests_WP_Customize_Setting extends WP_UnitTestCase {
 		$default = "default_value_{$name}";
 		$setting = new WP_Customize_Setting( $this->manager, $name, compact( 'type', 'default' ) );
 		// Note: #29316 will allow us to have one filter for all settings of a given type, which is what we need
-		add_filter( "customize_value_{$name}", function ( $default ) use ( $getter, $name ) {
-			return call_user_func( $getter, $name, $default );
-		} );
-		$this->assertEquals( $this->undefined, call_user_func( $getter, $name, $this->undefined ) );
+		add_filter( "customize_value_{$name}", array( $this, 'custom_type_value_filter' ) );
+		$this->assertEquals( $this->undefined, $this->custom_type_getter( $name, $this->undefined ) );
 		$this->assertEquals( $default, $setting->value() );
 		$setting->preview();
 		$this->assertEquals( 1, did_action( "customize_preview_{$setting->id}" ) );
 		$this->assertEquals( 3, did_action( "customize_preview_{$setting->type}" ) );
-		$this->assertEquals( $post_data_overrides[ $name ], call_user_func( $getter, $name, $this->undefined ) );
+		$this->assertEquals( $post_data_overrides[ $name ], $this->custom_type_getter( $name, $this->undefined ) );
 		$this->assertEquals( $post_data_overrides[ $name ], $setting->value() );
 
 		// Custom type not existing and with a post value override
 		$name = "set_{$type}_with_post_value";
 		$default = "default_value_{$name}";
 		$initial_value = "initial_value_{$name}";
-		call_user_func( $setter, $name, $initial_value );
+		$this->custom_type_setter( $name, $initial_value );
 		$setting = new WP_Customize_Setting( $this->manager, $name, compact( 'type', 'default' ) );
 		// Note: #29316 will allow us to have one filter for all settings of a given type, which is what we need
-		add_filter( "customize_value_{$name}", function ( $default ) use ( $getter, $name ) {
-			return call_user_func( $getter, $name, $default );
-		} );
-		$this->assertEquals( $initial_value, call_user_func( $getter, $name, $this->undefined ) );
+		add_filter( "customize_value_{$name}", array( $this, 'custom_type_value_filter' ) );
+		$this->assertEquals( $initial_value, $this->custom_type_getter( $name, $this->undefined ) );
 		$this->assertEquals( $initial_value, $setting->value() );
 		$setting->preview();
 		$this->assertEquals( 1, did_action( "customize_preview_{$setting->id}" ) );
 		$this->assertEquals( 4, did_action( "customize_preview_{$setting->type}" ) );
-		$this->assertEquals( $post_data_overrides[ $name ], call_user_func( $getter, $name, $this->undefined ) );
+		$this->assertEquals( $post_data_overrides[ $name ], $this->custom_type_getter( $name, $this->undefined ) );
 		$this->assertEquals( $post_data_overrides[ $name ], $setting->value() );
 
 		unset( $this->custom_type_data_previewed, $this->custom_type_data_saved );
