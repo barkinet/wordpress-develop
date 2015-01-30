@@ -97,7 +97,7 @@ class Tests_WP_Customize_Setting extends WP_UnitTestCase {
 			$this->assertEquals( $undefined, call_user_func( $type_options['getter'], $name, $undefined ) );
 			$this->assertEquals( $default, $setting->value() );
 			$setting->preview();
-			$this->assertEquals( $default, call_user_func( $type_options['getter'], $name, $undefined ) );
+			$this->assertEquals( $default, call_user_func( $type_options['getter'], $name, $undefined ), sprintf( 'Expected %s(%s) to return setting default: %s.', $type_options['getter'], $name, $default ) );
 			$this->assertEquals( $default, $setting->value() );
 
 			// Non-multidimensional: See what effect the preview has on an extant setting (default value should not be seen)
