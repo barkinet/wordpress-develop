@@ -57,36 +57,39 @@ class Tests_WP_Customize_Setting extends WP_UnitTestCase {
 		$this->assertEquals( 10, has_filter( "customize_sanitize_js_{$bar->id}" ), $args['sanitize_js_callback'] );
 	}
 
-	function test_preview_standard_types() {
+	public $post_data_overrides = array(
+		'unset_option_overridden' => 'unset_option_post_override_value',
+		'unset_theme_mod_overridden' => 'unset_theme_mod_post_override_value',
+		'set_option_overridden' => 'set_option_post_override_value',
+		'set_theme_mod_overridden' => 'set_theme_mod_post_override_value',
+		'unset_option_multi_overridden[foo]' => 'unset_option_multi_overridden[foo]_post_override_value',
+		'unset_theme_mod_multi_overridden[foo]' => 'unset_theme_mod_multi_overridden[foo]_post_override_value',
+		'set_option_multi_overridden[foo]' => 'set_option_multi_overridden[foo]_post_override_value',
+		'set_theme_mod_multi_overridden[foo]' => 'set_theme_mod_multi_overridden[foo]_post_override_value',
+	);
 
-		$post_data_overrides = array(
-			'unset_option_overridden' => 'unset_option_post_override_value',
-			'unset_theme_mod_overridden' => 'unset_theme_mod_post_override_value',
-			'set_option_overridden' => 'set_option_post_override_value',
-			'set_theme_mod_overridden' => 'set_theme_mod_post_override_value',
-			'unset_option_multi_overridden[foo]' => 'unset_option_multi_overridden[foo]_post_override_value',
-			'unset_theme_mod_multi_overridden[foo]' => 'unset_theme_mod_multi_overridden[foo]_post_override_value',
-			'set_option_multi_overridden[foo]' => 'set_option_multi_overridden[foo]_post_override_value',
-			'set_theme_mod_multi_overridden[foo]' => 'set_theme_mod_multi_overridden[foo]_post_override_value',
-		);
+	public $standard_type_configs = array(
+		'option' => array(
+			'getter' => 'get_option',
+			'setter' => 'update_option',
+		),
+		'theme_mod' => array(
+			'getter' => 'get_theme_mod',
+			'setter' => 'set_theme_mod',
+		),
+	);
+
+	/**
+	 * Run assertions on non-multidimensional standard settings
+	 */
+	function test_preview_standard_types_non_multidimensional() {
 
 		// @todo this is hacky. The manager should provide a mechanism to override the post_values
-		$_POST['customized'] = wp_slash( wp_json_encode( $post_data_overrides ) );
-
+		$_POST['customized'] = wp_slash( wp_json_encode( $this->post_data_overrides ) );
 		$undefined = new stdClass();
-		$types = array(
-			'option' => array(
-				'getter' => 'get_option',
-				'setter' => 'update_option',
-			),
-			'theme_mod' => array(
-				'getter' => 'get_theme_mod',
-				'setter' => 'set_theme_mod',
-			),
-		);
 
 		// Try non-multidimensional settings
-		foreach ( $types as $type => $type_options ) {
+		foreach ( $this->standard_type_configs as $type => $type_options ) {
 			// Non-multidimensional: See what effect the preview filter has on a non-existent setting (default value should be seen)
 			$name = "unset_{$type}_without_post_value";
 			$default = "default_value_{$name}";
@@ -125,8 +128,8 @@ class Tests_WP_Customize_Setting extends WP_UnitTestCase {
 			$this->assertEquals( $undefined, call_user_func( $type_options['getter'], $name, $undefined ) );
 			$this->assertEquals( $default, $setting->value() );
 			$setting->preview(); // activate post_data
-			$this->assertEquals( $post_data_overrides[ $name ], call_user_func( $type_options['getter'], $name, $undefined ) );
-			$this->assertEquals( $post_data_overrides[ $name ], $setting->value() );
+			$this->assertEquals( $this->post_data_overrides[ $name ], call_user_func( $type_options['getter'], $name, $undefined ) );
+			$this->assertEquals( $this->post_data_overrides[ $name ], $setting->value() );
 
 			// Non-multidimensional: Test set setting being overridden by a post value
 			$name = "set_{$type}_overridden";
@@ -139,12 +142,20 @@ class Tests_WP_Customize_Setting extends WP_UnitTestCase {
 			$setting->preview(); // activate post_data
 			$this->assertEquals( 0, did_action( "customize_preview_{$setting->id}" ) ); // only applicable for custom types (not options or theme_mods)
 			$this->assertEquals( 0, did_action( "customize_preview_{$setting->type}" ) ); // only applicable for custom types (not options or theme_mods)
-			$this->assertEquals( $post_data_overrides[ $name ], call_user_func( $type_options['getter'], $name, $undefined ) );
-			$this->assertEquals( $post_data_overrides[ $name ], $setting->value() );
+			$this->assertEquals( $this->post_data_overrides[ $name ], call_user_func( $type_options['getter'], $name, $undefined ) );
+			$this->assertEquals( $this->post_data_overrides[ $name ], $setting->value() );
 		}
+	}
 
-		// Try multidimensional settings
-		foreach ( $types as $type => $type_options ) {
+	/**
+	 * Run assertions on multidimensional standard settings
+	 */
+	function test_preview_standard_types_multidimensional() {
+		// @todo this is hacky. The manager should provide a mechanism to override the post_values
+		$_POST['customized'] = wp_slash( wp_json_encode( $this->post_data_overrides ) );
+		$undefined = new stdClass();
+
+		foreach ( $this->standard_type_configs as $type => $type_options ) {
 			// Multidimensional: See what effect the preview filter has on a non-existent setting (default value should be seen)
 			$base_name = "unset_{$type}_multi";
 			$name = $base_name . '[foo]';
@@ -187,7 +198,7 @@ class Tests_WP_Customize_Setting extends WP_UnitTestCase {
 			$this->assertEquals( 0, did_action( "customize_preview_{$setting->type}" ) ); // only applicable for custom types (not options or theme_mods)
 			$base_value = call_user_func( $type_options['getter'], $base_name, $undefined );
 			$this->assertArrayHasKey( 'foo', $base_value );
-			$this->assertEquals( $post_data_overrides[ $name ], $base_value['foo'] );
+			$this->assertEquals( $this->post_data_overrides[ $name ], $base_value['foo'] );
 
 			// Multidimemsional: Test set setting being overridden by a post value
 			$base_name = "set_{$type}_multi_overridden";
@@ -208,7 +219,7 @@ class Tests_WP_Customize_Setting extends WP_UnitTestCase {
 			$this->assertEquals( 0, did_action( "customize_preview_{$setting->type}" ) ); // only applicable for custom types (not options or theme_mods)
 			$base_value = call_user_func( $type_options['getter'], $base_name, $undefined );
 			$this->assertArrayHasKey( 'foo', $base_value );
-			$this->assertEquals( $post_data_overrides[ $name ], $base_value['foo'] );
+			$this->assertEquals( $this->post_data_overrides[ $name ], $base_value['foo'] );
 			$this->arrayHasKey( 'bar', call_user_func( $type_options['getter'], $base_name, $undefined ) );
 			$this->assertEquals( $base_initial_value['bar'], call_user_func( $type_options['getter'], $base_name, $undefined )['bar'] );
 		}
