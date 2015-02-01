@@ -213,10 +213,6 @@ class WP_Customize_Section {
 	 * @return array The array to be exported to the client as JSON.
 	 */
 	public function json() {
-		if ( ! $this->check_capabilities() ) {
-			return;
-		}
-
 		$array = wp_array_slice_assoc( (array) $this, array( 'id', 'title', 'description', 'priority', 'panel', 'type' ) );
 		$array['content'] = $this->get_content();
 		$array['active'] = $this->active();
