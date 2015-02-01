@@ -1328,12 +1328,12 @@ final class WP_Customize_Manager {
 	}
 
 	/**
-	 * Add settings in the transaction that were not added with code, e.g. dynamically-created settings for Widgets
+	 * Add settings from the POST data that were not added with code, e.g. dynamically-created settings for Widgets
 	 *
 	 * @since 4.2.0
 	 */
 	public function register_dynamic_settings() {
-		$this->add_dynamic_settings( $this->transaction->data() );
+		$this->add_dynamic_settings( $this->unsanitized_post_values() );
 	}
 
 	/**
