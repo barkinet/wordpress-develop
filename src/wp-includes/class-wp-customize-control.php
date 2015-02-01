@@ -265,10 +265,6 @@ class WP_Customize_Control {
 	 * @return array Array of parameters passed to the JavaScript.
 	 */
 	public function json() {
-		if ( ! $this->check_capabilities() ) {
-			return;
-		}
-
 		$this->to_json();
 		return $this->json;
 	}
