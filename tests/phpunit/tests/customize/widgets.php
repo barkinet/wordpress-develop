@@ -165,4 +165,32 @@ class Tests_WP_Customize_Widgets extends WP_UnitTestCase {
 		$args['uppercase_id_set_by_filter'] = strtoupper( $id );
 		return $args;
 	}
+
+	/**
+	 * Test WP_Customize_Widgets::sanitize_widget_js_instance() and WP_Customize_Widgets::sanitize_widget_instance()
+	 */
+	function test_sanitize_widget_js_instance() {
+		$this->do_customize_boot_actions();
+
+		$new_categories_instance = array(
+			'title' => 'Taxonomies Brand New Value',
+			'count' => '1',
+			'hierarchical' => '1',
+			'dropdown' => '1',
+		);
+
+		$sanitized_for_js = $this->manager->widgets->sanitize_widget_js_instance( $new_categories_instance );
+		$this->assertArrayHasKey( 'encoded_serialized_instance', $sanitized_for_js );
+		$this->assertTrue( is_serialized( base64_decode( $sanitized_for_js['encoded_serialized_instance'] ), true ) );
+		$this->assertEquals( $new_categories_instance['title'], $sanitized_for_js['title'] );
+		$this->assertTrue( $sanitized_for_js['is_widget_customizer_js_value'] );
+		$this->assertArrayHasKey( 'instance_hash_key', $sanitized_for_js );
+
+		$corrupted_sanitized_for_js = $sanitized_for_js;
+		$corrupted_sanitized_for_js['encoded_serialized_instance'] = base64_encode( serialize( array( 'title' => 'EVIL' ) ) );
+		$this->assertNull( $this->manager->widgets->sanitize_widget_instance( $corrupted_sanitized_for_js ), 'Expected sanitize_widget_instance to reject corrupted data.' );
+
+		$unsanitized_from_js = $this->manager->widgets->sanitize_widget_instance( $sanitized_for_js );
+		$this->assertEquals( $unsanitized_from_js, $new_categories_instance );
+	}
 }
