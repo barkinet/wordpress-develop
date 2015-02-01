@@ -265,6 +265,10 @@ class WP_Customize_Control {
 	 * @return array Array of parameters passed to the JavaScript.
 	 */
 	public function json() {
+		if ( ! $this->check_capabilities() ) {
+			return;
+		}
+
 		$this->to_json();
 		return $this->json;
 	}
@@ -521,11 +525,11 @@ class WP_Customize_Control {
 	 * @since 4.1.0
 	 */
 	final public function print_template() {
-	        ?>
-	        <script type="text/html" id="tmpl-customize-control-<?php echo $this->type; ?>-content">
-	                <?php $this->content_template(); ?>
-	        </script>
-	        <?php
+		?>
+		<script type="text/html" id="tmpl-customize-control-<?php echo $this->type; ?>-content">
+			<?php $this->content_template(); ?>
+		</script>
+		<?php
 	}
 
 	/**
