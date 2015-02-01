@@ -102,6 +102,7 @@ final class WP_Customize_Manager {
 		add_action( 'wp_ajax_customize_save', array( $this, 'save' ) );
 
 		add_action( 'customize_register',                 array( $this, 'register_controls' ) );
+		add_action( 'customize_register',                 array( $this, 'register_dynamic_settings' ), 11 ); // allow code to create settings first
 		add_action( 'customize_controls_init',            array( $this, 'prepare_controls' ) );
 		add_action( 'customize_controls_enqueue_scripts', array( $this, 'enqueue_control_scripts' ) );
 	}
@@ -726,6 +727,61 @@ final class WP_Customize_Manager {
 	}
 
 	/**
+	 * Register any dynamically-created settings, such as those from $_POST['customized'] that have no corresponding setting created.
+	 *
+	 * This is a mechanism to "wake up" settings that have been dynamically created
+	 * on the frontend and have been added to a transaction. When the transaction is
+	 * loaded, the dynamically-created settings then will get created and previewed
+	 * even though they are not directly created statically with code.
+	 *
+	 * @param array $customized mapping of settings IDs to values
+	 * @return WP_Customize_Setting[]
+	 */
+	public function add_dynamic_settings( $customized ) {
+		$new_settings = array();
+		foreach ( $customized as $setting_id => $value ) {
+			// Skip settings already created
+			if ( $this->get_setting( $setting_id ) ) {
+				continue;
+			}
+			$setting_class = 'WP_Customize_Setting';
+			$args = false;
+
+			/**
+			 * Allow non-statically created settings to be constructed with custom WP_Customize_Setting subclass.
+			 *
+			 * @since 4.2.0
+			 *
+			 * @param string $class
+			 * @param string $setting_id
+			 */
+			$setting_class = apply_filters( 'customize_dynamic_setting_class', $setting_class, $setting_id );
+
+			/**
+			 * Filter a dynamic setting's constructor args.
+			 *
+			 * For a dynamic setting to be registered, this filter must be employed
+			 * to override the default false value with an array of args to pass to
+			 * the WP_Customize_Setting constructor.
+			 *
+			 * @since 4.2.0
+			 *
+			 * @param false|array $args
+			 * @param string $setting_id
+			 */
+			$setting_args = apply_filters( 'customize_dynamic_setting_args', $args, $setting_id );
+
+			if ( false === $setting_args ) {
+				continue;
+			}
+			$setting = new $setting_class( $this, $setting_id, $setting_args );
+			$this->add_setting( $setting );
+			$new_settings[] = $setting;
+		}
+		return $new_settings;
+	}
+
+	/**
 	 * Retrieve a customize setting.
 	 *
 	 * @since 3.4.0
@@ -1269,6 +1325,15 @@ final class WP_Customize_Manager {
 			'section'    => 'static_front_page',
 			'type'       => 'dropdown-pages',
 		) );
+	}
+
+	/**
+	 * Add settings in the transaction that were not added with code, e.g. dynamically-created settings for Widgets
+	 *
+	 * @since 4.2.0
+	 */
+	public function register_dynamic_settings() {
+		$this->add_dynamic_settings( $this->transaction->data() );
 	}
 
 	/**
