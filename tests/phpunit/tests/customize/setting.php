@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Tests specific to sites in multisite.
+ * Tests for the WP_Customize_Setting class.
  *
  * @group customize
  */
