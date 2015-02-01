@@ -117,20 +117,23 @@ final class WP_Customize_Widgets {
 	}
 
 	/**
-	 * Inspect the transaction for any widget settings, and dynamically add them up-front so widgets will be initialized properly.
+	 * Inspect the incoming customized data for any widget settings, and dynamically add them up-front so widgets will be initialized properly.
 	 *
 	 * @since 4.2.0
 	 */
 	public function register_settings() {
-		$widget_customized = array();
-		$all_customized = $this->manager->transaction->data();
-		foreach ( $all_customized as $setting_id => $value ) {
-			if ( $this->get_setting_type( $setting_id ) ) {
-				$widget_customized[ $setting_id ] = $value;
+		$widget_setting_ids = array();
+		$incoming_setting_ids = array_keys( $this->manager->unsanitized_post_values() );
+		foreach ( $incoming_setting_ids as $setting_id ) {
+			if ( ! is_null( $this->get_setting_type( $setting_id ) ) ) {
+				$widget_setting_ids[] = $setting_id;
 			}
 		}
+		if ( $this->manager->doing_ajax( 'update-widget' ) && isset( $_REQUEST['widget-id'] ) ) {
+			$widget_setting_ids[] = $this->get_setting_id( wp_unslash( $_REQUEST['widget-id'] ) );
+		}
 
-		$settings = $this->manager->add_dynamic_settings( $widget_customized );
+		$settings = $this->manager->add_dynamic_settings( array_unique( $widget_setting_ids ) );
 
 		/*
 		 * Preview settings right away so that widgets and sidebars will get registered properly.
@@ -145,8 +148,7 @@ final class WP_Customize_Widgets {
 	}
 
 	/**
-	 * Determine the arguments for a dynamically-created setting. This is used
-	 * when updating the transaction.
+	 * Determine the arguments for a dynamically-created setting.
 	 *
 	 * @since 4.2.0
 	 *

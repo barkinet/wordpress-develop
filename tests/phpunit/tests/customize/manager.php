@@ -108,17 +108,14 @@ class Tests_WP_Customize_Manager extends WP_UnitTestCase {
 	 */
 	function test_add_dynamic_settings() {
 		$manager = $this->instantiate();
-		$settings = array(
-			'foo' => 'OOF',
-			'bar' => 'RAB',
-		);
+		$setting_ids = array( 'foo', 'bar' );
 		$manager->add_setting( 'foo', array( 'default' => 'foo_default' ) );
 		$this->assertEmpty( $manager->get_setting( 'bar' ), 'Expected there to not be a bar setting up front.' );
-		$manager->add_dynamic_settings( $settings );
+		$manager->add_dynamic_settings( $setting_ids );
 		$this->assertEmpty( $manager->get_setting( 'bar' ), 'Expected the bar setting to remain absent since filters not added.' );
 
 		$this->action_customize_register_for_dynamic_settings();
-		$manager->add_dynamic_settings( $settings );
+		$manager->add_dynamic_settings( $setting_ids );
 		$this->assertNotEmpty( $manager->get_setting( 'bar' ), 'Expected bar setting to be created since filters were added.' );
 		$this->assertEquals( 'foo_default', $manager->get_setting( 'foo' )->default, 'Expected static foo setting to not get overridden by dynamic setting.' );
 		$this->assertEquals( 'dynamic_bar_default', $manager->get_setting( 'bar' )->default, 'Expected dynamic setting bar to have default providd by filter.' );

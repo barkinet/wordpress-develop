@@ -746,18 +746,18 @@ final class WP_Customize_Manager {
 	 * loaded, the dynamically-created settings then will get created and previewed
 	 * even though they are not directly created statically with code.
 	 *
-	 * @param array $customized mapping of settings IDs to values
-	 * @return WP_Customize_Setting[]
+	 * @param string[] $setting_ids  The setting IDs to add.
+	 * @return WP_Customize_Setting[]  The settings added.
 	 */
-	public function add_dynamic_settings( $customized ) {
+	public function add_dynamic_settings( $setting_ids ) {
 		$new_settings = array();
-		foreach ( $customized as $setting_id => $value ) {
+		foreach ( $setting_ids as $setting_id ) {
 			// Skip settings already created
 			if ( $this->get_setting( $setting_id ) ) {
 				continue;
 			}
-			$setting_class = 'WP_Customize_Setting';
 			$setting_args = false;
+			$setting_class = 'WP_Customize_Setting';
 
 			/**
 			 * Filter a dynamic setting's constructor args.
@@ -1348,7 +1348,7 @@ final class WP_Customize_Manager {
 	 * @since 4.2.0
 	 */
 	public function register_dynamic_settings() {
-		$this->add_dynamic_settings( $this->unsanitized_post_values() );
+		$this->add_dynamic_settings( array_keys( $this->unsanitized_post_values() ) );
 	}
 
 	/**
