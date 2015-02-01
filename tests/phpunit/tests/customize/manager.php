@@ -32,6 +32,23 @@ class Tests_WP_Customize_Manager extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Test WP_Customize_Manager::unsanitized_post_values()
+	 *
+	 * @ticket 30988
+	 */
+	function test_unsanitized_post_values() {
+		$manager = $this->instantiate();
+
+		$customized = array(
+			'foo' => 'bar',
+			'baz[quux]' => 123,
+		);
+		$_POST['customized'] = wp_slash( wp_json_encode( $customized ) );
+		$post_values = $manager->unsanitized_post_values();
+		$this->assertEquals( $customized, $post_values );
+	}
+
+	/**
 	 * Test the WP_Customize_Manager::post_value() method
 	 *
 	 * @ticket 30936
