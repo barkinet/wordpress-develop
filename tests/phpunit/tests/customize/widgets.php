@@ -1,0 +1,99 @@
+<?php
+
+/**
+ * Tests for the WP_Customize_Widgets class.
+ *
+ * @group customize
+ */
+class Tests_WP_Customize_Widgets extends WP_UnitTestCase {
+
+	/**
+	 * @var WP_Customize_Manager
+	 */
+	protected $manager;
+
+	function setUp() {
+		parent::setUp();
+		require_once( ABSPATH . WPINC . '/class-wp-customize-manager.php' );
+		$GLOBALS['wp_customize'] = new WP_Customize_Manager(); // wpcs: override ok
+		$this->manager = $GLOBALS['wp_customize'];
+
+		unset( $GLOBALS['_wp_sidebars_widgets'] ); // clear out cache set by wp_get_sidebars_widgets()
+		$sidebars_widgets = wp_get_sidebars_widgets();
+		$this->assertEqualSets( array( 'wp_inactive_widgets', 'sidebar-1' ), array_keys( wp_get_sidebars_widgets() ) );
+		$this->assertContains( 'search-2', $sidebars_widgets['sidebar-1'] );
+		$this->assertContains( 'categories-2', $sidebars_widgets['sidebar-1'] );
+		$this->assertArrayHasKey( 2, get_option( 'widget_search' ) );
+		$widget_categories = get_option( 'widget_categories' );
+		$this->assertArrayHasKey( 2, $widget_categories );
+		$this->assertEquals( '', $widget_categories['title'] );
+
+		remove_action( 'after_setup_theme', 'twentyfifteen_setup' ); // @todo We should not be including a theme anyway
+
+		$user_id = $this->factory->user->create( array( 'role' => 'administrator' ) );
+		wp_set_current_user( $user_id );
+	}
+
+	function tearDown() {
+		parent::tearDown();
+		$this->manager = null;
+		unset( $GLOBALS['wp_customize'] );
+	}
+
+	function set_customized_post_data( $customized ) {
+		$_POST['customized'] = wp_slash( wp_json_encode( $customized ) );
+	}
+
+	function do_customize_boot_actions() {
+		do_action( 'setup_theme' );
+		$_REQUEST['nonce'] = wp_create_nonce( 'preview-customize_' . $this->manager->theme()->get_stylesheet() );
+		do_action( 'after_setup_theme' );
+		do_action( 'init' );
+		do_action( 'wp_loaded' );
+		do_action( 'wp', $GLOBALS['wp'] );
+	}
+
+	/**
+	 * Test WP_Customize_Widgets::__construct()
+	 */
+	function test_construct() {
+		$this->assertInstanceOf( 'WP_Customize_Widgets', $this->manager->widgets );
+		$this->assertEquals( $this->manager, $this->manager->widgets->manager );
+	}
+
+	/**
+	 * Test WP_Customize_Widgets::register_settings()
+	 *
+	 * @ticket 30988
+	 */
+	function test_register_settings() {
+
+		$raw_widget_customized = array(
+			'widget_categories[2]' => array(
+				'title' => 'Taxonomies Brand New Value',
+				'count' => 0,
+				'hierarchical' => 0,
+				'dropdown' => 0,
+			),
+			'widget_search[3]' => array(
+				'title' => 'Not as good as Google!',
+			),
+		);
+		$customized = array();
+		foreach ( $raw_widget_customized as $setting_id => $instance ) {
+			$customized[ $setting_id ] = $this->manager->widgets->sanitize_widget_js_instance( $instance );
+		}
+
+		$this->set_customized_post_data( $customized );
+		$this->do_customize_boot_actions();
+		$this->assertTrue( is_customize_preview() );
+
+		$this->assertNotEmpty( $this->manager->get_setting( 'widget_categories[2]' ), 'Expected setting for pre-existing widget category-2, being customized.' );
+		$this->assertNotEmpty( $this->manager->get_setting( 'widget_search[2]' ), 'Expected setting for pre-existing widget search-2, not being customized.' );
+		$this->assertNotEmpty( $this->manager->get_setting( 'widget_search[3]' ), 'Expected dynamic setting for non-existing widget search-3, being customized.' );
+
+		$widget_categories = get_option( 'widget_categories' );
+		$this->assertEquals( $raw_widget_customized['widget_categories[2]'], $widget_categories[2], 'Expected $wp_customize->get_setting(widget_categories[2])->preview() to have been called.' );
+	}
+
+}
