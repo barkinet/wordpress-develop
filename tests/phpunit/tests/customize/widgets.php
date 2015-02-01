@@ -96,4 +96,73 @@ class Tests_WP_Customize_Widgets extends WP_UnitTestCase {
 		$this->assertEquals( $raw_widget_customized['widget_categories[2]'], $widget_categories[2], 'Expected $wp_customize->get_setting(widget_categories[2])->preview() to have been called.' );
 	}
 
+	/**
+	 * Test WP_Customize_Widgets::get_setting_args()
+	 */
+	function test_get_setting_args() {
+
+		add_filter( 'widget_customizer_setting_args', array( $this, 'filter_widget_customizer_setting_args' ), 10, 2 );
+
+		$default_args = array(
+			'type' => 'option',
+			'capability' => 'edit_theme_options',
+			'transport' => 'refresh',
+			'default' => array(),
+			'sanitize_callback' => array( $this->manager->widgets, 'sanitize_widget_instance' ),
+			'sanitize_js_callback' => array( $this->manager->widgets, 'sanitize_widget_js_instance' ),
+		);
+
+		$args = $this->manager->widgets->get_setting_args( 'widget_foo[2]' );
+		foreach ( $default_args as $key => $default_value ) {
+			$this->assertEquals( $default_value, $args[ $key ] );
+		}
+		$this->assertEquals( 'WIDGET_FOO[2]', $args['uppercase_id_set_by_filter'] );
+
+		$override_args = array(
+			'type' => 'theme_mod',
+			'capability' => 'edit_posts',
+			'transport' => 'postMessage',
+			'default' => array( 'title' => 'asd' ),
+			'sanitize_callback' => '__return_empty_array',
+			'sanitize_js_callback' => '__return_empty_array',
+		);
+		$args = $this->manager->widgets->get_setting_args( 'widget_bar[3]', $override_args );
+		foreach ( $override_args as $key => $override_value ) {
+			$this->assertEquals( $override_value, $args[ $key ] );
+		}
+		$this->assertEquals( 'WIDGET_BAR[3]', $args['uppercase_id_set_by_filter'] );
+
+		$default_args = array(
+			'type' => 'option',
+			'capability' => 'edit_theme_options',
+			'transport' => 'refresh',
+			'default' => array(),
+			'sanitize_callback' => array( $this->manager->widgets, 'sanitize_sidebar_widgets' ),
+			'sanitize_js_callback' => array( $this->manager->widgets, 'sanitize_sidebar_widgets_js_instance' ),
+		);
+		$args = $this->manager->widgets->get_setting_args( 'sidebars_widgets[sidebar-1]' );
+		foreach ( $default_args as $key => $default_value ) {
+			$this->assertEquals( $default_value, $args[ $key ] );
+		}
+		$this->assertEquals( 'SIDEBARS_WIDGETS[SIDEBAR-1]', $args['uppercase_id_set_by_filter'] );
+
+		$override_args = array(
+			'type' => 'theme_mod',
+			'capability' => 'edit_posts',
+			'transport' => 'postMessage',
+			'default' => array( 'title' => 'asd' ),
+			'sanitize_callback' => '__return_empty_array',
+			'sanitize_js_callback' => '__return_empty_array',
+		);
+		$args = $this->manager->widgets->get_setting_args( 'sidebars_widgets[sidebar-2]', $override_args );
+		foreach ( $override_args as $key => $override_value ) {
+			$this->assertEquals( $override_value, $args[ $key ] );
+		}
+		$this->assertEquals( 'SIDEBARS_WIDGETS[SIDEBAR-2]', $args['uppercase_id_set_by_filter'] );
+	}
+
+	function filter_widget_customizer_setting_args( $args, $id ) {
+		$args['uppercase_id_set_by_filter'] = strtoupper( $id );
+		return $args;
+	}
 }
