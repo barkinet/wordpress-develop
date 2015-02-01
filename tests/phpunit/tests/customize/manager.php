@@ -32,6 +32,36 @@ class Tests_WP_Customize_Manager extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Test WP_Customize_Manager::doing_ajax()
+	 *
+	 * @group ajax
+	 */
+	function test_doing_ajax() {
+		if ( ! defined( 'DOING_AJAX' ) ) {
+			define( 'DOING_AJAX', true );
+		}
+
+		$manager = $this->instantiate();
+		$this->assertTrue( $manager->doing_ajax() );
+
+		$_REQUEST['action'] = 'customize_save';
+		$this->assertTrue( $manager->doing_ajax( 'customize_save' ) );
+		$this->assertFalse( $manager->doing_ajax( 'update-widget' ) );
+	}
+
+	/**
+	 * Test ! WP_Customize_Manager::doing_ajax()
+	 */
+	function test_not_doing_ajax() {
+		if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
+			$this->markTestSkipped( 'Cannot test when DOING_AJAX' );
+		}
+
+		$manager = $this->instantiate();
+		$this->assertFalse( $manager->doing_ajax() );
+	}
+
+	/**
 	 * Test the WP_Customize_Manager::post_value() method
 	 *
 	 * @ticket 30936

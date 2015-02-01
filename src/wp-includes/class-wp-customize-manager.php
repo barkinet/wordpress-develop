@@ -112,10 +112,22 @@ final class WP_Customize_Manager {
 	 *
 	 * @since 3.4.0
 	 *
+	 * @param string|null $action whether the supplied Ajax action is being run (since 4.2.0).
+	 *
 	 * @return bool
 	 */
-	public function doing_ajax() {
-		return isset( $_POST['customized'] ) || ( defined( 'DOING_AJAX' ) && DOING_AJAX );
+	public function doing_ajax( $action = null ) {
+		$doing_ajax = ( defined( 'DOING_AJAX' ) && DOING_AJAX );
+		if ( ! $doing_ajax ) {
+			return false;
+		}
+
+		if ( ! $action ) {
+			return true;
+		} else {
+			// Note: we can't just use doing_action( "wp_ajax_{$action}" ) because we need to check before admin-ajax.php gets to that point
+			return isset( $_REQUEST['action'] ) && wp_unslash( $_REQUEST['action'] ) === $action;
+		}
 	}
 
 	/**
