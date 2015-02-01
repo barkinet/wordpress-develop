@@ -184,7 +184,9 @@ do_action( 'customize_controls_print_scripts' );
 	<div id="customize-preview" class="wp-full-overlay-main"></div>
 	<?php
 
-	// Render control templates.
+	// Render Panel, Section, and Control templates.
+	$wp_customize->render_panel_templates();
+	$wp_customize->render_section_templates();
 	$wp_customize->render_control_templates();
 
 	/**

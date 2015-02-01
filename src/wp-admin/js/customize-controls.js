@@ -149,6 +149,7 @@
 	Container = api.Class.extend({
 		defaultActiveArguments: { duration: 'fast', completeCallback: $.noop },
 		defaultExpandedArguments: { duration: 'fast', completeCallback: $.noop },
+		containerType: 'container',
 
 		/**
 		 * @since 4.1.0
@@ -161,7 +162,11 @@
 			container.id = id;
 			container.params = {};
 			$.extend( container, options || {} );
+			container.templateSelector = 'customize-' + container.containerType + '-' + container.params.type;
 			container.container = $( container.params.content );
+			if ( 0 === container.container.length ) {
+				container.container = $( container.getContainer() );
+			}
 
 			container.deferred = {
 				embedded: new $.Deferred()
@@ -348,7 +353,26 @@
 		 * Bring the container into view and then expand this and bring it into view
 		 * @param {Object} [params]
 		 */
-		focus: focus
+		focus: focus,
+
+		/**
+		 * Return the container html, generated from its JS template, if it exists.
+		 *
+		 * @since 4.2.0
+		 */
+		getContainer: function () {
+			var template,
+				container = this;
+
+			if ( 0 !== $( '#tmpl-' + container.templateSelector ).length ) {
+				template = wp.template( container.templateSelector );
+				if ( template && container.container ) {
+					return template( container.params );
+				}
+			}
+
+			return '<li></li>';
+		}
 	});
 
 	/**
@@ -358,6 +382,7 @@
 	 * @augments wp.customize.Class
 	 */
 	api.Section = Container.extend({
+		containerType: 'section',
 
 		/**
 		 * @since 4.1.0
@@ -527,6 +552,8 @@
 	 * @augments wp.customize.Class
 	 */
 	api.Panel = Container.extend({
+		containerType: 'panel',
+
 		/**
 		 * @since 4.1.0
 		 *
@@ -553,6 +580,7 @@
 
 			if ( ! panel.container.parent().is( parentContainer ) ) {
 				parentContainer.append( panel.container );
+				panel.renderContent();
 			}
 			panel.deferred.embedded.resolve();
 		},
@@ -575,14 +603,13 @@
 				}
 			});
 
-			meta = panel.container.find( '.panel-meta:first' );
-
-			meta.find( '> .accordion-section-title' ).on( 'click keydown', function( event ) {
+			panel.container.on( 'click keydown', '.panel-meta > .accordion-section-title', function( event ) {
 				if ( api.utils.isKeydownButNotEnterEvent( event ) ) {
 					return;
 				}
 				event.preventDefault(); // Keep this AFTER the key filter above
 
+				meta = panel.container.find( '.panel-meta' );
 				if ( meta.hasClass( 'cannot-expand' ) ) {
 					return;
 				}
@@ -703,6 +730,26 @@
 				backBtn.attr( 'tabindex', '-1' );
 				panelTitle.focus();
 				container.scrollTop( 0 );
+			}
+		},
+
+		/**
+		 * Render the panel from its JS template, if it exists.
+		 *
+		 * The panel's container must already exist in the DOM.
+		 *
+		 * @since 4.2.0
+		 */
+		renderContent: function () {
+			var template,
+				panel = this;
+
+			// Add the content to the container.
+			if ( 0 !== $( '#tmpl-' + panel.templateSelector + '-content' ).length ) {
+				template = wp.template( panel.templateSelector + '-content' );
+				if ( template && panel.container ) {
+					panel.container.find( '.accordion-sub-container' ).html( template( panel.params ) );
+				}
 			}
 		}
 	});

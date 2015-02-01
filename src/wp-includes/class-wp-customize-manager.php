@@ -54,7 +54,25 @@ final class WP_Customize_Manager {
 	protected $customized;
 
 	/**
-	 * Controls that may be rendered from JS templates.
+	 * Panel types that may be rendered from JS templates.
+	 *
+	 * @since 4.2.0
+	 * @access protected
+	 * @var array
+	 */
+	protected $registered_panel_types = array();
+
+	/**
+	 * Section types that may be rendered from JS templates.
+	 *
+	 * @since 4.2.0
+	 * @access protected
+	 * @var array
+	 */
+	protected $registered_section_types = array();
+
+	/**
+	 * Control types that may be rendered from JS templates.
 	 *
 	 * @since 4.1.0
 	 * @access protected
@@ -774,6 +792,34 @@ final class WP_Customize_Manager {
 	}
 
 	/**
+	 * Register a customize panel type.
+	 *
+	 * Registered types are eligible to be rendered via JS and created dynamically.
+	 *
+	 * @since 4.2.0
+	 * @access public
+	 *
+	 * @param string $panel Name of a custom panel which is a subclass of
+	 *                        {@see WP_Customize_Panel}.
+	 */
+	public function register_panel_type( $panel ) {
+		$this->registered_panel_types[] = $panel;
+	}
+
+	/**
+	 * Render JS templates for all registered panel types.
+	 *
+	 * @since 4.2.0
+	 * @access public
+	 */
+	public function render_panel_templates() {
+		foreach ( $this->registered_panel_types as $panel_type ) {
+			$panel = new $panel_type( $this, 'temp', array() );
+			$panel->print_template();
+		}
+	}
+
+	/**
 	 * Add a customize section.
 	 *
 	 * @since 3.4.0
@@ -812,6 +858,34 @@ final class WP_Customize_Manager {
 	 */
 	public function remove_section( $id ) {
 		unset( $this->sections[ $id ] );
+	}
+
+	/**
+	 * Register a customize section type.
+	 *
+	 * Registered types are eligible to be rendered via JS and created dynamically.
+	 *
+	 * @since 4.2.0
+	 * @access public
+	 *
+	 * @param string $section Name of a custom section which is a subclass of
+	 *                        {@see WP_Customize_Section}.
+	 */
+	public function register_section_type( $section ) {
+		$this->registered_section_types[] = $section;
+	}
+
+	/**
+	 * Render JS templates for all registered section types.
+	 *
+	 * @since 4.2.0
+	 * @access public
+	 */
+	public function render_section_templates() {
+		foreach ( $this->registered_section_types as $section_type ) {
+			$section = new $section_type( $this, 'temp', array() );
+			$section->print_template();
+		}
 	}
 
 	/**
@@ -985,7 +1059,10 @@ final class WP_Customize_Manager {
 	 */
 	public function register_controls() {
 
-		/* Control Types (custom control classes) */
+		/* Panel, Section, and Control Types */
+		$this->register_panel_type( 'WP_Customize_Panel' );
+		$this->register_section_type( 'WP_Customize_Section' );
+		$this->register_section_type( 'WP_Customize_Sidebar_Section' );
 		$this->register_control_type( 'WP_Customize_Color_Control' );
 		$this->register_control_type( 'WP_Customize_Upload_Control' );
 		$this->register_control_type( 'WP_Customize_Image_Control' );
