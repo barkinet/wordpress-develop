@@ -733,7 +733,7 @@ function write_post() {
 //
 
 /**
- * {@internal Missing Short Description}}
+ * Add post meta data defined in $_POST superglobal for post with given ID.
  *
  * @since 1.2.0
  *
@@ -772,7 +772,7 @@ function add_meta( $post_ID ) {
 } // add_meta
 
 /**
- * {@internal Missing Short Description}}
+ * Delete post meta data by meta ID.
  *
  * @since 1.2.0
  *
@@ -803,7 +803,7 @@ function get_meta_keys() {
 }
 
 /**
- * {@internal Missing Short Description}}
+ * Get post meta data by meta ID.
  *
  * @since 2.1.0
  *
@@ -815,9 +815,7 @@ function get_post_meta_by_id( $mid ) {
 }
 
 /**
- * {@internal Missing Short Description}}
- *
- * Some postmeta stuff.
+ * Get meta data for the given post ID.
  *
  * @since 1.2.0
  *
@@ -833,7 +831,7 @@ function has_meta( $postid ) {
 }
 
 /**
- * {@internal Missing Short Description}}
+ * Update post meta data by meta ID.
  *
  * @since 1.2.0
  *
@@ -1006,7 +1004,7 @@ function wp_edit_posts_query( $q = false ) {
 }
 
 /**
- * {@internal Missing Short Description}}
+ * Get all available post MIME types for a given post type.
  *
  * @since 2.5.0
  *
@@ -1504,7 +1502,7 @@ function _admin_notice_post_locked() {
 			<div class="post-locked-avatar"></div>
 			<p class="wp-tab-first" tabindex="0">
 			<span class="currently-editing"></span><br />
-			<span class="locked-saving hidden"><img src="images/wpspin_light-2x.gif" width="16" height="16" /> <?php _e('Saving revision...'); ?></span>
+			<span class="locked-saving hidden"><img src="<?php echo esc_url( admin_url( 'images/spinner-2x.gif' ) ); ?>" width="16" height="16" /> <?php _e('Saving revision...'); ?></span>
 			<span class="locked-saved hidden"><?php _e('Your latest changes were saved as a revision.'); ?></span>
 			</p>
 			<?php

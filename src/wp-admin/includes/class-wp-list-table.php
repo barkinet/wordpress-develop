@@ -337,7 +337,7 @@ class WP_List_Table {
 <p class="search-box">
 	<label class="screen-reader-text" for="<?php echo $input_id ?>"><?php echo $text; ?>:</label>
 	<input type="search" id="<?php echo $input_id ?>" name="s" value="<?php _admin_search_query(); ?>" />
-	<?php submit_button( $text, 'button', false, false, array('id' => 'search-submit') ); ?>
+	<?php submit_button( $text, 'button', '', false, array('id' => 'search-submit') ); ?>
 </p>
 <?php
 	}
@@ -445,7 +445,7 @@ class WP_List_Table {
 
 		echo "</select>\n";
 
-		submit_button( __( 'Apply' ), 'action', false, false, array( 'id' => "doaction$two" ) );
+		submit_button( __( 'Apply' ), 'action', '', false, array( 'id' => "doaction$two" ) );
 		echo "\n";
 	}
 
@@ -953,7 +953,7 @@ class WP_List_Table {
 	 * @return array List of CSS classes for the table tag.
 	 */
 	protected function get_table_classes() {
-		return array( 'widefat', 'fixed', $this->_args['plural'] );
+		return array( 'widefat', 'fixed', 'striped', $this->_args['plural'] );
 	}
 
 	/**
@@ -1028,13 +1028,14 @@ class WP_List_Table {
 	 * @param object $item The current item
 	 */
 	public function single_row( $item ) {
-		static $row_class = '';
-		$row_class = ( $row_class == '' ? ' class="alternate"' : '' );
-
-		echo '<tr' . $row_class . '>';
+		echo '<tr>';
 		$this->single_row_columns( $item );
 		echo '</tr>';
 	}
+
+	protected function column_default( $item, $column_name ) {}
+
+	protected function column_cb( $item ) {}
 
 	/**
 	 * Generates the columns for a single row of the table

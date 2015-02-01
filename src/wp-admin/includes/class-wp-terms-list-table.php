@@ -268,7 +268,6 @@ class WP_Terms_List_Table extends WP_List_Table {
 
 	/**
 	 * @global string $taxonomy
-	 * @staticvar string $row_class
 	 * @param object $tag
 	 * @param int $level
 	 */
@@ -276,12 +275,9 @@ class WP_Terms_List_Table extends WP_List_Table {
 		global $taxonomy;
  		$tag = sanitize_term( $tag, $taxonomy );
 
-		static $row_class = '';
-		$row_class = ( $row_class == '' ? ' class="alternate"' : '' );
-
 		$this->level = $level;
 
-		echo '<tr id="tag-' . $tag->term_id . '"' . $row_class . '>';
+		echo '<tr id="tag-' . $tag->term_id . '">';
 		$this->single_row_columns( $tag );
 		echo '</tr>';
 	}
@@ -467,7 +463,7 @@ class WP_Terms_List_Table extends WP_List_Table {
 			return;
 ?>
 
-	<form method="get" action=""><table style="display: none"><tbody id="inlineedit">
+	<form method="get"><table style="display: none"><tbody id="inlineedit">
 		<tr id="inline-edit" class="inline-edit-row" style="display: none"><td colspan="<?php echo $this->get_column_count(); ?>" class="colspanchange">
 
 			<fieldset><div class="inline-edit-col">

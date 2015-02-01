@@ -434,23 +434,20 @@ function is_email_address_unsafe( $user_email ) {
 }
 
 /**
- * Processes new user registrations.
+ * Sanitize and validate data required for a user sign-up.
  *
- * Checks the data provided by the user during signup. Verifies
- * the validity and uniqueness of user names and user email addresses,
- * and checks email addresses against admin-provided domain
- * whitelists and blacklists.
+ * Verifies the validity and uniqueness of user names and user email addresses,
+ * and checks email addresses against admin-provided domain whitelists and blacklists.
  *
- * The hook 'wpmu_validate_user_signup' provides an easy way
- * to modify the signup process. The value $result, which is passed
- * to the hook, contains both the user-provided info and the error
- * messages created by the function. 'wpmu_validate_user_signup' allows
- * you to process the data in any way you'd like, and unset the
- * relevant errors if necessary.
+ * The {@see 'wpmu_validate_user_signup'} hook provides an easy way to modify the sign-up
+ * process. The value $result, which is passed to the hook, contains both the user-provided
+ * info and the error messages created by the function. {@see 'wpmu_validate_user_signup'}
+ * allows you to process the data in any way you'd like, and unset the relevant errors if
+ * necessary.
  *
  * @since MU
  *
- * @param string $user_name The login name provided by the user.
+ * @param string $user_name  The login name provided by the user.
  * @param string $user_email The email provided by the user.
  * @return array Contains username, email, and error messages.
  */
@@ -1805,10 +1802,12 @@ function global_terms( $term_id, $deprecated = '' ) {
 		}
 	} elseif ( $global_id != $term_id ) {
 		$local_id = $wpdb->get_row( $wpdb->prepare( "SELECT term_id FROM $wpdb->terms WHERE term_id = %d", $global_id ) );
-		if ( null != $local_id )
-			$local_id = global_terms( $local_id );
-			if ( 10 < $global_terms_recurse )
+		if ( null != $local_id ) {
+			global_terms( $local_id );
+			if ( 10 < $global_terms_recurse ) {
 				$global_id = $term_id;
+			}
+		}
 	}
 
 	if ( $global_id != $term_id ) {
@@ -2005,11 +2004,12 @@ function fix_phpmailer_messageid( $phpmailer ) {
  * @return bool
  */
 function is_user_spammy( $user = null ) {
-    if ( ! is_a( $user, 'WP_User' ) ) {
-		if ( $user )
+    if ( ! ( $user instanceof WP_User ) ) {
+		if ( $user ) {
 			$user = get_user_by( 'login', $user );
-		else
+		} else {
 			$user = wp_get_current_user();
+		}
 	}
 
 	return $user && isset( $user->spam ) && 1 == $user->spam;
