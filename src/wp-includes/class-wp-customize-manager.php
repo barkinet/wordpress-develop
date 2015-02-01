@@ -419,7 +419,7 @@ final class WP_Customize_Manager {
 	 *
 	 * @return array
 	 */
-	private function unsanitized_post_values() {
+	public function unsanitized_post_values() {
 		if ( ! isset( $this->_post_values ) ) {
 			if ( isset( $_POST['customized'] ) ) {
 				$this->_post_values = json_decode( wp_unslash( $_POST['customized'] ), true );
