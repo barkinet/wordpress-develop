@@ -1550,6 +1550,17 @@ function wp_ajax_inline_save() {
 	if ( empty($data['ping_status']) )
 		$data['ping_status'] = 'closed';
 
+	// Exclude terms from taxonomies that are not supposed to appear in Quick Edit.
+	if ( ! empty( $data['tax_input'] ) ) {
+		foreach ( $data['tax_input'] as $taxonomy => $terms ) {
+			$tax_object = get_taxonomy( $taxonomy );
+			/** This filter is documented in wp-admin/includes/class-wp-posts-list-table.php */
+			if ( ! apply_filters( 'quick_edit_show_taxonomy', $tax_object->show_in_quick_edit, $taxonomy, $post['post_type'] ) ) {
+				unset( $data['tax_input'][ $taxonomy ] );
+			}
+		}
+	}
+
 	// Hack: wp_unique_post_slug() doesn't work for drafts, so we will fake that our post is published.
 	if ( ! empty( $data['post_name'] ) && in_array( $post['post_status'], array( 'draft', 'pending' ) ) ) {
 		$post['post_status'] = 'publish';
@@ -2725,18 +2736,28 @@ function wp_ajax_parse_embed() {
 function wp_ajax_parse_media_shortcode() {
 	global $post, $wp_scripts;
 
-	if ( ! $post = get_post( (int) $_POST['post_ID'] ) ) {
+	if ( empty( $_POST['shortcode'] ) ) {
 		wp_send_json_error();
 	}
 
-	if ( empty( $_POST['shortcode'] ) || ! current_user_can( 'edit_post', $post->ID ) ) {
-		wp_send_json_error();
+	$shortcode = wp_unslash( $_POST['shortcode'] );
+
+	if ( ! empty( $_POST['post_ID'] ) ) {
+		$post = get_post( (int) $_POST['post_ID'] );
 	}
 
-	setup_postdata( $post );
-	$shortcode = do_shortcode( wp_unslash( $_POST['shortcode'] ) );
+	// the embed shortcode requires a post
+	if ( ! $post || ! current_user_can( 'edit_post', $post->ID ) ) {
+		if ( 'embed' === $shortcode ) {
+			wp_send_json_error();
+		}
+	} else {
+		setup_postdata( $post );
+	}
 
-	if ( empty( $shortcode ) ) {
+	$parsed = do_shortcode( $shortcode  );
+
+	if ( empty( $parsed ) ) {
 		wp_send_json_error( array(
 			'type' => 'no-items',
 			'message' => __( 'No items found.' ),
@@ -2756,7 +2777,7 @@ function wp_ajax_parse_media_shortcode() {
 
 	ob_start();
 
-	echo $shortcode;
+	echo $parsed;
 
 	if ( 'playlist' === $_REQUEST['type'] ) {
 		wp_underscore_playlist_templates();

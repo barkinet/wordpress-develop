@@ -288,7 +288,7 @@ class WP_Posts_List_Table extends WP_List_Table {
 	}
 
 	protected function get_table_classes() {
-		return array( 'widefat', 'fixed', is_post_type_hierarchical( $this->screen->post_type ) ? 'pages' : 'posts' );
+		return array( 'widefat', 'fixed', 'striped', is_post_type_hierarchical( $this->screen->post_type ) ? 'pages' : 'posts' );
 	}
 
 	public function get_columns() {
@@ -572,13 +572,11 @@ class WP_Posts_List_Table extends WP_List_Table {
 
 	/**
 	 * @global string $mode
-	 * @staticvar string $alternate
 	 * @param WP_Post $post
 	 * @param int $level
 	 */
 	public function single_row( $post, $level = 0 ) {
 		global $mode;
-		static $alternate;
 
 		$global_post = get_post();
 		$GLOBALS['post'] = $post;
@@ -589,8 +587,7 @@ class WP_Posts_List_Table extends WP_List_Table {
 		$post_type_object = get_post_type_object( $post->post_type );
 		$can_edit_post = current_user_can( 'edit_post', $post->ID );
 
-		$alternate = 'alternate' == $alternate ? '' : 'alternate';
-		$classes = $alternate . ' iedit author-' . ( get_current_user_id() == $post->post_author ? 'self' : 'other' );
+		$classes = 'iedit author-' . ( get_current_user_id() == $post->post_author ? 'self' : 'other' );
 
 		$lock_holder = wp_check_post_lock( $post->ID );
 		if ( $lock_holder ) {
@@ -698,7 +695,7 @@ class WP_Posts_List_Table extends WP_List_Table {
 
 				$actions = array();
 				if ( $can_edit_post && 'trash' != $post->post_status ) {
-					$actions['edit'] = '<a href="' . get_edit_post_link( $post->ID, true ) . '" title="' . esc_attr__( 'Edit this item' ) . '">' . __( 'Edit' ) . '</a>';
+					$actions['edit'] = '<a href="' . get_edit_post_link( $post->ID ) . '" title="' . esc_attr__( 'Edit this item' ) . '">' . __( 'Edit' ) . '</a>';
 					$actions['inline hide-if-no-js'] = '<a href="#" class="editinline" title="' . esc_attr__( 'Edit this item inline' ) . '">' . __( 'Quick&nbsp;Edit' ) . '</a>';
 				}
 				if ( current_user_can( 'delete_post', $post->ID ) ) {
@@ -947,10 +944,23 @@ class WP_Posts_List_Table extends WP_List_Table {
 		$hierarchical_taxonomies = array();
 		$flat_taxonomies = array();
 		foreach ( $taxonomy_names as $taxonomy_name ) {
+
 			$taxonomy = get_taxonomy( $taxonomy_name );
 
-			if ( !$taxonomy->show_ui )
+			$show_in_quick_edit = $taxonomy->show_in_quick_edit;
+
+			/**
+			 * Filters whether the current taxonomy should be shown in the Quick Edit panel.
+			 *
+			 * @since 4.2.0
+			 *
+			 * @param bool   $show_in_quick_edit Whether to show the current taxonomy in Quick Edit.
+			 * @param string $taxonomy_name      Taxonomy name.
+			 * @param string $post_type          Post type of current Quick Edit post.
+			 */
+			if ( ! apply_filters( 'quick_edit_show_taxonomy', $show_in_quick_edit, $taxonomy_name, $screen->post_type ) ) {
 				continue;
+			}
 
 			if ( $taxonomy->hierarchical )
 				$hierarchical_taxonomies[] = $taxonomy;
@@ -964,7 +974,7 @@ class WP_Posts_List_Table extends WP_List_Table {
 
 	?>
 
-	<form method="get" action=""><table style="display: none"><tbody id="inlineedit">
+	<form method="get"><table style="display: none"><tbody id="inlineedit">
 		<?php
 		$hclass = count( $hierarchical_taxonomies ) ? 'post' : 'page';
 		$bulk = 0;

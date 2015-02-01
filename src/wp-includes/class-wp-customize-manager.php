@@ -718,11 +718,11 @@ final class WP_Customize_Manager {
 	 *                                        constructor.
 	 */
 	public function add_setting( $id, $args = array() ) {
-		if ( is_a( $id, 'WP_Customize_Setting' ) )
+		if ( $id instanceof WP_Customize_Setting ) {
 			$setting = $id;
-		else
+		} else {
 			$setting = new WP_Customize_Setting( $this, $id, $args );
-
+		}
 		$this->settings[ $setting->id ] = $setting;
 	}
 
@@ -816,10 +816,9 @@ final class WP_Customize_Manager {
 	 * @param array                     $args Optional. Panel arguments. Default empty array.
 	 */
 	public function add_panel( $id, $args = array() ) {
-		if ( is_a( $id, 'WP_Customize_Panel' ) ) {
+		if ( $id instanceof WP_Customize_Panel ) {
 			$panel = $id;
-		}
-		else {
+		} else {
 			$panel = new WP_Customize_Panel( $this, $id, $args );
 		}
 
@@ -862,11 +861,11 @@ final class WP_Customize_Manager {
 	 * @param array                       $args Section arguments.
 	 */
 	public function add_section( $id, $args = array() ) {
-		if ( is_a( $id, 'WP_Customize_Section' ) )
+		if ( $id instanceof WP_Customize_Section ) {
 			$section = $id;
-		else
+		} else {
 			$section = new WP_Customize_Section( $this, $id, $args );
-
+		}
 		$this->sections[ $section->id ] = $section;
 	}
 
@@ -904,11 +903,11 @@ final class WP_Customize_Manager {
 	 *                                          constructor.
 	 */
 	public function add_control( $id, $args = array() ) {
-		if ( is_a( $id, 'WP_Customize_Control' ) )
+		if ( $id instanceof WP_Customize_Control ) {
 			$control = $id;
-		else
+		} else {
 			$control = new WP_Customize_Control( $this, $id, $args );
-
+		}
 		$this->controls[ $control->id ] = $control;
 	}
 
@@ -969,8 +968,8 @@ final class WP_Customize_Manager {
 	 *
 	 * @since 3.4.0
 	 *
-	 * @param {WP_Customize_Panel|WP_Customize_Section|WP_Customize_Control} $a Object A.
-	 * @param {WP_Customize_Panel|WP_Customize_Section|WP_Customize_Control} $b Object B.
+	 * @param WP_Customize_Panel|WP_Customize_Section|WP_Customize_Control $a Object A.
+	 * @param WP_Customize_Panel|WP_Customize_Section|WP_Customize_Control $b Object B.
 	 * @return int
 	 */
 	protected function _cmp_priority( $a, $b ) {
@@ -1279,53 +1278,56 @@ final class WP_Customize_Manager {
 		/* Static Front Page */
 		// #WP19627
 
-		$this->add_section( 'static_front_page', array(
-			'title'          => __( 'Static Front Page' ),
-		//	'theme_supports' => 'static-front-page',
-			'priority'       => 120,
-			'description'    => __( 'Your theme supports a static front page.' ),
-		) );
+		// Replicate behavior from options-reading.php and hide front page options if there are no pages
+		if ( get_pages() ) {
+			$this->add_section( 'static_front_page', array(
+				'title'          => __( 'Static Front Page' ),
+			//	'theme_supports' => 'static-front-page',
+				'priority'       => 120,
+				'description'    => __( 'Your theme supports a static front page.' ),
+			) );
 
-		$this->add_setting( 'show_on_front', array(
-			'default'        => get_option( 'show_on_front' ),
-			'capability'     => 'manage_options',
-			'type'           => 'option',
-		//	'theme_supports' => 'static-front-page',
-		) );
+			$this->add_setting( 'show_on_front', array(
+				'default'        => get_option( 'show_on_front' ),
+				'capability'     => 'manage_options',
+				'type'           => 'option',
+			//	'theme_supports' => 'static-front-page',
+			) );
 
-		$this->add_control( 'show_on_front', array(
-			'label'   => __( 'Front page displays' ),
-			'section' => 'static_front_page',
-			'type'    => 'radio',
-			'choices' => array(
-				'posts' => __( 'Your latest posts' ),
-				'page'  => __( 'A static page' ),
-			),
-		) );
+			$this->add_control( 'show_on_front', array(
+				'label'   => __( 'Front page displays' ),
+				'section' => 'static_front_page',
+				'type'    => 'radio',
+				'choices' => array(
+					'posts' => __( 'Your latest posts' ),
+					'page'  => __( 'A static page' ),
+				),
+			) );
 
-		$this->add_setting( 'page_on_front', array(
-			'type'       => 'option',
-			'capability' => 'manage_options',
-		//	'theme_supports' => 'static-front-page',
-		) );
+			$this->add_setting( 'page_on_front', array(
+				'type'       => 'option',
+				'capability' => 'manage_options',
+			//	'theme_supports' => 'static-front-page',
+			) );
 
-		$this->add_control( 'page_on_front', array(
-			'label'      => __( 'Front page' ),
-			'section'    => 'static_front_page',
-			'type'       => 'dropdown-pages',
-		) );
+			$this->add_control( 'page_on_front', array(
+				'label'      => __( 'Front page' ),
+				'section'    => 'static_front_page',
+				'type'       => 'dropdown-pages',
+			) );
 
-		$this->add_setting( 'page_for_posts', array(
-			'type'           => 'option',
-			'capability'     => 'manage_options',
-		//	'theme_supports' => 'static-front-page',
-		) );
+			$this->add_setting( 'page_for_posts', array(
+				'type'           => 'option',
+				'capability'     => 'manage_options',
+			//	'theme_supports' => 'static-front-page',
+			) );
 
-		$this->add_control( 'page_for_posts', array(
-			'label'      => __( 'Posts page' ),
-			'section'    => 'static_front_page',
-			'type'       => 'dropdown-pages',
-		) );
+			$this->add_control( 'page_for_posts', array(
+				'label'      => __( 'Posts page' ),
+				'section'    => 'static_front_page',
+				'type'       => 'dropdown-pages',
+			) );
+		}
 	}
 
 	/**

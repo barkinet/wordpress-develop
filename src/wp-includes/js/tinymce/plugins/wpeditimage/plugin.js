@@ -176,7 +176,7 @@ tinymce.PluginManager.add( 'wpeditimage', function( editor ) {
 
 		windowPos = window.pageYOffset || document.documentElement.scrollTop;
 		adminbar = tinymce.$( '#wpadminbar' )[0];
-		mceToolbar = tinymce.$( '.mce-tinymce .mce-toolbar-grp' )[0];
+		mceToolbar = tinymce.$( '.mce-toolbar-grp', editor.getContainer() )[0];
 		boundary = imageNode.getBoundingClientRect();
 		boundaryMiddle = ( boundary.left + boundary.right ) / 2;
 		boundaryVerticalMiddle = ( boundary.top + boundary.bottom ) / 2;
@@ -185,7 +185,7 @@ tinymce.PluginManager.add( 'wpeditimage', function( editor ) {
 		windowWidth = window.innerWidth;
 		toolbarWidth = toolbarNode.offsetWidth;
 		toolbarHalf = toolbarWidth / 2;
-		iframe = editor.getContentAreaContainer().firstChild;
+		iframe = document.getElementById( editor.id + '_ifr' );
 		iframePos = DOM.getPos( iframe );
 		iframeWidth = iframe.offsetWidth;
 		iframeHeigth = iframe.offsetHeight;
