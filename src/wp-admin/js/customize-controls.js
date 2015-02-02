@@ -2153,6 +2153,11 @@
 			api.previewer.previewUrl( api.settings.url.home );
 		}
 
+		// Trigger 'unload' event when user navigate around during preview
+		api.previewer.previewUrl.bind(function () {
+			api.previewer.send( 'unload' );
+		});
+
 		// Save and activated states
 		(function() {
 			var state = new api.Values(),

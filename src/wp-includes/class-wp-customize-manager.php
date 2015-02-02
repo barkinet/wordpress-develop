@@ -432,6 +432,7 @@ final class WP_Customize_Manager {
 		add_action( 'wp', array( $this, 'customize_preview_override_404_status' ) );
 		add_action( 'wp_head', array( $this, 'customize_preview_base' ) );
 		add_action( 'wp_head', array( $this, 'customize_preview_html5' ) );
+		add_action( 'wp_head', array( $this, 'customize_preview_loading_style' ) );
 		add_action( 'wp_footer', array( $this, 'customize_preview_settings' ), 20 );
 		add_action( 'shutdown', array( $this, 'customize_preview_signature' ), 1000 );
 		add_filter( 'wp_die_handler', array( $this, 'remove_preview_signature' ) );
@@ -489,6 +490,18 @@ final class WP_Customize_Manager {
 			}
 		</script>
 		<![endif]--><?php
+	}
+
+	public function customize_preview_loading_style() {
+		?><style>
+			body.customizer-navigating-away {
+				opacity: 0.25;
+				cursor: progress !important;
+			}
+			body.customizer-navigating-away * {
+				pointer-events: none !important;
+			}
+		</style><?php
 	}
 
 	/**
