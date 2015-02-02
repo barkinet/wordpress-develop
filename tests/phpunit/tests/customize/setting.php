@@ -230,10 +230,13 @@ class Tests_WP_Customize_Setting extends WP_UnitTestCase {
 	}
 
 	/**
-	 * @var array storage for custom types that
+	 * @var array storage for saved custom type data that are tested in self::test_preview_custom_type()
 	 */
 	protected $custom_type_data_saved;
 
+	/**
+	 * @var array storage for previewed custom type data that are tested in self::test_preview_custom_type()
+	 */
 	protected $custom_type_data_previewed;
 
 	function custom_type_getter( $name, $default = null ) {
