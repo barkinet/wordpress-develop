@@ -110,9 +110,9 @@ final class WP_Customize_Manager {
 	/**
 	 * Return true if it's an AJAX request.
 	 *
-	 * @since 3.4.0
+	 * @since 4.2.0
 	 *
-	 * @param string|null $action whether the supplied Ajax action is being run (since 4.2.0).
+	 * @param string|null $action whether the supplied Ajax action is being run.
 	 *
 	 * @return bool
 	 */
