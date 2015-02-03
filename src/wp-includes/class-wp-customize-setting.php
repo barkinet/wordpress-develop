@@ -100,7 +100,6 @@ class WP_Customize_Setting {
 	 * @since 3.4.0
 	 */
 	public function preview() {
-
 		if ( ! isset( $this->_original_value ) ) {
 			$this->_original_value = $this->value();
 		}
@@ -162,8 +161,8 @@ class WP_Customize_Setting {
 		} else {
 			$value = $post_value;
 		}
-		$replaced = $this->multidimensional_replace( $original, $this->id_data['keys'], $value );
-		return $replaced;
+
+		return $this->multidimensional_replace( $original, $this->id_data['keys'], $value );
 	}
 
 	/**

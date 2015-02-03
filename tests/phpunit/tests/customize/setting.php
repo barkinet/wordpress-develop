@@ -20,7 +20,7 @@ class Tests_WP_Customize_Setting extends WP_UnitTestCase {
 	function setUp() {
 		parent::setUp();
 		require_once( ABSPATH . WPINC . '/class-wp-customize-manager.php' );
-		$GLOBALS['wp_customize'] = new WP_Customize_Manager(); // wpcs: override ok
+		$GLOBALS['wp_customize'] = new WP_Customize_Manager();
 		$this->manager = $GLOBALS['wp_customize'];
 		$this->undefined = new stdClass();
 	}
@@ -31,20 +31,22 @@ class Tests_WP_Customize_Setting extends WP_UnitTestCase {
 		unset( $GLOBALS['wp_customize'] );
 	}
 
-	function test_construct() {
-		$foo = new WP_Customize_Setting( $this->manager, 'foo' );
-		$this->assertEquals( $this->manager, $foo->manager );
-		$this->assertEquals( 'foo', $foo->id );
-		$this->assertEquals( 'theme_mod', $foo->type );
-		$this->assertEquals( 'edit_theme_options', $foo->capability );
-		$this->assertEquals( '', $foo->theme_supports );
-		$this->assertEquals( '', $foo->default );
-		$this->assertEquals( 'refresh', $foo->transport );
-		$this->assertEquals( '', $foo->sanitize_callback );
-		$this->assertEquals( '', $foo->sanitize_js_callback );
-		$this->assertFalse( has_filter( "customize_sanitize_{$foo->id}" ) );
-		$this->assertFalse( has_filter( "customize_sanitize_js_{$foo->id}" ) );
+	function test_constructor_without_args() {
+		$setting = new WP_Customize_Setting( $this->manager, 'foo' );
+		$this->assertEquals( $this->manager, $setting->manager );
+		$this->assertEquals( 'foo', $setting->id );
+		$this->assertEquals( 'theme_mod', $setting->type );
+		$this->assertEquals( 'edit_theme_options', $setting->capability );
+		$this->assertEquals( '', $setting->theme_supports );
+		$this->assertEquals( '', $setting->default );
+		$this->assertEquals( 'refresh', $setting->transport );
+		$this->assertEquals( '', $setting->sanitize_callback );
+		$this->assertEquals( '', $setting->sanitize_js_callback );
+		$this->assertFalse( has_filter( "customize_sanitize_{$setting->id}" ) );
+		$this->assertFalse( has_filter( "customize_sanitize_js_{$setting->id}" ) );
+	}
 
+	function test_constructor_with_args() {
 		$args = array(
 			'type' => 'option',
 			'capability' => 'edit_posts',
@@ -54,13 +56,13 @@ class Tests_WP_Customize_Setting extends WP_UnitTestCase {
 			'sanitize_callback' => create_function( '$value', 'return $value . ":sanitize_callback";' ),
 			'sanitize_js_callback' => create_function( '$value', 'return $value . ":sanitize_js_callback";' ),
 		);
-		$bar = new WP_Customize_Setting( $this->manager, 'bar', $args );
-		$this->assertEquals( 'bar', $bar->id );
+		$setting = new WP_Customize_Setting( $this->manager, 'bar', $args );
+		$this->assertEquals( 'bar', $setting->id );
 		foreach ( $args as $key => $value ) {
-			$this->assertEquals( $value, $bar->$key );
+			$this->assertEquals( $value, $setting->$key );
 		}
-		$this->assertEquals( 10, has_filter( "customize_sanitize_{$bar->id}", $args['sanitize_callback'] ) );
-		$this->assertEquals( 10, has_filter( "customize_sanitize_js_{$bar->id}" ), $args['sanitize_js_callback'] );
+		$this->assertEquals( 10, has_filter( "customize_sanitize_{$setting->id}", $args['sanitize_callback'] ) );
+		$this->assertEquals( 10, has_filter( "customize_sanitize_js_{$setting->id}" ), $args['sanitize_js_callback'] );
 	}
 
 	public $post_data_overrides = array(
@@ -86,11 +88,9 @@ class Tests_WP_Customize_Setting extends WP_UnitTestCase {
 	);
 
 	/**
-	 * Run assertions on non-multidimensional standard settings
+	 * Run assertions on non-multidimensional standard settings.
 	 */
 	function test_preview_standard_types_non_multidimensional() {
-
-		// @todo this is hacky. The manager should provide a mechanism to override the post_values
 		$_POST['customized'] = wp_slash( wp_json_encode( $this->post_data_overrides ) );
 
 		// Try non-multidimensional settings
@@ -153,10 +153,9 @@ class Tests_WP_Customize_Setting extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Run assertions on multidimensional standard settings
+	 * Run assertions on multidimensional standard settings.
 	 */
 	function test_preview_standard_types_multidimensional() {
-		// @todo this is hacky. The manager should provide a mechanism to override the post_values
 		$_POST['customized'] = wp_slash( wp_json_encode( $this->post_data_overrides ) );
 
 		foreach ( $this->standard_type_configs as $type => $type_options ) {
@@ -260,7 +259,7 @@ class Tests_WP_Customize_Setting extends WP_UnitTestCase {
 	}
 
 	/**
-	 * @var WP_Customize_Setting $setting
+	 * @param WP_Customize_Setting $setting
 	 */
 	function custom_type_preview( $setting ) {
 		$previewed_value = $setting->post_value( $this->undefined );
@@ -280,14 +279,13 @@ class Tests_WP_Customize_Setting extends WP_UnitTestCase {
 		$this->custom_type_data_saved = array();
 		$this->custom_type_data_previewed = array();
 
-		add_action( "customize_preview_{$type}", array( $this, custom_type_preview ) );
+		add_action( "customize_preview_{$type}", array( $this, 'custom_type_preview' ) );
 
 		// Custom type not existing and no post value override
 		$name = "unset_{$type}_without_post_value";
 		$default = "default_value_{$name}";
 		$setting = new WP_Customize_Setting( $this->manager, $name, compact( 'type', 'default' ) );
 		// Note: #29316 will allow us to have one filter for all settings of a given type, which is what we need
-
 		add_filter( "customize_value_{$name}", array( $this, 'custom_type_value_filter' ) );
 		$this->assertEquals( $this->undefined, $this->custom_type_getter( $name, $this->undefined ) );
 		$this->assertEquals( $default, $setting->value() );
@@ -362,22 +360,5 @@ class Tests_WP_Customize_Setting extends WP_UnitTestCase {
 		$this->assertEquals( $default, get_option( $name, $this->undefined ), sprintf( 'Expected get_option(%s) to return setting default: %s.', $name, $default ) );
 		$this->assertEquals( $default, $setting->value() );
 	}
-
-	// @todo function test_save() {
-	// @todo test do_action( 'customize_save_' . $this->id_data[ 'base' ], $this );
-	// @todo test_post_value()
-	// @todo test_sanitize( $value )
-	// @todo apply_filters( "customize_sanitize_{$this->id}", $value, $this );
-	// @todo function update( $value )
-	// @todo test_value()
-	// @todo test customize_value_{$name} filter
-	// @todo test_js_value()
-	// @todo test apply_filters( "customize_sanitize_js_{$this->id}", $this->value(), $this );
-	// @todo test_check_capabilities() {
-
-	// @todo final protected function multidimensional( &$root, $keys, $create = false )
-	// @todo final protected function multidimensional_replace( $root, $keys, $value )
-	// @todo final protected function multidimensional_get( $root, $keys, $default = null ) {
-	// @todo final protected function multidimensional_isset( $root, $keys )
 }
 
