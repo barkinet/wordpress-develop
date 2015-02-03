@@ -772,7 +772,7 @@ final class WP_Customize_Manager {
 			 * @since 4.2.0
 			 *
 			 * @param false|array $setting_args  The arguments to the WP_Customize_Setting constructor.
-			 * @param string $setting_id  ID for dynamic setting, usually coming from $_POST['customized'].
+			 * @param string $setting_id         ID for dynamic setting, usually coming from $_POST['customized'].
 			 */
 			$setting_args = apply_filters( 'customize_dynamic_setting_args', $setting_args, $setting_id );
 			if ( false === $setting_args ) {
@@ -785,8 +785,8 @@ final class WP_Customize_Manager {
 			 * @since 4.2.0
 			 *
 			 * @param string $setting_class  WP_Customize_Setting or a subclass.
-			 * @param string $setting_id  ID for dynamic setting, usually coming from $_POST['customized'].
-			 * @param string $setting_args  WP_Customize_Setting or a subclass.
+			 * @param string $setting_id     ID for dynamic setting, usually coming from $_POST['customized'].
+			 * @param string $setting_args   WP_Customize_Setting or a subclass.
 			 */
 			$setting_class = apply_filters( 'customize_dynamic_setting_class', $setting_class, $setting_id, $setting_args );
 
