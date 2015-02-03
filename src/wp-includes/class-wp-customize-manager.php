@@ -747,6 +747,8 @@ final class WP_Customize_Manager {
 	 * loaded, the dynamically-created settings then will get created and previewed
 	 * even though they are not directly created statically with code.
 	 *
+	 * @since 4.2.0
+	 *
 	 * @param string[] $setting_ids  The setting IDs to add.
 	 * @return WP_Customize_Setting[]  The settings added.
 	 */
