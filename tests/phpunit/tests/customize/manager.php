@@ -51,7 +51,7 @@ class Tests_WP_Customize_Manager extends WP_UnitTestCase {
 	/**
 	 * Test the WP_Customize_Manager::post_value() method
 	 *
-	 * @ticket 30936
+	 * @ticket 30988
 	 */
 	function test_post_value() {
 		$posted_settings = array(
