@@ -182,9 +182,10 @@ class WP_Customize_Transaction {
 	 * @since 4.2.0
 	 *
 	 * @param WP_Customize_Setting|string $setting
+	 * @param mixed $default  Return value if the transaction lacks a value for the given setting.
 	 * @return mixed
 	 */
-	public function get( $setting ) {
+	public function get( $setting, $default = null ) {
 		if ( is_string( $setting ) ) {
 			$setting_obj = $this->manager->get_setting( $setting );
 			if ( $setting_obj ) {
@@ -204,7 +205,8 @@ class WP_Customize_Transaction {
 		 */
 
 		if ( ! isset( $this->data[ $setting_id ] ) ) {
-			return null;
+			// @todo Should this instead return $setting_obj->default? Or only if is_null( $default )?
+			return $default;
 		}
 
 		$value = $this->data[ $setting_id ];

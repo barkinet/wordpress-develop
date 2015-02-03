@@ -137,12 +137,18 @@ class WP_Customize_Setting {
 		}
 	}
 
+	protected $_original_value;
+
 	/**
 	 * Handle previewing the setting.
 	 *
 	 * @since 3.4.0
 	 */
 	public function preview() {
+		if ( ! isset( $this->_original_value ) ) {
+			$this->_original_value = $this->value();
+		}
+
 		switch ( $this->type ) {
 			case 'theme_mod' :
 				add_filter( 'theme_mod_' . $this->id_data['base'], array( $this, '_preview_filter' ) );
@@ -193,7 +199,15 @@ class WP_Customize_Setting {
 	 * @return mixed New or old value.
 	 */
 	public function _preview_filter( $original ) {
-		return $this->multidimensional_replace( $original, $this->id_data['keys'], $this->transaction_value() );
+		$undefined = new stdClass(); // symbol hack
+		$transaction_value = $this->transaction_value( $undefined );
+		if ( $undefined === $transaction_value ) {
+			$value = $this->_original_value;
+		} else {
+			$value = $transaction_value;
+		}
+
+		return $this->multidimensional_replace( $original, $this->id_data['keys'], $value );
 	}
 
 	/**
@@ -492,8 +506,14 @@ class WP_Customize_Setting {
 			$node = &$node[ $key ];
 		}
 
-		if ( $create && ! isset( $node[ $last ] ) ) {
-			$node[ $last ] = array();
+		if ( $create ) {
+			if ( ! is_array( $node ) ) {
+				// account for an array overriding a string or object value
+				$node = array();
+			}
+			if ( ! isset( $node[ $last ] ) ) {
+				$node[ $last ] = array();
+			}
 		}
 
 		if ( ! isset( $node[ $last ] ) ) {

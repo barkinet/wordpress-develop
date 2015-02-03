@@ -101,16 +101,17 @@ final class WP_Customize_Manager {
 	 * Constructor.
 	 *
 	 * @since 3.4.0
+	 * @since 4.2.0  Added $transaction_uuid param.
 	 *
 	 * @param string $transaction_uuid
 	 */
 	public function __construct( $transaction_uuid = null ) {
-		require( ABSPATH . WPINC . '/class-wp-customize-transaction.php' );
-		require( ABSPATH . WPINC . '/class-wp-customize-setting.php' );
-		require( ABSPATH . WPINC . '/class-wp-customize-panel.php' );
-		require( ABSPATH . WPINC . '/class-wp-customize-section.php' );
-		require( ABSPATH . WPINC . '/class-wp-customize-control.php' );
-		require( ABSPATH . WPINC . '/class-wp-customize-widgets.php' );
+		require_once( ABSPATH . WPINC . '/class-wp-customize-transaction.php' );
+		require_once( ABSPATH . WPINC . '/class-wp-customize-setting.php' );
+		require_once( ABSPATH . WPINC . '/class-wp-customize-panel.php' );
+		require_once( ABSPATH . WPINC . '/class-wp-customize-section.php' );
+		require_once( ABSPATH . WPINC . '/class-wp-customize-control.php' );
+		require_once( ABSPATH . WPINC . '/class-wp-customize-widgets.php' );
 
 		if ( isset( $_REQUEST['customize_messenger_channel'] ) ) {
 			// @todo Is this needed anymore?
@@ -613,18 +614,35 @@ final class WP_Customize_Manager {
 	}
 
 	/**
-	 * Decode the $_REQUEST['customized'] values for a specific Customize Setting.
+	 * Parse the incoming $_POST['customized'] JSON data and store the unsanitized
+	 * settings for subsequent post_value() lookups.
+	 *
+	 * @since 4.1.1
+	 *
+	 * @deprecated
+	 *
+	 * @return array
+	 */
+	public function unsanitized_post_values() {
+		_deprecated_function( __METHOD__, '0.4.2', 'WP_Customize_Manager::transaction::data()' );
+		return $this->transaction->data();
+	}
+
+	/**
+	 * Return the sanitized value for a given setting from the request's POST data.
 	 *
 	 * @since 3.4.0
+	 * @since 4.1.1  Added $default argument.
 	 *
 	 * @deprecated
 	 *
 	 * @param WP_Customize_Setting $setting A WP_Customize_Setting derived object
-	 * @return string|null $post_value Sanitized value, or null if not supplied
+	 * @param mixed $default value returned $setting has no post value (added in 4.2.0).
+	 * @return string|mixed $post_value Sanitized value or the $default provided
 	 */
-	public function post_value( $setting ) {
+	public function post_value( $setting, $default = null ) {
 		_deprecated_function( __METHOD__, '0.4.2', 'WP_Customize_Manager::transaction::get()' );
-		return $this->transaction->get( $setting );
+		return $this->transaction->get( $setting, $default );
 	}
 
 	/**
