@@ -2963,6 +2963,7 @@ class WP_Query {
 
 		$user_id = get_current_user_id();
 
+		$q_status = array();
 		if ( ! empty( $q['post_status'] ) ) {
 			$statuswheres = array();
 			$q_status = $q['post_status'];
@@ -3420,10 +3421,11 @@ class WP_Query {
 
 		if ( 'ids' == $q['fields'] ) {
 			$this->posts = $wpdb->get_col( $this->request );
+			$this->posts = array_map( 'intval', $this->posts );
 			$this->post_count = count( $this->posts );
 			$this->set_found_posts( $q, $limits );
 
-			return array_map( 'intval', $this->posts );
+			return $this->posts;
 		}
 
 		if ( 'id=>parent' == $q['fields'] ) {
@@ -3432,9 +3434,13 @@ class WP_Query {
 			$this->set_found_posts( $q, $limits );
 
 			$r = array();
-			foreach ( $this->posts as $post ) {
+			foreach ( $this->posts as $key => $post ) {
+				$this->posts[ $key ]->ID = (int) $post->ID;
+				$this->posts[ $key ]->post_parent = (int) $post->post_parent;
+
 				$r[ (int) $post->ID ] = (int) $post->post_parent;
 			}
+
 			return $r;
 		}
 
@@ -3527,7 +3533,10 @@ class WP_Query {
 			$status = get_post_status($this->posts[0]);
 			$post_status_obj = get_post_status_object($status);
 			//$type = get_post_type($this->posts[0]);
-			if ( !$post_status_obj->public ) {
+
+			// If the post_status was specifically requested, let it pass through.
+			if ( !$post_status_obj->public && ! in_array( $status, $q_status ) ) {
+
 				if ( ! is_user_logged_in() ) {
 					// User must be logged in to view unpublished posts.
 					$this->posts = array();
