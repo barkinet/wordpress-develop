@@ -380,7 +380,7 @@ final class WP_Customize_Manager {
 			show_admin_bar( false );
 		}
 
-		if ( ! current_user_can( 'customize' ) ) {
+		if ( ! current_user_can( 'customize' ) ) { // @todo Only do this if ! $anonymous_access_allowed
 			$this->wp_die( -1 );
 		}
 
@@ -409,6 +409,15 @@ final class WP_Customize_Manager {
 			}
 		}
 
+		/*
+		 * Now that Customizer previews are loaded into iframes via GET requests
+		 * and natural URLs with transaction UUIDs added, we need to ensure that
+		 * the responses are never cached by proxies. In practice, this will not
+		 * be needed if the user is logged-in anyway. But if $anonymous_access_allowed
+		 * then the auth cookies would not be sent and WordPress would not send
+		 * no-cache headers by default.
+		 */
+		nocache_headers();
 		$this->start_previewing_theme();
 	}
 
