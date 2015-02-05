@@ -1476,4 +1476,44 @@ final class WP_Customize_Widgets {
 		$this->_captured_options = array();
 		$this->_is_capturing_option_updates = false;
 	}
+
+	/**
+	 * @since 3.9.0
+	 * @since 4.2.0 Deprecated in favor of customize_dynamic_setting_args filter.
+	 *
+	 * @deprecated
+	 */
+	public function setup_widget_addition_previews() {
+		_deprecated_function( __METHOD__, '4.2.0' );
+	}
+
+	/**
+	 * @since 3.9.0
+	 * @since 4.2.0 Deprecated in favor of customize_dynamic_setting_args filter.
+	 *
+	 * @deprecated
+	 */
+	public function prepreview_added_sidebars_widgets() {
+		_deprecated_function( __METHOD__, '4.2.0' );
+	}
+
+	/**
+	 * @since 3.9.0
+	 * @since 4.2.0 Deprecated in favor of customize_dynamic_setting_args filter.
+	 *
+	 * @deprecated
+	 */
+	public function prepreview_added_widget_instance() {
+		_deprecated_function( __METHOD__, '4.2.0' );
+	}
+
+	/**
+	 * @since 3.9.0
+	 * @since 4.2.0 Deprecated in favor of customize_dynamic_setting_args filter.
+	 *
+	 * @deprecated
+	 */
+	public function remove_prepreview_filters() {
+		_deprecated_function( __METHOD__, '4.2.0' );
+	}
 }
