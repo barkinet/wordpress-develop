@@ -26,7 +26,7 @@ class Tests_WP_Customize_Widgets extends WP_UnitTestCase {
 		$this->assertArrayHasKey( 2, get_option( 'widget_search' ) );
 		$widget_categories = get_option( 'widget_categories' );
 		$this->assertArrayHasKey( 2, $widget_categories );
-		$this->assertEquals( '', $widget_categories['title'] );
+		$this->assertEquals( '', $widget_categories[2]['title'] );
 
 		remove_action( 'after_setup_theme', 'twentyfifteen_setup' ); // @todo We should not be including a theme anyway
 
@@ -45,6 +45,7 @@ class Tests_WP_Customize_Widgets extends WP_UnitTestCase {
 	}
 
 	function do_customize_boot_actions() {
+		$_SERVER['REQUEST_METHOD'] = 'POST';
 		do_action( 'setup_theme' );
 		$_REQUEST['nonce'] = wp_create_nonce( 'preview-customize_' . $this->manager->theme()->get_stylesheet() );
 		do_action( 'after_setup_theme' );
