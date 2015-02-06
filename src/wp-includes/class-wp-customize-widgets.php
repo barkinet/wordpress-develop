@@ -1479,9 +1479,8 @@ final class WP_Customize_Widgets {
 
 	/**
 	 * @since 3.9.0
-	 * @since 4.2.0 Deprecated in favor of customize_dynamic_setting_args filter.
 	 *
-	 * @deprecated
+	 * @deprecated 4.2.0 Deprecated in favor of customize_dynamic_setting_args filter.
 	 */
 	public function setup_widget_addition_previews() {
 		_deprecated_function( __METHOD__, '4.2.0' );
@@ -1489,9 +1488,8 @@ final class WP_Customize_Widgets {
 
 	/**
 	 * @since 3.9.0
-	 * @since 4.2.0 Deprecated in favor of customize_dynamic_setting_args filter.
 	 *
-	 * @deprecated
+	 * @deprecated 4.2.0 Deprecated in favor of customize_dynamic_setting_args filter.
 	 */
 	public function prepreview_added_sidebars_widgets() {
 		_deprecated_function( __METHOD__, '4.2.0' );
@@ -1499,9 +1497,8 @@ final class WP_Customize_Widgets {
 
 	/**
 	 * @since 3.9.0
-	 * @since 4.2.0 Deprecated in favor of customize_dynamic_setting_args filter.
 	 *
-	 * @deprecated
+	 * @deprecated 4.2.0 Deprecated in favor of customize_dynamic_setting_args filter.
 	 */
 	public function prepreview_added_widget_instance() {
 		_deprecated_function( __METHOD__, '4.2.0' );
@@ -1509,9 +1506,8 @@ final class WP_Customize_Widgets {
 
 	/**
 	 * @since 3.9.0
-	 * @since 4.2.0 Deprecated in favor of customize_dynamic_setting_args filter.
 	 *
-	 * @deprecated
+	 * @deprecated 4.2.0 Deprecated in favor of customize_dynamic_setting_args filter.
 	 */
 	public function remove_prepreview_filters() {
 		_deprecated_function( __METHOD__, '4.2.0' );
