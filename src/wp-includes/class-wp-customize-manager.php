@@ -744,8 +744,8 @@ final class WP_Customize_Manager {
 	 * Register any dynamically-created settings, such as those from $_POST['customized'] that have no corresponding setting created.
 	 *
 	 * This is a mechanism to "wake up" settings that have been dynamically created
-	 * on the frontend and have been added to a transaction. When the transaction is
-	 * loaded, the dynamically-created settings then will get created and previewed
+	 * on the frontend and have been sent to WordPress in $_POST['customized']. When WP
+	 * loads, the dynamically-created settings then will get created and previewed
 	 * even though they are not directly created statically with code.
 	 *
 	 * @since 4.2.0
