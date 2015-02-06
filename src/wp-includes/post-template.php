@@ -942,8 +942,26 @@ function the_meta() {
  * Retrieve or display list of pages as a dropdown (select list).
  *
  * @since 2.1.0
+ * @since 4.2.0 The `$value_field` argument was added.
  *
- * @param array|string $args Optional. Override default arguments.
+ * @param array|string $args {
+ *     Optional. Array or string of arguments to generate a pages drop-down element.
+ *
+ *     @type int          $depth                 Maximum depth. Default 0.
+ *     @type int          $child_of              Page ID to retrieve child pages of. Default 0.
+ *     @type int|string   $selected              Value of the option that should be selected. Default 0.
+ *     @type bool|int     $echo                  Whether to echo or return the generated markup. Accepts 0, 1,
+ *                                               or their bool equivalents. Default 1.
+ *     @type string       $name                  Value for the 'name' attribute of the select element.
+ *                                               Default 'page_id'.
+ *     @type string       $id                    Value for the 'id' attribute of the select element.
+ *                                               Defaults to the value of `$name`.
+ *     @type string       $show_option_none      Text to display for showing no pages. Default empty (does not display).
+ *     @type string       $show_option_no_change Text to display for "no change" option. Default empty (does not display).
+ *     @type string       $option_none_value     Value to use when no page is selected. Default empty.
+ *     @type string       $value_field           Post field used to populate the 'value' attribute of the option
+ *                                               elements. Accepts any valid post field. Default 'ID'.
+ * }
  * @return string HTML content, if not displaying.
  */
 function wp_dropdown_pages( $args = '' ) {
@@ -952,7 +970,8 @@ function wp_dropdown_pages( $args = '' ) {
 		'selected' => 0, 'echo' => 1,
 		'name' => 'page_id', 'id' => '',
 		'show_option_none' => '', 'show_option_no_change' => '',
-		'option_none_value' => ''
+		'option_none_value' => '',
+		'value_field' => 'ID',
 	);
 
 	$r = wp_parse_args( $args, $defaults );
@@ -1406,15 +1425,20 @@ class Walker_PageDropdown extends Walker {
 	 * @since 2.1.0
 	 *
 	 * @param string $output Passed by reference. Used to append additional content.
-	 * @param object $page Page data object.
-	 * @param int $depth Depth of page in reference to parent pages. Used for padding.
-	 * @param array $args Uses 'selected' argument for selected page to set selected HTML attribute for option element.
+	 * @param object $page   Page data object.
+	 * @param int    $depth  Depth of page in reference to parent pages. Used for padding.
+	 * @param array  $args   Uses 'selected' argument for selected page to set selected HTML attribute for option
+	 *              element. Uses 'value_field' argument to fill "value" attribute. See {@see wp_dropdown_pages()}.
 	 * @param int $id
 	 */
 	public function start_el( &$output, $page, $depth = 0, $args = array(), $id = 0 ) {
 		$pad = str_repeat('&nbsp;', $depth * 3);
 
-		$output .= "\t<option class=\"level-$depth\" value=\"$page->ID\"";
+		if ( ! isset( $args['value_field'] ) || ! isset( $page->{$args['value_field']} ) ) {
+			$args['value_field'] = 'ID';
+		}
+
+		$output .= "\t<option class=\"level-$depth\" value=\"" . esc_attr( $page->{$args['value_field']} ) . "\"";
 		if ( $page->ID == $args['selected'] )
 			$output .= ' selected="selected"';
 		$output .= '>';
