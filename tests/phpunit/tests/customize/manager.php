@@ -32,7 +32,7 @@ class Tests_WP_Customize_Manager extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Test WP_Customize_Manager::doing_ajax()
+	 * Test WP_Customize_Manager::doing_ajax().
 	 *
 	 * @group ajax
 	 */
@@ -50,7 +50,7 @@ class Tests_WP_Customize_Manager extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Test ! WP_Customize_Manager::doing_ajax()
+	 * Test ! WP_Customize_Manager::doing_ajax().
 	 */
 	function test_not_doing_ajax() {
 		if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
@@ -62,7 +62,7 @@ class Tests_WP_Customize_Manager extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Test WP_Customize_Manager::unsanitized_post_values()
+	 * Test WP_Customize_Manager::unsanitized_post_values().
 	 *
 	 * @ticket 30988
 	 */
@@ -79,7 +79,7 @@ class Tests_WP_Customize_Manager extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Test the WP_Customize_Manager::post_value() method
+	 * Test the WP_Customize_Manager::post_value() method.
 	 *
 	 * @ticket 30988
 	 */
@@ -147,7 +147,7 @@ class Tests_WP_Customize_Manager extends WP_UnitTestCase {
 	}
 
 	/**
-	 * In lieu of closures, callback for customize_register action added in test_register_dynamic_settings()
+	 * In lieu of closures, callback for customize_register action added in test_register_dynamic_settings().
 	 */
 	function action_customize_register_for_dynamic_settings() {
 		add_filter( 'customize_dynamic_setting_args', array( $this, 'filter_customize_dynamic_setting_args_for_test_dynamic_settings' ), 10, 2 );
@@ -155,7 +155,7 @@ class Tests_WP_Customize_Manager extends WP_UnitTestCase {
 	}
 
 	/**
-	 * In lieu of closures, callback for customize_dynamic_setting_args filter added for test_register_dynamic_settings()
+	 * In lieu of closures, callback for customize_dynamic_setting_args filter added for test_register_dynamic_settings().
 	 */
 	function filter_customize_dynamic_setting_args_for_test_dynamic_settings( $setting_args, $setting_id ) {
 		$this->assertEquals( false, $setting_args, 'Expected $setting_args to be false by default.' );
@@ -167,7 +167,7 @@ class Tests_WP_Customize_Manager extends WP_UnitTestCase {
 	}
 
 	/**
-	 * In lieu of closures, callback for customize_dynamic_setting_class filter added for test_register_dynamic_settings()
+	 * In lieu of closures, callback for customize_dynamic_setting_class filter added for test_register_dynamic_settings().
 	 */
 	function filter_customize_dynamic_setting_class_for_test_dynamic_settings( $setting_class, $setting_id, $setting_args ) {
 		$this->assertEquals( 'WP_Customize_Setting', $setting_class );
@@ -175,6 +175,4 @@ class Tests_WP_Customize_Manager extends WP_UnitTestCase {
 		$this->assertInternalType( 'array', $setting_args );
 		return $setting_class;
 	}
-
 }
-

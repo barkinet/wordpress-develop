@@ -763,8 +763,8 @@ final class WP_Customize_Manager {
 	 *
 	 * @since 4.2.0
 	 *
-	 * @param string[] $setting_ids  The setting IDs to add.
-	 * @return WP_Customize_Setting[]  The settings added.
+	 * @param string[] $setting_ids The setting IDs to add.
+	 * @return WP_Customize_Setting[] The settings added.
 	 */
 	public function add_dynamic_settings( $setting_ids ) {
 		$new_settings = array();
@@ -773,6 +773,7 @@ final class WP_Customize_Manager {
 			if ( $this->get_setting( $setting_id ) ) {
 				continue;
 			}
+
 			$setting_args = false;
 			$setting_class = 'WP_Customize_Setting';
 
@@ -786,7 +787,7 @@ final class WP_Customize_Manager {
 			 * @since 4.2.0
 			 *
 			 * @param false|array $setting_args  The arguments to the WP_Customize_Setting constructor.
-			 * @param string $setting_id         ID for dynamic setting, usually coming from $_POST['customized'].
+			 * @param string      $setting_id    ID for dynamic setting, usually coming from $_POST['customized'].
 			 */
 			$setting_args = apply_filters( 'customize_dynamic_setting_args', $setting_args, $setting_id );
 			if ( false === $setting_args ) {
@@ -820,8 +821,9 @@ final class WP_Customize_Manager {
 	 * @return WP_Customize_Setting
 	 */
 	public function get_setting( $id ) {
-		if ( isset( $this->settings[ $id ] ) )
+		if ( isset( $this->settings[ $id ] ) ) {
 			return $this->settings[ $id ];
+		}
 	}
 
 	/**

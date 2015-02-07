@@ -416,17 +416,13 @@ final class WP_Customize_Widgets {
 			}
 		}
 
-		/*
-		 * We have to register these settings later than customize_preview_init
-		 * so that other filters have had a chance to run.
-		 */
 		if ( ! $this->manager->doing_ajax( 'customize_save' ) ) {
 			foreach ( $new_setting_ids as $new_setting_id ) {
 				$this->manager->get_setting( $new_setting_id )->preview();
 			}
 		}
 
-		add_filter( 'sidebars_widgets',   array( $this, 'preview_sidebars_widgets' ), 1 );
+		add_filter( 'sidebars_widgets', array( $this, 'preview_sidebars_widgets' ), 1 );
 	}
 
 	/**
@@ -1377,11 +1373,14 @@ final class WP_Customize_Widgets {
 	 *
 	 * @since 4.2.0
 	 * @access protected
-	 * @return mixed
+	 *
+	 * @param string $option_name Option name.
+	 * @param mixed  $default     Optional. Default value to return if the option does not exist.
+	 * @return mixed Value set for the option.
 	 */
-	protected function get_captured_option( $name, $default = false ) {
-		if ( array_key_exists( $name, $this->_captured_options ) ) {
-			$value = $this->_captured_options[ $name ];
+	protected function get_captured_option( $option_name, $default = false ) {
+		if ( array_key_exists( $option_name, $this->_captured_options ) ) {
+			$value = $this->_captured_options[ $option_name ];
 		} else {
 			$value = $default;
 		}
@@ -1422,21 +1421,21 @@ final class WP_Customize_Widgets {
 	 * @since 3.9.0
 	 * @access public
 	 *
-	 * @param mixed $new_value
-	 * @param string $option_name
-	 * @param mixed $old_value
-	 * @return mixed
+	 * @param mixed  $new_value   The new option value.
+	 * @param string $option_name Name of the option.
+	 * @param mixed  $old_value   The old option value.
+	 * @return mixed Filtered option value.
 	 */
 	public function capture_filter_pre_update_option( $new_value, $option_name, $old_value ) {
 		if ( $this->is_option_capture_ignored( $option_name ) ) {
 			return;
 		}
 
-		if ( ! isset( $this->_captured_options[$option_name] ) ) {
+		if ( ! isset( $this->_captured_options[ $option_name ] ) ) {
 			add_filter( "pre_option_{$option_name}", array( $this, 'capture_filter_pre_get_option' ) );
 		}
 
-		$this->_captured_options[$option_name] = $new_value;
+		$this->_captured_options[ $option_name ] = $new_value;
 
 		return $old_value;
 	}
@@ -1447,14 +1446,14 @@ final class WP_Customize_Widgets {
 	 * @since 3.9.0
 	 * @access public
 	 *
-	 * @param mixed $value Option
-	 * @return mixed
+	 * @param mixed $value Value to return instead of the option value.
+	 * @return mixed Filtered option value.
 	 */
 	public function capture_filter_pre_get_option( $value ) {
 		$option_name = preg_replace( '/^pre_option_/', '', current_filter() );
 
-		if ( isset( $this->_captured_options[$option_name] ) ) {
-			$value = $this->_captured_options[$option_name];
+		if ( isset( $this->_captured_options[ $option_name ] ) ) {
+			$value = $this->_captured_options[ $option_name ];
 
 			/** This filter is documented in wp-includes/option.php */
 			$value = apply_filters( 'option_' . $option_name, $value );
@@ -1486,7 +1485,6 @@ final class WP_Customize_Widgets {
 
 	/**
 	 * @since 3.9.0
-	 *
 	 * @deprecated 4.2.0 Deprecated in favor of customize_dynamic_setting_args filter.
 	 */
 	public function setup_widget_addition_previews() {
@@ -1495,7 +1493,6 @@ final class WP_Customize_Widgets {
 
 	/**
 	 * @since 3.9.0
-	 *
 	 * @deprecated 4.2.0 Deprecated in favor of customize_dynamic_setting_args filter.
 	 */
 	public function prepreview_added_sidebars_widgets() {
@@ -1504,7 +1501,6 @@ final class WP_Customize_Widgets {
 
 	/**
 	 * @since 3.9.0
-	 *
 	 * @deprecated 4.2.0 Deprecated in favor of customize_dynamic_setting_args filter.
 	 */
 	public function prepreview_added_widget_instance() {
@@ -1513,7 +1509,6 @@ final class WP_Customize_Widgets {
 
 	/**
 	 * @since 3.9.0
-	 *
 	 * @deprecated 4.2.0 Deprecated in favor of customize_dynamic_setting_args filter.
 	 */
 	public function remove_prepreview_filters() {
