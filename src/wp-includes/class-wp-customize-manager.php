@@ -65,7 +65,7 @@ final class WP_Customize_Manager {
 	/**
 	 * Unsanitized values for Customize Settings parsed from $_POST['customized'].
 	 *
-	 * @var array|false
+	 * @var array
 	 */
 	private $_post_values;
 
@@ -425,8 +425,8 @@ final class WP_Customize_Manager {
 			if ( isset( $_POST['customized'] ) ) {
 				$this->_post_values = json_decode( wp_unslash( $_POST['customized'] ), true );
 			}
-			if ( empty( $this->_post_values ) ) { // if not isset or of JSON error
-				$this->_post_values = false;
+			if ( empty( $this->_post_values ) ) { // if not isset or if JSON error
+				$this->_post_values = array();
 			}
 		}
 		if ( empty( $this->_post_values ) ) {
@@ -453,6 +453,19 @@ final class WP_Customize_Manager {
 		} else {
 			return $default;
 		}
+	}
+
+	/**
+	 * Override a setting's (unsanitized) value as found in any incoming $_POST['customized']
+	 *
+	 * @since 4.2.0
+	 *
+	 * @param string $setting_id  The ID for the WP_Customize_Setting instance.
+	 * @param mixed $value
+	 */
+	public function set_post_value( $setting_id, $value ) {
+		$this->unsanitized_post_values();
+		$this->_post_values[ $setting_id ] = $value;
 	}
 
 	/**

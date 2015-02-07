@@ -1212,8 +1212,8 @@ final class WP_Customize_Widgets {
 
 		// Clean up any input vars that were manually added
 		foreach ( $added_input_vars as $key ) {
-			unset( $_POST[$key] );
-			unset( $_REQUEST[$key] );
+			unset( $_POST[ $key ] );
+			unset( $_REQUEST[ $key ] );
 		}
 
 		// Make sure the expected option was updated.
@@ -1230,23 +1230,30 @@ final class WP_Customize_Widgets {
 			}
 		}
 
-		// Obtain the widget control with the updated instance in place.
-		ob_start();
-
-		$form = $wp_registered_widget_controls[$widget_id];
-		if ( $form ) {
-			call_user_func_array( $form['callback'], $form['params'] );
-		}
-
-		$form = ob_get_clean();
-
 		// Obtain the widget instance.
 		$option = $this->get_captured_option( $option_name );
 		if ( null !== $parsed_id['number'] ) {
-			$instance = $option[$parsed_id['number']];
+			$instance = $option[ $parsed_id['number'] ];
 		} else {
 			$instance = $option;
 		}
+
+		/*
+		 * Override the incoming $_POST['customized'] for a newly-created widget's
+		 * setting with the new $instance so that the preview filter currently
+		 * in place from WP_Customize_Setting::preview() will use this value
+		 * instead of the default widget instance value (an empty array).
+		 */
+		$setting_id = $this->get_setting_id( $widget_id );
+		$this->manager->set_post_value( $setting_id, $instance );
+
+		// Obtain the widget control with the updated instance in place.
+		ob_start();
+		$form = $wp_registered_widget_controls[ $widget_id ];
+		if ( $form ) {
+			call_user_func_array( $form['callback'], $form['params'] );
+		}
+		$form = ob_get_clean();
 
 		$this->stop_capturing_option_updates();
 
