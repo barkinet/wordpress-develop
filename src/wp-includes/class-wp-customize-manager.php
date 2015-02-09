@@ -114,7 +114,6 @@ final class WP_Customize_Manager {
 	 * @since 4.2.0 Added $action param.
 	 *
 	 * @param string|null $action whether the supplied Ajax action is being run.
-	 *
 	 * @return bool
 	 */
 	public function doing_ajax( $action = null ) {
