@@ -70,18 +70,18 @@ function plugins_api($action, $args = null) {
 		if ( $ssl = wp_http_supports( array( 'ssl' ) ) )
 			$url = set_url_scheme( $url, 'https' );
 
-		$args = array(
+		$http_args = array(
 			'timeout' => 15,
 			'body' => array(
 				'action' => $action,
 				'request' => serialize( $args )
 			)
 		);
-		$request = wp_remote_post( $url, $args );
+		$request = wp_remote_post( $url, $http_args );
 
 		if ( $ssl && is_wp_error( $request ) ) {
 			trigger_error( __( 'An unexpected error occurred. Something may be wrong with WordPress.org or this server&#8217;s configuration. If you continue to have problems, please try the <a href="https://wordpress.org/support/">support forums</a>.' ) . ' ' . __( '(WordPress could not establish a secure connection to WordPress.org. Please contact your server administrator.)' ), headers_sent() || WP_DEBUG ? E_USER_WARNING : E_USER_NOTICE );
-			$request = wp_remote_post( $http_url, $args );
+			$request = wp_remote_post( $http_url, $http_args );
 		}
 
 		if ( is_wp_error($request) ) {
@@ -276,6 +276,7 @@ function install_plugin_install_status($api, $loop = false) {
 	// Default to a "new" plugin
 	$status = 'install';
 	$url = false;
+	$update_file = false;
 
 	/*
 	 * Check to see if this plugin is known to be installed,
@@ -304,6 +305,7 @@ function install_plugin_install_status($api, $loop = false) {
 			} else {
 				$key = array_keys( $installed_plugin );
 				$key = array_shift( $key ); //Use the first plugin regardless of the name, Could have issues for multiple-plugins in one directory if they share different version numbers
+				$update_file = $api->slug . '/' . $key;
 				if ( version_compare($api->version, $installed_plugin[ $key ]['Version'], '=') ){
 					$status = 'latest_installed';
 				} elseif ( version_compare($api->version, $installed_plugin[ $key ]['Version'], '<') ) {
@@ -327,7 +329,8 @@ function install_plugin_install_status($api, $loop = false) {
 	if ( isset($_GET['from']) )
 		$url .= '&amp;from=' . urlencode( wp_unslash( $_GET['from'] ) );
 
-	return compact('status', 'url', 'version');
+	$file = $update_file;
+	return compact( 'status', 'url', 'version', 'file' );
 }
 
 /**

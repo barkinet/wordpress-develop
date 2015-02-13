@@ -641,7 +641,7 @@ final class WP_Customize_Manager {
 	 * Return the sanitized value for a given setting from the request's POST data.
 	 *
 	 * @since 3.4.0
-	 * @since 4.1.1  Added $default argument.
+	 * @since 4.1.1 Introduced 'default' parameter.
 	 *
 	 * @deprecated
 	 *
