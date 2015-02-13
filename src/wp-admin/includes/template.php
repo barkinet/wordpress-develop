@@ -250,7 +250,7 @@ function wp_terms_checklist( $post_id = 0, $args = array() ) {
  * @since 2.5.0
  *
  * @param string $taxonomy Taxonomy to retrieve terms from.
- * @param int $default Unused.
+ * @param int $default Not used.
  * @param int $number Number of terms to retrieve. Defaults to 10.
  * @param bool $echo Optionally output the list as well. Defaults to true.
  * @return array List of popular term IDs.
@@ -411,7 +411,7 @@ function get_inline_data($post) {
  * @param string $mode
  * @param bool $table_row
  */
-function wp_comment_reply($position = '1', $checkbox = false, $mode = 'single', $table_row = true) {
+function wp_comment_reply( $position = 1, $checkbox = false, $mode = 'single', $table_row = true ) {
 	global $wp_list_table;
 	/**
 	 * Filter the in-line comment reply-to form output in the Comments
@@ -582,7 +582,7 @@ function _list_meta_row( $entry, &$count ) {
 	static $update_nonce = false;
 
 	if ( is_protected_meta( $entry['meta_key'], 'post' ) )
-		return;
+		return '';
 
 	if ( !$update_nonce )
 		$update_nonce = wp_create_nonce( 'add-meta' );
@@ -597,7 +597,7 @@ function _list_meta_row( $entry, &$count ) {
 		} else {
 			// This is a serialized array/object so we should NOT display it.
 			--$count;
-			return;
+			return '';
 		}
 	}
 
@@ -843,9 +843,9 @@ function parent_dropdown( $default = 0, $parent = 0, $level = 0 ) {
  *
  * @since 2.1.0
  *
- * @param string $selected slug for the role that should be already selected
+ * @param string $selected Slug for the role that should be already selected.
  */
-function wp_dropdown_roles( $selected = false ) {
+function wp_dropdown_roles( $selected = '' ) {
 	$p = '';
 	$r = '';
 
@@ -1527,12 +1527,12 @@ function _admin_search_query() {
  *
  * @since 2.7.0
  * @param string $title Title of the Iframe page.
- * @param bool $limit_styles Limit styles to colour-related styles only (unless others are enqueued).
+ * @param bool $deprecated Not used.
  *
  */
-function iframe_header( $title = '', $limit_styles = false ) {
+function iframe_header( $title = '', $deprecated = false ) {
 	show_admin_bar( false );
-	global $hook_suffix, $current_user, $admin_body_class, $wp_locale;
+	global $hook_suffix, $admin_body_class, $wp_locale;
 	$admin_body_class = preg_replace('/[^a-z0-9_-]+/i', '-', $hook_suffix);
 
 	$current_screen = get_current_screen();
@@ -1738,7 +1738,7 @@ function compression_test() {
 						h = x.getResponseHeader('Content-Encoding');
 						testCompression.check(r, h, test);
 					}
-				}
+				};
 
 				x.open('GET', ajaxurl + '?action=wp-compression-test&test='+test+'&'+(new Date()).getTime(), true);
 				x.send('');
@@ -1814,7 +1814,7 @@ function submit_button( $text = null, $type = 'primary', $name = 'submit', $wrap
  *                     Defaults to no other attributes. Other attributes can also be provided as a
  *                     string such as 'tabindex="1"', though the array format is typically cleaner.
  */
-function get_submit_button( $text = null, $type = 'primary large', $name = 'submit', $wrap = true, $other_attributes = null ) {
+function get_submit_button( $text = '', $type = 'primary large', $name = 'submit', $wrap = true, $other_attributes = '' ) {
 	if ( ! is_array( $type ) )
 		$type = explode( ' ', $type );
 
