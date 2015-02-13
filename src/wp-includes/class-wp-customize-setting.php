@@ -267,15 +267,7 @@ class WP_Customize_Setting {
 	 * @return mixed The default value on failure, otherwise the sanitized value.
 	 */
 	public final function transaction_value( $default = null ) {
-
-		// Call the manager for the transaction value
-		$value = $this->manager->transaction->get( $this );
-
-		if ( is_null( $value ) ) {
-			$value = $default;
-		}
-
-		return $value;
+		return $this->manager->transaction->get( $this, $default );
 	}
 
 	/**

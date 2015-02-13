@@ -152,9 +152,9 @@ final class WP_Customize_Manager {
 	 * Return true if it's an AJAX request, optionally specified.
 	 *
 	 * @since 3.4.0
+	 * @since 4.2.0 Added $action param.
 	 *
 	 * @param string|null $action whether the supplied Ajax action is being run.
-	 *
 	 * @return bool
 	 */
 	public function doing_ajax( $action = null ) {
@@ -163,15 +163,12 @@ final class WP_Customize_Manager {
 			return false;
 		}
 
-		if ( $action ) {
-			if ( ! isset( $_REQUEST['action'] ) ) {
-				return false;
-			} else if ( wp_unslash( $_REQUEST['action'] ) !== $action ) {
-				return false;
-			}
+		if ( ! $action ) {
+			return true;
+		} else {
+			// Note: we can't just use doing_action( "wp_ajax_{$action}" ) because we need to check before admin-ajax.php gets to that point
+			return isset( $_REQUEST['action'] ) && wp_unslash( $_REQUEST['action'] ) === $action;
 		}
-
-		return true;
 	}
 
 	/**
@@ -650,8 +647,23 @@ final class WP_Customize_Manager {
 	 * @return string|mixed $post_value Sanitized value or the $default provided
 	 */
 	public function post_value( $setting, $default = null ) {
-		_deprecated_function( __METHOD__, '0.4.2', 'WP_Customize_Manager::transaction::get()' );
+		_deprecated_function( __METHOD__, '0.4.2', 'WP_Customxize_Manager::transaction::get()' );
 		return $this->transaction->get( $setting, $default );
+	}
+
+	/**
+	 * Override a setting's (unsanitized) value as found in the current transaction.
+	 *
+	 * @since 4.2.0
+	 *
+	 * @deprecated
+	 *
+	 * @param string $setting_id  The ID for the WP_Customize_Setting instance.
+	 * @param mixed $value
+	 */
+	public function set_post_value( $setting_id, $value ) {
+		_deprecated_function( __METHOD__, '0.4.2', 'WP_Customize_Manager::transaction::set()' );
+		$this->transaction->set( $this->get_setting( $setting_id ), $value );
 	}
 
 	/**
@@ -1168,18 +1180,21 @@ final class WP_Customize_Manager {
 	 * loaded, the dynamically-created settings then will get created and previewed
 	 * even though they are not directly created statically with code.
 	 *
-	 * @param array $customized mapping of settings IDs to values
-	 * @return WP_Customize_Setting[]
+	 * @since 4.2.0
+	 *
+	 * @param string[] $setting_ids The setting IDs to add.
+	 * @return WP_Customize_Setting[] The settings added.
 	 */
-	public function add_dynamic_settings( $customized ) {
+	public function add_dynamic_settings( $setting_ids ) {
 		$new_settings = array();
-		foreach ( $customized as $setting_id => $value ) {
+		foreach ( $setting_ids as $setting_id ) {
 			// Skip settings already created
 			if ( $this->get_setting( $setting_id ) ) {
 				continue;
 			}
+
 			$setting_class = 'WP_Customize_Setting';
-			$args = false;
+			$setting_args = false;
 
 			/**
 			 * Allow non-statically created settings to be constructed with custom WP_Customize_Setting subclass.
@@ -1200,14 +1215,25 @@ final class WP_Customize_Manager {
 			 *
 			 * @since 4.2.0
 			 *
-			 * @param false|array $args
-			 * @param string $setting_id
+			 * @param false|array $setting_args  The arguments to the WP_Customize_Setting constructor.
+			 * @param string      $setting_id    ID for dynamic setting, usually coming from $_POST['customized'].
 			 */
-			$setting_args = apply_filters( 'customize_dynamic_setting_args', $args, $setting_id );
-
+			$setting_args = apply_filters( 'customize_dynamic_setting_args', $setting_args, $setting_id );
 			if ( false === $setting_args ) {
 				continue;
 			}
+
+			/**
+			 * Allow non-statically created settings to be constructed with custom WP_Customize_Setting subclass.
+			 *
+			 * @since 4.2.0
+			 *
+			 * @param string $setting_class  WP_Customize_Setting or a subclass.
+			 * @param string $setting_id     ID for dynamic setting, usually coming from $_POST['customized'].
+			 * @param string $setting_args   WP_Customize_Setting or a subclass.
+			 */
+			$setting_class = apply_filters( 'customize_dynamic_setting_class', $setting_class, $setting_id, $setting_args );
+
 			$setting = new $setting_class( $this, $setting_id, $setting_args );
 			$this->add_setting( $setting );
 			$new_settings[] = $setting;
@@ -1785,7 +1811,7 @@ final class WP_Customize_Manager {
 	 * @since 4.2.0
 	 */
 	public function register_dynamic_settings() {
-		$this->add_dynamic_settings( $this->transaction->data() );
+		$this->add_dynamic_settings( array_keys( $this->transaction->data() ) );
 	}
 
 	/**

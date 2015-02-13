@@ -1232,7 +1232,7 @@ class WP_Tax_Query {
 					 * matter because `sanitize_term_field()` ignores the $term_id param when the
 					 * context is 'db'.
 					 */
-					$term = "'" . sanitize_term_field( $query['field'], $term, 0, $query['taxonomy'], 'db' ) . "'";
+					$term = "'" . esc_sql( sanitize_term_field( $query['field'], $term, 0, $query['taxonomy'], 'db' ) ) . "'";
 				}
 
 				$terms = implode( ",", $query['terms'] );
@@ -1842,7 +1842,7 @@ function get_terms( $taxonomies, $args = '' ) {
 	if ( ! empty( $args['name'] ) ) {
 		if ( is_array( $args['name'] ) ) {
 			$name = array_map( 'sanitize_text_field', $args['name'] );
-			$where .= " AND t.name IN ('" . implode( "', '", $name ) . "')";
+			$where .= " AND t.name IN ('" . implode( "', '", array_map( 'esc_sql', $name ) ) . "')";
 		} else {
 			$name = sanitize_text_field( $args['name'] );
 			$where .= $wpdb->prepare( " AND t.name = %s", $name );
@@ -2013,28 +2013,27 @@ function get_terms( $taxonomies, $args = '' ) {
 			}
 		}
 	}
-	reset( $terms );
 
 	$_terms = array();
 	if ( 'id=>parent' == $_fields ) {
-		while ( $term = array_shift( $terms ) ) {
-			$_terms[$term->term_id] = $term->parent;
+		foreach ( $terms as $term ) {
+			$_terms[ $term->term_id ] = $term->parent;
 		}
 	} elseif ( 'ids' == $_fields ) {
-		while ( $term = array_shift( $terms ) ) {
+		foreach ( $terms as $term ) {
 			$_terms[] = $term->term_id;
 		}
 	} elseif ( 'names' == $_fields ) {
-		while ( $term = array_shift( $terms ) ) {
+		foreach ( $terms as $term ) {
 			$_terms[] = $term->name;
 		}
 	} elseif ( 'id=>name' == $_fields ) {
-		while ( $term = array_shift( $terms ) ) {
-			$_terms[$term->term_id] = $term->name;
+		foreach ( $terms as $term ) {
+			$_terms[ $term->term_id ] = $term->name;
 		}
 	} elseif ( 'id=>slug' == $_fields ) {
-		while ( $term = array_shift( $terms ) ) {
-			$_terms[$term->term_id] = $term->slug;
+		foreach ( $terms as $term ) {
+			$_terms[ $term->term_id ] = $term->slug;
 		}
 	}
 
