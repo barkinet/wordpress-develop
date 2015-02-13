@@ -1946,7 +1946,7 @@ function _wp_customize_include() {
 }
 
 /**
- * Handle publishing of wp_transaction posts.
+ * Handle publishing of customize_transact posts.
  *
  * This is located here specifically to account for publishing transactions with
  * future statuses. In this case we have to bootstrap the Customizer during Cron,

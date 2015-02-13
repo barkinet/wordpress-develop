@@ -139,7 +139,7 @@ function get_permalink( $id = 0, $leavename = false ) {
 		return get_page_link($post, $leavename, $sample);
 	elseif ( $post->post_type == 'attachment' )
 		return get_attachment_link( $post, $leavename );
-	elseif ( $post->post_type == 'wp_transaction' )
+	elseif ( 'customize_transact' === $post->post_type )
 		return home_url( sprintf( '?wp_customize=on&customize_transaction_uuid=%s', $post->post_name ) );
 	elseif ( in_array($post->post_type, get_post_types( array('_builtin' => false) ) ) )
 		return get_post_permalink($post, $leavename, $sample);
@@ -1190,7 +1190,7 @@ function get_edit_post_link( $id = 0, $context = 'display' ) {
 		$edit_post_link = sprintf( $edit_post_link, $post->ID );
 	}
 
-	if ( 'wp_transaction' === $post->post_type ) {
+	if ( 'customize_transact' === $post->post_type ) {
 		$edit_post_link = add_query_arg( array( 'customize_transaction_uuid' => $post->post_name ), $edit_post_link );
 	} else if ( 'revision' !== $post->post_type ) {
 		$edit_post_link = add_query_arg( array( 'action' => 'edit' ), $edit_post_link );

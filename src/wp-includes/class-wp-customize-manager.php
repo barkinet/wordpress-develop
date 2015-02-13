@@ -369,7 +369,7 @@ final class WP_Customize_Manager {
 		/*
 		 * Only unauthenticated users to access the Customize preview if there is
 		 * a valid transaction loaded, i.e. if customize_transaction_uuid was supplied
-		 * and it corresponds to a wp_transaction post in the database.
+		 * and it corresponds to a customize_transact post in the database.
 		 */
 		if ( ! is_admin() && ! is_user_logged_in() && ( ! $anonymous_access_allowed || ! $this->transaction->post() ) ) {
 			$this->wp_die( -1 );
@@ -1044,7 +1044,7 @@ final class WP_Customize_Manager {
 		}
 
 		$transaction_post = $this->transaction->post();
-		$transaction_post_type = get_post_type_object( 'wp_transaction' );
+		$transaction_post_type = get_post_type_object( WP_Customize_Transaction::POST_TYPE );
 		$authorized = ( $transaction_post ?
 			current_user_can( $transaction_post_type->cap->edit_post, $transaction_post->ID )
 			:
@@ -1106,7 +1106,7 @@ final class WP_Customize_Manager {
 		}
 
 		$transaction_post = $this->transaction->post();
-		$transaction_post_type = get_post_type_object( 'wp_transaction' );
+		$transaction_post_type = get_post_type_object( WP_Customize_Transaction::POST_TYPE );
 		$authorized = ( $transaction_post ?
 			current_user_can( $transaction_post_type->cap->edit_post, $transaction_post->ID )
 			:

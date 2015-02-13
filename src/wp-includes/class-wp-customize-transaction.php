@@ -10,7 +10,7 @@
  */
 class WP_Customize_Transaction {
 
-	const POST_TYPE = 'wp_transaction';
+	const POST_TYPE = 'customize_transact';
 
 	/**
 	 * WP_Customize_Manager instance.
@@ -335,8 +335,8 @@ class WP_Customize_Transaction {
 
 		/*
 		 * See _wp_customize_transaction_publish() in theme.php for the behaviors
-		 * associated with the publish_wp_transaction action. The logic is
-		 * located there to facilitate scheduling wp_transaction posts for
+		 * associated with the publish_customize_transact action. The logic is
+		 * located there to facilitate scheduling customize_transact posts for
 		 * future-publishing, which happens during WP Cron when the Customizer
 		 * is not normally booted up.
 		 */

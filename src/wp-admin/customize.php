@@ -40,7 +40,7 @@ if ( ! $return ) {
 global $wp_scripts, $wp_customize;
 
 $transaction_post = $wp_customize->transaction->post();
-$transaction_post_type = get_post_type_object( 'wp_transaction' );
+$transaction_post_type = get_post_type_object( 'customize_transact' );
 $authorized = ( $transaction_post ?
 	current_user_can( $transaction_post_type->cap->edit_post, $transaction_post->ID )
 	:
@@ -140,7 +140,7 @@ do_action( 'customize_controls_print_scripts' );
 			<?php
 				if ( ! $wp_customize->is_theme_active() ) {
 					$save_text = __( 'Save &amp; Activate' );
-				} else if ( current_user_can( get_post_type_object( 'wp_transaction' )->cap->publish_posts ) ) {
+				} else if ( current_user_can( get_post_type_object( 'customize_transact' )->cap->publish_posts ) ) {
 					$save_text = __( 'Save &amp; Publish' );
 				} else {
 					$save_text = __( 'Submit for Review' );

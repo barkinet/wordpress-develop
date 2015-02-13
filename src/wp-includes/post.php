@@ -108,7 +108,7 @@ function create_initial_post_types() {
 		'query_var' => false,
 	) );
 
-	register_post_type( 'wp_transaction', array(
+	register_post_type( 'customize_transact', array(
 		'labels' => array(
 			'name' => __( 'Transactions' ),
 			'singular_name' => __( 'Transaction' ),
@@ -116,7 +116,7 @@ function create_initial_post_types() {
 		'public' => false,
 		'_builtin' => true, /* internal use only. don't use this when registering your own post type. */
 		'_edit_link' => 'customize.php', /* internal use only. don't use this when registering your own post type. */
-		'capability_type' => 'wp_transaction',
+		'capability_type' => 'customize_transact',
 		'capabilities' => array(
 			// @todo These need to be thought through more
 			'edit_post' => 'customize',
