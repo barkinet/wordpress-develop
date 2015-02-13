@@ -115,10 +115,10 @@
 			activeControls: api.settings.activeControls
 		} );
 
-		// Display a loading indicator when user navigate around during preview
-		api.preview.bind( 'unload', function () {
+		// Display a loading indicator when preview is reloading
+		api.preview.bind( 'loading', function () {
 			$( 'body' ).addClass( 'customizer-navigating-away' );
-			$( 'html' ).prop( 'title', 'Loading...' );
+			$( 'html' ).prop( 'title', api.settings.l10n.loading );
 		});
 
 		/* Custom Backgrounds */

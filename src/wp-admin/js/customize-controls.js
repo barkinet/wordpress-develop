@@ -1769,6 +1769,9 @@
 		refresh: function() {
 			var self = this;
 
+			// Display loading indicator
+			this.send( 'loading' );
+
 			this.abort();
 
 			this.loading = new api.PreviewFrame({
@@ -2152,11 +2155,6 @@
 		} else {
 			api.previewer.previewUrl( api.settings.url.home );
 		}
-
-		// Trigger 'unload' event when user navigate around during preview
-		api.previewer.previewUrl.bind(function () {
-			api.previewer.send( 'unload' );
-		});
 
 		// Save and activated states
 		(function() {
