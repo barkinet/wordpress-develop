@@ -1274,13 +1274,30 @@ function comments_popup_link( $zero = false, $one = false, $more = false, $css_c
 	global $wpcommentspopupfile, $wpcommentsjavascript;
 
 	$id = get_the_ID();
-
-	if ( false === $zero ) $zero = __( 'No Comments' );
-	if ( false === $one ) $one = __( '1 Comment' );
-	if ( false === $more ) $more = __( '% Comments' );
-	if ( false === $none ) $none = __( 'Comments Off' );
+	$span = '<span class="screen-reader-text">';
+	$title = get_the_title();
+	$span_close = '</span>';
 
 	$number = get_comments_number( $id );
+
+	if ( false === $zero ) {
+		/* translators: 1: Opening span tag with a class, 2: post title, 3: closing span tag */
+		$zero = sprintf( __( 'No Comments%1$s on %2$s%3$s' ), $span, $title, $span_close );
+	}
+	if ( false === $one ) {
+		/* translators: 1: Opening span tag with a class, 2: post title, 3: closing span tag */
+		$one = sprintf( __( '1 Comment%1$s on %2$s%3$s' ), $span, $title, $span_close );
+	}
+	if ( false === $more ) {
+		/* translators: 1: Opening span tag with a class, 2: post title, 3: closing span tag, 4: number of comments */
+		$more = sprintf( _n( '%4$s Comment%1$s on %2$s%3$s', '%4$s Comments%1$s on %2$s%3$s', $number ),
+			$span, $title, $span_close, number_format_i18n( $number )
+		);
+	}
+	if ( false === $none ) {
+		/* translators: 1: Opening span tag with a class, 2: post title, 3: closing span tag */
+		$none = sprintf( __( 'Comments Off%1$s on %2$s%3$s' ), $span, $title, $span_close );
+	}
 
 	if ( 0 == $number && !comments_open() && !pings_open() ) {
 		echo '<span' . ((!empty($css_class)) ? ' class="' . esc_attr( $css_class ) . '"' : '') . '>' . $none . '</span>';
@@ -1311,7 +1328,6 @@ function comments_popup_link( $zero = false, $one = false, $more = false, $css_c
 	if ( !empty( $css_class ) ) {
 		echo ' class="'.$css_class.'" ';
 	}
-	$title = the_title_attribute( array('echo' => 0 ) );
 
 	$attributes = '';
 	/**
@@ -1323,7 +1339,7 @@ function comments_popup_link( $zero = false, $one = false, $more = false, $css_c
 	 */
 	echo apply_filters( 'comments_popup_link_attributes', $attributes );
 
-	echo ' title="' . esc_attr( sprintf( __('Comment on %s'), $title ) ) . '">';
+	echo '>';
 	comments_number( $zero, $one, $more );
 	echo '</a>';
 }
@@ -1486,7 +1502,7 @@ function get_post_reply_link($args = array(), $post = null) {
 	}
 
 	if ( get_option('comment_registration') && ! is_user_logged_in() ) {
-		$link = sprintf( '<a rel="nofollow" href="%s">%s</a>',
+		$link = sprintf( '<a rel="nofollow" class="comment-reply-login" href="%s">%s</a>',
 			wp_login_url( get_permalink() ),
 			$args['login_text']
 		);

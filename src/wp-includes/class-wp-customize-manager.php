@@ -246,7 +246,7 @@ final class WP_Customize_Manager {
 	 * @param mixed $message UI message
 	 */
 	protected function wp_die( $ajax_message, $message = null ) {
-		if ( $this->doing_ajax() ) {
+		if ( $this->doing_ajax() || isset( $_POST['customized'] ) ) {
 			wp_die( $ajax_message );
 		}
 
@@ -283,7 +283,7 @@ final class WP_Customize_Manager {
 	 * @return string
 	 */
 	public function wp_die_handler() {
-		if ( $this->doing_ajax() ) {
+		if ( $this->doing_ajax() || isset( $_POST['customized'] ) ) {
 			return '_ajax_wp_die_handler';
 		} else {
 			return '_default_wp_die_handler'; // @todo Why not pass-through the func_get_arg( 0 )?
@@ -344,9 +344,12 @@ final class WP_Customize_Manager {
 	public function setup_theme() {
 		send_origin_headers(); // @todo Is this necessary anymore?
 
+		$doing_ajax_or_is_customized = ( $this->doing_ajax() || isset( $_POST['customized'] ) );
 		// @todo Isn't this redundant?
-		if ( is_admin() && ! $this->doing_ajax() ) {
+		if ( is_admin() && ! $doing_ajax_or_is_customized ) {
 			auth_redirect();
+		} elseif ( $doing_ajax_or_is_customized && ! is_user_logged_in() ) {
+			$this->wp_die( 0 );
 		}
 
 		/**
@@ -424,7 +427,8 @@ final class WP_Customize_Manager {
 	 * @since 3.4.0
 	 */
 	public function after_setup_theme() {
-		if ( ! $this->doing_ajax() && ! validate_current_theme() ) {
+		$doing_ajax_or_is_customized = ( $this->doing_ajax() || isset( $_SERVER['customized'] ) );
+		if ( ! $doing_ajax_or_is_customized && ! validate_current_theme() ) {
 			wp_redirect( 'themes.php?broken=true' );
 			exit;
 		}

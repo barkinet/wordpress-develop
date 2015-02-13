@@ -764,7 +764,7 @@ class wpdb {
 					$query = $this->prepare( 'SET NAMES %s', $charset );
 					if ( ! empty( $collate ) )
 						$query .= $this->prepare( ' COLLATE %s', $collate );
-					mysqli_query( $query, $dbh );
+					mysqli_query( $dbh, $query );
 				}
 			} else {
 				if ( function_exists( 'mysql_set_charset' ) && $this->has_cap( 'set_charset' ) ) {
@@ -2461,7 +2461,8 @@ class wpdb {
 				}
 
 				// Change the charset to match the string(s) we're converting
-				if ( $charset !== $this->charset ) {
+				if ( $charset !== $connection_charset ) {
+					$connection_charset = $charset;
 					$this->set_charset( $this->dbh, $charset );
 				}
 
@@ -2482,7 +2483,7 @@ class wpdb {
 
 			// Don't forget to change the charset back!
 			if ( $connection_charset !== $this->charset ) {
-				$this->set_charset( $this->dbh, $connection_charset );
+				$this->set_charset( $this->dbh );
 			}
 		}
 
@@ -2800,7 +2801,14 @@ class wpdb {
 			case 'set_charset' :
 				return version_compare( $version, '5.0.7', '>=' );
 			case 'utf8mb4' :      // @since 4.1.0
-				return version_compare( $version, '5.5.3', '>=' );
+				if ( version_compare( $version, '5.5.3', '<' ) ) {
+					return false;
+				}
+				if ( $this->use_mysqli ) {
+					return mysqli_get_client_version( $this->dbh ) >= 50503;
+				} else {
+					return mysql_get_client_version( $this->dbh ) >= 50503;
+				}
 		}
 
 		return false;
