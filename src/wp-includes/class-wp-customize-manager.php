@@ -494,11 +494,13 @@ final class WP_Customize_Manager {
 
 	public function customize_preview_loading_style() {
 		?><style>
-			body.customizer-navigating-away {
+			body.wp-customizer-unloading {
 				opacity: 0.25;
 				cursor: progress !important;
+				-webkit-transition: opacity 0.5s;
+				transition: opacity 0.5s;
 			}
-			body.customizer-navigating-away * {
+			body.wp-customizer-unloading * {
 				pointer-events: none !important;
 			}
 		</style><?php

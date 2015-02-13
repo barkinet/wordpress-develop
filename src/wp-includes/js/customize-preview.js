@@ -117,7 +117,7 @@
 
 		// Display a loading indicator when preview is reloading
 		api.preview.bind( 'loading', function () {
-			$( 'body' ).addClass( 'customizer-navigating-away' );
+			$( 'body' ).addClass( 'wp-customizer-unloading' );
 			$( 'html' ).prop( 'title', api.settings.l10n.loading );
 		});
 
