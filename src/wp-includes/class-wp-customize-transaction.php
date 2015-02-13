@@ -61,7 +61,7 @@ class WP_Customize_Transaction {
 			$this->data = array();
 		} else {
 			// for reason why base64 encoding is used, see WP_Customize_Transaction::save()
-			$this->data = json_decode( base64_decode( $post->post_content ), true );
+			$this->data = json_decode( $post->post_content_filtered, true );
 
 			if ( ! empty( $this->data ) ) {
 				// For back-compat
@@ -308,22 +308,13 @@ class WP_Customize_Transaction {
 
 		$post_content = wp_json_encode( $this->data, $options );
 
-		/*
-		 * base64-encoding is used to prevent corruption of data due to slashing
-		 * and due to wp_kses and other formatting filters transforming the
-		 * content on save via the content_save_pre filter. This will ensure
-		 * that settings which contain HTML won't get corrupted when the user
-		 * cannot do unfiltered_html.
-		 */
-		$post_content = base64_encode( $post_content );
-
 		if ( ! $this->post ) {
 			$postarr = array(
 				'post_type' => self::POST_TYPE,
 				'post_name' => $this->uuid,
 				'post_status' => $status,
 				'post_author' => get_current_user_id(),
-				'post_content' => $post_content,
+				'post_content_filtered' => $post_content,
 			);
 			$r = wp_insert_post( $postarr, true );
 			if ( is_wp_error( $r ) ) {
@@ -333,7 +324,7 @@ class WP_Customize_Transaction {
 		} else {
 			$postarr = array(
 				'ID' => $this->post->ID,
-				'post_content' => wp_slash( $post_content ),
+				'post_content_filtered' => wp_slash( $post_content ),
 				'post_status' => $status,
 			);
 			$r = wp_update_post( $postarr, true );
