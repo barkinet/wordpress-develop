@@ -69,32 +69,37 @@ class WP_Customize_Setting {
 	public function __construct( $manager, $id, $args = array() ) {
 		$keys = array_keys( get_object_vars( $this ) );
 		foreach ( $keys as $key ) {
-			if ( isset( $args[ $key ] ) )
+			if ( isset( $args[ $key ] ) ) {
 				$this->$key = $args[ $key ];
+			}
 		}
 
 		$this->manager = $manager;
 		$this->id = $id;
 
 		// Parse the ID for array keys.
-		$this->id_data[ 'keys' ] = preg_split( '/\[/', str_replace( ']', '', $this->id ) );
-		$this->id_data[ 'base' ] = array_shift( $this->id_data[ 'keys' ] );
+		$this->id_data['keys'] = preg_split( '/\[/', str_replace( ']', '', $this->id ) );
+		$this->id_data['base'] = array_shift( $this->id_data['keys'] );
 
 		// Rebuild the ID.
-		$this->id = $this->id_data[ 'base' ];
-		if ( ! empty( $this->id_data[ 'keys' ] ) )
-			$this->id .= '[' . implode( '][', $this->id_data[ 'keys' ] ) . ']';
+		$this->id = $this->id_data['base'];
+		if ( ! empty( $this->id_data['keys'] ) ) {
+			$this->id .= '[' . implode( '][', $this->id_data['keys'] ) . ']';
+		}
 
-		if ( $this->sanitize_callback )
+		if ( $this->sanitize_callback ) {
 			add_filter( "customize_sanitize_{$this->id}", $this->sanitize_callback, 10, 2 );
+		}
 
-		if ( $this->sanitize_js_callback )
+		if ( $this->sanitize_js_callback ) {
 			add_filter( "customize_sanitize_js_{$this->id}", $this->sanitize_js_callback, 10, 2 );
+		}
 	}
 
 	/**
 	 * The ID for the current blog when the preview() method was called.
 	 *
+	 * @see WP_Customize_Setting::preview()
 	 * @since 4.2
 	 * @var int
 	 */
@@ -135,16 +140,16 @@ class WP_Customize_Setting {
 			$this->_previewed_blog_id = get_current_blog_id();
 		}
 
-		switch( $this->type ) {
+		switch ( $this->type ) {
 			case 'theme_mod' :
-				add_filter( 'theme_mod_' . $this->id_data[ 'base' ], array( $this, '_preview_filter' ) );
+				add_filter( 'theme_mod_' . $this->id_data['base'], array( $this, '_preview_filter' ) );
 				break;
 			case 'option' :
-				if ( empty( $this->id_data[ 'keys' ] ) )
-					add_filter( 'pre_option_' . $this->id_data[ 'base' ], array( $this, '_preview_filter' ) );
-				else {
-					add_filter( 'option_' . $this->id_data[ 'base' ], array( $this, '_preview_filter' ) );
-					add_filter( 'default_option_' . $this->id_data[ 'base' ], array( $this, '_preview_filter' ) );
+				if ( empty( $this->id_data['keys'] ) ) {
+					add_filter( 'pre_option_' . $this->id_data['base'], array( $this, '_preview_filter' ) );
+				} else {
+					add_filter( 'option_' . $this->id_data['base'], array( $this, '_preview_filter' ) );
+					add_filter( 'default_option_' . $this->id_data['base'], array( $this, '_preview_filter' ) );
 				}
 				break;
 			default :
@@ -215,8 +220,9 @@ class WP_Customize_Setting {
 	final public function save() {
 		$value = $this->post_value();
 
-		if ( ! $this->check_capabilities() || ! isset( $value ) )
+		if ( ! $this->check_capabilities() || ! isset( $value ) ) {
 			return false;
+		}
 
 		/**
 		 * Fires when the WP_Customize_Setting::save() method is called.
@@ -228,7 +234,7 @@ class WP_Customize_Setting {
 		 *
 		 * @param WP_Customize_Setting $this {@see WP_Customize_Setting} instance.
 		 */
-		do_action( 'customize_save_' . $this->id_data[ 'base' ], $this );
+		do_action( 'customize_save_' . $this->id_data['base'], $this );
 
 		$this->update( $value );
 	}
