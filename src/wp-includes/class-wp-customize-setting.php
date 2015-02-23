@@ -104,9 +104,12 @@ class WP_Customize_Setting {
 	 * Return true if the current blog is not the same as the previewed blog.
 	 *
 	 * @since 4.2
-	 * @return bool
+	 * @return bool|null Returns null if preview() has not been called yet.
 	 */
 	public function is_current_blog_previewed() {
+		if ( ! isset( $this->_previewed_blog_id ) ) {
+			return null;
+		}
 		return ( get_current_blog_id() === $this->_previewed_blog_id );
 	}
 
