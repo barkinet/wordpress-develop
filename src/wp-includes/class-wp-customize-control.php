@@ -1158,18 +1158,18 @@ class WP_Customize_Theme_Control extends WP_Customize_Control {
 			<# } else { #>
 				<div class="theme-screenshot blank"></div>
 			<# } #>
-			<span class="more-details" id="{{ data.theme.id }}-action"><?php _e( 'Theme Details' ); ?></span>
-			<div class="theme-author"><?php printf( __( 'By %s' ), '{{ data.theme.author }}' ); ?></div>
+			<span class="more-details" id="{{ data.theme.id }}-action"><?php esc_html_e( 'Theme Details' ); ?></span>
+			<div class="theme-author"><?php printf( esc_html__( 'By %s' ), '{{ data.theme.author }}' ); ?></div>
 
 			<# if ( data.theme.active ) { #>
-				<h3 class="theme-name" id="{{ data.theme.id }}-name"><span><?php _ex( 'Previewing:', 'theme' ); ?></span> {{ data.theme.name }}</h3>
+				<h3 class="theme-name" id="{{ data.theme.id }}-name"><span><?php echo esc_html( _x( 'Previewing:', 'theme' ) ); ?></span> {{ data.theme.name }}</h3>
 			<# } else { #>
 				<h3 class="theme-name" id="{{ data.theme.id }}-name">{{ data.theme.name }}</h3>
 			<# } #>
 
 			<# if ( ! data.theme.active ) { #>
 				<div class="theme-actions">
-					<a class="button" href="<?php echo add_query_arg( 'theme', '{{ data.theme.id }}', remove_query_arg( 'theme' ) ); ?>" target="_top"><?php _e( 'Live Preview' ); ?></a>
+					<a class="button" href="<?php echo add_query_arg( 'theme', '{{ data.theme.id }}', remove_query_arg( 'theme' ) ); ?>" target="_top"><?php esc_html_e( 'Live Preview' ); ?></a>
 				</div>
 			<# } #>
 		</div>
@@ -1192,16 +1192,16 @@ class WP_Customize_New_Theme_Control extends WP_Customize_Control {
 	 * @since 4.2.0
 	 */
 	public function render() {
-		if ( is_multisite() || ! current_user_can( 'install_themes') ) {
+		if ( is_multisite() || ! current_user_can( 'install_themes' ) ) {
 			return;
 		}
 		?>
 		<div class="theme add-new-theme">
-			<a href="<?php echo admin_url( 'theme-install.php' ); ?>" target="_top">
+			<a href="<?php echo esc_url( admin_url( 'theme-install.php' ) ); ?>" target="_top">
 				<div class="theme-screenshot">
 					<span></span>
 				</div>
-				<h3 class="theme-name"><?php _e( 'Add New Theme' ); ?></h3>
+				<h3 class="theme-name"><?php esc_html_e( 'Add New Theme' ); ?></h3>
 			</a>
 		</div>
 		<?php

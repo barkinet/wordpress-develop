@@ -343,21 +343,21 @@ class WP_Customize_Themes_Section extends WP_Customize_Section {
 		<li id="accordion-section-<?php echo esc_attr( $this->id ); ?>" class="<?php echo esc_attr( $classes ); ?>">
 			<h3 class="accordion-section-title" tabindex="0">
 				<?php echo esc_html( $this->title ); ?>
-				<span class="screen-reader-text"><?php _e( 'Press return or enter to expand' ); ?></span>
+				<span class="screen-reader-text"><?php esc_html_e( 'Press return or enter to expand' ); ?></span>
 			</h3>
 			<span class="control-panel-back themes-panel-back" tabindex="-1"><span class="screen-reader-text"><?php _e( 'Back' ); ?></span></span>
 			<div class="customize-themes-panel control-panel-content themes-php">
 				<h2><?php esc_html_e( 'Themes' ); ?>
 					<span class="title-count theme-count"><?php echo count( $this->controls ) - 1; ?></span>
 				<?php if ( ! is_multisite() && current_user_can( 'install_themes' ) ) : ?>
-					<a href="<?php echo admin_url( 'theme-install.php' ); ?>" target="_top" class="add-new-h2"><?php echo esc_html_x( 'Add New', 'Add new theme' ); ?></a>
+					<a href="<?php echo esc_url( admin_url( 'theme-install.php' ) ); ?>" target="_top" class="add-new-h2"><?php echo esc_html_x( 'Add New', 'Add new theme' ); ?></a>
 				<?php endif; ?>
 				</h2>
 				<div class="theme-overlay" tabindex="0" role="dialog" aria-label="<?php esc_attr_e( 'Theme details' ); ?>"></div>
 				<div id="customize-container"></div>
 				<?php if ( 6 < count( $this->controls ) ) : ?>
 					<p><label for="themes-filter">
-						<span class="screen-reader-text"><?php _e( 'Search installed themes...' ); ?></span>
+						<span class="screen-reader-text"><?php esc_html_e( 'Search installed themes...' ); ?></span>
 						<input type="search" id="themes-filter" placeholder="<?php esc_attr_e( 'Search installed themes...' ); ?>" />
 					</label></p>
 				<?php endif; ?>

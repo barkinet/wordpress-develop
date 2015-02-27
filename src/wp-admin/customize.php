@@ -127,13 +127,13 @@ do_action( 'customize_controls_print_scripts' );
 			?>
 			<span class="spinner"></span>
 			<a class="customize-controls-preview-toggle" href="#">
-				<span class="controls"><?php _e( 'Customize' ); ?></span>
-				<span class="preview"><?php _e( 'Preview' ); ?></span>
+				<span class="controls"><?php esc_html_e( 'Customize' ); ?></span>
+				<span class="preview"><?php esc_html_e( 'Preview' ); ?></span>
 			</a>
 			<a class="customize-controls-close" href="<?php echo esc_url( $return ); ?>">
-				<span class="screen-reader-text"><?php _e( 'Cancel' ); ?></span>
+				<span class="screen-reader-text"><?php esc_html_e( 'Cancel' ); ?></span>
 			</a>
-			<span class="control-panel-back" tabindex="-1"><span class="screen-reader-text"><?php _e( 'Back' ); ?></span></span>
+			<span class="control-panel-back" tabindex="-1"><span class="screen-reader-text"><?php esc_html_e( 'Back' ); ?></span></span>
 		</div>
 
 		<div id="widgets-right"><!-- For Widget Customizer, many widgets try to look for instances under div#widgets-right, so we have to add that ID to a container div in the Customizer for compat -->
@@ -141,11 +141,11 @@ do_action( 'customize_controls_print_scripts' );
 			<div id="customize-info" class="accordion-section">
 				<div class="accordion-section-title" aria-label="<?php esc_attr_e( 'Customizer Options' ); ?>" tabindex="0">
 					<span class="preview-notice"><?php
-						echo sprintf( __( 'You are customizing %s' ), '<strong class="theme-name site-title">' . get_bloginfo( 'name' ) . '</strong>' );
+						echo sprintf( esc_html__( 'You are customizing %s' ), '<strong class="theme-name site-title">' . get_bloginfo( 'name', 'display' ) . '</strong>' );
 					?></span>
 				</div>
 				<div class="accordion-section-content"><?php
-					echo __( 'The Customizer allows you to preview changes to your site before publishing them. You can also navigate to different pages on your site to preview them.' );
+					esc_html_e( 'The Customizer allows you to preview changes to your site before publishing them. You can also navigate to different pages on your site to preview them.' );
 				?></div>
 			</div>
 
@@ -156,9 +156,9 @@ do_action( 'customize_controls_print_scripts' );
 		</div>
 
 		<div id="customize-footer-actions" class="wp-full-overlay-footer">
-			<a href="#" class="collapse-sidebar button-secondary" title="<?php esc_attr_e('Collapse Sidebar'); ?>">
+			<a href="#" class="collapse-sidebar button-secondary" title="<?php esc_attr_e( 'Collapse Sidebar' ); ?>">
 				<span class="collapse-sidebar-arrow"></span>
-				<span class="collapse-sidebar-label"><?php _e('Collapse'); ?></span>
+				<span class="collapse-sidebar-label"><?php esc_html_e( 'Collapse' ); ?></span>
 			</a>
 		</div>
 	</form>

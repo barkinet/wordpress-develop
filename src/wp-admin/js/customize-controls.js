@@ -814,12 +814,13 @@
 		 * @param {Object}   theme
 		 */
 		showDetails: function ( theme, callback ) {
-			var section = this;
+			var section = this,
+				overlay = section.overlay;
 			callback = callback || function(){};
 			section.currentTheme = theme.id;
-			section.overlay.html( section.template( theme ) )
-			               .fadeIn( 'fast' )
-			               .focus();
+			overlay.html( section.template( theme ) );
+			overlay.fadeIn( 'fast' );
+			overlay.focus();
 			$( 'body' ).addClass( 'modal-open' );
 			section.containFocus( section.overlay );
 			section.updateLimits();
@@ -1800,12 +1801,9 @@
 		 * @since 4.2.0
 		 */
 		filter: function( term ) {
-			var control = this,
-			    haystack = control.params.theme.name + ' ' +
-				           control.params.theme.description + ' ' +
-				           control.params.theme.tags + ' ' +
-				           control.params.theme.author;
-			haystack = haystack.toLowerCase().replace( '-', ' ' );
+			var control = this, haystack, haystackParts;
+			haystackParts = _.values( _.pick( control.params.theme, [ 'name', 'description', 'tags', 'author' ] ) );
+			haystack = haystackParts.join( ' ' ).toLowerCase().replace( '-', ' ' );
 			if ( -1 !== haystack.search( term ) ) {
 				control.activate();
 			} else {

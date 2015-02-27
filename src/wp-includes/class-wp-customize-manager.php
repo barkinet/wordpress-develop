@@ -1124,7 +1124,7 @@ final class WP_Customize_Manager {
 		/* Themes */
 
 		$this->add_section( new WP_Customize_Themes_Section( $this, 'themes', array(
-			'title' => sprintf( __( 'Theme: %s' ), $this->theme()->display('Name') ),
+			'title' => sprintf( __( 'Theme: %s' ), $this->theme()->display( 'Name' ) ),
 			'capability' => 'switch_themes',
 			'priority' => 0,
 		) ) );
