@@ -216,6 +216,7 @@ final class WP_Customize_Widgets {
 		$sidebars_widgets = $this->old_sidebars_widgets;
 		$sidebars_widgets = retrieve_widgets( 'customize' );
 		add_filter( 'option_sidebars_widgets', array( $this, 'filter_option_sidebars_widgets_for_theme_switch' ), 1 );
+		unset( $GLOBALS['_wp_sidebars_widgets'] );
 	}
 
 	/**
@@ -232,6 +233,7 @@ final class WP_Customize_Widgets {
 	 * @access public
 	 *
 	 * @param array $old_sidebars_widgets
+	 * @return array
 	 */
 	public function filter_customize_value_old_sidebars_widgets_data( $old_sidebars_widgets ) {
 		return $this->old_sidebars_widgets;
@@ -249,6 +251,7 @@ final class WP_Customize_Widgets {
 	 * @access public
 	 *
 	 * @param array $sidebars_widgets
+	 * @return array
 	 */
 	public function filter_option_sidebars_widgets_for_theme_switch( $sidebars_widgets ) {
 		$sidebars_widgets = $GLOBALS['sidebars_widgets'];
