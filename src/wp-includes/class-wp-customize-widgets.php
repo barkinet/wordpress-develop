@@ -335,6 +335,7 @@ final class WP_Customize_Widgets {
 			$setting_id = 'old_sidebars_widgets_data';
 			$setting_args = $this->get_setting_args( $setting_id, array(
 				'type' => 'global_variable',
+				'dirty' => true,
 			) );
 			$this->manager->add_setting( $setting_id, $setting_args );
 		}

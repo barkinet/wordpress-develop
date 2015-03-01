@@ -252,6 +252,7 @@ do_action( 'customize_controls_print_scripts' );
 		$settings['settings'][ $id ] = array(
 			'value'     => $setting->js_value(),
 			'transport' => $setting->transport,
+			'dirty'     => $setting->dirty,
 		);
 	}
 
