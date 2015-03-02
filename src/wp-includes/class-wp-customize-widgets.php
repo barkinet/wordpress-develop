@@ -360,6 +360,9 @@ final class WP_Customize_Widgets {
 				$setting_id   = sprintf( 'sidebars_widgets[%s]', $sidebar_id );
 				$setting_args = $this->get_setting_args( $setting_id );
 				if ( ! $this->manager->get_setting( $setting_id ) ) {
+					if ( ! $this->manager->is_theme_active() ) {
+						$setting_args['dirty'] = true;
+					}
 					$this->manager->add_setting( $setting_id, $setting_args );
 				}
 				$new_setting_ids[] = $setting_id;
@@ -898,6 +901,7 @@ final class WP_Customize_Widgets {
 	 * @access public
 	 *
 	 * @param array $sidebars_widgets List of widgets for the current sidebar.
+	 * @return array
 	 */
 	public function preview_sidebars_widgets( $sidebars_widgets ) {
 		$sidebars_widgets = get_option( 'sidebars_widgets' );
