@@ -2351,10 +2351,7 @@
 			},
 
 			save: function() {
-				var self  = this,
-					query = $.extend( this.query(), {
-						nonce:  this.nonce.save
-					} ),
+				var self = this,
 					processing = api.state( 'processing' ),
 					submitWhenDoneProcessing,
 					submit;
@@ -2362,7 +2359,11 @@
 				body.addClass( 'saving' );
 
 				submit = function () {
-					var request = wp.ajax.post( 'customize_save', query );
+					var request, query;
+					query = $.extend( self.query(), {
+						nonce:  self.nonce.save
+					} );
+					request = wp.ajax.post( 'customize_save', query );
 
 					api.trigger( 'save', request );
 
