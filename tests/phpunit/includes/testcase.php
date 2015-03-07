@@ -87,6 +87,7 @@ class WP_UnitTestCase extends PHPUnit_Framework_TestCase {
 	function clean_up_global_scope() {
 		$_GET = array();
 		$_POST = array();
+		$_REQUEST = array();
 		$this->flush_cache();
 	}
 
