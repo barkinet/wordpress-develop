@@ -366,11 +366,13 @@ class Tests_WP_Customize_Setting extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Ensure that previewing a setting is disabled when the current blog is switched.
+	 * Ensure that is_current_blog_previewed returns the expected values.
+	 *
+	 * This is applicable to both single and multisite. This doesn't do switch_to_blog()
 	 *
 	 * @ticket 31428
 	 */
-	function test_previewing_with_switch_to_blog() {
+	function test_is_current_blog_previewed() {
 		$type = 'option';
 		$name = 'blogname';
 		$post_value = rand_str();
@@ -379,20 +381,33 @@ class Tests_WP_Customize_Setting extends WP_UnitTestCase {
 		$this->assertNull( $setting->is_current_blog_previewed() );
 		$setting->preview();
 		$this->assertTrue( $setting->is_current_blog_previewed() );
+
 		$this->assertEquals( $post_value, $setting->value() );
 		$this->assertEquals( $post_value, get_option( $name ) );
+	}
 
-		if ( is_multisite() ) {
-			$blog_id = $this->factory->blog->create();
-			switch_to_blog( $blog_id );
-			$this->assertFalse( $setting->is_current_blog_previewed() );
-			$this->assertNotEquals( $post_value, $setting->value() );
-			$this->assertNotEquals( $post_value, get_option( $name ) );
-			restore_current_blog();
-		} else {
-			$this->markTestSkipped( 'Cannot test WP_Customize_Setting::is_current_blog_previewed() with switch_to_blog() if not on multisite.' );
-		}
+	/**
+	 * Ensure that previewing a setting is disabled when the current blog is switched.
+	 *
+	 * @ticket 31428
+	 * @group multisite
+	 */
+	function test_previewing_with_switch_to_blog() {
+		$type = 'option';
+		$name = 'blogdescription';
+		$post_value = rand_str();
+		$this->manager->set_post_value( $name, $post_value );
+		$setting = new WP_Customize_Setting( $this->manager, $name, compact( 'type' ) );
+		$this->assertNull( $setting->is_current_blog_previewed() );
+		$setting->preview();
+		$this->assertTrue( $setting->is_current_blog_previewed() );
 
+		$blog_id = $this->factory->blog->create();
+		switch_to_blog( $blog_id );
+		$this->assertFalse( $setting->is_current_blog_previewed() );
+		$this->assertNotEquals( $post_value, $setting->value() );
+		$this->assertNotEquals( $post_value, get_option( $name ) );
+		restore_current_blog();
 	}
 }
 
