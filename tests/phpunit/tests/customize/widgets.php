@@ -99,6 +99,35 @@ class Tests_WP_Customize_Widgets extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Test WP_Customize_Widgets::override_sidebars_widgets_for_theme_switch()
+	 *
+	 * @todo A lot of this should be in a test for WP_Customize_Manager::setup_theme()
+	 */
+	function test_override_sidebars_widgets_for_theme_switch() {
+		if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
+			$this->markTestSkipped( 'The WP_Customize_Widgets::override_sidebars_widgets_for_theme_switch() method short-circuits if DOING_AJAX.' );
+		}
+		$old_theme = get_stylesheet();
+		$new_theme = 'twentythirteen';
+		$this->assertNotEquals( $new_theme, $old_theme );
+
+		update_site_option( 'allowedthemes', array_fill_keys( array( $new_theme, $old_theme ), true ) );
+		$this->assertTrue( wp_get_theme( $old_theme )->is_allowed(), "Expected old theme $old_theme to be allowed." );
+		$this->assertTrue( wp_get_theme( $new_theme )->is_allowed(), "Expected new theme $new_theme to be allowed" );
+
+		$_REQUEST['theme'] = $new_theme;
+		$this->do_customize_boot_actions();
+		$this->assertEquals( $new_theme, $this->manager->get_stylesheet() );
+
+		// @todo Now we need to set the sidebars_widgets theme mods for both the old theme and the new theme
+		// @todo We need to create the old_sidebars_widgets_data setting
+		// @todo We need to actually do this testing at the acceptance testing layer
+
+		// @todo $this->manager->widgets->override_sidebars_widgets_for_theme_switch() then check wp_get_sidebars_widgets() and $manager->get_setting('old_sidebars_widgets_data')
+
+	}
+
+	/**
 	 * Test WP_Customize_Widgets::get_setting_args()
 	 */
 	function test_get_setting_args() {
