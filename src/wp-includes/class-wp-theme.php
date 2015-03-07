@@ -1121,10 +1121,7 @@ final class WP_Theme implements ArrayAccess {
 	 * @return array Array of stylesheet names.
 	 */
 	public static function get_allowed_on_network() {
-		static $allowed_themes;
-		if ( ! isset( $allowed_themes ) )
-			$allowed_themes = (array) get_site_option( 'allowedthemes' );
-		return $allowed_themes;
+		return (array) get_site_option( 'allowedthemes' );
 	}
 
 	/**
@@ -1137,7 +1134,10 @@ final class WP_Theme implements ArrayAccess {
 	 * @return array Array of stylesheet names.
 	 */
 	public static function get_allowed_on_site( $blog_id = null ) {
-		static $allowed_themes = array();
+		$allowed_themes = wp_cache_get( 'themes_allowed_on_site' );
+		if ( empty( $allowed_themes ) ) {
+			$allowed_themes = array();
+		}
 
 		if ( ! $blog_id || ! is_multisite() )
 			$blog_id = get_current_blog_id();
@@ -1191,7 +1191,9 @@ final class WP_Theme implements ArrayAccess {
 			}
 		}
 
-		return (array) $allowed_themes[ $blog_id ];
+		$allowed_on_site = (array) $allowed_themes[ $blog_id ];
+		wp_cache_set( 'themes_allowed_on_site', $allowed_on_site );
+		return $allowed_on_site;
 	}
 
 	/**
