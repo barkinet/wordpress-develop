@@ -21,8 +21,15 @@ class Tests_WP_Customize_Widgets extends WP_UnitTestCase {
 		unset( $GLOBALS['_wp_sidebars_widgets'] ); // clear out cache set by wp_get_sidebars_widgets()
 		$sidebars_widgets = wp_get_sidebars_widgets();
 		$this->assertEqualSets( array( 'wp_inactive_widgets', 'sidebar-1' ), array_keys( wp_get_sidebars_widgets() ) );
-		$this->assertContains( 'search-2', $sidebars_widgets['sidebar-1'] );
-		$this->assertContains( 'categories-2', $sidebars_widgets['sidebar-1'] );
+		$initial_sidebar_1 = array(
+			'search-2',
+			'recent-posts-2',
+			'recent-comments-2',
+			'archives-2',
+			'categories-2',
+			'meta-2',
+		);
+		$this->assertEquals( $initial_sidebar_1, $sidebars_widgets['sidebar-1'] );
 		$this->assertArrayHasKey( 2, get_option( 'widget_search' ) );
 		$widget_categories = get_option( 'widget_categories' );
 		$this->assertArrayHasKey( 2, $widget_categories );
@@ -111,18 +118,45 @@ class Tests_WP_Customize_Widgets extends WP_UnitTestCase {
 		$new_theme = 'twentythirteen';
 		$this->assertNotEquals( $new_theme, $old_theme );
 
+		// Make sure the new theme and the old theme are both among allowed themes
 		update_site_option( 'allowedthemes', array_fill_keys( array( $new_theme, $old_theme ), true ) );
 		$this->assertTrue( wp_get_theme( $old_theme )->is_allowed(), "Expected old theme $old_theme to be allowed." );
 		$this->assertTrue( wp_get_theme( $new_theme )->is_allowed(), "Expected new theme $new_theme to be allowed" );
 
+		// Set the sidebars_widgets theme mods for both the old theme and the new theme
+		$twentyfifteen_sidebars_widgets = wp_get_sidebars_widgets();
+		$twentythirteen_sidebars_widgets = $twentyfifteen_sidebars_widgets;
+		$twentythirteen_sidebars_widgets['sidebar-2'] = array();
+		for ( $i = 0; $i < 3; $i += 1 ) {
+			$twentythirteen_sidebars_widgets['sidebar-2'][] = array_pop( $twentythirteen_sidebars_widgets['sidebar-1'] );
+		}
+		$twentythirteen_sidebars_widgets['sidebar-1'] = array_reverse( $twentythirteen_sidebars_widgets['sidebar-1'] );
+		update_option( 'theme_mods_twentythirteen', array(
+			'sidebars_widgets' => array(
+				'time' => time() - 3600,
+				'data' => $twentythirteen_sidebars_widgets,
+			),
+		) );
+
+		switch_theme( $new_theme );
+		check_theme_switched();
+		$sidebars_widgets = get_option( 'sidebars_widgets' );
+		// FAIL: 'sidebar-2' is currently getting placed in 'orphaned_widgets_1'
+		$this->assertEquals( $twentythirteen_sidebars_widgets['sidebar-1'], $sidebars_widgets['sidebar-1'] );
+		$this->assertEquals( $twentythirteen_sidebars_widgets['sidebar-2'], $sidebars_widgets['sidebar-2'] );
+
+		switch_theme( $old_theme );
+		check_theme_switched();
+		$sidebars_widgets = get_option( 'sidebars_widgets' );
+		$this->assertEquals( $twentyfifteen_sidebars_widgets['sidebar-1'], $sidebars_widgets['sidebar-1'] );
+
+		// Initialize the Customizer with a preview for the new theme
 		$_REQUEST['theme'] = $new_theme;
 		$this->do_customize_boot_actions();
 		$this->assertEquals( $new_theme, $this->manager->get_stylesheet() );
 
-		// @todo Now we need to set the sidebars_widgets theme mods for both the old theme and the new theme
-		// @todo We need to create the old_sidebars_widgets_data setting
+		// @todo We need to ensure that the old_sidebars_widgets_data setting is automatically created and that it is dirty
 		// @todo We need to actually do this testing at the acceptance testing layer
-
 		// @todo $this->manager->widgets->override_sidebars_widgets_for_theme_switch() then check wp_get_sidebars_widgets() and $manager->get_setting('old_sidebars_widgets_data')
 
 	}
