@@ -105,10 +105,15 @@ class Tests_WP_Customize_Widgets extends WP_UnitTestCase {
 		$this->assertEquals( $raw_widget_customized['widget_categories[2]'], $widget_categories[2], 'Expected $wp_customize->get_setting(widget_categories[2])->preview() to have been called.' );
 	}
 
+	/**
+	 * @param string $new_theme Stylesheet
+	 *
+	 * @throws Exception
+	 */
 	function prepare_theme_switch_state( $new_theme ) {
 		$old_theme = get_stylesheet();
 		if ( 'twentyfifteen' !== $old_theme ) {
-			throw new Exception( 'Currently expecting default theme to be twentyfifteen.' );
+			throw new Exception( 'Currently expecting initial theme to be twentyfifteen.' );
 		}
 		if ( $new_theme === $old_theme ) {
 			throw new Exception( 'A different theme must be supplied than the current theme.' );
@@ -134,26 +139,47 @@ class Tests_WP_Customize_Widgets extends WP_UnitTestCase {
 			),
 		) );
 
-		switch_theme( $new_theme );
-		register_sidebar( array(
-			'name'          => __( 'Secondary Widget Area', 'twentythirteen' ),
-			'id'            => 'sidebar-2',
-			'description'   => __( 'Appears on posts and pages in the sidebar.', 'twentythirteen' ),
-			'before_widget' => '<aside id="%1$s" class="widget %2$s">',
-			'after_widget'  => '</aside>',
-			'before_title'  => '<h3 class="widget-title">',
-			'after_title'   => '</h3>',
-		) );
-		check_theme_switched();
+		$this->switch_theme_and_check_switched( $new_theme );
 		$sidebars_widgets = get_option( 'sidebars_widgets' );
 		$this->assertEquals( $twentythirteen_sidebars_widgets['sidebar-1'], $sidebars_widgets['sidebar-1'] );
 		$this->assertEquals( $twentythirteen_sidebars_widgets['sidebar-2'], $sidebars_widgets['sidebar-2'] );
 
-		switch_theme( $old_theme );
-		unregister_sidebar( 'sidebar-2' );
-		check_theme_switched();
+		$this->switch_theme_and_check_switched( $old_theme );
 		$sidebars_widgets = get_option( 'sidebars_widgets' );
 		$this->assertEquals( $twentyfifteen_sidebars_widgets['sidebar-1'], $sidebars_widgets['sidebar-1'] );
+	}
+
+	/**
+	 * @param string $new_theme Stylesheet
+	 *
+	 * @throws Exception
+	 */
+	function switch_theme_and_check_switched( $new_theme ) {
+		switch_theme( $new_theme );
+		if ( 'twentythirteen' === $new_theme ) {
+			register_sidebar( array(
+				'name'          => __( 'Secondary Widget Area', 'twentythirteen' ),
+				'id'            => 'sidebar-2',
+				'description'   => __( 'Appears on posts and pages in the sidebar.', 'twentythirteen' ),
+				'before_widget' => '<aside id="%1$s" class="widget %2$s">',
+				'after_widget'  => '</aside>',
+				'before_title'  => '<h3 class="widget-title">',
+				'after_title'   => '</h3>',
+			) );
+		} else if ( 'twentyfifteen' === $new_theme ) {
+			unregister_sidebar( 'sidebar-2' );
+		} else {
+			throw new Exception( 'Only twentyfifteen and twentythirteen are supported.' );
+		}
+		check_theme_switched();
+	}
+
+	function test_override_sidebars_widgets_for_non_theme_switch() {
+		if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
+			$this->markTestSkipped( 'The WP_Customize_Widgets::override_sidebars_widgets_for_theme_switch() method short-circuits if DOING_AJAX.' );
+		}
+		$this->do_customize_boot_actions();
+		$this->assertEmpty( $this->manager->get_setting( 'old_sidebars_widgets_data' ) );
 	}
 
 	/**
@@ -174,10 +200,12 @@ class Tests_WP_Customize_Widgets extends WP_UnitTestCase {
 		$this->do_customize_boot_actions();
 		$this->assertEquals( $new_theme, $this->manager->get_stylesheet() );
 
-		// @todo We need to ensure that the old_sidebars_widgets_data setting is automatically created and that it is dirty
+		$old_sidebars_widgets_setting = $this->manager->get_setting( 'old_sidebars_widgets_data' );
+		$this->assertNotEmpty( $old_sidebars_widgets_setting );
+		$this->assertTrue( $old_sidebars_widgets_setting->dirty );
+
 		// @todo We need to actually do this testing at the acceptance testing layer
 		// @todo $this->manager->widgets->override_sidebars_widgets_for_theme_switch() then check wp_get_sidebars_widgets() and $manager->get_setting('old_sidebars_widgets_data')
-
 	}
 
 	/**
