@@ -216,7 +216,7 @@ final class WP_Customize_Widgets {
 		$sidebars_widgets = $this->old_sidebars_widgets;
 		$sidebars_widgets = retrieve_widgets( 'customize' );
 		add_filter( 'option_sidebars_widgets', array( $this, 'filter_option_sidebars_widgets_for_theme_switch' ), 1 );
-		unset( $GLOBALS['_wp_sidebars_widgets'] );
+		unset( $GLOBALS['_wp_sidebars_widgets'] ); // reset global cache var used by wp_get_sidebars_widgets()
 	}
 
 	/**
