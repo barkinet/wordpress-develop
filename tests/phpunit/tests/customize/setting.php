@@ -393,6 +393,10 @@ class Tests_WP_Customize_Setting extends WP_UnitTestCase {
 	 * @group multisite
 	 */
 	function test_previewing_with_switch_to_blog() {
+		if ( ! is_multisite() ) {
+			$this->markTestSkipped( 'Cannot test WP_Customize_Setting::is_current_blog_previewed() with switch_to_blog() if not on multisite.' );
+		}
+
 		$type = 'option';
 		$name = 'blogdescription';
 		$post_value = rand_str();
