@@ -12,6 +12,9 @@ class Tests_WP_Customize_Widgets extends WP_UnitTestCase {
 	 */
 	protected $manager;
 
+	protected $twentyfifteen_sidebars_widgets;
+	protected $twentythirteen_sidebars_widgets;
+
 	function setUp() {
 		parent::setUp();
 		require_once( ABSPATH . WPINC . '/class-wp-customize-manager.php' );
@@ -125,28 +128,28 @@ class Tests_WP_Customize_Widgets extends WP_UnitTestCase {
 		$this->assertTrue( wp_get_theme( $new_theme )->is_allowed(), "Expected new theme $new_theme to be allowed" );
 
 		// Set the sidebars_widgets theme mods for both the old theme and the new theme
-		$twentyfifteen_sidebars_widgets = wp_get_sidebars_widgets();
-		$twentythirteen_sidebars_widgets = $twentyfifteen_sidebars_widgets;
-		$twentythirteen_sidebars_widgets['sidebar-2'] = array();
+		$this->twentyfifteen_sidebars_widgets = wp_get_sidebars_widgets();
+		$this->twentythirteen_sidebars_widgets = $this->twentyfifteen_sidebars_widgets;
+		$this->twentythirteen_sidebars_widgets['sidebar-2'] = array();
 		for ( $i = 0; $i < 3; $i += 1 ) {
-			$twentythirteen_sidebars_widgets['sidebar-2'][] = array_pop( $twentythirteen_sidebars_widgets['sidebar-1'] );
+			$this->twentythirteen_sidebars_widgets['sidebar-2'][] = array_pop( $this->twentythirteen_sidebars_widgets['sidebar-1'] );
 		}
-		$twentythirteen_sidebars_widgets['sidebar-1'] = array_reverse( $twentythirteen_sidebars_widgets['sidebar-1'] );
+		$this->twentythirteen_sidebars_widgets['sidebar-1'] = array_reverse( $this->twentythirteen_sidebars_widgets['sidebar-1'] );
 		update_option( 'theme_mods_twentythirteen', array(
 			'sidebars_widgets' => array(
 				'time' => time() - 3600,
-				'data' => $twentythirteen_sidebars_widgets,
+				'data' => $this->twentythirteen_sidebars_widgets,
 			),
 		) );
 
 		$this->switch_theme_and_check_switched( $new_theme );
 		$sidebars_widgets = get_option( 'sidebars_widgets' );
-		$this->assertEquals( $twentythirteen_sidebars_widgets['sidebar-1'], $sidebars_widgets['sidebar-1'] );
-		$this->assertEquals( $twentythirteen_sidebars_widgets['sidebar-2'], $sidebars_widgets['sidebar-2'] );
+		$this->assertEquals( $this->twentythirteen_sidebars_widgets['sidebar-1'], $sidebars_widgets['sidebar-1'] );
+		$this->assertEquals( $this->twentythirteen_sidebars_widgets['sidebar-2'], $sidebars_widgets['sidebar-2'] );
 
 		$this->switch_theme_and_check_switched( $old_theme );
 		$sidebars_widgets = get_option( 'sidebars_widgets' );
-		$this->assertEquals( $twentyfifteen_sidebars_widgets['sidebar-1'], $sidebars_widgets['sidebar-1'] );
+		$this->assertEquals( $this->twentyfifteen_sidebars_widgets['sidebar-1'], $sidebars_widgets['sidebar-1'] );
 	}
 
 	/**
@@ -195,6 +198,8 @@ class Tests_WP_Customize_Widgets extends WP_UnitTestCase {
 		$new_theme = 'twentythirteen';
 		$this->prepare_theme_switch_state( $new_theme );
 
+		$this->assertNotEquals( $new_theme, $old_theme );
+
 		// Initialize the Customizer with a preview for the new theme
 		$_REQUEST['theme'] = $new_theme;
 		$this->do_customize_boot_actions();
@@ -203,6 +208,10 @@ class Tests_WP_Customize_Widgets extends WP_UnitTestCase {
 		$old_sidebars_widgets_setting = $this->manager->get_setting( 'old_sidebars_widgets_data' );
 		$this->assertNotEmpty( $old_sidebars_widgets_setting );
 		$this->assertTrue( $old_sidebars_widgets_setting->dirty );
+		$old_sidebars_widgets_value = $old_sidebars_widgets_setting->value();
+		$this->assertNotEmpty( $old_sidebars_widgets_value );
+		$this->assertEquals( $this->twentyfifteen_sidebars_widgets['sidebar-1'], $old_sidebars_widgets_value['sidebar-1'] );
+		$this->assertArrayNotHasKey( 'sidebar-2', $old_sidebars_widgets_value['sidebar-1'] );
 
 		// @todo We need to actually do this testing at the acceptance testing layer
 		// @todo $this->manager->widgets->override_sidebars_widgets_for_theme_switch() then check wp_get_sidebars_widgets() and $manager->get_setting('old_sidebars_widgets_data')
