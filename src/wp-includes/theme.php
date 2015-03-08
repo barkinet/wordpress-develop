@@ -762,7 +762,7 @@ function switch_theme( $stylesheet ) {
 	global $wp_theme_directories, $wp_customize, $sidebars_widgets;
 
 	$_sidebars_widgets = null;
-	if ( 'wp_ajax_customize_save' === current_action() ) {
+	if ( did_action( 'customize_save_before_switch_theme' ) ) {
 		$_sidebars_widgets = $wp_customize->post_value( $wp_customize->get_setting( 'old_sidebars_widgets_data' ) );
 	} elseif ( is_array( $sidebars_widgets ) ) {
 		$_sidebars_widgets = $sidebars_widgets;
@@ -807,7 +807,7 @@ function switch_theme( $stylesheet ) {
 		 * we need to to remove the theme mods to avoid overwriting changes made via
 		 * the Customizer when accessing wp-admin/widgets.php.
 		 */
-		if ( 'wp_ajax_customize_save' === current_action() ) {
+		if ( did_action( 'customize_save_before_switch_theme' ) ) {
 			remove_theme_mod( 'sidebars_widgets' );
 		}
 	}

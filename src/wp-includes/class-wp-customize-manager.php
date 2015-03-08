@@ -732,6 +732,16 @@ final class WP_Customize_Manager {
 			}
 		}
 
+		/**
+		 * Fires before the theme has switched in the Customizer, and before settings
+		 * have been saved.
+		 *
+		 * @since 4.1.2
+		 *
+		 * @param WP_Customize_Manager $this WP_Customize_Manager instance.
+		 */
+		do_action( 'customize_save_before_switch_theme', $this );
+
 		// Do we have to switch themes?
 		if ( ! $this->is_theme_active() ) {
 			// Temporarily stop previewing the theme to allow switch_themes()
