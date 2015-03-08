@@ -207,6 +207,7 @@ class Tests_WP_Customize_Widgets extends WP_UnitTestCase {
 		if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
 			$this->markTestSkipped( 'The WP_Customize_Widgets::override_sidebars_widgets_for_theme_switch() method short-circuits if DOING_AJAX.' );
 		}
+		$start_time = time();
 		$old_theme = get_stylesheet();
 		$new_theme = 'twentythirteen';
 		$this->assertNotEquals( $new_theme, $old_theme );
@@ -237,15 +238,45 @@ class Tests_WP_Customize_Widgets extends WP_UnitTestCase {
 
 		$old_sidebars_widgets_setting = $this->manager->get_setting( 'old_sidebars_widgets_data' );
 		$this->assertNotEmpty( $old_sidebars_widgets_setting );
-		$this->assertTrue( $old_sidebars_widgets_setting->dirty );
 		$old_sidebars_widgets_value = $old_sidebars_widgets_setting->value();
 		$this->assertNotEmpty( $old_sidebars_widgets_value );
 		$this->assertEquals( $this->twentyfifteen_sidebars_widgets['sidebar-1'], $old_sidebars_widgets_value['sidebar-1'] );
 		$this->assertArrayNotHasKey( 'sidebar-2', $old_sidebars_widgets_value['sidebar-1'] );
 
-		// Now save the customizer
+		$expected_dirty_settings = array( 'sidebars_widgets[sidebar-1]', 'sidebars_widgets[sidebar-2]', 'old_sidebars_widgets_data' );
+		foreach ( $expected_dirty_settings as $dirty_setting_id ) {
+			$this->assertTrue( $this->manager->get_setting( $dirty_setting_id )->dirty, "Expected setting $dirty_setting_id to be dirty." );
+		}
+
+		// Now save the customizer, and remove preview filters which interfere with saving
+		foreach ( $this->manager->settings() as $setting ) {
+			if ( $setting->dirty ) {
+				$this->manager->set_post_value( $setting->id, $setting->value() );
+				$id_base = preg_replace( '/\[.*/', '', $setting->id );
+				if ( 'theme_mod' === $setting->type ) {
+					remove_filter( "theme_mod_{$id_base}", array( $setting, '_preview_filter' ) );
+				} else if ( 'option' === $setting->type ) {
+					remove_filter( "pre_option_{$id_base}", array( $setting, '_preview_filter' ) );
+					remove_filter( "option_{$id_base}", array( $setting, '_preview_filter' ) );
+					remove_filter( "default_option_{$id_base}", array( $setting, '_preview_filter' ) );
+				}
+			}
+		}
+		remove_filter( 'option_sidebars_widgets', array( $this->manager->widgets, 'filter_option_sidebars_widgets_for_theme_switch' ), 1 );
 		$response = $this->manager->save( array( 'check_ajax_referer' => false, 'send_json' => false ) );
-		$this->assertInternalType( 'array', $response );
+		$this->assertInternalType( 'array', $response ); // and not a WP_Error
+
+		// Ensure that the new theme's sidebars have been saved as expected
+		$db_sidebars_widgets = maybe_unserialize( $wpdb->get_var( "SELECT option_value FROM $wpdb->options WHERE option_name = 'sidebars_widgets'" ) );
+		$this->assertEquals( $this->twentythirteen_sidebars_widgets['sidebar-1'], $db_sidebars_widgets['sidebar-1'] );
+		$this->assertEquals( $this->twentythirteen_sidebars_widgets['sidebar-2'], $db_sidebars_widgets['sidebar-2'] );
+
+		// Ensure that the old theme's sidebars have been placed in that theme's widgets_sidebars theme mod
+		$old_theme_sidebars_widgets_theme_mod = get_option( "theme_mods_{$old_theme}" );
+		$this->assertEquals( $old_sidebars_widgets_value, $old_theme_sidebars_widgets_theme_mod['sidebars_widgets']['data'] );
+		$this->assertGreaterThanOrEqual( $old_theme_sidebars_widgets_theme_mod['sidebars_widgets']['time'], $start_time );
+		$new_theme_mods = get_option( "theme_mods_{$new_theme}" );
+		$this->assertEmpty( $new_theme_mods['sidebars_widgets'], "Expected new theme's sidebars_widgets theme mod to be gone." );
 	}
 
 	/**
