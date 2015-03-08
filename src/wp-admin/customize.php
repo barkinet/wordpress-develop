@@ -280,19 +280,27 @@ do_action( 'customize_controls_print_scripts' );
 
 	// Prepare Customize Control objects to pass to JavaScript.
 	foreach ( $wp_customize->controls() as $id => $control ) {
-		$settings['controls'][ $id ] = $control->json();
+		if ( $control->check_capabilities() ) {
+			$settings['controls'][ $id ] = $control->json();
+		}
 	}
 
 	// Prepare Customize Section objects to pass to JavaScript.
 	foreach ( $wp_customize->sections() as $id => $section ) {
-		$settings['sections'][ $id ] = $section->json();
+		if ( $section->check_capabilities() ) {
+			$settings['sections'][ $id ] = $section->json();
+		}
 	}
 
 	// Prepare Customize Panel objects to pass to JavaScript.
-	foreach ( $wp_customize->panels() as $id => $panel ) {
-		$settings['panels'][ $id ] = $panel->json();
-		foreach ( $panel->sections as $section_id => $section ) {
-			$settings['sections'][ $section_id ] = $section->json();
+	foreach ( $wp_customize->panels() as $panel_id => $panel ) {
+		if ( $panel->check_capabilities() ) {
+			$settings['panels'][ $panel_id ] = $panel->json();
+			foreach ( $panel->sections as $section_id => $section ) {
+				if ( $section->check_capabilities() ) {
+					$settings['sections'][ $section_id ] = $section->json();
+				}
+			}
 		}
 	}
 
