@@ -175,6 +175,7 @@ add_filter( 'option_blog_charset',      '_canonical_charset'                  );
 add_filter( 'option_home',              '_config_wp_home'                     );
 add_filter( 'option_siteurl',           '_config_wp_siteurl'                  );
 add_filter( 'tiny_mce_before_init',     '_mce_set_direction'                  );
+add_filter( 'teeny_mce_before_init',    '_mce_set_direction'                  );
 add_filter( 'pre_kses',                 'wp_pre_kses_less_than'               );
 add_filter( 'sanitize_title',           'sanitize_title_with_dashes',   10, 3 );
 add_action( 'check_comment_flood',      'check_comment_flood_db',       10, 3 );
@@ -305,6 +306,10 @@ add_filter( 'authenticate', 'wp_authenticate_username_password',  20, 3 );
 add_filter( 'authenticate', 'wp_authenticate_spam_check',         99    );
 add_filter( 'determine_current_user', 'wp_validate_auth_cookie'          );
 add_filter( 'determine_current_user', 'wp_validate_logged_in_cookie', 20 );
+
+// Split term updates.
+add_action( 'split_shared_term', '_wp_check_split_default_terms',  10, 4 );
+add_action( 'split_shared_term', '_wp_check_split_terms_in_menus', 10, 4 );
 
 /**
  * Filters formerly mixed into wp-includes

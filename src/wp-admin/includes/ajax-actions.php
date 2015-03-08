@@ -1845,21 +1845,36 @@ function wp_ajax_update_widget() {
  */
 function wp_ajax_upload_attachment() {
 	check_ajax_referer( 'media-form' );
+	/*
+	 * This function does not use wp_send_json_success() / wp_send_json_error()
+	 * as the html4 Plupload handler requires a text/html content-type for older IE.
+	 * See https://core.trac.wordpress.org/ticket/31037
+	 */
 
 	if ( ! current_user_can( 'upload_files' ) ) {
-		wp_send_json_error( array(
-			'message'  => __( "You don't have permission to upload files." ),
-			'filename' => $_FILES['async-upload']['name'],
+		echo wp_json_encode( array(
+			'success' => false,
+			'data'    => array(
+				'message'  => __( "You don't have permission to upload files." ),
+				'filename' => $_FILES['async-upload']['name'],
+			)
 		) );
+
+		wp_die();
 	}
 
 	if ( isset( $_REQUEST['post_id'] ) ) {
 		$post_id = $_REQUEST['post_id'];
 		if ( ! current_user_can( 'edit_post', $post_id ) ) {
-			wp_send_json_error( array(
-				'message'  => __( "You don't have permission to attach files to this post." ),
-				'filename' => $_FILES['async-upload']['name'],
+			echo wp_json_encode( array(
+				'success' => false,
+				'data'    => array(
+					'message'  => __( "You don't have permission to attach files to this post." ),
+					'filename' => $_FILES['async-upload']['name'],
+				)
 			) );
+
+			wp_die();
 		}
 	} else {
 		$post_id = null;
@@ -1871,20 +1886,30 @@ function wp_ajax_upload_attachment() {
 	if ( isset( $post_data['context'] ) && in_array( $post_data['context'], array( 'custom-header', 'custom-background' ) ) ) {
 		$wp_filetype = wp_check_filetype_and_ext( $_FILES['async-upload']['tmp_name'], $_FILES['async-upload']['name'] );
 		if ( ! wp_match_mime_types( 'image', $wp_filetype['type'] ) ) {
-			wp_send_json_error( array(
-				'message'  => __( 'The uploaded file is not a valid image. Please try again.' ),
-				'filename' => $_FILES['async-upload']['name'],
+			echo wp_json_encode( array(
+				'success' => false,
+				'data'    => array(
+					'message'  => __( 'The uploaded file is not a valid image. Please try again.' ),
+					'filename' => $_FILES['async-upload']['name'],
+				)
 			) );
+
+			wp_die();
 		}
 	}
 
 	$attachment_id = media_handle_upload( 'async-upload', $post_id, $post_data );
 
 	if ( is_wp_error( $attachment_id ) ) {
-		wp_send_json_error( array(
-			'message'  => $attachment_id->get_error_message(),
-			'filename' => $_FILES['async-upload']['name'],
+		echo wp_json_encode( array(
+			'success' => false,
+			'data'    => array(
+				'message'  => $attachment_id->get_error_message(),
+				'filename' => $_FILES['async-upload']['name'],
+			)
 		) );
+
+		wp_die();
 	}
 
 	if ( isset( $post_data['context'] ) && isset( $post_data['theme'] ) ) {
@@ -1898,7 +1923,12 @@ function wp_ajax_upload_attachment() {
 	if ( ! $attachment = wp_prepare_attachment_for_js( $attachment_id ) )
 		wp_die();
 
-	wp_send_json_success( $attachment );
+	echo wp_json_encode( array(
+		'success' => true,
+		'data'    => $attachment,
+	) );
+
+	wp_die();
 }
 
 /**
@@ -2237,6 +2267,9 @@ function wp_ajax_save_attachment() {
 	if ( 'attachment' != $post['post_type'] )
 		wp_send_json_error();
 
+	if ( isset( $changes['parent'] ) )
+		$post['post_parent'] = $changes['parent'];
+
 	if ( isset( $changes['title'] ) )
 		$post['post_title'] = $changes['title'];
 
@@ -2257,7 +2290,7 @@ function wp_ajax_save_attachment() {
 		}
 	}
 
-	if ( 0 === strpos( $post['post_mime_type'], 'audio/' ) ) {
+	if ( wp_attachment_is( 'audio', $post['ID'] ) ) {
 		$changed = false;
 		$id3data = wp_get_attachment_metadata( $post['ID'] );
 		if ( ! is_array( $id3data ) ) {
@@ -2415,7 +2448,7 @@ function wp_ajax_send_attachment_to_editor() {
 		$caption = isset( $attachment['post_excerpt'] ) ? $attachment['post_excerpt'] : '';
 		$title = ''; // We no longer insert title tags into <img> tags, as they are redundant.
 		$html = get_image_send_to_editor( $id, $caption, $title, $align, $url, (bool) $rel, $size, $alt );
-	} elseif ( 'video' === substr( $post->post_mime_type, 0, 5 ) || 'audio' === substr( $post->post_mime_type, 0, 5 )  ) {
+	} elseif ( wp_attachment_is( 'video', $post ) || wp_attachment_is( 'audio', $post )  ) {
 		$html = stripslashes_deep( $_POST['html'] );
 	}
 
@@ -2600,8 +2633,13 @@ function wp_ajax_save_user_color_scheme() {
 		wp_send_json_error();
 	}
 
+	$previous_color_scheme = get_user_meta( get_current_user_id(), 'admin_color', true );
 	update_user_meta( get_current_user_id(), 'admin_color', $color_scheme );
-	wp_send_json_success();
+
+	wp_send_json_success( array(
+		'previousScheme' => 'admin-color-' . $previous_color_scheme,
+		'currentScheme'  => 'admin-color-' . $color_scheme
+	) );
 }
 
 /**
@@ -2670,13 +2708,21 @@ function wp_ajax_parse_embed() {
 	}
 
 	$shortcode = wp_unslash( $_POST['shortcode'] );
-	$url = str_replace( '[embed]', '', str_replace( '[/embed]', '', $shortcode ) );
+
+	preg_match( '/' . get_shortcode_regex() . '/s', $shortcode, $matches );
+	$atts = shortcode_parse_atts( $matches[3] );
+	if ( ! empty( $matches[5] ) ) {
+		$url = $matches[5];
+	} elseif ( ! empty( $atts['src'] ) ) {
+		$url = $atts['src'];
+	}
+
 	$parsed = false;
 	setup_postdata( $post );
 
 	$wp_embed->return_false_on_fail = true;
 
-	if ( is_ssl() && preg_match( '%^\\[embed[^\\]]*\\]http://%i', $shortcode ) ) {
+	if ( is_ssl() && 0 === strpos( $url, 'http://' ) ) {
 		// Admin is ssl and the user pasted non-ssl URL.
 		// Check if the provider supports ssl embeds and use that for the preview.
 		$ssl_shortcode = preg_replace( '%^(\\[embed[^\\]]*\\])http://%i', '$1https://', $shortcode );
@@ -2729,7 +2775,8 @@ function wp_ajax_parse_embed() {
 	}
 
 	wp_send_json_success( array(
-		'body' => $parsed
+		'body' => $parsed,
+		'attr' => $wp_embed->last_attr
 	) );
 }
 
@@ -2827,4 +2874,121 @@ function wp_ajax_destroy_sessions() {
 	}
 
 	wp_send_json_success( array( 'message' => $message ) );
+}
+
+/**
+ * AJAX handler for installing a plugin.
+ *
+ * @since 4.2.0
+ */
+function wp_ajax_install_plugin() {
+	$status = array(
+		'install' => 'plugin',
+		'slug'    => sanitize_key( $_POST['slug'] ),
+	);
+
+	if ( ! current_user_can( 'install_plugins' ) ) {
+		$status['error'] = __( 'You do not have sufficient permissions to install plugins on this site.' );
+ 		wp_send_json_error( $status );
+	}
+
+	check_ajax_referer( 'updates' );
+
+	include_once( ABSPATH . 'wp-admin/includes/class-wp-upgrader.php' );
+	include_once( ABSPATH . 'wp-admin/includes/plugin-install.php' );
+
+	$api = plugins_api( 'plugin_information', array(
+		'slug'   => sanitize_key( $_POST['slug'] ),
+		'fields' => array( 'sections' => false )
+	) );
+
+	if ( is_wp_error( $api ) ) {
+		$status['error'] = $api->get_error_message();
+ 		wp_send_json_error( $status );
+	}
+
+	$upgrader = new Plugin_Upgrader( new Automatic_Upgrader_Skin() );
+	$result = $upgrader->install( $api->download_link );
+
+	if ( is_wp_error( $result ) ) {
+		$status['error'] = $result->get_error_message();
+ 		wp_send_json_error( $status );
+	}
+
+	$plugin_status = install_plugin_install_status( $api );
+
+	if ( ! is_multisite() ) {
+		activate_plugin( $plugin_status['file'] );
+	}
+
+	wp_send_json_success( $status );
+}
+
+/**
+ * AJAX handler for updating a plugin.
+ *
+ * @since 4.2.0
+ */
+function wp_ajax_update_plugin() {
+	$plugin = urldecode( $_POST['plugin'] );
+
+	$status = array(
+		'update' => 'plugin',
+		'plugin' => $plugin,
+		'slug'   => sanitize_key( $_POST['slug'] ),
+	);
+
+	if ( ! current_user_can( 'update_plugins' ) ) {
+		$status['error'] = __( 'You do not have sufficient permissions to update plugins on this site.' );
+ 		wp_send_json_error( $status );
+	}
+
+	check_ajax_referer( 'updates' );
+
+	include_once( ABSPATH . 'wp-admin/includes/class-wp-upgrader.php' );
+
+	$current = get_site_transient( 'update_plugins' );
+	if ( empty( $current ) ) {
+		wp_update_plugins();
+	}
+
+	$upgrader = new Plugin_Upgrader( new Automatic_Upgrader_Skin() );
+	$result = $upgrader->bulk_upgrade( array( $plugin ) );
+
+	if ( is_array( $result ) ) {
+		$result = $result[ $plugin ];
+	}
+
+	if ( is_wp_error( $result ) ) {
+		$status['error'] = $result->get_error_message();
+ 		wp_send_json_error( $status );
+	}
+
+	wp_send_json_success( $status );
+}
+
+/**
+ * AJAX handler for saving a post from Ptrss This.
+ *
+ * @since 4.2.0
+ */
+function wp_ajax_press_this_save_post() {
+	if ( empty( $GLOBALS['wp_press_this'] ) ) {
+		include( ABSPATH . 'wp-admin/includes/class-wp-press-this.php' );
+	}
+
+	$GLOBALS['wp_press_this']->save_post();
+}
+
+/**
+ * AJAX handler for creating new category from Ptrss This.
+ *
+ * @since 4.2.0
+ */
+function wp_ajax_press_this_add_category() {
+	if ( empty( $GLOBALS['wp_press_this'] ) ) {
+		include( ABSPATH . 'wp-admin/includes/class-wp-press-this.php' );
+	}
+
+	$GLOBALS['wp_press_this']->add_category();
 }

@@ -1064,10 +1064,13 @@ if ( !function_exists('check_admin_referer') ) :
  *
  * @since 1.2.0
  *
- * @param int|string $action    Action nonce
- * @param string     $query_arg Where to look for nonce in $_REQUEST (since 2.5)
+ * @param int|string $action    Action nonce.
+ * @param string     $query_arg Optional. Key to check for nonce in `$_REQUEST` (since 2.5).
+ *                              Default '_wpnonce'.
+ * @return false|int False if the nonce is invalid, 1 if the nonce is valid and generated between
+ *                   0-12 hours ago, 2 if the nonce is valid and generated between 12-24 hours ago.
  */
-function check_admin_referer($action = -1, $query_arg = '_wpnonce') {
+function check_admin_referer( $action = -1, $query_arg = '_wpnonce' ) {
 	if ( -1 == $action )
 		_doing_it_wrong( __FUNCTION__, __( 'You should specify a nonce action to be verified by using the first parameter.' ), '3.2' );
 
@@ -1084,8 +1087,9 @@ function check_admin_referer($action = -1, $query_arg = '_wpnonce') {
 	 *
 	 * @since 1.5.1
 	 *
-	 * @param string $action The nonce action.
-	 * @param bool   $result Whether the admin request nonce was validated.
+	 * @param string    $action The nonce action.
+	 * @param false|int $result False if the nonce is invalid, 1 if the nonce is valid and generated between
+	 *                          0-12 hours ago, 2 if the nonce is valid and generated between 12-24 hours ago.
 	 */
 	do_action( 'check_admin_referer', $action, $result );
 	return $result;
@@ -1098,8 +1102,14 @@ if ( !function_exists('check_ajax_referer') ) :
  *
  * @since 2.0.3
  *
- * @param int|string $action    Action nonce
- * @param string     $query_arg Where to look for nonce in $_REQUEST (since 2.5)
+ * @param int|string   $action    Action nonce.
+ * @param false|string $query_arg Optional. Key to check for the nonce in `$_REQUEST` (since 2.5). If false,
+ *                                `$_REQUEST` values will be evaluated for '_ajax_nonce', and '_wpnonce'
+ *                                (in that order). Default false.
+ * @param bool         $die       Optional. Whether to die early when the nonce cannot be verified.
+ *                                Default true.
+ * @return false|int False if the nonce is invalid, 1 if the nonce is valid and generated between
+ *                   0-12 hours ago, 2 if the nonce is valid and generated between 12-24 hours ago.
  */
 function check_ajax_referer( $action = -1, $query_arg = false, $die = true ) {
 	$nonce = '';
@@ -1125,8 +1135,9 @@ function check_ajax_referer( $action = -1, $query_arg = false, $die = true ) {
 	 *
 	 * @since 2.1.0
 	 *
-	 * @param string $action The AJAX nonce action.
-	 * @param bool   $result Whether the AJAX request nonce was validated.
+	 * @param string    $action The AJAX nonce action.
+	 * @param false|int $result False if the nonce is invalid, 1 if the nonce is valid and generated between
+	 *                          0-12 hours ago, 2 if the nonce is valid and generated between 12-24 hours ago.
 	 */
 	do_action( 'check_ajax_referer', $action, $result );
 
@@ -1190,6 +1201,19 @@ if ( !function_exists('wp_sanitize_redirect') ) :
  * @return string redirect-sanitized URL
  **/
 function wp_sanitize_redirect($location) {
+	$regex = '/
+		(
+			(?: [\xC2-\xDF][\x80-\xBF]        # double-byte sequences   110xxxxx 10xxxxxx
+			|   \xE0[\xA0-\xBF][\x80-\xBF]    # triple-byte sequences   1110xxxx 10xxxxxx * 2
+			|   [\xE1-\xEC][\x80-\xBF]{2}
+			|   \xED[\x80-\x9F][\x80-\xBF]
+			|   [\xEE-\xEF][\x80-\xBF]{2}
+			|   \xF0[\x90-\xBF][\x80-\xBF]{2} # four-byte sequences   11110xxx 10xxxxxx * 3
+			|   [\xF1-\xF3][\x80-\xBF]{3}
+			|   \xF4[\x80-\x8F][\x80-\xBF]{2}
+		){1,50}                              # ...one or more times
+		)/x';
+	$location = preg_replace_callback( $regex, '_wp_sanitize_utf8_in_redirect', $location );
 	$location = preg_replace('|[^a-z0-9-~+_.?#=&;,/:%!*\[\]()]|i', '', $location);
 	$location = wp_kses_no_null($location);
 
@@ -1197,6 +1221,19 @@ function wp_sanitize_redirect($location) {
 	$strip = array('%0d', '%0a', '%0D', '%0A');
 	$location = _deep_replace($strip, $location);
 	return $location;
+}
+
+/**
+ * URL encode UTF-8 characters in a URL.
+ *
+ * @ignore
+ * @since 4.2.0
+ * @access private
+ *
+ * @see wp_sanitize_redirect()
+ */
+function _wp_sanitize_utf8_in_redirect( $matches ) {
+	return urlencode( $matches[0] );
 }
 endif;
 
@@ -1693,7 +1730,8 @@ if ( !function_exists('wp_verify_nonce') ) :
  *
  * @param string     $nonce  Nonce that was used in the form to verify
  * @param string|int $action Should give context to what is taking place and be the same when nonce was created.
- * @return bool Whether the nonce check passed or failed.
+ * @return false|int False if the nonce is invalid, 1 if the nonce is valid and generated between
+ *                   0-12 hours ago, 2 if the nonce is valid and generated between 12-24 hours ago.
  */
 function wp_verify_nonce( $nonce, $action = -1 ) {
 	$nonce = (string) $nonce;
@@ -2089,7 +2127,7 @@ if ( !function_exists( 'get_avatar' ) ) :
  *
  * @param mixed $id_or_email The Gravatar to retrieve. Accepts a user_id, gravatar md5 hash,
  *                           user email, WP_User object, WP_Post object, or comment object.
- * @param int    $size       Optional. Height and width of the avatar in pixels. Default 96.
+ * @param int    $size       Optional. Height and width of the avatar image file in pixels. Default 96.
  * @param string $default    Optional. URL for the default image or a default type. Accepts '404'
  *                           (return a 404 instead of a default image), 'retro' (8bit), 'monsterid'
  *                           (monster), 'wavatar' (cartoon face), 'indenticon' (the "quilt"),
@@ -2100,6 +2138,8 @@ if ( !function_exists( 'get_avatar' ) ) :
  * @param array  $args       {
  *     Optional. Extra arguments to retrieve the avatar.
  *
+ *     @type int          $height        Display height of the avatar in pixels. Defaults to $size.
+ *     @type int          $width         Display width of the avatar in pixels. Defaults to $size.
  *     @type bool         $force_default Whether to always show the default image, never the Gravatar. Default false.
  *     @type string       $rating        What rating to display avatars up to. Accepts 'G', 'PG', 'R', 'X', and are
  *                                       judged in that order. Default is the value of the 'avatar_rating' option.
@@ -2109,6 +2149,7 @@ if ( !function_exists( 'get_avatar' ) ) :
  *                                       Default null.
  *     @type bool         $force_display Whether to always show the avatar - ignores the show_avatars option.
  *                                       Default false.
+ *     @type string       $extra_attr    HTML attributes to insert in the IMG element. Is not sanitized. Default empty.
  * }
  *
  * @return false|string `<img>` tag for the user's avatar. False on failure.
@@ -2117,6 +2158,8 @@ function get_avatar( $id_or_email, $size = 96, $default = '', $alt = '', $args =
 	$defaults = array(
 		// get_avatar_data() args.
 		'size'          => 96,
+		'height'        => null,
+		'width'         => null,
 		'default'       => get_option( 'avatar_default', 'mystery' ),
 		'force_default' => false,
 		'rating'        => get_option( 'avatar_rating' ),
@@ -2124,6 +2167,7 @@ function get_avatar( $id_or_email, $size = 96, $default = '', $alt = '', $args =
 		'alt'           => '',
 		'class'         => null,
 		'force_display' => false,
+		'extra_attr'    => '',
 	);
 
 	if ( empty( $args ) ) {
@@ -2135,6 +2179,13 @@ function get_avatar( $id_or_email, $size = 96, $default = '', $alt = '', $args =
 	$args['alt']     = $alt;
 
 	$args = wp_parse_args( $args, $defaults );
+
+	if ( empty( $args['height'] ) ) {
+		$args['height'] = $args['size'];
+	}
+	if ( empty( $args['width'] ) ) {
+		$args['width'] = $args['size'];
+	}
 
 	/**
 	 * Filter whether to retrieve the avatar URL early.
@@ -2150,7 +2201,7 @@ function get_avatar( $id_or_email, $size = 96, $default = '', $alt = '', $args =
 	 */
 	$avatar = apply_filters( 'pre_get_avatar', null, $id_or_email, $args );
 	if ( ! is_null( $avatar ) ) {
-		/** This filter is documented in src/wp-include/pluggable.php */
+		/** This filter is documented in wp-includes/pluggable.php */
 		return apply_filters( 'get_avatar', $avatar, $id_or_email, $args['size'], $args['default'], $args['alt'], $args );
 	}
 
@@ -2181,12 +2232,13 @@ function get_avatar( $id_or_email, $size = 96, $default = '', $alt = '', $args =
 	}
 
 	$avatar = sprintf(
-		"<img alt='%s' src='%s' class='%s' height='%d' width='%d' />",
+		"<img alt='%s' src='%s' class='%s' height='%d' width='%d' %s/>",
 		esc_attr( $args['alt'] ),
 		esc_url( $url ),
 		esc_attr( join( ' ', $class ) ),
-		(int) $args['size'],
-		(int) $args['size']
+		(int) $args['height'],
+		(int) $args['width'],
+		$args['extra_attr']
 	);
 
 	/**

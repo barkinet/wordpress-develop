@@ -25,7 +25,10 @@ if ( 'grid' === $mode ) {
 	wp_enqueue_script( 'media-grid' );
 	wp_enqueue_script( 'media' );
 
-	$vars = wp_edit_attachments_query_vars();
+	$q = $_GET;
+	// let JS handle this
+	unset( $q['s'] );
+	$vars = wp_edit_attachments_query_vars( $q );
 	$ignore = array( 'mode', 'post_type', 'post_status', 'posts_per_page' );
 	foreach ( $vars as $key => $value ) {
 		if ( ! $value || in_array( $key, $ignore ) ) {
@@ -67,7 +70,7 @@ if ( 'grid' === $mode ) {
 
 	require_once( ABSPATH . 'wp-admin/admin-header.php' );
 	?>
-	<div class="wrap" id="wp-media-grid">
+	<div class="wrap" id="wp-media-grid" data-search="<?php _admin_search_query() ?>">
 		<h2>
 		<?php
 		echo esc_html( $title );
@@ -110,45 +113,14 @@ if ( $doaction ) {
 	}
 
 	switch ( $doaction ) {
-		case 'attach':
-			$parent_id = (int) $_REQUEST['found_post_id'];
-			if ( !$parent_id )
-				return;
-
-			$parent = get_post( $parent_id );
-			if ( !current_user_can( 'edit_post', $parent_id ) )
-				wp_die( __( 'You are not allowed to edit this post.' ) );
-
-			$attach = array();
-			foreach ( (array) $_REQUEST['media'] as $att_id ) {
-				$att_id = (int) $att_id;
-
-				if ( !current_user_can( 'edit_post', $att_id ) )
-					continue;
-
-				$attach[] = $att_id;
-			}
-
-			if ( ! empty( $attach ) ) {
-				$attach_string = implode( ',', $attach );
-				$attached = $wpdb->query( $wpdb->prepare( "UPDATE $wpdb->posts SET post_parent = %d WHERE post_type = 'attachment' AND ID IN ( $attach_string )", $parent_id ) );
-				foreach ( $attach as $att_id ) {
-					clean_attachment_cache( $att_id );
-				}
-			}
-
-			if ( isset( $attached ) ) {
-				$location = 'upload.php';
-				if ( $referer = wp_get_referer() ) {
-					if ( false !== strpos( $referer, 'upload.php' ) )
-						$location = $referer;
-				}
-
-				$location = add_query_arg( array( 'attached' => $attached ) , $location );
-				wp_redirect( $location );
-				exit;
-			}
+		case 'detach':
+			wp_media_attach_action( $_REQUEST['parent_post_id'], 'detach' );
 			break;
+
+		case 'attach':
+			wp_media_attach_action( $_REQUEST['found_post_id'] );
+			break;
+
 		case 'trash':
 			if ( !isset( $post_ids ) )
 				break;
@@ -253,7 +225,12 @@ if ( ! empty( $_GET['posted'] ) ) {
 
 if ( ! empty( $_GET['attached'] ) && $attached = absint( $_GET['attached'] ) ) {
 	$message = sprintf( _n('Reattached %d attachment.', 'Reattached %d attachments.', $attached), $attached );
-	$_SERVER['REQUEST_URI'] = remove_query_arg(array('attached'), $_SERVER['REQUEST_URI']);
+	$_SERVER['REQUEST_URI'] = remove_query_arg( array( 'detach', 'attached' ), $_SERVER['REQUEST_URI'] );
+}
+
+if ( ! empty( $_GET['detach'] ) && $detached = absint( $_GET['detach'] ) ) {
+	$message = sprintf( _n( 'Detached %d attachment.', 'Detached %d attachments.', $detached ), $detached );
+	$_SERVER['REQUEST_URI'] = remove_query_arg( array( 'detach', 'attached' ), $_SERVER['REQUEST_URI'] );
 }
 
 if ( ! empty( $_GET['deleted'] ) && $deleted = absint( $_GET['deleted'] ) ) {

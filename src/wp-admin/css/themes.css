@@ -174,7 +174,7 @@
 	top: 35%;
 	right: 25%;
 	left: 25%;
-	background: #222;
+	background: #23282d;
 	background: rgba(0,0,0,0.7);
 	color: #fff;
 	font-size: 15px;
@@ -274,7 +274,7 @@
 }
 
 .theme-browser .theme .theme-author {
-	background: #222;
+	background: #23282d;
 	color: #eee;
 	display: none;
 	font-size: 14px;
@@ -369,14 +369,14 @@
 .theme-browser .theme.add-new-theme:hover span:after,
 .theme-browser .theme.add-new-theme:focus span:after {
 	background: #fff;
-	color: #0074a2;
+	color: #0073aa;
 }
 
 .theme-browser .theme.add-new-theme:hover:after,
 .theme-browser .theme.add-new-theme:focus:after {
 	border-color: transparent;
 	color: #fff;
-	background: #0074a2;
+	background: #0073aa;
 	content: '';
 }
 
@@ -499,14 +499,12 @@
 	font-weight: 300;
 }
 
-.theme-overlay .theme-header .left:before,
-.rtl .theme-overlay .theme-header .right:before {
-	content: '\f341';
+.theme-overlay .theme-header .left:before {
+	content: "\f341";
 }
 
-.theme-overlay .theme-header .right:before,
-.rtl .theme-overlay .theme-header .left:before {
-	content: '\f345';
+.theme-overlay .theme-header .right:before {
+	content: "\f345";
 }
 
 
@@ -697,7 +695,7 @@ body.folded .theme-overlay .theme-wrap {
 
 .theme-overlay .screenshot.selected {
 	background: transparent;
-	border: 2px solid #2ea2cc;
+	border: 2px solid #00a0d2;
 }
 
 .theme-overlay .screenshot.selected img {
@@ -719,7 +717,7 @@ body.folded .theme-overlay .theme-wrap {
 }
 
 .theme-overlay .current-label {
-	background: #333;
+	background: #32373c;
 	color: #fff;
 	font-size: 11px;
 	display: inline-block;
@@ -734,7 +732,7 @@ body.folded .theme-overlay .theme-wrap {
 }
 
 .theme-overlay .theme-name {
-	color: #222;
+	color: #23282d;
 	font-size: 32px;
 	font-weight: 100;
 	margin: 10px 0 0;
@@ -748,10 +746,6 @@ body.folded .theme-overlay .theme-wrap {
 	float: none;
 	display: inline-block;
 	margin-left: 10px;
-	-webkit-user-select: none;
-	-moz-user-select: none;
-	-ms-user-select: none;
-	user-select: none;
 }
 
 .theme-overlay .theme-author {
@@ -775,7 +769,7 @@ body.folded .theme-overlay .theme-wrap {
 
 .theme-overlay .theme-tags {
 	border-top: 3px solid #eee;
-	color: #888;
+	color: #82878c;
 	font-size: 13px;
 	font-weight: 400;
 	margin: 30px 0 0 0;
@@ -799,7 +793,7 @@ body.folded .theme-overlay .theme-wrap {
 }
 
 .theme-overlay .theme-update {
-	color: #222;
+	color: #23282d;
 	font-size: 18px;
 	display: inline-block;
 	line-height: 40px;
@@ -809,7 +803,7 @@ body.folded .theme-overlay .theme-wrap {
 .theme-overlay .parent-theme {
 	background: #f7fcfe;
 	border: 1px solid #eee;
-	border-left: 4px solid #2ea2cc;
+	border-left: 4px solid #00a0d2;
 	font-size: 14px;
 	font-weight: normal;
 	margin-top: 30px;
@@ -1081,7 +1075,7 @@ body.folded .theme-overlay .theme-wrap {
 
 /* Already installed theme */
 .theme-browser .theme .theme-installed {
-	background: #0074a2;
+	background: #0073aa;
 }
 .theme-browser .theme .theme-installed:before {
 	content: '\f147';
@@ -1141,11 +1135,12 @@ body.show-upload-theme .upload-theme + .wp-filter + .theme-browser {
 }
 
 p.no-themes {
-	color: #999;
+	clear: both;
+	color: #666;
 	font-size: 18px;
 	font-style: normal;
 	margin: 0;
-	padding: 0;
+	padding: 100px 0 0;
 	text-align: center;
 	display: none;
 }
@@ -1465,14 +1460,6 @@ body.full-overlay-active {
 	pointer-events: none;
 }
 
-.rtl .theme-install-overlay .previous-theme:before {
-	content: "\f345";
-}
-
-.rtl .theme-install-overlay .next-theme:before {
-	content: "\f341";
-}
-
 /* Collapse Button */
 .wp-full-overlay a.collapse-sidebar {
 	position: absolute;
@@ -1491,7 +1478,7 @@ body.full-overlay-active {
 }
 
 .wp-full-overlay a.collapse-sidebar:hover {
-	color: #0074a2;
+	color: #0073aa;
 }
 
 .wp-full-overlay.collapsed .collapse-sidebar {
@@ -1527,6 +1514,7 @@ body.full-overlay-active {
 	text-decoration: none !important;
 }
 
+/* rtl:ignore */
 .wp-full-overlay.collapsed .collapse-sidebar-arrow:before,
 .rtl .wp-full-overlay .collapse-sidebar-arrow:before {
 	-webkit-transform: rotate(180deg);
@@ -1714,7 +1702,6 @@ body.full-overlay-active {
  * HiDPI Displays
  */
 @media print,
-  (-o-min-device-pixel-ratio: 5/4),
   (-webkit-min-device-pixel-ratio: 1.25),
   (min-resolution: 120dpi) {
 	.wp-full-overlay .collapse-sidebar-arrow {

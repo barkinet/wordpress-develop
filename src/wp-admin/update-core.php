@@ -231,18 +231,12 @@ function list_plugin_updates() {
 	</tr>
 	</thead>
 
-	<tfoot>
-	<tr>
-		<th scope="col" class="manage-column check-column"><input type="checkbox" id="plugins-select-all-2" /></th>
-		<th scope="col" class="manage-column"><label for="plugins-select-all-2"><?php _e('Select All'); ?></label></th>
-	</tr>
-	</tfoot>
 	<tbody class="plugins">
 <?php
 	foreach ( (array) $plugins as $plugin_file => $plugin_data) {
 		$info = plugins_api('plugin_information', array('slug' => $plugin_data->update->slug ));
 		if ( is_wp_error( $info ) ) {
-			continue;
+			$info = false;
 		}
 
 		// Get plugin compat for running version of WordPress.
@@ -282,6 +276,13 @@ function list_plugin_updates() {
 	}
 ?>
 	</tbody>
+
+	<tfoot>
+	<tr>
+		<th scope="col" class="manage-column check-column"><input type="checkbox" id="plugins-select-all-2" /></th>
+		<th scope="col" class="manage-column"><label for="plugins-select-all-2"><?php _e( 'Select All' ); ?></label></th>
+	</tr>
+	</tfoot>
 </table>
 <p><input id="upgrade-plugins-2" class="button" type="submit" value="<?php esc_attr_e('Update Plugins'); ?>" name="upgrade" /></p>
 </form>
@@ -313,12 +314,6 @@ function list_theme_updates() {
 	</tr>
 	</thead>
 
-	<tfoot>
-	<tr>
-		<th scope="col" class="manage-column check-column"><input type="checkbox" id="themes-select-all-2" /></th>
-		<th scope="col" class="manage-column"><label for="themes-select-all-2"><?php _e('Select All'); ?></label></th>
-	</tr>
-	</tfoot>
 	<tbody class="plugins">
 <?php
 	foreach ( $themes as $stylesheet => $theme ) {
@@ -330,6 +325,13 @@ function list_theme_updates() {
 	}
 ?>
 	</tbody>
+
+	<tfoot>
+	<tr>
+		<th scope="col" class="manage-column check-column"><input type="checkbox" id="themes-select-all-2" /></th>
+		<th scope="col" class="manage-column"><label for="themes-select-all-2"><?php _e( 'Select All' ); ?></label></th>
+	</tr>
+	</tfoot>
 </table>
 <p><input id="upgrade-themes-2" class="button" type="submit" value="<?php esc_attr_e('Update Themes'); ?>" name="upgrade" /></p>
 </form>
@@ -350,7 +352,7 @@ function list_translation_updates() {
 	?>
 	<h3><?php _e( 'Translations' ); ?></h3>
 	<form method="post" action="<?php echo esc_url( $form_action ); ?>" name="upgrade-translations" class="upgrade">
-		<p><?php _e( 'Some of your translations are out of date.' ); ?></p>
+		<p><?php _e( 'New translations are available.' ); ?></p>
 		<?php wp_nonce_field( 'upgrade-translations' ); ?>
 		<p><input class="button" type="submit" value="<?php esc_attr_e( 'Update Translations' ); ?>" name="upgrade" /></p>
 	</form>
@@ -390,14 +392,14 @@ function do_core_upgrade( $reinstall = false ) {
 	<h2><?php _e('Update WordPress'); ?></h2>
 <?php
 
-	if ( false === ( $credentials = request_filesystem_credentials( $url, '', false, ABSPATH, array(), $allow_relaxed_file_ownership ) ) ) {
+	if ( false === ( $credentials = request_filesystem_credentials( $url, '', false, ABSPATH, array( 'version', 'locale' ), $allow_relaxed_file_ownership ) ) ) {
 		echo '</div>';
 		return;
 	}
 
 	if ( ! WP_Filesystem( $credentials, ABSPATH, $allow_relaxed_file_ownership ) ) {
 		// Failed to connect, Error and request again
-		request_filesystem_credentials( $url, '', true, ABSPATH, array(), $allow_relaxed_file_ownership );
+		request_filesystem_credentials( $url, '', true, ABSPATH, array( 'version', 'locale' ), $allow_relaxed_file_ownership );
 		echo '</div>';
 		return;
 	}

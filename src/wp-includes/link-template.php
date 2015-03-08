@@ -2424,13 +2424,13 @@ function get_comments_pagenum_link( $pagenum = 1, $max_page = 0 ) {
 	if ( 'newest' == get_option('default_comments_page') ) {
 		if ( $pagenum != $max_page ) {
 			if ( $wp_rewrite->using_permalinks() )
-				$result = user_trailingslashit( trailingslashit($result) . 'comment-page-' . $pagenum, 'commentpaged');
+				$result = user_trailingslashit( trailingslashit($result) . $wp_rewrite->comments_pagination_base . '-' . $pagenum, 'commentpaged');
 			else
 				$result = add_query_arg( 'cpage', $pagenum, $result );
 		}
 	} elseif ( $pagenum > 1 ) {
 		if ( $wp_rewrite->using_permalinks() )
-			$result = user_trailingslashit( trailingslashit($result) . 'comment-page-' . $pagenum, 'commentpaged');
+			$result = user_trailingslashit( trailingslashit($result) . $wp_rewrite->comments_pagination_base . '-' . $pagenum, 'commentpaged');
 		else
 			$result = add_query_arg( 'cpage', $pagenum, $result );
 	}
@@ -2465,6 +2465,10 @@ function get_next_comments_link( $label = '', $max_page = 0 ) {
 		return;
 
 	$page = get_query_var('cpage');
+
+	if ( ! $page ) {
+		$page = 1;
+	}
 
 	$nextpage = intval($page) + 1;
 
@@ -2573,7 +2577,7 @@ function paginate_comments_links($args = array()) {
 		'add_fragment' => '#comments'
 	);
 	if ( $wp_rewrite->using_permalinks() )
-		$defaults['base'] = user_trailingslashit(trailingslashit(get_permalink()) . 'comment-page-%#%', 'commentpaged');
+		$defaults['base'] = user_trailingslashit(trailingslashit(get_permalink()) . $wp_rewrite->comments_pagination_base . '-%#%', 'commentpaged');
 
 	$args = wp_parse_args( $args, $defaults );
 	$page_links = paginate_links( $args );
@@ -2594,23 +2598,42 @@ function paginate_comments_links($args = array()) {
  * @return string The Press This bookmarklet link URL.
  */
 function get_shortcut_link() {
-	// In case of breaking changes, version this. #WP20071
-	$link = "javascript:
-			var d=document,
-			w=window,
-			e=w.getSelection,
-			k=d.getSelection,
-			x=d.selection,
-			s=(e?e():(k)?k():(x?x.createRange().text:0)),
-			f='" . admin_url('press-this.php') . "',
-			l=d.location,
-			e=encodeURIComponent,
-			u=f+'?u='+e(l.href)+'&t='+e(d.title)+'&s='+e(s)+'&v=4';
-			a=function(){if(!w.open(u,'t','toolbar=0,resizable=1,scrollbars=1,status=1,width=720,height=570'))l.href=u;};
-			if (/Firefox/.test(navigator.userAgent)) setTimeout(a, 0); else a();
-			void(0)";
+	global $is_IE, $wp_version;
 
-	$link = str_replace(array("\r", "\n", "\t"),  '', $link);
+	$bookmarklet_version = '6';
+	$link = '';
+
+	if ( $is_IE ) {
+		/**
+		 * Return the old/shorter bookmarklet code for MSIE 8 and lower,
+		 * since they only support a max length of ~2000 characters for
+		 * bookmark[let] URLs, which is way to small for our smarter one.
+		 * Do update the version number so users do not get the "upgrade your
+		 * bookmarklet" notice when using PT in those browsers.
+		 */
+		$ua = $_SERVER['HTTP_USER_AGENT'];
+
+		if ( ! empty( $ua ) && preg_match( '/\bMSIE (\d)/', $ua, $matches ) && (int) $matches[1] <= 8 ) {
+			$url = wp_json_encode( admin_url( 'press-this.php' ) );
+
+			$link = 'javascript:var d=document,w=window,e=w.getSelection,k=d.getSelection,x=d.selection,' .
+				's=(e?e():(k)?k():(x?x.createRange().text:0)),f=' . $url . ',l=d.location,e=encodeURIComponent,' .
+				'u=f+"?u="+e(l.href)+"&t="+e(d.title)+"&s="+e(s)+"&v=' . $bookmarklet_version . '";' .
+				'a=function(){if(!w.open(u,"t","toolbar=0,resizable=1,scrollbars=1,status=1,width=600,height=700"))l.href=u;};' .
+				'if(/Firefox/.test(navigator.userAgent))setTimeout(a,0);else a();void(0)';
+		}
+	}
+
+	if ( empty( $link ) ) {
+		$src = @file_get_contents( ABSPATH . 'wp-admin/js/bookmarklet.min.js' );
+
+		if ( $src ) {
+			$url = wp_json_encode( admin_url( 'press-this.php' ) . '?v=' . $bookmarklet_version );
+			$link = 'javascript:' . str_replace( 'window.pt_url', $url, $src );
+		}
+	}
+
+	$link = str_replace( array( "\r", "\n", "\t" ),  '', $link );
 
 	/**
 	 * Filter the Press This bookmarklet link.
@@ -3403,7 +3426,9 @@ function get_avatar_url( $id_or_email, $args = null ) {
  * @param array $args        {
  *     Optional. Arguments to return instead of the default arguments.
  *
- *     @type int    $size           Height and width of the avatar in pixels. Default 96.
+ *     @type int    $size           Height and width of the avatar image file in pixels. Default 96.
+ *     @type int    $height         Display height of the avatar in pixels. Defaults to $size.
+ *     @type int    $width          Display width of the avatar in pixels. Defaults to $size.
  *     @type string $default        URL for the default image or a default type. Accepts '404' (return
  *                                  a 404 instead of a default image), 'retro' (8bit), 'monsterid' (monster),
  *                                  'wavatar' (cartoon face), 'indenticon' (the "quilt"), 'mystery', 'mm',
@@ -3417,6 +3442,7 @@ function get_avatar_url( $id_or_email, $args = null ) {
  *                                  Default null.
  *     @type array  $processed_args When the function returns, the value will be the processed/sanitized $args
  *                                  plus a "found_avatar" guess. Pass as a reference. Default null.
+ *     @type string $extra_attr     HTML attributes to insert in the IMG element. Is not sanitized. Default empty.
  * }
  *
  * @return array $processed_args {
@@ -3430,11 +3456,14 @@ function get_avatar_url( $id_or_email, $args = null ) {
 function get_avatar_data( $id_or_email, $args = null ) {
 	$args = wp_parse_args( $args, array(
 		'size'           => 96,
+		'height'         => null,
+		'width'          => null,
 		'default'        => get_option( 'avatar_default', 'mystery' ),
 		'force_default'  => false,
 		'rating'         => get_option( 'avatar_rating' ),
 		'scheme'         => null,
 		'processed_args' => null, // if used, should be a reference
+		'extra_attr'     => '',
 	) );
 
 	if ( is_numeric( $args['size'] ) ) {
@@ -3444,6 +3473,24 @@ function get_avatar_data( $id_or_email, $args = null ) {
 		}
 	} else {
 		$args['size'] = 96;
+	}
+
+	if ( is_numeric( $args['height'] ) ) {
+		$args['height'] = absint( $args['height'] );
+		if ( ! $args['height'] ) {
+			$args['height'] = $args['size'];
+		}
+	} else {
+		$args['height'] = $args['size'];
+	}
+
+	if ( is_numeric( $args['width'] ) ) {
+		$args['width'] = absint( $args['width'] );
+		if ( ! $args['width'] ) {
+			$args['width'] = $args['size'];
+		}
+	} else {
+		$args['width'] = $args['size'];
 	}
 
 	if ( empty( $args['default'] ) ) {
@@ -3482,7 +3529,7 @@ function get_avatar_data( $id_or_email, $args = null ) {
 	$args = apply_filters( 'pre_get_avatar_data', $args, $id_or_email );
 
 	if ( isset( $args['url'] ) && ! is_null( $args['url'] ) ) {
-		/** This filter is documented in src/wp-includes/link-template.php */
+		/** This filter is documented in wp-includes/link-template.php */
 		return apply_filters( 'get_avatar_data', $args, $id_or_email );
 	}
 
@@ -3519,7 +3566,7 @@ function get_avatar_data( $id_or_email, $args = null ) {
 		$allowed_comment_types = apply_filters( 'get_avatar_comment_types', array( 'comment' ) );
 		if ( ! empty( $id_or_email->comment_type ) && ! in_array( $id_or_email->comment_type, (array) $allowed_comment_types ) ) {
 			$args['url'] = false;
-			/** This filter is documented in src/wp-includes/link-template.php */
+			/** This filter is documented in wp-includes/link-template.php */
 			return apply_filters( 'get_avatar_data', $args, $id_or_email );
 		}
 

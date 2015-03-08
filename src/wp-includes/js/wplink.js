@@ -2,7 +2,7 @@
 var wpLink;
 
 ( function( $ ) {
-	var editor, searchTimer, River, Query,
+	var editor, searchTimer, River, Query, correctedURL,
 		inputs = {},
 		rivers = {},
 		isTouch = ( 'ontouchend' in document );
@@ -72,6 +72,21 @@ var wpLink;
 					wpLink.searchInternalLinks.call( self );
 				}, 500 );
 			});
+
+			function correctURL() {
+				var url = $.trim( inputs.url.val() );
+
+				if ( url && correctedURL !== url && ! /^(?:[a-z]+:|#|\?|\.|\/)/.test( url ) ) {
+					inputs.url.val( 'http://' + url );
+					correctedURL = url;
+				}
+			}
+
+			inputs.url.on( 'paste', function() {
+				setTimeout( correctURL, 0 );
+			} );
+
+			inputs.url.on( 'blur', correctURL );
 		},
 
 		open: function( editorId ) {
@@ -146,6 +161,8 @@ var wpLink;
 			if ( ! rivers.recent.ul.children().length ) {
 				rivers.recent.ajax();
 			}
+
+			correctedURL = inputs.url.val().replace( /^http:\/\//, '' );
 		},
 
 		mceRefresh: function() {
@@ -183,13 +200,16 @@ var wpLink;
 
 			inputs.backdrop.hide();
 			inputs.wrap.hide();
+
+			correctedURL = false;
+
 			$( document ).trigger( 'wplink-close', inputs.wrap );
 		},
 
 		getAttrs: function() {
 			return {
-				href: inputs.url.val(),
-				title: inputs.title.val(),
+				href: $.trim( inputs.url.val() ),
+				title: $.trim( inputs.title.val() ),
 				target: inputs.openInNewTab.prop( 'checked' ) ? '_blank' : ''
 			};
 		},
@@ -211,7 +231,7 @@ var wpLink;
 			attrs = wpLink.getAttrs();
 
 			// If there's no href, return.
-			if ( ! attrs.href || attrs.href == 'http://' )
+			if ( ! attrs.href )
 				return;
 
 			// Build HTML
@@ -309,7 +329,7 @@ var wpLink;
 				inputs.url.val( selection.replace( /&amp;|&#0?38;/gi, '&' ) );
 			} else {
 				// Set URL to default.
-				inputs.url.val( 'http://' );
+				inputs.url.val( '' );
 			}
 
 			// Set description to default.

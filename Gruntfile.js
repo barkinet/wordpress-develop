@@ -2,12 +2,20 @@
 module.exports = function(grunt) {
 	var path = require('path'),
 		SOURCE_DIR = 'src/',
-		BUILD_DIR = 'build/';
+		BUILD_DIR = 'build/',
+		mediaConfig = {},
+		mediaBuilds = ['audio-video', 'grid', 'models', 'views'];
 
 	// Load tasks.
 	require('matchdep').filterDev(['grunt-*', '!grunt-legacy-util']).forEach( grunt.loadNpmTasks );
 	// Load legacy utils
 	grunt.util = require('grunt-legacy-util');
+
+	mediaBuilds.forEach( function ( build ) {
+		var path = SOURCE_DIR + 'wp-includes/js/media/';
+		mediaConfig[ build ] = { files : {} };
+		mediaConfig[ build ].files[ path + build + '.js' ] = [ path + build + '.manifest.js' ];
+	} );
 
 	// Project configuration.
 	grunt.initConfig({
@@ -109,11 +117,14 @@ module.exports = function(grunt) {
 				dest: 'tests/qunit/compiled.html',
 				options: {
 					processContent: function( src ) {
-						return src.replace( /([^\.])*\.\.\/src/ig , '/../build' );
+						src = src.replace( /([^\.])*\.\.\/src/ig , '/../build' );
+						src = src.replace( '/jquery/ui/core.js', '/jquery/ui/core.min.js' );
+						return src;
 					}
 				}
 			}
 		},
+		browserify: mediaConfig,
 		sass: {
 			colors: {
 				expand: true,
@@ -128,7 +139,7 @@ module.exports = function(grunt) {
 		},
 		cssmin: {
 			options: {
-				'wp-admin': ['wp-admin', 'color-picker', 'customize-controls', 'customize-widgets', 'ie', 'install', 'login', 'deprecated-*']
+				'wp-admin': ['wp-admin', 'color-picker', 'customize-controls', 'customize-widgets', 'ie', 'install', 'login', 'press-this', 'deprecated-*']
 			},
 			core: {
 				expand: true,
@@ -160,29 +171,64 @@ module.exports = function(grunt) {
 				]
 			}
 		},
-		cssjanus: {
-			core: {
-				options: {
+		rtlcss: {
+			options: {
+				// rtlcss options
+				config: {
+					swapLeftRightInUrl: false,
 					swapLtrRtlInUrl: false,
-					processContent: function( src ) {
-						return src.replace( /url\((.+?)\.css\)/g, 'url($1-rtl.css)' );
-					}
+					autoRename: false,
+					preserveDirectives: true,
+					stringMap: [
+						{
+							name: 'import-rtl-stylesheet',
+							search: [ '.css' ],
+							replace: [ '-rtl.css' ],
+							options: {
+								scope: 'url',
+								ignoreCase: false
+							}
+						}
+					]
 				},
+				properties : [
+					{
+						name: 'swap-dashicons-left-right-arrows',
+						expr: /content/im,
+						action: function( prop, value ) {
+							if ( value === '"\\f141"' ) { // dashicons-arrow-left
+								value = '"\\f139"';
+							} else if ( value === '"\\f340"' ) { // dashicons-arrow-left-alt
+								value = '"\\f344"';
+							} else if ( value === '"\\f341"' ) { // dashicons-arrow-left-alt2
+								value = '"\\f345"';
+							} else if ( value === '"\\f139"' ) { // dashicons-arrow-right
+								value = '"\\f141"';
+							} else if ( value === '"\\f344"' ) { // dashicons-arrow-right-alt
+								value = '"\\f340"';
+							} else if ( value === '"\\f345"' ) { // dashicons-arrow-right-alt2
+								value = '"\\f341"';
+							}
+							return { prop: prop, value: value };
+						}
+					}
+				],
+				saveUnmodified: false
+			},
+			core: {
 				expand: true,
 				cwd: SOURCE_DIR,
 				dest: BUILD_DIR,
 				ext: '-rtl.css',
 				src: [
 					'wp-admin/css/*.css',
-					'wp-includes/css/*.css'
+					'wp-includes/css/*.css',
+
+					// Exceptions
+					'!wp-includes/css/dashicons.css'
 				]
 			},
 			colors: {
-				options: {
-					processContent: function( src ) {
-						return src.replace( /([^/]+)\.css/gi, '$1-rtl.css' );
-					}
-				},
 				expand: true,
 				cwd: BUILD_DIR,
 				dest: BUILD_DIR,
@@ -220,6 +266,18 @@ module.exports = function(grunt) {
 					'!twenty{eleven,twelve,thirteen}/**',
 					// Third party scripts
 					'!twenty{fourteen,fifteen}/js/html5.js'
+				]
+			},
+			media: {
+				options: {
+					browserify: true
+				},
+				expand: true,
+				cwd: SOURCE_DIR,
+				src: [
+					'wp-includes/js/media/**/*.js',
+					'!wp-includes/js/media/*.js',
+					'wp-includes/js/media/*.manifest.js'
 				]
 			},
 			core: {
@@ -352,10 +410,23 @@ module.exports = function(grunt) {
 					'!wp-admin/js/custom-header.js', // Why? We should minify this.
 					'!wp-admin/js/farbtastic.js',
 					'!wp-admin/js/iris.min.js',
+					'!wp-admin/js/bookmarklet.js', // Minified and updated in /src with the precommit task. See uglify:bookmarklet.
 					'!wp-includes/js/backbone.min.js',
 					'!wp-includes/js/swfobject.js',
 					'!wp-includes/js/underscore.min.js',
 					'!wp-includes/js/zxcvbn.min.js'
+				]
+			},
+			media: {
+				expand: true,
+				cwd: SOURCE_DIR,
+				dest: BUILD_DIR,
+				ext: '.min.js',
+				src: [
+					'wp-includes/js/media/audio-video.js',
+					'wp-includes/js/media/grid.js',
+					'wp-includes/js/media/models.js',
+					'wp-includes/js/media/views.js'
 				]
 			},
 			jqueryui: {
@@ -367,6 +438,15 @@ module.exports = function(grunt) {
 				dest: BUILD_DIR,
 				ext: '.min.js',
 				src: ['wp-includes/js/jquery/ui/*.js']
+			},
+			bookmarklet: {
+				options: {
+					compress: {
+						negate_iife: false
+					}
+				},
+				src: SOURCE_DIR + 'wp-admin/js/bookmarklet.js',
+				dest: SOURCE_DIR + 'wp-admin/js/bookmarklet.min.js'
 			}
 		},
 		concat: {
@@ -421,7 +501,7 @@ module.exports = function(grunt) {
 				dest: SOURCE_DIR
 			}
 		},
-		watch: {
+		_watch: {
 			all: {
 				files: [
 					SOURCE_DIR + '**',
@@ -435,6 +515,13 @@ module.exports = function(grunt) {
 					interval: 2000
 				}
 			},
+			browserify: {
+				files: [
+					SOURCE_DIR + 'wp-includes/js/media/*.js',
+					'!' + SOURCE_DIR + 'wp-includes/js/media/*.manifest.js'
+				],
+				tasks: ['uglify:media']
+			},
 			config: {
 				files: 'Gruntfile.js'
 			},
@@ -447,7 +534,7 @@ module.exports = function(grunt) {
 					SOURCE_DIR + 'wp-admin/css/*.css',
 					SOURCE_DIR + 'wp-includes/css/*.css'
 				],
-				tasks: ['cssjanus:dynamic'],
+				tasks: ['rtlcss:dynamic'],
 				options: {
 					spawn: false,
 					interval: 2000
@@ -466,24 +553,69 @@ module.exports = function(grunt) {
 	// Register tasks.
 
 	// RTL task.
-	grunt.registerTask('rtl', ['cssjanus:core', 'cssjanus:colors']);
+	grunt.registerTask('rtl', ['rtlcss:core', 'rtlcss:colors']);
 
 	// Color schemes task.
 	grunt.registerTask('colors', ['sass:colors', 'autoprefixer:colors']);
 
 	// JSHint task.
-	grunt.registerTask('jshint:corejs', ['jshint:grunt', 'jshint:tests', 'jshint:themes', 'jshint:core']);
+	grunt.registerTask( 'jshint:corejs', [
+		'jshint:grunt',
+		'jshint:tests',
+		'jshint:themes',
+		'jshint:core',
+		'jshint:media'
+	] );
 
-	// Pre-commit task.
-	grunt.registerTask('precommit', 'Runs front-end dev/test tasks in preparation for a commit.',
-		['autoprefixer:core', 'imagemin:core', 'jshint:corejs', 'qunit:compiled']);
+	grunt.renameTask( 'watch', '_watch' );
 
-	// Copy task.
-	grunt.registerTask('copy:all', ['copy:files', 'copy:wp-admin-rtl', 'copy:version']);
+	grunt.registerTask( 'watch', function() {
+		if ( ! this.args.length || this.args.indexOf( 'browserify' ) > -1 ) {
+			grunt.config( 'browserify.options', {
+				browserifyOptions: {
+					debug: true
+				},
+				watch: true
+			} );
 
-	// Build task.
-	grunt.registerTask('build', ['clean:all', 'copy:all', 'cssmin:core', 'colors', 'rtl', 'cssmin:rtl', 'cssmin:colors',
-		'uglify:core', 'uglify:jqueryui', 'concat:tinymce', 'compress:tinymce', 'clean:tinymce', 'jsvalidate:build']);
+			grunt.task.run( 'browserify' );
+		}
+
+		grunt.task.run( '_' + this.nameArgs );
+	} );
+
+	grunt.registerTask( 'precommit', 'Runs front-end dev/test tasks in preparation for a commit.', [
+		'autoprefixer:core',
+		'imagemin:core',
+		'browserify',
+		'jshint:corejs',
+		'qunit:compiled',
+		'uglify:bookmarklet'
+	] );
+
+	grunt.registerTask( 'copy:all', [
+		'copy:files',
+		'copy:wp-admin-rtl',
+		'copy:version'
+	] );
+
+	grunt.registerTask( 'build', [
+		'clean:all',
+		'copy:all',
+		'cssmin:core',
+		'colors',
+		'rtl',
+		'cssmin:rtl',
+		'cssmin:colors',
+		'browserify',
+		'uglify:core',
+		'uglify:media',
+		'uglify:jqueryui',
+		'concat:tinymce',
+		'compress:tinymce',
+		'clean:tinymce',
+		'jsvalidate:build'
+	] );
 
 	// Testing tasks.
 	grunt.registerMultiTask('phpunit', 'Runs PHPUnit tests, including the ajax, external-http, and multisite tests.', function() {
@@ -513,7 +645,7 @@ module.exports = function(grunt) {
 	//
 	// On `watch:all`, automatically updates the `copy:dynamic` and `clean:dynamic`
 	// configurations so that only the changed files are updated.
-	// On `watch:rtl`, automatically updates the `cssjanus:dynamic` configuration.
+	// On `watch:rtl`, automatically updates the `rtlcss:dynamic` configuration.
 	grunt.event.on('watch', function( action, filepath, target ) {
 		if ( target !== 'all' && target !== 'rtl' ) {
 			return;
@@ -525,6 +657,6 @@ module.exports = function(grunt) {
 
 		grunt.config(['clean', 'dynamic', 'src'], cleanSrc);
 		grunt.config(['copy', 'dynamic', 'src'], copySrc);
-		grunt.config(['cssjanus', 'dynamic', 'src'], copySrc);
+		grunt.config(['rtlcss', 'dynamic', 'src'], copySrc);
 	});
 };

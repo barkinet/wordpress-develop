@@ -404,12 +404,20 @@ function post_class( $class = '', $post_id = null ) {
  * @return array Array of classes.
  */
 function get_post_class( $class = '', $post_id = null ) {
-	$post = get_post($post_id);
+	$post = get_post( $post_id );
 
 	$classes = array();
 
-	if ( empty($post) )
+	if ( $class ) {
+		if ( ! is_array( $class ) ) {
+			$class = preg_split( '#\s+#', $class );
+		}
+		$classes = array_map( 'esc_attr', $class );
+	}
+
+	if ( ! $post ) {
 		return $classes;
+	}
 
 	$classes[] = 'post-' . $post->ID;
 	if ( ! is_admin() )
@@ -466,13 +474,7 @@ function get_post_class( $class = '', $post_id = null ) {
 		}
 	}
 
-	if ( !empty($class) ) {
-		if ( !is_array( $class ) )
-			$class = preg_split('#\s+#', $class);
-		$classes = array_merge($classes, $class);
-	}
-
-	$classes = array_map('esc_attr', $classes);
+	$classes = array_map( 'esc_attr', $classes );
 
 	/**
 	 * Filter the list of CSS classes for the current post.
@@ -942,8 +944,26 @@ function the_meta() {
  * Retrieve or display list of pages as a dropdown (select list).
  *
  * @since 2.1.0
+ * @since 4.2.0 The `$value_field` argument was added.
  *
- * @param array|string $args Optional. Override default arguments.
+ * @param array|string $args {
+ *     Optional. Array or string of arguments to generate a pages drop-down element.
+ *
+ *     @type int          $depth                 Maximum depth. Default 0.
+ *     @type int          $child_of              Page ID to retrieve child pages of. Default 0.
+ *     @type int|string   $selected              Value of the option that should be selected. Default 0.
+ *     @type bool|int     $echo                  Whether to echo or return the generated markup. Accepts 0, 1,
+ *                                               or their bool equivalents. Default 1.
+ *     @type string       $name                  Value for the 'name' attribute of the select element.
+ *                                               Default 'page_id'.
+ *     @type string       $id                    Value for the 'id' attribute of the select element.
+ *                                               Defaults to the value of `$name`.
+ *     @type string       $show_option_none      Text to display for showing no pages. Default empty (does not display).
+ *     @type string       $show_option_no_change Text to display for "no change" option. Default empty (does not display).
+ *     @type string       $option_none_value     Value to use when no page is selected. Default empty.
+ *     @type string       $value_field           Post field used to populate the 'value' attribute of the option
+ *                                               elements. Accepts any valid post field. Default 'ID'.
+ * }
  * @return string HTML content, if not displaying.
  */
 function wp_dropdown_pages( $args = '' ) {
@@ -952,7 +972,8 @@ function wp_dropdown_pages( $args = '' ) {
 		'selected' => 0, 'echo' => 1,
 		'name' => 'page_id', 'id' => '',
 		'show_option_none' => '', 'show_option_no_change' => '',
-		'option_none_value' => ''
+		'option_none_value' => '',
+		'value_field' => 'ID',
 	);
 
 	$r = wp_parse_args( $args, $defaults );
@@ -1110,18 +1131,17 @@ function wp_list_pages( $args = '' ) {
  * @since 2.7.0
  *
  * @param array|string $args {
- *     Optional. Arguments to generate a page menu. {@see wp_list_pages()}
- *     for additional arguments.
+ *     Optional. Arguments to generate a page menu. See wp_list_pages() for additional arguments.
  *
- * @type string          $sort_column How to short the list of pages. Accepts post column names.
- *                                    Default 'menu_order, post_title'.
- * @type string          $menu_class  Class to use for the div ID containing the page list. Default 'menu'.
- * @type bool            $echo        Whether to echo the list or return it. Accepts true (echo) or false (return).
- *                                    Default true.
- * @type string          $link_before The HTML or text to prepend to $show_home text. Default empty.
- * @type string          $link_after  The HTML or text to append to $show_home text. Default empty.
- * @type int|bool|string $show_home   Whether to display the link to the home page. Can just enter the text
- *                                    you'd like shown for the home link. 1|true defaults to 'Home'.
+ *     @type string          $sort_column How to short the list of pages. Accepts post column names.
+ *                                        Default 'menu_order, post_title'.
+ *     @type string          $menu_class  Class to use for the div ID containing the page list. Default 'menu'.
+ *     @type bool            $echo        Whether to echo the list or return it. Accepts true (echo) or false (return).
+ *                                        Default true.
+ *     @type string          $link_before The HTML or text to prepend to $show_home text. Default empty.
+ *     @type string          $link_after  The HTML or text to append to $show_home text. Default empty.
+ *     @type int|bool|string $show_home   Whether to display the link to the home page. Can just enter the text
+ *                                        you'd like shown for the home link. 1|true defaults to 'Home'.
  * }
  * @return string html menu
  */
@@ -1406,15 +1426,20 @@ class Walker_PageDropdown extends Walker {
 	 * @since 2.1.0
 	 *
 	 * @param string $output Passed by reference. Used to append additional content.
-	 * @param object $page Page data object.
-	 * @param int $depth Depth of page in reference to parent pages. Used for padding.
-	 * @param array $args Uses 'selected' argument for selected page to set selected HTML attribute for option element.
+	 * @param object $page   Page data object.
+	 * @param int    $depth  Depth of page in reference to parent pages. Used for padding.
+	 * @param array  $args   Uses 'selected' argument for selected page to set selected HTML attribute for option
+	 *              element. Uses 'value_field' argument to fill "value" attribute. See {@see wp_dropdown_pages()}.
 	 * @param int $id
 	 */
 	public function start_el( &$output, $page, $depth = 0, $args = array(), $id = 0 ) {
 		$pad = str_repeat('&nbsp;', $depth * 3);
 
-		$output .= "\t<option class=\"level-$depth\" value=\"$page->ID\"";
+		if ( ! isset( $args['value_field'] ) || ! isset( $page->{$args['value_field']} ) ) {
+			$args['value_field'] = 'ID';
+		}
+
+		$output .= "\t<option class=\"level-$depth\" value=\"" . esc_attr( $page->{$args['value_field']} ) . "\"";
 		if ( $page->ID == $args['selected'] )
 			$output .= ' selected="selected"';
 		$output .= '>';
@@ -1525,7 +1550,7 @@ function prepend_attachment($content) {
 	if ( empty($post->post_type) || $post->post_type != 'attachment' )
 		return $content;
 
-	if ( 0 === strpos( $post->post_mime_type, 'video' ) ) {
+	if ( wp_attachment_is( 'video', $post ) ) {
 		$meta = wp_get_attachment_metadata( get_the_ID() );
 		$atts = array( 'src' => wp_get_attachment_url() );
 		if ( ! empty( $meta['width'] ) && ! empty( $meta['height'] ) ) {
@@ -1536,7 +1561,7 @@ function prepend_attachment($content) {
 			$atts['poster'] = wp_get_attachment_url( get_post_thumbnail_id() );
 		}
 		$p = wp_video_shortcode( $atts );
-	} elseif ( 0 === strpos( $post->post_mime_type, 'audio' ) ) {
+	} elseif ( wp_attachment_is( 'audio', $post ) ) {
 		$p = wp_audio_shortcode( array( 'src' => wp_get_attachment_url() ) );
 	} else {
 		$p = '<p class="attachment">';

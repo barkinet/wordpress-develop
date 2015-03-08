@@ -34,37 +34,6 @@ tinymce.PluginManager.add( 'wpview', function( editor ) {
 		return false;
 	}
 
-	/**
-	 * Get the text/shortcode string for a view.
-	 *
-	 * @param view The view wrapper's node
-	 * @returns string The text/shoercode string of the view
-	 */
-	function getViewText( view ) {
-		if ( view = getView( view ) ) {
-			return window.decodeURIComponent( editor.dom.getAttrib( view, 'data-wpview-text' ) || '' );
-		}
-
-		return '';
-	}
-
-	/**
-	 * Set the view's original text/shortcode string
-	 *
-	 * @param view The view wrapper's HTML id or node
-	 * @param text The text string to be set
-	 */
-	function setViewText( view, text ) {
-		view = getView( view );
-
-		if ( view ) {
-			editor.dom.setAttrib( view, 'data-wpview-text', window.encodeURIComponent( text || '' ) );
-			return true;
-		}
-
-		return false;
-	}
-
 	function _stop( event ) {
 		event.stopPropagation();
 	}
@@ -103,11 +72,9 @@ tinymce.PluginManager.add( 'wpview', function( editor ) {
 	}
 
 	function removeView( view ) {
-		// TODO: trigger an event to run a clean up function.
-		// Maybe `jQuery( view ).trigger( 'remove' );`?
 		editor.undoManager.transact( function() {
 			handleEnter( view );
-			editor.dom.remove( view );
+			wp.mce.views.remove( editor, view );
 		});
 	}
 
@@ -138,7 +105,7 @@ tinymce.PluginManager.add( 'wpview', function( editor ) {
 		clipboard = dom.create( 'div', {
 			'class': 'wpview-clipboard',
 			'contenteditable': 'true'
-		}, getViewText( viewNode ) );
+		}, wp.mce.views.getText( viewNode ) );
 
 		editor.dom.select( '.wpview-body', viewNode )[0].appendChild( clipboard );
 
@@ -197,8 +164,6 @@ tinymce.PluginManager.add( 'wpview', function( editor ) {
 	// Check if the `wp.mce` API exists.
 	if ( typeof wp === 'undefined' || ! wp.mce ) {
 		return {
-			getViewText: _noop,
-			setViewText: _noop,
 			getView: _noop
 		};
 	}
@@ -237,7 +202,7 @@ tinymce.PluginManager.add( 'wpview', function( editor ) {
 			return;
 		}
 
-		event.content = wp.mce.views.toViews( event.content );
+		event.content = wp.mce.views.setMarkers( event.content );
 	});
 
 	// When the editor's content has been updated and the DOM has been
@@ -341,7 +306,7 @@ tinymce.PluginManager.add( 'wpview', function( editor ) {
 							editor.focus();
 						}
 
-						wp.mce.views.edit( view );
+						wp.mce.views.edit( editor, view );
 						return false;
 					} else if ( editor.dom.hasClass( event.target, 'remove' ) ) {
 						removeView( view );
@@ -721,8 +686,6 @@ tinymce.PluginManager.add( 'wpview', function( editor ) {
 	});
 
 	return {
-		getViewText: getViewText,
-		setViewText: setViewText,
 		getView: getView
 	};
 });

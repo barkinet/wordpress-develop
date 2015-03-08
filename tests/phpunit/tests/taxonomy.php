@@ -158,8 +158,17 @@ class Tests_Taxonomy extends WP_UnitTestCase {
 	 *
 	 * @expectedIncorrectUsage register_taxonomy
 	 */
-	function test_register_long_taxonomy() {
+	function test_register_taxonomy_with_too_long_name() {
 		$this->assertInstanceOf( 'WP_Error', register_taxonomy( 'abcdefghijklmnopqrstuvwxyz0123456789', 'post', array() ) );
+	}
+
+	/**
+	 * @ticket 31135
+	 *
+	 * @expectedIncorrectUsage register_taxonomy
+	 */
+	function test_register_taxonomy_with_empty_name() {
+		$this->assertInstanceOf( 'WP_Error', register_taxonomy( '', 'post', array() ) );
 	}
 
 	/**

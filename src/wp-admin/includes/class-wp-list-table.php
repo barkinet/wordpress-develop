@@ -509,6 +509,18 @@ class WP_List_Table {
 	protected function months_dropdown( $post_type ) {
 		global $wpdb, $wp_locale;
 
+		/**
+		 * Filter whether to remove the 'Months' drop-down from the post list table.
+		 *
+		 * @since 4.2.0
+		 *
+		 * @param bool   $disable   Whether to disable the drop-down. Default false.
+		 * @param string $post_type The post type.
+		 */
+		if ( apply_filters( 'disable_months_dropdown', false, $post_type ) ) {
+			return;
+		}
+
 		$months = $wpdb->get_results( $wpdb->prepare( "
 			SELECT DISTINCT YEAR( post_date ) AS year, MONTH( post_date ) AS month
 			FROM $wpdb->posts
@@ -927,18 +939,19 @@ class WP_List_Table {
 	</tr>
 	</thead>
 
-	<tfoot>
-	<tr>
-		<?php $this->print_column_headers( false ); ?>
-	</tr>
-	</tfoot>
-
 	<tbody id="the-list"<?php
 		if ( $singular ) {
 			echo " data-wp-lists='list:$singular'";
 		} ?>>
 		<?php $this->display_rows_or_placeholder(); ?>
 	</tbody>
+
+	<tfoot>
+	<tr>
+		<?php $this->print_column_headers( false ); ?>
+	</tr>
+	</tfoot>
+
 </table>
 <?php
 		$this->display_tablenav( 'bottom' );

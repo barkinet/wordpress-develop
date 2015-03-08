@@ -2112,12 +2112,12 @@ i.mce-i-hr:before {
 	font-family: Tahoma, sans-serif;
 }
 
-/* @noflip */
+/* rtl:ignore */
 .mce-rtl .mce-flow-layout .mce-flow-layout-item > div {
 	direction: rtl;
 }
 
-/* @noflip */
+/* rtl:ignore */
 .mce-rtl .mce-listbox i.mce-caret {
 	left: 6px;
 }
@@ -2129,7 +2129,6 @@ html:lang(he-il) .rtl .quicktags-toolbar input  {
 
 /* HiDPI */
 @media print,
-  (-o-min-device-pixel-ratio: 5/4),
   (-webkit-min-device-pixel-ratio: 1.25),
   (min-resolution: 120dpi) {
 	.wp-media-buttons .add_media span.wp-media-buttons-icon,

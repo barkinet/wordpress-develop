@@ -1342,9 +1342,9 @@ function register_post_type( $post_type, $args = array() ) {
 	$post_type = sanitize_key( $post_type );
 	$args->name = $post_type;
 
-	if ( strlen( $post_type ) > 20 ) {
-		_doing_it_wrong( __FUNCTION__, __( 'Post types cannot exceed 20 characters in length' ), '4.0' );
-		return new WP_Error( 'post_type_too_long', __( 'Post types cannot exceed 20 characters in length' ) );
+	if ( empty( $post_type ) || strlen( $post_type ) > 20 ) {
+		_doing_it_wrong( __FUNCTION__, __( 'Post type names must be between 1 and 20 characters in length.' ), '4.2' );
+		return new WP_Error( 'post_type_length_invalid', __( 'Post type names must be between 1 and 20 characters in length.' ) );
 	}
 
 	// If not set, default to the setting for public.
@@ -3057,22 +3057,35 @@ function wp_get_recent_posts( $args = array(), $output = ARRAY_A ) {
  *
  *     @type int    $ID                    The post ID. If equal to something other than 0,
  *                                         the post with that ID will be updated. Default 0.
- *     @type string $post_status           The post status. Default 'draft'.
- *     @type string $post_type             The post type. Default 'post'.
  *     @type int    $post_author           The ID of the user who added the post. Default is
  *                                         the current user ID.
- *     @type bool   $ping_status           Whether the post can accept pings. Default is the
- *                                         value of 'default_ping_status' option.
- *     @type int    $post_parent           Set this for the post it belongs to, if any. Default 0.
- *     @type int    $menu_order            The order it is displayed. Default 0.
+ *     @type string $post_date             The date of the post. Default is the current time.
+ *     @type string $post_date_gmt         The date of the post in the GMT timezone. Default is
+ *                                         the value of `$post_date`.
+ *     @type mixed  $post_content          The post content. Default empty.
+ *     @type string $post_content_filtered The filtered post content. Default empty.
+ *     @type string $post_title            The post title. Default empty.
+ *     @type string $post_excerpt          The post excerpt. Default empty.
+ *     @type string $post_status           The post status. Default 'draft'.
+ *     @type string $post_type             The post type. Default 'post'.
+ *     @type string $comment_status        Whether the post can accept comments. Accepts 'open' or 'closed'.
+ *                                         Default is the value of 'default_comment_status' option.
+ *     @type string $ping_status           Whether the post can accept pings. Accepts 'open' or 'closed'.
+ *                                         Default is the value of 'default_ping_status' option.
+ *     @type string $post_password         The password to access the post. Default empty.
+ *     @type string $post_name             The post name. Default is the sanitized post title.
  *     @type string $to_ping               Space or carriage return-separated list of URLs to ping.
- *                                         Default empty string.
+ *                                         Default empty.
  *     @type string $pinged                Space or carriage return-separated list of URLs that have
- *                                         been pinged. Default empty string.
- *     @type string $post_password         The password to access the post. Default empty string.
- *     @type string $guid'                 Global Unique ID for referencing the post.
- *     @type string $post_content_filtered The filtered post content. Default empty string.
- *     @type string $post_excerpt          The post excerpt. Default empty string.
+ *                                         been pinged. Default empty.
+ *     @type string $post_modified         The date when the post was last modified. Default is
+ *                                         the current time.
+ *     @type string $post_modified_gmt     The date when the post was last modified in the GMT
+ *                                         timezone. Default is the current time.
+ *     @type int    $post_parent           Set this for the post it belongs to, if any. Default 0.
+ *     @type int    $menu_order            The order the post should be displayed in. Default 0.
+ *     @type string $post_mime_type        The mime type of the post. Default empty.
+ *     @type string $guid                  Global Unique ID for referencing the post. Default empty.
  * }
  * @param bool  $wp_error Optional. Whether to allow return of WP_Error on failure. Default false.
  * @return int|WP_Error The post ID on success. The value 0 or WP_Error on failure.
@@ -3919,16 +3932,14 @@ function wp_set_post_categories( $post_ID = 0, $post_categories = array(), $appe
 /**
  * Transition the post status of a post.
  *
- * Calls hooks to transition post status.
+ * When a post is saved, the post status is "transitioned" from one status to another,
+ * though this does not always mean the status has actually changed before and after
+ * the save.
  *
- * The first is 'transition_post_status' with new status, old status, and post data.
- *
- * The next action called is 'OLDSTATUS_to_NEWSTATUS' the 'NEWSTATUS' is the
- * $new_status parameter and the 'OLDSTATUS' is $old_status parameter; it has the
- * post data.
- *
- * The final action is named 'NEWSTATUS_POSTTYPE', 'NEWSTATUS' is from the $new_status
- * parameter and POSTTYPE is post_type post data.
+ * For instance: When publishing a post for the first time, the post status may transition
+ * from 'draft' – or some other status – to 'publish'. However, if a post is already
+ * published and is simply being updated, the "old" and "new" statuses may both be 'publish'
+ * before and after the transition.
  *
  * @since 2.3.0
  *
@@ -3965,6 +3976,14 @@ function wp_transition_post_status( $new_status, $old_status, $post ) {
 	 *
 	 * The dynamic portions of the hook name, `$new_status` and `$post->post_type`,
 	 * refer to the new post status and post type, respectively.
+	 *
+	 * Please note: When this action is hooked using a particular post status (like
+	 * 'publish', as `publish_{$post->post_type}`), it will fire both when a post is
+	 * first transitioned to that status from something else, as well as upon
+	 * subsequent post updates (old and new status are both the same).
+	 *
+	 * Therefore, if you are looking to only fire a callback when a post is first
+	 * transitioned to a status, use the {@see 'transition_post_status'} hook instead.
 	 *
 	 * @since 2.3.0
 	 *
@@ -4828,7 +4847,7 @@ function wp_delete_attachment( $post_id, $force_delete = false ) {
 		// Don't delete the thumb if another attachment uses it.
 		if (! $wpdb->get_row( $wpdb->prepare( "SELECT meta_id FROM $wpdb->postmeta WHERE meta_key = '_wp_attachment_metadata' AND meta_value LIKE %s AND post_id <> %d", '%' . $wpdb->esc_like( $meta['thumb'] ) . '%', $post_id)) ) {
 			$thumbfile = str_replace(basename($file), $meta['thumb'], $file);
-			/** This filter is documented in wp-admin/custom-header.php */
+			/** This filter is documented in wp-includes/functions.php */
 			$thumbfile = apply_filters( 'wp_delete_file', $thumbfile );
 			@ unlink( path_join($uploadpath['basedir'], $thumbfile) );
 		}
@@ -4838,7 +4857,7 @@ function wp_delete_attachment( $post_id, $force_delete = false ) {
 	if ( isset( $meta['sizes'] ) && is_array( $meta['sizes'] ) ) {
 		foreach ( $meta['sizes'] as $size => $sizeinfo ) {
 			$intermediate_file = str_replace( basename( $file ), $sizeinfo['file'], $file );
-			/** This filter is documented in wp-admin/custom-header.php */
+			/** This filter is documented in wp-includes/functions.php */
 			$intermediate_file = apply_filters( 'wp_delete_file', $intermediate_file );
 			@ unlink( path_join( $uploadpath['basedir'], $intermediate_file ) );
 		}
@@ -4847,17 +4866,13 @@ function wp_delete_attachment( $post_id, $force_delete = false ) {
 	if ( is_array($backup_sizes) ) {
 		foreach ( $backup_sizes as $size ) {
 			$del_file = path_join( dirname($meta['file']), $size['file'] );
-			/** This filter is documented in wp-admin/custom-header.php */
+			/** This filter is documented in wp-includes/functions.php */
 			$del_file = apply_filters( 'wp_delete_file', $del_file );
 			@ unlink( path_join($uploadpath['basedir'], $del_file) );
 		}
 	}
 
-	/** This filter is documented in wp-admin/custom-header.php */
-	$file = apply_filters( 'wp_delete_file', $file );
-
-	if ( ! empty($file) )
-		@ unlink($file);
+	wp_delete_file( $file );
 
 	clean_post_cache( $post );
 
@@ -4965,6 +4980,14 @@ function wp_get_attachment_url( $post_id = 0 ) {
 		$url = get_the_guid( $post->ID );
 	}
 
+	/*
+	 * If currently on SSL, prefer HTTPS URLs when we know they're supported by the domain
+	 * (which is to say, when they share the domain name of the current SSL page).
+	 */
+	if ( is_ssl() && 'https' !== substr( $url, 0, 5 ) && parse_url( $url, PHP_URL_HOST ) === $_SERVER['HTTP_HOST'] ) {
+		$url = set_url_scheme( $url, 'https' );
+	}
+
 	/**
 	 * Filter the attachment URL.
 	 *
@@ -5048,28 +5071,65 @@ function wp_get_attachment_thumb_url( $post_id = 0 ) {
 }
 
 /**
- * Check if the attachment is an image.
+ * Verifies an attachment is of a given type.
+ *
+ * @since 4.2.0
+ *
+ * @param string      $type    Attachment type. Accepts 'image', 'audio', or 'video'.
+ * @param int|WP_Post $post_id Optional. Attachment ID. Default 0.
+ * @return bool True if one of the accepted types, false otherwise.
+ */
+function wp_attachment_is( $type, $post_id = 0 ) {
+	if ( ! $post = get_post( $post_id ) ) {
+		return false;
+	}
+
+	if ( ! $file = get_attached_file( $post->ID ) ) {
+		return false;
+	}
+
+	if ( 0 === strpos( $post->post_mime_type, $type . '/' ) ) {
+		return true;
+	}
+
+	$check = wp_check_filetype( $file );
+	if ( empty( $check['ext'] ) ) {
+		return false;
+	}
+
+	$ext = $check['ext'];
+
+	if ( 'import' !== $post->post_mime_type ) {
+		return $type === $ext;
+	}
+
+	switch ( $type ) {
+	case 'image':
+		$image_exts = array( 'jpg', 'jpeg', 'jpe', 'gif', 'png' );
+		return in_array( $ext, $image_exts );
+
+	case 'audio':
+		return in_array( $ext, wp_get_audio_extensions() );
+
+	case 'video':
+		return in_array( $ext, wp_get_video_extensions() );
+
+	default:
+		return $type === $ext;
+	}
+}
+
+/**
+ * Checks if the attachment is an image.
  *
  * @since 2.1.0
+ * @since 4.2.0 Modified into wrapper for wp_attachment_is()
  *
- * @param int $post_id Optional. Attachment ID. Default 0.
+ * @param int|WP_Post $post Optional. Attachment ID. Default 0.
  * @return bool Whether the attachment is an image.
  */
-function wp_attachment_is_image( $post_id = 0 ) {
-	$post_id = (int) $post_id;
-	if ( !$post = get_post( $post_id ) )
-		return false;
-
-	if ( !$file = get_attached_file( $post->ID ) )
-		return false;
-
-	$ext = preg_match('/\.([^.]+)$/', $file, $matches) ? strtolower($matches[1]) : false;
-
-	$image_exts = array( 'jpg', 'jpeg', 'jpe', 'gif', 'png' );
-
-	if ( 'image/' == substr($post->post_mime_type, 0, 6) || $ext && 'import' == $post->post_mime_type && in_array($ext, $image_exts) )
-		return true;
-	return false;
+function wp_attachment_is_image( $post = 0 ) {
+	return wp_attachment_is( 'image', $post );
 }
 
 /**
@@ -5287,35 +5347,34 @@ function get_posts_by_author_sql( $post_type, $full = true, $post_author = null,
 		$cap = $post_type_obj->cap->read_private_posts;
 	}
 
-	if ( $full ) {
-		if ( null === $post_author ) {
-			$sql = $wpdb->prepare( 'WHERE post_type = %s AND ', $post_type );
-		} else {
-			$sql = $wpdb->prepare( 'WHERE post_author = %d AND post_type = %s AND ', $post_author, $post_type );
-		}
-	} else {
-		$sql = '';
+	$sql = $wpdb->prepare( 'post_type = %s', $post_type );
+
+	if ( null !== $post_author ) {
+		$sql .= $wpdb->prepare( ' AND post_author = %d', $post_author );
 	}
 
-	$sql .= "(post_status = 'publish'";
-
 	// Only need to check the cap if $public_only is false.
+	$post_status_sql = "post_status = 'publish'";
 	if ( false === $public_only ) {
 		if ( current_user_can( $cap ) ) {
 			// Does the user have the capability to view private posts? Guess so.
-			$sql .= " OR post_status = 'private'";
+			$post_status_sql .= " OR post_status = 'private'";
 		} elseif ( is_user_logged_in() ) {
 			// Users can view their own private posts.
 			$id = get_current_user_id();
 			if ( null === $post_author || ! $full ) {
-				$sql .= " OR post_status = 'private' AND post_author = $id";
+				$post_status_sql .= " OR post_status = 'private' AND post_author = $id";
 			} elseif ( $id == (int) $post_author ) {
-				$sql .= " OR post_status = 'private'";
+				$post_status_sql .= " OR post_status = 'private'";
 			} // else none
 		} // else none
 	}
 
-	$sql .= ')';
+	$sql .= " AND ($post_status_sql)";
+
+	if ( $full ) {
+		$sql = 'WHERE ' . $sql;
+	}
 
 	return $sql;
 }
