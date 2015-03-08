@@ -242,6 +242,10 @@ class Tests_WP_Customize_Widgets extends WP_UnitTestCase {
 		$this->assertNotEmpty( $old_sidebars_widgets_value );
 		$this->assertEquals( $this->twentyfifteen_sidebars_widgets['sidebar-1'], $old_sidebars_widgets_value['sidebar-1'] );
 		$this->assertArrayNotHasKey( 'sidebar-2', $old_sidebars_widgets_value['sidebar-1'] );
+
+		// Now save the customizer
+		$response = $this->manager->save( array( 'check_ajax_referer' => false, 'send_json' => false ) );
+		$this->assertInternalType( 'array', $response );
 	}
 
 	/**

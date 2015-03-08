@@ -695,15 +695,41 @@ final class WP_Customize_Manager {
 	 * Switch the theme and trigger the save() method on each setting.
 	 *
 	 * @since 3.4.0
+	 * @since 4.1.2 Add $options param.
+	 *
+	 * @param array $options {
+	 *      Override default behaviors for save method.
+	 *      @type bool $check_ajax_referer Whether check_ajax_referer() is performed. Defaults to true.
+	 *      @type bool $send_json Whether to return json; if false, returns WP_Error on failure, and the customize_save_response array on success. Defaults to true.
+	 * }
+	 * @return WP_Error|array|null
 	 */
-	public function save() {
+	public function save( $options = array() ) {
+		$options = array_merge(
+			array(
+				'check_ajax_referer' => true,
+				'send_json' => true,
+			),
+			empty( $options ) ? array() : $options
+		);
+
 		if ( ! $this->is_preview() ) {
-			wp_send_json_error( 'not_preview' );
+			$error = 'not_preview';
+			if ( $options['send_json'] ) {
+				wp_send_json_error( $error );
+			} else {
+				return new WP_Error( $error );
+			}
 		}
 
 		$action = 'save-customize_' . $this->get_stylesheet();
-		if ( ! check_ajax_referer( $action, 'nonce', false ) ) {
-			wp_send_json_error( 'invalid_nonce' );
+		if ( $options['check_ajax_referer'] && ! check_ajax_referer( $action, 'nonce', false ) ) {
+			$error = 'invalid_nonce';
+			if ( $options['send_json'] ) {
+				wp_send_json_error( $error );
+			} else {
+				return new WP_Error( $error );
+			}
 		}
 
 		// Do we have to switch themes?
@@ -751,7 +777,11 @@ final class WP_Customize_Manager {
 		 * @param WP_Customize_Manager $this WP_Customize_Manager instance.
 		 */
 		$response = apply_filters( 'customize_save_response', array(), $this );
-		wp_send_json_success( $response );
+		if ( $options['send_json'] ) {
+			wp_send_json_success( $response );
+		} else {
+			return $response;
+		}
 	}
 
 	/**
