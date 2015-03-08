@@ -604,17 +604,25 @@ final class WP_Customize_Manager {
 				$settings['values'][ $id ] = $setting->js_value();
 			}
 		}
-		foreach ( $this->panels as $id => $panel ) {
-			$settings['activePanels'][ $id ] = $panel->active();
-			foreach ( $panel->sections as $id => $section ) {
-				$settings['activeSections'][ $id ] = $section->active();
+		foreach ( $this->panels as $panel_id => $panel ) {
+			if ( $panel->check_capabilities() ) {
+				$settings['activePanels'][ $panel_id ] = $panel->active();
+				foreach ( $panel->sections as $section_id => $section ) {
+					if ( $section->check_capabilities() ) {
+						$settings['activeSections'][ $section_id ] = $section->active();
+					}
+				}
 			}
 		}
 		foreach ( $this->sections as $id => $section ) {
-			$settings['activeSections'][ $id ] = $section->active();
+			if ( $section->check_capabilities() ) {
+				$settings['activeSections'][ $id ] = $section->active();
+			}
 		}
 		foreach ( $this->controls as $id => $control ) {
-			$settings['activeControls'][ $id ] = $control->active();
+			if ( $control->check_capabilities() ) {
+				$settings['activeControls'][ $id ] = $control->active();
+			}
 		}
 
 		?>
