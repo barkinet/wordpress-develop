@@ -159,6 +159,18 @@ class Tests_WP_Customize_Widgets extends WP_UnitTestCase {
 	 */
 	function switch_theme_and_check_switched( $new_theme ) {
 		switch_theme( $new_theme );
+		$this->setup_sidebars_for_theme_switch( $new_theme );
+		check_theme_switched();
+	}
+
+	/**
+	 * Emulate loading the theme's functions.php
+	 *
+	 * @param string $new_theme stylesheet
+	 *
+	 * @throws Exception
+	 */
+	function setup_sidebars_for_theme_switch( $new_theme ) {
 		if ( 'twentythirteen' === $new_theme ) {
 			register_sidebar( array(
 				'name'          => __( 'Secondary Widget Area', 'twentythirteen' ),
@@ -174,7 +186,6 @@ class Tests_WP_Customize_Widgets extends WP_UnitTestCase {
 		} else {
 			throw new Exception( 'Only twentyfifteen and twentythirteen are supported.' );
 		}
-		check_theme_switched();
 	}
 
 	function test_override_sidebars_widgets_for_non_theme_switch() {
@@ -191,19 +202,38 @@ class Tests_WP_Customize_Widgets extends WP_UnitTestCase {
 	 * @todo A lot of this should be in a test for WP_Customize_Manager::setup_theme()
 	 */
 	function test_override_sidebars_widgets_for_theme_switch() {
+		global $wpdb;
+
 		if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
 			$this->markTestSkipped( 'The WP_Customize_Widgets::override_sidebars_widgets_for_theme_switch() method short-circuits if DOING_AJAX.' );
 		}
 		$old_theme = get_stylesheet();
 		$new_theme = 'twentythirteen';
-		$this->prepare_theme_switch_state( $new_theme );
-
 		$this->assertNotEquals( $new_theme, $old_theme );
+
+		$initial_sidebars_widgets = get_option( 'sidebars_widgets' );
+		$this->prepare_theme_switch_state( $new_theme );
+		$checked_sidebars_widgets = get_option( 'sidebars_widgets' );
+		$this->assertEquals( $initial_sidebars_widgets['sidebar-1'], $checked_sidebars_widgets['sidebar-1'], 'Expected sidebar-1 to be back in initial state after round-trip theme switch.' );
+		$this->assertArrayNotHasKey( 'orphaned_widgets_1', $checked_sidebars_widgets );
+		$this->assertArrayNotHasKey( 'sidebar-2', $checked_sidebars_widgets );
 
 		// Initialize the Customizer with a preview for the new theme
 		$_REQUEST['theme'] = $new_theme;
+		add_action( 'start_previewing_theme', array( $this, 'set_up_sidebars_for_theme_preview' ) );
 		$this->do_customize_boot_actions();
 		$this->assertEquals( $new_theme, $this->manager->get_stylesheet() );
+
+		$sidebars_widgets = get_option( 'sidebars_widgets' );
+		$this->assertArrayNotHasKey( 'orphaned_widgets_1', $sidebars_widgets );
+		$this->assertEquals( $this->twentythirteen_sidebars_widgets['sidebar-1'], $sidebars_widgets['sidebar-1'] );
+		$this->assertEquals( $this->twentythirteen_sidebars_widgets['sidebar-2'], $sidebars_widgets['sidebar-2'] );
+		unset( $sidebars_widgets['array_version'] );
+		$this->assertEquals( $sidebars_widgets, wp_get_sidebars_widgets() );
+
+		$db_sidebars_widgets = maybe_unserialize( $wpdb->get_var( "SELECT option_value FROM $wpdb->options WHERE option_name = 'sidebars_widgets'" ) );
+		$this->assertEquals( $db_sidebars_widgets['sidebar-1'], $initial_sidebars_widgets['sidebar-1'] );
+		$this->assertArrayNotHasKey( 'sidebar-2', $db_sidebars_widgets );
 
 		$old_sidebars_widgets_setting = $this->manager->get_setting( 'old_sidebars_widgets_data' );
 		$this->assertNotEmpty( $old_sidebars_widgets_setting );
@@ -212,9 +242,13 @@ class Tests_WP_Customize_Widgets extends WP_UnitTestCase {
 		$this->assertNotEmpty( $old_sidebars_widgets_value );
 		$this->assertEquals( $this->twentyfifteen_sidebars_widgets['sidebar-1'], $old_sidebars_widgets_value['sidebar-1'] );
 		$this->assertArrayNotHasKey( 'sidebar-2', $old_sidebars_widgets_value['sidebar-1'] );
+	}
 
-		// @todo We need to actually do this testing at the acceptance testing layer
-		// @todo $this->manager->widgets->override_sidebars_widgets_for_theme_switch() then check wp_get_sidebars_widgets() and $manager->get_setting('old_sidebars_widgets_data')
+	/**
+	 * @param WP_Customize_Manager $wp_customize
+	 */
+	function set_up_sidebars_for_theme_preview( $wp_customize ) {
+		$this->setup_sidebars_for_theme_switch( $wp_customize->get_stylesheet() );
 	}
 
 	/**
