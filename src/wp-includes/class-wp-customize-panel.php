@@ -316,10 +316,10 @@ class WP_Customize_Panel {
 	 */
 	public function print_template() {
 		?>
-		<script type="text/html" id="tmpl-customize-panel-<?php echo $this->type; ?>-content">
+		<script type="text/html" id="tmpl-customize-panel-<?php echo esc_attr( $this->type ); ?>-content">
 			<?php $this->content_template(); ?>
 		</script>
-		<script type="text/html" id="tmpl-customize-panel-<?php echo $this->type; ?>">
+		<script type="text/html" id="tmpl-customize-panel-<?php echo esc_attr( $this->type ); ?>">
 			<?php $this->render_template(); ?>
 		</script>
         <?php

@@ -109,6 +109,8 @@ jQuery( window ).load( function (){
 		equal( section.panel(), 'fixture-panel' );
 	} );
 
+	// @todo ensure that custom section type can be instantiated properly from the template
+
 	module( 'Customizer Panel in Fixture' );
 	test( 'Fixture panel exists', function () {
 		ok( wp.customize.panel.has( 'fixture-panel' ) );
@@ -137,6 +139,8 @@ jQuery( window ).load( function (){
 		ok( section.expanded() );
 		ok( panel.expanded() );
 	} );
+
+	// @todo ensure that custom panel type can be instantiated properly from the template
 
 
 	module( 'Dynamically-created Customizer Setting Model' );

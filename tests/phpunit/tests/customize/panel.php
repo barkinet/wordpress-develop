@@ -26,7 +26,7 @@ class Tests_WP_Customize_Panel extends WP_UnitTestCase {
 		parent::tearDown();
 	}
 
-	function test_construct() {
+	function test_construct_default_args() {
 		$panel = new WP_Customize_Panel( $this->manager, 'foo' );
 		$this->assertInternalType( 'int', $panel->instance_number );
 		$this->assertEquals( $this->manager, $panel->manager );
@@ -39,6 +39,125 @@ class Tests_WP_Customize_Panel extends WP_UnitTestCase {
 		$this->assertEmpty( $panel->sections );
 		$this->assertEquals( 'default', $panel->type );
 		$this->assertEquals( array( $panel, 'active_callback' ), $panel->active_callback );
+	}
 
+	function test_construct_custom_args() {
+		$args = array(
+			'priority' => 200,
+			'capability' => 'edit_posts',
+			'theme_supports' => 'html5',
+			'title' => 'Hello World',
+			'description' => 'Lorem Ipsum',
+			'type' => 'horizontal',
+			'active_callback' => '__return_true',
+		);
+
+		$panel = new WP_Customize_Panel( $this->manager, 'foo', $args );
+		foreach ( $args as $key => $value ) {
+			$this->assertEquals( $value, $panel->$key );
+		}
+	}
+
+	function test_active() {
+		$panel = new WP_Customize_Panel( $this->manager, 'foo' );
+		$this->assertTrue( $panel->active() );
+
+		$panel = new WP_Customize_Panel( $this->manager, 'foo', array(
+			'active_callback' => '__return_false',
+		) );
+		$this->assertFalse( $panel->active() );
+		add_filter( 'customize_panel_active', array( $this, 'filter_active_test' ), 10, 2 );
+		$this->assertTrue( $panel->active() );
+	}
+
+	/**
+	 * @param bool $active
+	 * @param WP_Customize_Panel $panel
+	 * @return bool
+	 */
+	function filter_active_test( $active, $panel ) {
+		$this->assertFalse( $active );
+		$this->assertInstanceOf( 'WP_Customize_Panel', $panel );
+		$active = true;
+		return $active;
+	}
+
+	function test_json() {
+		$args = array(
+			'priority' => 200,
+			'capability' => 'edit_posts',
+			'theme_supports' => 'html5',
+			'title' => 'Hello World',
+			'description' => 'Lorem Ipsum',
+			'type' => 'horizontal',
+			'active_callback' => '__return_true',
+		);
+		$panel = new WP_Customize_Panel( $this->manager, 'foo', $args );
+		$data = $panel->json();
+		$this->assertEquals( 'foo', $data['id'] );
+		foreach ( array( 'title', 'description', 'priority', 'type' ) as $key ) {
+			$this->assertEquals( $args[ $key ], $data[ $key ] );
+		}
+		$this->assertEmpty( $data['content'] );
+		$this->assertTrue( $data['active'] );
+		$this->assertInternalType( 'int', $data['instanceNumber'] );
+	}
+
+	function test_check_capabilities() {
+		$user_id = $this->factory->user->create( array( 'role' => 'administrator' ) );
+		wp_set_current_user( $user_id );
+
+		$panel = new WP_Customize_Panel( $this->manager, 'foo' );
+		$this->assertTrue( $panel->check_capabilities() );
+		$old_cap = $panel->capability;
+		$panel->capability = 'do_not_allow';
+		$this->assertFalse( $panel->check_capabilities() );
+		$panel->capability = $old_cap;
+		$this->assertTrue( $panel->check_capabilities() );
+		$panel->theme_supports = 'impossible_feature';
+		$this->assertFalse( $panel->check_capabilities() );
+	}
+
+	function test_get_content() {
+		$panel = new WP_Customize_Panel( $this->manager, 'foo' );
+		$this->assertEmpty( $panel->get_content() );
+	}
+
+	function test_maybe_render() {
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
+		$panel = new WP_Customize_Panel( $this->manager, 'bar' );
+		$customize_render_panel_count = did_action( 'customize_render_panel' );
+		add_action( 'customize_render_panel', array( $this, 'action_customize_render_panel_test' ) );
+		ob_start();
+		$panel->maybe_render();
+		$content = ob_get_clean();
+		$this->assertTrue( $panel->check_capabilities() );
+		$this->assertEmpty( $content );
+		$this->assertEquals( $customize_render_panel_count + 1, did_action( 'customize_render_panel' ), 'Unexpected did_action count for customize_render_panel' );
+		$this->assertEquals( 1, did_action( "customize_render_panel_{$panel->id}" ), "Unexpected did_action count for customize_render_panel_{$panel->id}" );
+	}
+
+	function action_customize_render_panel_test( $panel ) {
+		$this->assertInstanceOf( 'WP_Customize_Panel', $panel );
+	}
+
+	function test_print_templates() {
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
+
+		$panel = new WP_Customize_Panel( $this->manager, 'baz' );
+		ob_start();
+		$panel->print_template();
+		$content = ob_get_clean();
+		$this->assertContains( '<script type="text/html" id="tmpl-customize-panel-default-content">', $content );
+		$this->assertContains( '<script type="text/html" id="tmpl-customize-panel-default">', $content );
+
+		$panel = new WP_Customize_Panel( $this->manager, 'baz', array(
+			'type' => 'cool',
+		) );
+		ob_start();
+		$panel->print_template();
+		$content = ob_get_clean();
+		$this->assertContains( '<script type="text/html" id="tmpl-customize-panel-cool-content">', $content );
+		$this->assertContains( '<script type="text/html" id="tmpl-customize-panel-cool">', $content );
 	}
 }
