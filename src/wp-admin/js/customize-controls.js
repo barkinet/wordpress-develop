@@ -1466,6 +1466,9 @@
 			this.bind( 'ready', this._ready );
 
 			this.bind( 'ready', function ( data ) {
+
+				this.container.addClass( 'preview-ready' );
+
 				if ( ! data ) {
 					return;
 				}

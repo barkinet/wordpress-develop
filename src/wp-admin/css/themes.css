@@ -1363,6 +1363,9 @@ body.full-overlay-active {
 	background-size: 20px 20px;
 	background-position: center center;
 }
+#customize-preview.wp-full-overlay-main.preview-ready {
+	background: none;
+}
 
 .wp-full-overlay-sidebar .wp-full-overlay-header {
 	position: absolute;
