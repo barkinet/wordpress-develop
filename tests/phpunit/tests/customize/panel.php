@@ -58,6 +58,11 @@ class Tests_WP_Customize_Panel extends WP_UnitTestCase {
 		}
 	}
 
+	function test_construct_custom_type() {
+		$panel = new Custom_Panel_Test( $this->manager, 'foo' );
+		$this->assertEquals( 'titleless', $panel->type );
+	}
+
 	function test_active() {
 		$panel = new WP_Customize_Panel( $this->manager, 'foo' );
 		$this->assertTrue( $panel->active() );
