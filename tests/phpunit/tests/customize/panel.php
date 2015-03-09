@@ -141,7 +141,7 @@ class Tests_WP_Customize_Panel extends WP_UnitTestCase {
 		$this->assertInstanceOf( 'WP_Customize_Panel', $panel );
 	}
 
-	function test_print_templates() {
+	function test_print_templates_standard() {
 		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
 
 		$panel = new WP_Customize_Panel( $this->manager, 'baz' );
@@ -149,15 +149,51 @@ class Tests_WP_Customize_Panel extends WP_UnitTestCase {
 		$panel->print_template();
 		$content = ob_get_clean();
 		$this->assertContains( '<script type="text/html" id="tmpl-customize-panel-default-content">', $content );
+		$this->assertContains( 'accordion-section-title', $content );
+		$this->assertContains( 'control-panel-content', $content );
 		$this->assertContains( '<script type="text/html" id="tmpl-customize-panel-default">', $content );
+		$this->assertContains( 'accordion-section-content', $content );
+		$this->assertContains( 'preview-notice', $content );
+	}
 
-		$panel = new WP_Customize_Panel( $this->manager, 'baz', array(
-			'type' => 'cool',
-		) );
+
+	function test_print_templates_custom() {
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
+
+		$panel = new Custom_Panel_Test( $this->manager, 'baz' );
 		ob_start();
 		$panel->print_template();
 		$content = ob_get_clean();
-		$this->assertContains( '<script type="text/html" id="tmpl-customize-panel-cool-content">', $content );
-		$this->assertContains( '<script type="text/html" id="tmpl-customize-panel-cool">', $content );
+		$this->assertContains( '<script type="text/html" id="tmpl-customize-panel-titleless-content">', $content );
+		$this->assertNotContains( 'accordion-section-title', $content );
+
+		$this->assertContains( '<script type="text/html" id="tmpl-customize-panel-titleless">', $content );
+		$this->assertNotContains( 'preview-notice', $content );
 	}
+}
+
+require_once ABSPATH . WPINC . '/class-wp-customize-panel.php';
+class Custom_Panel_Test extends WP_Customize_Panel {
+	public $type = 'titleless';
+
+	protected function render_template() {
+		?>
+		<li id="accordion-panel-{{ data.id }}" class="accordion-section control-section control-panel control-panel-{{ data.type }}">
+			<ul class="accordion-sub-container control-panel-content"></ul>
+		</li>
+		<?php
+	}
+
+	protected function content_template() {
+		?>
+		<li class="panel-meta accordion-section control-section<# if ( ! data.description ) { #> cannot-expand<# } #>">
+			<# if ( data.description ) { #>
+				<div class="accordion-section-content description">
+					{{{ data.description }}}
+				</div>
+			<# } #>
+		</li>
+		<?php
+	}
+
 }
