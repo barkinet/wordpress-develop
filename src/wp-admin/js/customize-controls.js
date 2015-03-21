@@ -2334,7 +2334,11 @@
 
 			messenger.targetWindow( iframe[0].contentWindow );
 
-			messenger.bind( 'login', function() {
+			messenger.bind( 'login', function ( params ) {
+				$.extend( api.settings.nonce, params.nonce );
+				$.extend( previewer.nonce, params.nonce );
+				api.Widgets.data.nonce = params.nonce['update-widget'];
+
 				iframe.remove();
 				messenger.destroy();
 				delete previewer._login;
