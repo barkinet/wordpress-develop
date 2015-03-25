@@ -2137,9 +2137,7 @@
 		tmpl = api.settings.documentTitleTmpl;
 		title = tmpl.replace( '%s', documentTitle );
 		document.title = title;
-		if ( window !== window.parent ) {
-			window.parent.document.title = document.title;
-		}
+		api.trigger( 'title', title );
 	};
 
 	/**
@@ -2816,6 +2814,11 @@
 				parent.send( 'activated', api.settings.url.activated );
 			else if ( api.settings.url.activated )
 				window.location = api.settings.url.activated;
+		});
+
+		// Pass titles to the parent
+		api.bind( 'title', function( newTitle ) {
+			parent.send( 'title', newTitle );
 		});
 
 		// Initialize the connection with the parent frame.
