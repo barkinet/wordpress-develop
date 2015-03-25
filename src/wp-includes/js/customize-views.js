@@ -105,16 +105,22 @@
 		},
 
 		initialize: function() {
-			var properties = [
-				this.model.get('header').url,
-				this.model.get('choice')
-			];
-
 			this.listenTo(this.model, 'change:selected', this.toggleSelected);
 
-			if (_.contains(properties, api.get().header_image)) {
+			if ( this.isCurrentHeader() ) {
 				api.HeaderTool.currentHeader.set(this.extendedModel());
 			}
+		},
+
+		isCurrentHeader: function() {
+			var currentHeaderId = api.get().header_image_data.attachment_id;
+			if ( currentHeaderId && this.model.get( 'header' ).attachment_id === currentHeaderId ) {
+				return true;
+			}
+			if ( ! currentHeaderId && this.model.get( 'choice' ) === api.get().header_image ) {
+				return true;
+			}
+			return false;
 		},
 
 		render: function() {
