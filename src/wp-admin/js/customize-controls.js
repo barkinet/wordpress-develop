@@ -67,8 +67,14 @@
 		construct = this;
 		params = params || {};
 		focus = function () {
-			construct.container.find( ':focusable:first' ).focus();
-			construct.container[0].scrollIntoView( true );
+			var focusContainer;
+			if ( construct.extended( api.Panel ) && construct.expanded() ) {
+				focusContainer = construct.container.find( '.control-panel-content:first' );
+			} else {
+				focusContainer = construct.container;
+			}
+			focusContainer.find( ':focusable:first' ).focus();
+			focusContainer[0].scrollIntoView( true );
 		};
 		if ( params.completeCallback ) {
 			completeCallback = params.completeCallback;
