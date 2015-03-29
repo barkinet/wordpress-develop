@@ -715,7 +715,7 @@
 				content.show( 0, function() {
 					position = content.offset().top;
 					scroll = container.scrollTop();
-					content.css( 'margin-top', ( 45 - position - scroll ) );
+					content.css( 'margin-top', ( $( '#customize-header-actions' ).height() - position - scroll ) );
 					section.addClass( 'current-panel' );
 					overlay.addClass( 'in-themes-panel' );
 					container.scrollTop( 0 );
@@ -1039,9 +1039,10 @@
 				});
 
 				content.show( 0, function() {
+					content.parent().show();
 					position = content.offset().top;
 					scroll = container.scrollTop();
-					content.css( 'margin-top', ( 45 - position - scroll ) );
+					content.css( 'margin-top', ( $( '#customize-header-actions' ).height() - position - scroll ) );
 					section.addClass( 'current-panel' );
 					overlay.addClass( 'in-sub-panel' );
 					container.scrollTop( 0 );
