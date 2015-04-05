@@ -767,13 +767,8 @@ case 'login' :
 default:
 	$secure_cookie = '';
 	$customize_login = isset( $_REQUEST['customize-login'] );
-	$customize_theme = null;
-	if ( $customize_login ) {
+	if ( $customize_login )
 		wp_enqueue_script( 'customize-base' );
-		if ( ! empty( $_REQUEST['theme'] ) ) {
-			$customize_theme = wp_unslash( $_REQUEST['theme'] );
-		}
-	}
 
 	// If the user wants ssl but the session is not ssl, force a secure cookie.
 	if ( !empty($_POST['log']) && !force_ssl_admin() ) {
@@ -797,21 +792,7 @@ default:
 
 	$reauth = empty($_REQUEST['reauth']) ? false : true;
 
-	$GLOBALS['_wp_login_logged_in_cookie'] = null;
-
-	/**
-	 * Workaround to obtain the LOGGED_IN_COOKIE when wp_signon() is called.
-	 *
-	 * @param string $cookie
-	 * @private
-	 */
-	function _capture_wp_login_logged_in_cookie( $cookie ) {
-		$GLOBALS['_wp_login_logged_in_cookie'] = $cookie;
-	}
-
-	add_action( 'set_logged_in_cookie', '_capture_wp_login_logged_in_cookie' );
 	$user = wp_signon( '', $secure_cookie );
-	remove_action( 'set_logged_in_cookie', '_capture_wp_login_logged_in_cookie' );
 
 	if ( empty( $_COOKIE[ LOGGED_IN_COOKIE ] ) ) {
 		if ( headers_sent() ) {
@@ -846,38 +827,7 @@ default:
 			/** This action is documented in wp-login.php */
 			do_action( 'login_footer' ); ?>
 			<?php if ( $customize_login ) : ?>
-				<?php
-				$theme = wp_get_theme( $customize_theme );
-				$messenger_login_params = array(
-					'url' => wp_customize_url(),
-					'channel' => 'login',
-				);
-				$login_message = array();
-
-				// Update Customizer nonces
-				if ( ! $theme->errors() ) {
-					/*
-					 * Set the current user and auth cookie so that wp_create_nonce() will succeed;
-					 * wp_signon() calls wp_set_auth_cookie() which deos not set $_COOKIE, and
-					 * wp_create_nonce() calls wp_get_session_token() which calls wp_parse_auth_cookie()
-					 * which expects the $_COOKIE to be set.
-					 */
-					wp_set_current_user( $user->ID );
-					$_COOKIE[ LOGGED_IN_COOKIE ] = $GLOBALS['_wp_login_logged_in_cookie'];
-					$login_message['nonce'] = array(
-						'save' => wp_create_nonce( 'save-customize_' . $theme->get_stylesheet() ),
-						'preview' => wp_create_nonce( 'preview-customize_' . $theme->get_stylesheet() ),
-						'update-widget' => wp_create_nonce( 'update-widget' ),
-					);
-				}
-
-				?>
-				<script type="text/javascript">
-					setTimeout( function () {
-						var messenger = new wp.customize.Messenger( <?php echo wp_json_encode( $messenger_login_params ) ?> );
-						messenger.send( 'login', <?php echo wp_json_encode( $login_message ) ?> );
-					}, 1000 );
-				</script>
+				<script type="text/javascript">setTimeout( function(){ new wp.customize.Messenger({ url: '<?php echo wp_customize_url(); ?>', channel: 'login' }).send('login') }, 1000 );</script>
 			<?php endif; ?>
 			</body></html>
 <?php		exit;
@@ -968,7 +918,6 @@ default:
 <?php 	} ?>
 <?php   if ( $customize_login ) : ?>
 		<input type="hidden" name="customize-login" value="1" />
-		<input type="hidden" name="theme" value="<?php echo esc_attr( $customize_theme ) ?>" />
 <?php   endif; ?>
 		<input type="hidden" name="testcookie" value="1" />
 	</p>

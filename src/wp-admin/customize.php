@@ -209,8 +209,7 @@ do_action( 'customize_controls_print_scripts' );
 
 	$login_url = add_query_arg( array(
 		'interim-login' => 1,
-		'customize-login' => 1,
-		'theme' => $wp_customize->get_stylesheet(),
+		'customize-login' => 1
 	), wp_login_url() );
 
 	// Prepare Customizer settings to pass to JavaScript.
