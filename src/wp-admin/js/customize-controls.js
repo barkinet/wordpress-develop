@@ -582,6 +582,17 @@
 					section.closeDetails();
 				}
 			});
+
+			// Pre-load the first 3 theme screenshots
+			api.bind( 'ready', function () {
+				_.each( section.controls().slice( 0, 3 ), function ( control ) {
+					var img, src = control.params.theme.screenshot[0];
+					if ( src ) {
+						img = new Image();
+						img.src = src;
+					}
+				});
+			});
 		},
 
 		/**
