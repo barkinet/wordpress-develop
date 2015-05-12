@@ -626,14 +626,21 @@ class WP_User_Query {
 			$include = false;
 		}
 
-		// Meta query.
-		$this->meta_query = new WP_Meta_Query();
-		$this->meta_query->parse_query_vars( $qv );
-
 		$blog_id = 0;
 		if ( isset( $qv['blog_id'] ) ) {
 			$blog_id = absint( $qv['blog_id'] );
 		}
+
+		if ( isset( $qv['who'] ) && 'authors' == $qv['who'] && $blog_id ) {
+			$qv['meta_key'] = $wpdb->get_blog_prefix( $blog_id ) . 'user_level';
+			$qv['meta_value'] = 0;
+			$qv['meta_compare'] = '!=';
+			$qv['blog_id'] = $blog_id = 0; // Prevent extra meta query
+		}
+
+		// Meta query.
+		$this->meta_query = new WP_Meta_Query();
+		$this->meta_query->parse_query_vars( $qv );
 
 		$role = '';
 		if ( isset( $qv['role'] ) ) {
@@ -775,13 +782,6 @@ class WP_User_Query {
 			$this->query_where .= $this->get_search_sql( $search, $search_columns, $wild );
 		}
 
-		if ( isset( $qv['who'] ) && 'authors' == $qv['who'] && $blog_id ) {
-			$qv['meta_key'] = $wpdb->get_blog_prefix( $blog_id ) . 'user_level';
-			$qv['meta_value'] = 0;
-			$qv['meta_compare'] = '!=';
-			$qv['blog_id'] = $blog_id = 0; // Prevent extra meta query
-		}
-
 		if ( ! empty( $include ) ) {
 			// Sanitized earlier.
 			$ids = implode( ',', $include );
@@ -857,7 +857,7 @@ class WP_User_Query {
 			$this->results = $r;
 		} elseif ( 'all' == $qv['fields'] ) {
 			foreach ( $this->results as $key => $user ) {
-				$this->results[ $key ] = new WP_User( $user );
+				$this->results[ $key ] = new WP_User( $user, '', $qv['blog_id'] );
 			}
 		}
 	}
@@ -1249,7 +1249,7 @@ function is_user_member_of_blog( $user_id = 0, $blog_id = 0 ) {
  * Post meta data is called "Custom Fields" on the Administration Screens.
  *
  * @since 3.0.0
- * @link http://codex.wordpress.org/Function_Reference/add_user_meta
+ * @link https://codex.wordpress.org/Function_Reference/add_user_meta
  *
  * @param int $user_id User ID.
  * @param string $meta_key Metadata name.
@@ -1269,7 +1269,7 @@ function add_user_meta($user_id, $meta_key, $meta_value, $unique = false) {
  * allows removing all metadata matching key, if needed.
  *
  * @since 3.0.0
- * @link http://codex.wordpress.org/Function_Reference/delete_user_meta
+ * @link https://codex.wordpress.org/Function_Reference/delete_user_meta
  *
  * @param int $user_id user ID
  * @param string $meta_key Metadata name.
@@ -1284,7 +1284,7 @@ function delete_user_meta($user_id, $meta_key, $meta_value = '') {
  * Retrieve user meta field for a user.
  *
  * @since 3.0.0
- * @link http://codex.wordpress.org/Function_Reference/get_user_meta
+ * @link https://codex.wordpress.org/Function_Reference/get_user_meta
  *
  * @param int $user_id User ID.
  * @param string $key Optional. The meta key to retrieve. By default, returns data for all keys.
@@ -1305,7 +1305,7 @@ function get_user_meta($user_id, $key = '', $single = false) {
  * If the meta field for the user does not exist, it will be added.
  *
  * @since 3.0.0
- * @link http://codex.wordpress.org/Function_Reference/update_user_meta
+ * @link https://codex.wordpress.org/Function_Reference/update_user_meta
  *
  * @param int $user_id User ID.
  * @param string $meta_key Metadata key.
@@ -1744,7 +1744,7 @@ function email_exists( $email ) {
 }
 
 /**
- * Checks whether an username is valid.
+ * Checks whether a username is valid.
  *
  * @since 2.0.1
  *
@@ -1766,7 +1766,7 @@ function validate_username( $username ) {
 }
 
 /**
- * Insert an user into the database.
+ * Insert a user into the database.
  *
  * Most of the $userdata array fields have filters associated with the values.
  * The exceptions are 'rich_editing', 'role', 'jabber', 'aim', 'yim',
@@ -2060,7 +2060,7 @@ function wp_insert_user( $userdata ) {
 }
 
 /**
- * Update an user in the database.
+ * Update a user in the database.
  *
  * It is possible to update a user's password by specifying the 'user_pass'
  * value in the $userdata parameter array.
@@ -2136,7 +2136,7 @@ function wp_update_user($userdata) {
 }
 
 /**
- * A simpler way of inserting an user into the database.
+ * A simpler way of inserting a user into the database.
  *
  * Creates a new user with just the username, password, and email. For more
  * complex user creation use {@see wp_insert_user()} to specify more information.

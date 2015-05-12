@@ -22,7 +22,7 @@
 	width: 0;
 	height: 0;
 	margin-left: 8px;
-	border-top: 5px solid #bbb;
+	border-top: 5px solid #b4b9be;
 	border-right: 5px solid transparent;
 }
 
@@ -36,7 +36,7 @@
 	display: inline-block;
 	-webkit-border-radius: 5px;
 	border-radius: 5px;
-	background-color: #bbb;
+	background-color: #b4b9be;
 	color: #fff;
 }
 
@@ -125,7 +125,8 @@ strong .post-com-count:after {
 	font-size: 1em;
 }
 
-#edithead .inside {
+#edithead .inside,
+#commentsdiv #edithead .inside {
 	float: left;
 	padding: 3px 0 2px 5px;
 	margin: 0;
@@ -357,6 +358,11 @@ table.fixed {
 	border-bottom: 0 none;
 }
 
+#commentsdiv #edithead .inside input {
+	vertical-align: middle;
+	width: 160px;
+}
+
 .sorting-indicator {
 	display: none;
 	width: 10px;
@@ -557,16 +563,22 @@ th.asc:hover span.sorting-indicator {
 .tablenav .tablenav-pages a.disabled:hover,
 .tablenav .tablenav-pages a.disabled:focus,
 .tablenav .tablenav-pages a.disabled:active {
-	color: #aaa;
+	color: #a0a5aa;
 	background: #eee;
 	background: rgba( 0, 0, 0, 0.05 );
 }
 
 .tablenav .displaying-num {
-	margin-right: 2px;
+	margin-right: 7px;
 	color: #777;
 	font-size: 12px;
 	font-style: italic;
+}
+
+.tablenav .one-page .displaying-num {
+	display: inline-block;
+	margin-top: 2px;
+	margin-right: 0;
 }
 
 .tablenav .actions {
@@ -603,43 +615,43 @@ classes exist in paginate_links() but not seen in list table output. */
 
 .tablenav .view-switch {
 	float: right;
-	margin: 5px 16px 0 8px;
+	margin: 0 5px;
+	padding-top: 3px;
+	/* line-height in px same as .tablenav height */
+	line-height: 30px;
 }
 
 .wp-filter .view-switch {
 	display: inline-block;
 	vertical-align: middle;
-	padding: 15px 0;
-	margin: 0 20px 0 0;
+	padding: 12px 0;
+	margin: 0 8px 0 2px;
+}
+
+.media-toolbar.wp-filter .view-switch {
+	margin: 0 12px 0 2px;
 }
 
 .view-switch a {
-	text-decoration: none;
-}
-
-.view-switch > a {
-	display: inline-block;
-	width: 18px;
-	height: 18px;
-}
-
-.view-switch > a:before {
-	color: #bbb;
-	display: inline-block;
 	float: left;
+	width: 28px;
+	height: 28px;
+	text-align: center;
+	line-height: 24px;
+}
+
+.view-switch a:before {
+	color: #b4b9be;
+	display: inline-block;
 	font: normal 20px/1 'dashicons';
 	speak: none;
 	vertical-align: middle;
-	margin-left: 0;
 	-webkit-font-smoothing: antialiased;
 	-moz-osx-font-smoothing: grayscale;
 }
 
-.view-switch > .view-list:before {
-	content: '\f163';
-}
-
-.view-switch a:hover:before {
+.view-switch a:hover:before,
+.view-switch a:focus:before {
 	color: #727272;
 }
 
@@ -647,15 +659,15 @@ classes exist in paginate_links() but not seen in list table output. */
 	color: #0073aa;
 }
 
-.view-switch > a + a {
-	margin-left: 5px;
+.view-switch .view-list:before {
+	content: '\f163';
 }
 
-.view-switch > .view-excerpt:before {
+.view-switch .view-excerpt:before {
 	content: '\f164';
 }
 
-.view-switch > .view-grid:before {
+.view-switch .view-grid:before {
 	content: '\f509';
 }
 
@@ -1164,7 +1176,9 @@ tr.active.update + tr.plugin-update-tr .plugin-update {
 }
 
 .plugins .update .second,
-.plugins .update .row-actions {
+.plugins .update .row-actions,
+.plugins .updated .second,
+.plugins .updated .row-actions {
 	padding-bottom: 0;
 }
 
@@ -1245,7 +1259,7 @@ tr.active.update + tr.plugin-update-tr .plugin-update {
 	content: '\f147';
 }
 
-.plugins .plugin-update {
+.plugins .plugin-update-tr .plugin-update {
 	padding: 0;
 	border: none;
 	-webkit-box-shadow: inset 0 -1px 0 rgba(0,0,0,0.1);
@@ -1541,6 +1555,12 @@ div.action-links,
 	.tablenav.top .actions,
 	.tablenav .view-switch {
 		display: none;
+	}
+
+	.view-switch a {
+		width: 36px;
+		height: 36px;
+		line-height: 33px;
 	}
 
 	/* Pagination */

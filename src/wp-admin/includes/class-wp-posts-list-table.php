@@ -149,11 +149,11 @@ class WP_Posts_List_Table extends WP_List_Table {
 	}
 
 	/**
-	 * Determine if the current view is the "All" view
+	 * Determine if the current view is the "All" view.
 	 *
 	 * @since 4.2.0
 	 *
-	 * @return boolean
+	 * @return bool Whether the current ivew is the "All" view.
 	 */
 	protected function is_base_request() {
 		if ( empty( $_GET ) ) {
@@ -576,7 +576,7 @@ class WP_Posts_List_Table extends WP_List_Table {
 	 * @param int $level
 	 * @param int $pagenum
 	 * @param int $per_page
-	 * @param array $to_display list of pages to be displayed
+	 * @param array $to_display List of pages to be displayed. Passed by reference.
 	 */
 	private function _page_rows( &$children_pages, &$count, $parent, $level, $pagenum, $per_page, &$to_display ) {
 
@@ -1010,7 +1010,7 @@ class WP_Posts_List_Table extends WP_List_Table {
 			$show_in_quick_edit = $taxonomy->show_in_quick_edit;
 
 			/**
-			 * Filters whether the current taxonomy should be shown in the Quick Edit panel.
+			 * Filter whether the current taxonomy should be shown in the Quick Edit panel.
 			 *
 			 * @since 4.2.0
 			 *
@@ -1116,12 +1116,12 @@ class WP_Posts_List_Table extends WP_List_Table {
 				<em class="alignleft inline-edit-or">
 					<?php
 					/* translators: Between password field and private checkbox on post quick edit interface */
-					echo __( '&ndash;OR&ndash;' );
+					_e( '&ndash;OR&ndash;' );
 					?>
 				</em>
 				<label class="alignleft inline-edit-private">
 					<input type="checkbox" name="keep_private" value="private" />
-					<span class="checkbox-title"><?php echo __( 'Private' ); ?></span>
+					<span class="checkbox-title"><?php _e( 'Private' ); ?></span>
 				</label>
 			</div>
 
@@ -1331,7 +1331,7 @@ class WP_Posts_List_Table extends WP_List_Table {
 		$post_formats = get_theme_support( 'post-formats' );
 
 		?>
-		<label class="alignleft" for="post_format">
+		<label class="alignleft">
 		<span class="title"><?php _ex( 'Format', 'post format' ); ?></span>
 		<select name="post_format">
 			<option value="-1"><?php _e( '&mdash; No Change &mdash;' ); ?></option>

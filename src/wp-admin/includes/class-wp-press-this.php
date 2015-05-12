@@ -8,11 +8,14 @@
  */
 
 /**
- * Press This class
+ * Press This class.
  *
  * @since 4.2.0
  */
 class WP_Press_This {
+
+	// Used to trigger the bookmarklet update notice.
+	public $version = 8;
 
 	private $images = array();
 
@@ -38,10 +41,6 @@ class WP_Press_This {
 	 */
 	public function site_settings() {
 		return array(
-			// Used to trigger the bookmarklet update notice.
-			// Needs to be set here and in get_shortcut_link() in wp-includes/link-template.php.
-			'version' => '8',
-
 			/**
 			 * Filter whether or not Press This should redirect the user in the parent window upon save.
 			 *
@@ -159,7 +158,7 @@ class WP_Press_This {
 			 * @since 4.2.0
 			 *
 			 * @param string $url     Redirect URL. If `$status` is 'publish', this will be the post permalink.
-			 *                        Otherwise, the post edit URL will be used.
+			 *                        Otherwise, the default is false resulting in no redirect.
 			 * @param int    $post_id Post ID.
 			 * @param string $status  Post status.
 			 */
@@ -251,8 +250,8 @@ class WP_Press_This {
 		$source_content  = '';
 
 		if ( ! is_wp_error( $source_tmp_file ) && file_exists( $source_tmp_file ) ) {
-			// Get the content of the source page from the tmp file..
 
+			// Get the content of the source page from the tmp file..
 			$source_content = wp_kses(
 				@file_get_contents( $source_tmp_file ),
 				array(
@@ -281,14 +280,23 @@ class WP_Press_This {
 			unlink( $source_tmp_file );
 
 		} else if ( is_wp_error( $source_tmp_file ) ) {
-			$source_content = new WP_Error( 'upload-error',  sprintf( __( 'Error: %s' ), sprintf( __( 'Could not download the source URL (native error: %s).' ), $source_tmp_file->get_error_message() ) ) );
+			$source_content = new WP_Error( 'upload-error',  sprintf( __( 'ERROR: %s' ), sprintf( __( 'Could not download the source URL (native error: %s).' ), $source_tmp_file->get_error_message() ) ) );
 		} else if ( ! file_exists( $source_tmp_file ) ) {
-			$source_content = new WP_Error( 'no-local-file',  sprintf( __( 'Error: %s' ), __( 'Could not save or locate the temporary download file for the source URL.' ) ) );
+			$source_content = new WP_Error( 'no-local-file',  sprintf( __( 'ERROR: %s' ), __( 'Could not save or locate the temporary download file for the source URL.' ) ) );
 		}
 
 		return $source_content;
 	}
 
+	/**
+	 * Utility method to limit an array to 50 values.
+	 *
+	 * @ignore
+	 * @since 4.2.0
+	 *
+	 * @param array $value Array to limit.
+	 * @return array Original array if fewer than 50 values, limited array, empty array otherwise.
+	 */
 	private function _limit_array( $value ) {
 		if ( is_array( $value ) ) {
 			if ( count( $value ) > 50 ) {
@@ -301,6 +309,17 @@ class WP_Press_This {
 		return array();
 	}
 
+	/**
+	 * Utility method to limit the length of a given string to 5,000 characters.
+	 *
+	 * @ignore
+	 * @since 4.2.0
+	 *
+	 * @param string $value String to limit.
+	 * @return bool|int|string If boolean or integer, that value. If a string, the original value
+	 *                         if fewer than 5,000 characters, a truncated version, otherwise an
+	 *                         empty string.
+	 */
 	private function _limit_string( $value ) {
 		$return = '';
 
@@ -320,6 +339,15 @@ class WP_Press_This {
 		return $return;
 	}
 
+	/**
+	 * Utility method to limit a given URL to 2,048 characters.
+	 *
+	 * @ignore
+	 * @since 4.2.0
+	 *
+	 * @param string $url URL to check for length and validity.
+	 * @return string Escaped URL if of valid length (< 2048) and makeup. Empty string otherwise.
+	 */
 	private function _limit_url( $url ) {
 		if ( ! is_string( $url ) ) {
 			return '';
@@ -348,6 +376,18 @@ class WP_Press_This {
 		return esc_url_raw( $url, array( 'http', 'https' ) );
 	}
 
+	/**
+	 * Utility method to limit image source URLs.
+	 *
+	 * Excluded URLs include share-this type buttons, loaders, spinners, spacers, WP interface images,
+	 * tiny buttons or thumbs, mathtag.com or quantserve.com images, or the WP stats gif.
+	 *
+	 * @ignore
+	 * @since 4.2.0
+	 *
+	 * @param string $src Image source URL.
+	 * @return string If not matched an excluded URL type, the original URL, empty string otherwise.
+	 */
 	private function _limit_img( $src ) {
 		$src = $this->_limit_url( $src );
 
@@ -383,6 +423,18 @@ class WP_Press_This {
 		return $src;
 	}
 
+	/**
+	 * Limit embed source URLs to specific providers.
+	 *
+	 * Not all core oEmbed providers are supported. Supported providers include YouTube, Vimeo,
+	 * Vine, Daily Motion, SoundCloud, and Twitter.
+	 *
+	 * @ignore
+	 * @since 4.2.0
+	 *
+	 * @param string $src Embed source URL.
+	 * @return string If not from a supported provider, an empty string. Otherwise, a reformattd embed URL.
+	 */
 	private function _limit_embed( $src ) {
 		$src = $this->_limit_url( $src );
 
@@ -414,6 +466,17 @@ class WP_Press_This {
 		return $src;
 	}
 
+	/**
+	 * Process a meta data entry from the source.
+	 *
+	 * @ignore
+	 * @since 4.2.0
+	 *
+	 * @param string $meta_name  Meta key name.
+	 * @param mixed  $meta_value Meta value.
+	 * @param array  $data       Associative array of source data.
+	 * @return array Processed data array.
+	 */
 	private function _process_meta_entry( $meta_name, $meta_value, $data ) {
 		if ( preg_match( '/:?(title|description|keywords|site_name)$/', $meta_name ) ) {
 			$data['_meta'][ $meta_name ] = $meta_value;
@@ -543,7 +606,7 @@ class WP_Press_This {
 			}
 		}
 
-		// Fetch and gather <link> data
+		// Fetch and gather <link> data.
 		if ( empty( $data['_links'] ) ) {
 			$data['_links'] = array();
 		}
@@ -855,8 +918,11 @@ class WP_Press_This {
 	/**
 	 * Get a list of embeds with no duplicates.
 	 *
+	 * @since 4.2.0
+	 * @access public
+	 *
 	 * @param array $data The site's data.
-	 * @returns array
+	 * @returns array Embeds selected to be available.
 	 */
 	public function get_embeds( $data ) {
 		$selected_embeds = array();
@@ -879,6 +945,9 @@ class WP_Press_This {
 
 	/**
 	 * Get a list of images with no duplicates.
+	 *
+	 * @since 4.2.0
+	 * @access public
 	 *
 	 * @param array $data The site's data.
 	 * @returns array
@@ -911,6 +980,9 @@ class WP_Press_This {
 	/**
 	 * Gets the source page's canonical link, based on passed location and meta data.
 	 *
+	 * @since 4.2.0
+	 * @access public
+	 *
  	 * @param array $data The site's data.
 	 * @returns string Discovered canonical URL, or empty
 	 */
@@ -939,6 +1011,9 @@ class WP_Press_This {
 	/**
 	 * Gets the source page's site name, based on passed meta data.
 	 *
+	 * @since 4.2.0
+	 * @access public
+	 *
 	 * @param array $data The site's data.
 	 * @returns string Discovered site name, or empty
 	 */
@@ -958,6 +1033,9 @@ class WP_Press_This {
 
 	/**
 	 * Gets the source page's title, based on passed title and meta data.
+	 *
+	 * @since 4.2.0
+	 * @access public
 	 *
 	 * @param array $data The site's data.
 	 * @returns string Discovered page title, or empty
@@ -982,7 +1060,11 @@ class WP_Press_This {
 
 	/**
 	 * Gets the source page's suggested content, based on passed data (description, selection, etc).
+	 *
 	 * Features a blockquoted excerpt, as well as content attribution, if any.
+	 *
+	 * @since 4.2.0
+	 * @access public
 	 *
 	 * @param array $data The site's data.
 	 * @returns string Discovered content, or empty
@@ -1237,10 +1319,18 @@ class WP_Press_This {
 
 	<div class="wrapper">
 		<div class="editor-wrapper">
-			<div class="alerts">
-				<p class="alert is-notice is-hidden should-upgrade-bookmarklet">
-					<?php printf( __( 'You should upgrade <a href="%s" target="_blank">your bookmarklet</a> to the latest version!' ), admin_url( 'tools.php' ) ); ?>
-				</p>
+			<div class="alerts" role="alert" aria-live="assertive" aria-relevant="all" aria-atomic="true">
+				<?php
+
+				if ( isset( $data['v'] ) && $this->version > $data['v'] ) {
+					?>
+					<p class="alert is-notice">
+						<?php printf( __( 'You should upgrade <a href="%s" target="_blank">your bookmarklet</a> to the latest version!' ), admin_url( 'tools.php' ) ); ?>
+					</p>
+					<?php
+				}
+
+				?>
 			</div>
 
 			<div id="app-container" class="editor">
@@ -1345,7 +1435,11 @@ class WP_Press_This {
 		</div>
 		<div class="post-actions">
 			<span class="spinner">&nbsp;</span>
-			<button type="button" class="button-subtle draft-button"><?php _e( 'Save Draft' ); ?></button>
+			<button type="button" class="button-subtle draft-button" aria-live="polite">
+				<span class="save-draft"><?php _e( 'Save Draft' ); ?></span>
+				<span class="saving-draft"><?php _e( 'Saving...' ); ?></span>
+			</button>
+			<a href="<?php echo esc_url( get_edit_post_link( $post_ID ) ); ?>" class="edit-post-link" style="display: none;" target="_blank"><?php _e( 'Standard Editor' ); ?></a>
 			<button type="button" class="button-subtle preview-button"><?php _e( 'Preview' ); ?></button>
 			<button type="button" class="button-primary publish-button"><?php echo ( current_user_can( 'publish_posts' ) ) ? __( 'Publish' ) : __( 'Submit for Review' ); ?></button>
 		</div>

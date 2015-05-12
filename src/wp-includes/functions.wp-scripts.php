@@ -15,7 +15,7 @@
  *
  * @since 4.2.0
  *
- * @return WP_Scripts
+ * @return WP_Scripts WP_Scripts instance.
  */
 function wp_scripts() {
 	global $wp_scripts;
@@ -26,13 +26,12 @@ function wp_scripts() {
 }
 
 /**
- * Helper function to output a _doing_it_wrong message when applicable
+ * Helper function to output a _doing_it_wrong message when applicable.
  *
- * @since 4.2.0
- * @access private
  * @ignore
+ * @since 4.2.0
  *
- * @param string $function
+ * @param string $function Function name.
  */
 function _wp_scripts_maybe_doing_it_wrong( $function ) {
 	if ( did_action( 'init' ) ) {
@@ -95,6 +94,7 @@ function wp_print_scripts( $handles = false ) {
  * @global WP_Scripts $wp_scripts The WP_Scripts object for printing scripts.
  *
  * @since 2.6.0
+ * @since 4.3.0 A return value was added.
  *
  * @param string      $handle    Name of the script. Should be unique.
  * @param string      $src       Path to the script from the WordPress root directory. Example: '/js/myscript.js'.
@@ -106,15 +106,18 @@ function wp_print_scripts( $handles = false ) {
  *                               If set to null, no version is added. Default 'false'. Accepts 'false', 'null', or 'string'.
  * @param bool        $in_footer Optional. Whether to enqueue the script before </head> or before </body>.
  *                               Default 'false'. Accepts 'false' or 'true'.
+ * @return bool Whether the script has been registered. True on success, false on failure.
  */
 function wp_register_script( $handle, $src, $deps = array(), $ver = false, $in_footer = false ) {
 	$wp_scripts = wp_scripts();
 	_wp_scripts_maybe_doing_it_wrong( __FUNCTION__ );
 
-	$wp_scripts->add( $handle, $src, $deps, $ver );
+	$registered = $wp_scripts->add( $handle, $src, $deps, $ver );
 	if ( $in_footer ) {
 		$wp_scripts->add_data( $handle, 'group', 1 );
 	}
+
+	return $registered;
 }
 
 /**
@@ -139,11 +142,10 @@ function wp_register_script( $handle, $src, $deps = array(), $ver = false, $in_f
  *
  * @todo Documentation cleanup
  *
- * @param string         $handle       Script handle the data will be attached to.
- * @param string         $object_name  Name for the JavaScript object. Passed directly, so it should be qualified JS variable.
- *                                     Example: '/[a-zA-Z0-9_]+/'.
- * @param array|callable $l10n         The data itself. The data can be either a single or multi-dimensional array. If a callable
- *                                     is passed, it will be invoked at runtime.
+ * @param string $handle      Script handle the data will be attached to.
+ * @param string $object_name Name for the JavaScript object. Passed directly, so it should be qualified JS variable.
+ *                            Example: '/[a-zA-Z0-9_]+/'.
+ * @param array $l10n         The data itself. The data can be either a single or multi-dimensional array.
  * @return bool True if the script was successfully localized, false otherwise.
  */
 function wp_localize_script( $handle, $object_name, $l10n ) {
@@ -283,9 +285,9 @@ function wp_script_is( $handle, $list = 'enqueued' ) {
  * Possible values for $key and $value:
  * 'conditional' string Comments for IE 6, lte IE 7, etc.
  *
- * @see WP_Dependency::add_data()
- *
  * @since 4.2.0
+ *
+ * @see WP_Dependency::add_data()
  *
  * @param string $handle Name of the script.
  * @param string $key    Name of data point for which we're storing a value.

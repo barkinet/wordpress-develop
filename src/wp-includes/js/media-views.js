@@ -124,6 +124,7 @@ module.exports = CollectionAdd;
  * @param {string}                     attributes.menu                   Initial mode for the menu region. @todo this needs a better explanation.
  * @param {boolean}                    [attributes.searchable=false]     Whether the library is searchable.
  * @param {boolean}                    [attributes.sortable=true]        Whether the Attachments should be sortable. Depends on the orderby property being set to menuOrder on the attachments collection.
+ * @param {boolean}                    [attributes.date=true]            Whether to show the date filter in the browser's toolbar.
  * @param {boolean}                    [attributes.describe=true]        Whether to offer UI to describe the attachments - e.g. captioning images in a gallery.
  * @param {boolean}                    [attributes.dragInfo=true]        Whether to show instructional text about the attachments being sortable.
  * @param {boolean}                    [attributes.dragInfoText]         Instructional text about the attachments being sortable.
@@ -147,6 +148,7 @@ CollectionEdit = Library.extend({
 	defaults: {
 		multiple:         false,
 		sortable:         true,
+		date:             false,
 		searchable:       false,
 		content:          'browse',
 		describe:         true,
@@ -501,7 +503,7 @@ Embed = wp.media.controller.State.extend({
 	},
 
 	// The amount of time used when debouncing the scan.
-	sensitivity: 200,
+	sensitivity: 400,
 
 	initialize: function(options) {
 		this.metadata = options.metadata;
@@ -835,6 +837,7 @@ module.exports = GalleryAdd;
  * @param {boolean}                    [attributes.multiple=false]        Whether multi-select is enabled.
  * @param {boolean}                    [attributes.searchable=false]      Whether the library is searchable.
  * @param {boolean}                    [attributes.sortable=true]         Whether the Attachments should be sortable. Depends on the orderby property being set to menuOrder on the attachments collection.
+ * @param {boolean}                    [attributes.date=true]             Whether to show the date filter in the browser's toolbar.
  * @param {string|false}               [attributes.content=browse]        Initial mode for the content region.
  * @param {string|false}               [attributes.toolbar=image-details] Initial mode for the toolbar region.
  * @param {boolean}                    [attributes.describe=true]         Whether to offer UI to describe attachments - e.g. captioning images in a gallery.
@@ -859,6 +862,7 @@ GalleryEdit = Library.extend({
 		multiple:         false,
 		searchable:       false,
 		sortable:         true,
+		date:             false,
 		display:          false,
 		content:          'browse',
 		toolbar:          'gallery-edit',
@@ -3680,17 +3684,17 @@ module.exports = Attachments;
  * @augments wp.Backbone.View
  * @augments Backbone.View
  *
- * @param {object}      options
- * @param {object}      [options.filters=false] Which filters to show in the browser's toolbar.
- *                                              Accepts 'uploaded' and 'all'.
- * @param {object}      [options.search=true]   Whether to show the search interface in the
- *                                              browser's toolbar.
- * @param {object}      [options.date=true]     Whether to show the date filter in the
- *                                              browser's toolbar.
- * @param {object}      [options.display=false] Whether to show the attachments display settings
- *                                              view in the sidebar.
- * @param {bool|string} [options.sidebar=true]  Whether to create a sidebar for the browser.
- *                                              Accepts true, false, and 'errors'.
+ * @param {object}         [options]               The options hash passed to the view.
+ * @param {boolean|string} [options.filters=false] Which filters to show in the browser's toolbar.
+ *                                                 Accepts 'uploaded' and 'all'.
+ * @param {boolean}        [options.search=true]   Whether to show the search interface in the
+ *                                                 browser's toolbar.
+ * @param {boolean}        [options.date=true]     Whether to show the date filter in the
+ *                                                 browser's toolbar.
+ * @param {boolean}        [options.display=false] Whether to show the attachments display settings
+ *                                                 view in the sidebar.
+ * @param {boolean|string} [options.sidebar=true]  Whether to create a sidebar for the browser.
+ *                                                 Accepts true, false, and 'errors'.
  */
 var View = wp.media.View,
 	mediaTrash = wp.media.view.settings.mediaTrash,
@@ -4207,9 +4211,9 @@ module.exports = ButtonGroup;
  * @augments Backbone.View
  */
 var Button = wp.media.View.extend({
-	tagName:    'a',
+	tagName:    'button',
 	className:  'media-button',
-	attributes: { href: '#' },
+	attributes: { type: 'button' },
 
 	events: {
 		'click': 'click'
@@ -4529,9 +4533,7 @@ EmbedLink = wp.media.view.Settings.extend({
 	template:  wp.template('embed-link-settings'),
 
 	initialize: function() {
-		this.spinner = $('<span class="spinner" />');
-		this.$el.append( this.spinner[0] );
-		this.listenTo( this.model, 'change:url change:width change:height', this.updateoEmbed );
+		this.listenTo( this.model, 'change:url', this.updateoEmbed );
 	},
 
 	updateoEmbed: _.debounce( function() {
@@ -4541,15 +4543,14 @@ EmbedLink = wp.media.view.Settings.extend({
 		this.$('.embed-container').hide().find('.embed-preview').empty();
 		this.$( '.setting' ).hide();
 
-		// only proceed with embed if the field contains more than 6 characters
-		if ( url && url.length < 6 ) {
+		// only proceed with embed if the field contains more than 11 characters
+		// Example: http://a.io is 11 chars
+		if ( url && ( url.length < 11 || ! url.match(/^http(s)?:\/\//) ) ) {
 			return;
 		}
 
-		this.spinner.show();
-
 		this.fetch();
-	}, 600 ),
+	}, wp.media.controller.Embed.sensitivity ),
 
 	fetch: function() {
 		var embed;
@@ -4559,57 +4560,45 @@ EmbedLink = wp.media.view.Settings.extend({
 			return;
 		}
 
+		if ( this.dfd && 'pending' === this.dfd.state() ) {
+			this.dfd.abort();
+		}
+
 		embed = new wp.shortcode({
 			tag: 'embed',
 			attrs: _.pick( this.model.attributes, [ 'width', 'height', 'src' ] ),
 			content: this.model.get('url')
 		});
 
-		wp.ajax.send( 'parse-embed', {
-			data : {
+		this.dfd = $.ajax({
+			type:    'POST',
+			url:     wp.ajax.settings.url,
+			context: this,
+			data:    {
+				action: 'parse-embed',
 				post_ID: wp.media.view.settings.post.id,
 				shortcode: embed.string()
 			}
-		} )
-			.done( _.bind( this.renderoEmbed, this ) )
-			.fail( _.bind( this.renderFail, this ) );
+		})
+			.done( this.renderoEmbed )
+			.fail( this.renderFail );
 	},
 
-	renderFail: function () {
-		this.$( '.setting' ).hide().filter( '.link-text' ).show();
+	renderFail: function ( response, status ) {
+		if ( 'abort' === status ) {
+			return;
+		}
+		this.$( '.link-text' ).show();
 	},
 
 	renderoEmbed: function( response ) {
-		var html = ( response && response.body ) || '',
-			attr = {},
-			opts = { silent: true };
+		var html = ( response && response.data && response.data.body ) || '';
 
-		this.$( '.setting' ).hide()
-			.filter( '.link-text' )[ html ? 'hide' : 'show' ]();
-
-		if ( response && response.attr ) {
-			attr = response.attr;
-
-			_.each( [ 'width', 'height' ], function ( key ) {
-				var $el = this.$( '.setting.' + key ),
-					value = attr[ key ];
-
-				if ( value ) {
-					this.model.set( key, value, opts );
-					$el.show().find( 'input' ).val( value );
-				} else {
-					this.model.unset( key, opts );
-					$el.hide().find( 'input' ).val( '' );
-				}
-			}, this );
+		if ( html ) {
+			this.$('.embed-container').show().find('.embed-preview').html( html );
 		} else {
-			this.model.unset( 'height', opts );
-			this.model.unset( 'width', opts );
+			this.renderFail();
 		}
-
-		this.spinner.hide();
-
-		this.$('.embed-container').show().find('.embed-preview').html( html );
 	}
 });
 
@@ -5960,6 +5949,7 @@ Select = MediaFrame.extend({
 			sortable:   state.get('sortable'),
 			search:     state.get('searchable'),
 			filters:    state.get('filterable'),
+			date:       state.get('date'),
 			display:    state.has('display') ? state.get('display') : state.get('displaySettings'),
 			dragInfo:   state.get('dragInfo'),
 
@@ -7463,7 +7453,7 @@ var Spinner = wp.media.View.extend({
 	show: function() {
 		if ( ! this.spinnerTimeout ) {
 			this.spinnerTimeout = _.delay(function( $el ) {
-				$el.show();
+				$el.addClass( 'is-active' );
 			}, this.delay, this.$el );
 		}
 
@@ -7471,7 +7461,7 @@ var Spinner = wp.media.View.extend({
 	},
 
 	hide: function() {
-		this.$el.hide();
+		this.$el.removeClass( 'is-active' );
 		this.spinnerTimeout = clearTimeout( this.spinnerTimeout );
 
 		return this;

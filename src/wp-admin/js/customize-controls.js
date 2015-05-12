@@ -552,6 +552,16 @@
 		currentTheme: '',
 		overlay: '',
 		template: '',
+		screenshotQueue: null,
+		$window: $( window ),
+
+		/**
+		 * @since 4.2.0
+		 */
+		initialize: function () {
+			this.$customizeSidebar = $( '.wp-full-overlay-sidebar-content:first' );
+			return api.Section.prototype.initialize.apply( this, arguments );
+		},
 
 		/**
 		 * @since 4.2.0
@@ -582,6 +592,23 @@
 					section.closeDetails();
 				}
 			});
+
+			_.bindAll( this, 'renderScreenshots' );
+		},
+
+		/**
+		 * Override Section.isContextuallyActive method.
+		 *
+		 * Ignore the active states' of the contained theme controls, and just
+		 * use the section's own active state instead. This ensures empty search
+		 * results for themes to cause the section to become inactive.
+		 *
+		 * @since 4.2.0
+		 *
+		 * @returns {Boolean}
+		 */
+		isContextuallyActive: function () {
+			return this.active();
 		},
 
 		/**
@@ -635,19 +662,32 @@
 				section.closeDetails();
 			});
 
+			var renderScreenshots = _.throttle( _.bind( section.renderScreenshots, this ), 100 );
 			section.container.on( 'input', '#themes-filter', function( event ) {
 				var count,
 					term = event.currentTarget.value.toLowerCase().trim().replace( '-', ' ' ),
 					controls = section.controls();
 
-				controls.pop(); // Remove the last control (the add-new control).
-
 				_.each( controls, function( control ) {
 					control.filter( term );
 				});
-				// Update theme count. Note that the add-theme tile is a div.customize-control.
+
+				renderScreenshots();
+
+				// Update theme count.
 				count = section.container.find( 'li.customize-control:visible' ).length;
 				section.container.find( '.theme-count' ).text( count );
+			});
+
+			// Pre-load the first 3 theme screenshots.
+			api.bind( 'ready', function () {
+				_.each( section.controls().slice( 0, 3 ), function ( control ) {
+					var img, src = control.params.theme.screenshot[0];
+					if ( src ) {
+						img = new Image();
+						img.src = src;
+					}
+				});
 			});
 		},
 
@@ -692,9 +732,7 @@
 					}
 				});
 				api.panel.each( function ( otherPanel ) {
-					if ( panel !== otherPanel ) {
-						otherPanel.collapse( { duration: 0 } );
-					}
+					otherPanel.collapse( { duration: 0 } );
 				});
 
 				content.show( 0, function() {
@@ -704,16 +742,20 @@
 					section.addClass( 'current-panel' );
 					overlay.addClass( 'in-themes-panel' );
 					container.scrollTop( 0 );
+					_.delay( panel.renderScreenshots, 10 ); // Wait for the controls
+					panel.$customizeSidebar.on( 'scroll.customize-themes-section', _.throttle( panel.renderScreenshots, 300 ) );
 					if ( args.completeCallback ) {
 						args.completeCallback();
 					}
 				} );
 				topPanel.attr( 'tabindex', '-1' );
+				changeBtn.attr( 'tabindex', '-1' );
 				customizeBtn.focus();
 			} else {
 				siblings.removeClass( 'open' );
 				section.removeClass( 'current-panel' );
 				overlay.removeClass( 'in-themes-panel' );
+				panel.$customizeSidebar.off( 'scroll.customize-themes-section' );
 				content.delay( 180 ).hide( 0, function() {
 					content.css( 'margin-top', 'inherit' ); // Reset
 					if ( args.completeCallback ) {
@@ -721,9 +763,58 @@
 					}
 				} );
 				topPanel.attr( 'tabindex', '0' );
+				customizeBtn.attr( 'tabindex', '0' );
 				changeBtn.focus();
 				container.scrollTop( 0 );
 			}
+		},
+
+		/**
+		 * Render control's screenshot if the control comes into view.
+		 *
+		 * @since 4.2.0
+		 */
+		renderScreenshots: function( ) {
+			var section = this;
+
+			// Fill queue initially.
+			if ( section.screenshotQueue === null ) {
+				section.screenshotQueue = section.controls();
+			}
+
+			// Are all screenshots rendered?
+			if ( ! section.screenshotQueue.length ) {
+				return;
+			}
+
+			section.screenshotQueue = _.filter( section.screenshotQueue, function( control ) {
+				var $imageWrapper = control.container.find( '.theme-screenshot' ),
+					$image = $imageWrapper.find( 'img' );
+
+				if ( ! $image.length ) {
+					return false;
+				}
+
+				if ( $image.is( ':hidden' ) ) {
+					return true;
+				}
+
+				// Based on unveil.js.
+				var wt = section.$window.scrollTop(),
+					wb = wt + section.$window.height(),
+					et = $image.offset().top,
+					ih = $imageWrapper.height(),
+					eb = et + ih,
+					threshold = ih * 3,
+					inView = eb >= wt - threshold && et <= wb + threshold;
+
+				if ( inView ) {
+					control.container.trigger( 'render-screenshot' );
+				}
+
+				// If the image is in view return false so it's cleared from the queue.
+				return ! inView;
+			} );
 		},
 
 		/**
@@ -816,8 +907,8 @@
 			callback = callback || function(){};
 			section.currentTheme = theme.id;
 			section.overlay.html( section.template( theme ) )
-			               .fadeIn( 'fast' )
-			               .focus();
+				.fadeIn( 'fast' )
+				.focus();
 			$( 'body' ).addClass( 'modal-open' );
 			section.containFocus( section.overlay );
 			section.updateLimits();
@@ -1481,7 +1572,7 @@
 
 			this.params.attachment = this.params.defaultAttachment;
 			this.setting( this.params.defaultAttachment.url );
- 		},
+		},
 
 		/**
 		 * Called when the "Remove" link is clicked. Empties the setting.
@@ -1608,7 +1699,7 @@
 			this.btnNew.on( 'click', this.openMedia );
 			this.btnRemove.on( 'click', this.removeImage );
 
-			api.HeaderTool.currentHeader = new api.HeaderTool.ImageModel();
+			api.HeaderTool.currentHeader = this.getInitialHeaderImage();
 
 			new api.HeaderTool.CurrentView({
 				model: api.HeaderTool.currentHeader,
@@ -1629,6 +1720,38 @@
 				api.HeaderTool.UploadsList,
 				api.HeaderTool.DefaultsList
 			]);
+		},
+
+		/**
+		 * Returns a new instance of api.HeaderTool.ImageModel based on the currently
+		 * saved header image (if any).
+		 *
+		 * @since 4.2.0
+		 *
+		 * @returns {Object} Options
+		 */
+		getInitialHeaderImage: function() {
+			if ( ! api.get().header_image || ! api.get().header_image_data || _.contains( [ 'remove-header', 'random-default-image', 'random-uploaded-image' ], api.get().header_image ) ) {
+				return new api.HeaderTool.ImageModel();
+			}
+
+			// Get the matching uploaded image object.
+			var currentHeaderObject = _.find( _wpCustomizeHeader.uploads, function( imageObj ) {
+				return ( imageObj.attachment_id === api.get().header_image_data.attachment_id );
+			} );
+			// Fall back to raw current header image.
+			if ( ! currentHeaderObject ) {
+				currentHeaderObject = {
+					url: api.get().header_image,
+					thumbnail_url: api.get().header_image,
+					attachment_id: api.get().header_image_data.attachment_id
+				};
+			}
+
+			return new api.HeaderTool.ImageModel({
+				header: currentHeaderObject,
+				choice: currentHeaderObject.url.split( '/' ).pop()
+			});
 		},
 
 		/**
@@ -1835,6 +1958,7 @@
 	api.ThemeControl = api.Control.extend({
 
 		touchDrag: false,
+		isRendered: false,
 
 		/**
 		 * Defer rendering the theme control until the section is displayed.
@@ -1845,13 +1969,15 @@
 			var control = this,
 				renderContentArgs = arguments;
 
-			api.section( control.section(), function ( section ) {
+			api.section( control.section(), function( section ) {
 				if ( section.expanded() ) {
 					api.Control.prototype.renderContent.apply( control, renderContentArgs );
+					control.isRendered = true;
 				} else {
-					section.expanded.bind( function ( expanded ) {
-						if ( expanded ) {
+					section.expanded.bind( function( expanded ) {
+						if ( expanded && ! control.isRendered ) {
 							api.Control.prototype.renderContent.apply( control, renderContentArgs );
+							control.isRendered = true;
 						}
 					} );
 				}
@@ -1900,6 +2026,15 @@
 
 				api.section( control.section() ).showDetails( control.params.theme );
 			});
+
+			control.container.on( 'render-screenshot', function() {
+				var $screenshot = $( this ).find( 'img' ),
+					source = $screenshot.data( 'src' );
+
+				if ( source ) {
+					$screenshot.attr( 'src', source );
+				}
+			});
 		},
 
 		/**
@@ -1909,10 +2044,10 @@
 		 */
 		filter: function( term ) {
 			var control = this,
-			    haystack = control.params.theme.name + ' ' +
-				           control.params.theme.description + ' ' +
-				           control.params.theme.tags + ' ' +
-				           control.params.theme.author;
+				haystack = control.params.theme.name + ' ' +
+					control.params.theme.description + ' ' +
+					control.params.theme.tags + ' ' +
+					control.params.theme.author;
 			haystack = haystack.toLowerCase().replace( '-', ' ' );
 			if ( -1 !== haystack.search( term ) ) {
 				control.activate();
@@ -2359,11 +2494,23 @@
 
 			messenger.targetWindow( iframe[0].contentWindow );
 
-			messenger.bind( 'login', function() {
-				iframe.remove();
-				messenger.destroy();
-				delete previewer._login;
-				deferred.resolve();
+			messenger.bind( 'login', function () {
+				var refreshNonces = previewer.refreshNonces();
+
+				refreshNonces.always( function() {
+					iframe.remove();
+					messenger.destroy();
+					delete previewer._login;
+				});
+
+				refreshNonces.done( function() {
+					deferred.resolve();
+				});
+
+				refreshNonces.fail( function() {
+					previewer.cheatin();
+					deferred.reject();
+				});
 			});
 
 			return this._login;
@@ -2371,6 +2518,28 @@
 
 		cheatin: function() {
 			$( document.body ).empty().addClass('cheatin').append( '<p>' + api.l10n.cheatin + '</p>' );
+		},
+
+		refreshNonces: function() {
+			var request, deferred = $.Deferred();
+
+			deferred.promise();
+
+			request = wp.ajax.post( 'customize_refresh_nonces', {
+				wp_customize: 'on',
+				theme: api.settings.theme.stylesheet
+			});
+
+			request.done( function( response ) {
+				api.trigger( 'nonce-refresh', response );
+				deferred.resolve();
+			});
+
+			request.fail( function() {
+				deferred.reject();
+			});
+
+			return deferred;
 		}
 	});
 
@@ -2537,6 +2706,12 @@
 		// Refresh the nonces if the preview sends updated nonces over.
 		api.previewer.bind( 'nonce', function( nonce ) {
 			$.extend( this.nonce, nonce );
+		});
+
+		// Refresh the nonces if login sends updated nonces over.
+		api.bind( 'nonce-refresh', function( nonce ) {
+			$.extend( api.settings.nonce, nonce );
+			$.extend( api.previewer.nonce, nonce );
 		});
 
 		// Create Settings

@@ -123,7 +123,7 @@ CAP;
 		global $wp_embed;
 
 		$out = wp_oembed_get( 'http://www.youtube.com/watch?v=oHg5SJYRHA0' );
-		$this->assertContains( 'http://www.youtube.com/embed/oHg5SJYRHA0?feature=oembed', $out );
+		$this->assertContains( 'https://www.youtube.com/embed/oHg5SJYRHA0?feature=oembed', $out );
 
 		$out = wp_oembed_get( 'https://www.youtube.com/watch?v=oHg5SJYRHA0' );
 		$this->assertContains( 'https://www.youtube.com/embed/oHg5SJYRHA0?feature=oembed', $out );
@@ -529,16 +529,6 @@ VIDEO;
 		$post_id = attachment_url_to_postid( '' );
 		$this->assertInternalType( 'int', $post_id );
 		$this->assertEquals( 0, $post_id );
-	}
-
-	function test_wp_check_filetype() {
-		$url = 'http://example.com/testFile.mp4?autoplay=true&otherstuff=false';
-		$filetype = wp_check_filetype( $url );
-		$expected = array(
-			'ext'  => 'mp4',
-			'type' => 'video/mp4'
-		);
-		$this->assertEquals( $expected, $filetype );
 	}
 
 	/**

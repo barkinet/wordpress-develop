@@ -293,7 +293,7 @@ function category_description( $category = 0 ) {
  * the 'depth' argument.
  *
  * @since 2.1.0
- * @since 4.2.0 Introduced the 'value_field' parameter.
+ * @since 4.2.0 Introduced the `value_field` argument.
  *
  * @param string|array $args {
  *     Optional. Array or string of arguments to generate a categories drop-down element.
@@ -532,7 +532,28 @@ function wp_list_categories( $args = '' ) {
 		}
 	} else {
 		if ( ! empty( $show_option_all ) ) {
-			$posts_page = ( 'page' == get_option( 'show_on_front' ) && get_option( 'page_for_posts' ) ) ? get_permalink( get_option( 'page_for_posts' ) ) : home_url( '/' );
+
+			$posts_page = '';
+
+			// For taxonomies that belong only to custom post types, point to a valid archive.
+			$taxonomy_object = get_taxonomy( $r['taxonomy'] );
+			if ( ! in_array( 'post', $taxonomy_object->object_type ) && ! in_array( 'page', $taxonomy_object->object_type ) ) {
+				foreach ( $taxonomy_object->object_type as $object_type ) {
+					$_object_type = get_post_type_object( $object_type );
+
+					// Grab the first one.
+					if ( ! empty( $_object_type->has_archive ) ) {
+						$posts_page = get_post_type_archive_link( $object_type );
+						break;
+					}
+				}
+			}
+
+			// Fallback for the 'All' link is the front page.
+			if ( ! $posts_page ) {
+				$posts_page = 'page' == get_option( 'show_on_front' ) && get_option( 'page_for_posts' ) ? get_permalink( get_option( 'page_for_posts' ) ) : home_url( '/' );
+			}
+
 			$posts_page = esc_url( $posts_page );
 			if ( 'list' == $r['style'] ) {
 				$output .= "<li class='cat-item-all'><a href='$posts_page'>$show_option_all</a></li>";
@@ -1068,11 +1089,10 @@ class Walker_Category extends Walker {
 			 *
 			 * @see wp_list_categories()
 			 *
-			 * @param array  $css_classes    An array of CSS classes to be applied
-			 *                               to each list item.
-			 * @param object $category       Category data object.
-			 * @param int    $depth          Depth of page, used for padding.
-			 * @param array  $args           An array of arguments.
+			 * @param array  $css_classes An array of CSS classes to be applied to each list item.
+			 * @param object $category    Category data object.
+			 * @param int    $depth       Depth of page, used for padding.
+			 * @param array  $args        An array of wp_list_categories() arguments.
 			 */
 			$css_classes = implode( ' ', apply_filters( 'category_css_class', $css_classes, $category, $depth, $args ) );
 
@@ -1145,13 +1165,15 @@ class Walker_CategoryDropdown extends Walker {
 		/** This filter is documented in wp-includes/category-template.php */
 		$cat_name = apply_filters( 'list_cats', $category->name, $category );
 
-		if ( ! isset( $args['value_field'] ) || ! isset( $category->{$args['value_field']} ) ) {
-			$args['value_field'] = 'term_id';
+		if ( isset( $args['value_field'] ) && isset( $category->{$args['value_field']} ) ) {
+			$value_field = $args['value_field'];
+		} else {
+			$value_field = 'term_id';
 		}
 
-		$output .= "\t<option class=\"level-$depth\" value=\"" . esc_attr( $category->{$args['value_field']} ) . "\"";
+		$output .= "\t<option class=\"level-$depth\" value=\"" . esc_attr( $category->{$value_field} ) . "\"";
 
-		if ( $category->term_id == $args['selected'] )
+		if ( $category->{$value_field} == $args['selected'] )
 			$output .= ' selected="selected"';
 		$output .= '>';
 		$output .= $pad.$cat_name;

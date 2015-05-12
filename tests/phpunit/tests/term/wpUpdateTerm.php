@@ -274,7 +274,7 @@ class Tests_Term_WpUpdateTerm extends WP_UnitTestCase {
 		$t1 = wp_insert_term( 'Foo', 'wptests_tax' );
 		$t2 = wp_insert_term( 'Foo', 'wptests_tax_2' );
 
-		// Manually modify because split terms shouldn't naturally occur.
+		// Manually modify because shared terms shouldn't naturally occur.
 		$wpdb->update( $wpdb->term_taxonomy,
 			array( 'term_id' => $t1['term_id'] ),
 			array( 'term_taxonomy_id' => $t2['term_taxonomy_id'] ),
@@ -315,7 +315,7 @@ class Tests_Term_WpUpdateTerm extends WP_UnitTestCase {
 		$t1 = wp_insert_term( 'Foo', 'wptests_tax' );
 		$t2 = wp_insert_term( 'Foo', 'wptests_tax_2' );
 
-		// Manually modify because split terms shouldn't naturally occur.
+		// Manually modify because shared terms shouldn't naturally occur.
 		$wpdb->update( $wpdb->term_taxonomy,
 			array( 'term_id' => $t1['term_id'] ),
 			array( 'term_taxonomy_id' => $t2['term_taxonomy_id'] ),
@@ -653,4 +653,16 @@ class Tests_Term_WpUpdateTerm extends WP_UnitTestCase {
 
 		_unregister_taxonomy( 'wptests_tax' );
 	}
+
+	/**
+	 * @ticket 31954
+	 */
+	public function test_wp_update_term_with_null_get_term() {
+		$t = $this->factory->term->create( array( 'taxonomy' => 'category' ) );
+		$found = wp_update_term( $t, 'post_tag', array( 'slug' => 'foo' ) );
+
+		$this->assertWPError( $found );
+		$this->assertSame( 'invalid_term', $found->get_error_code() );
+	}
+
 }

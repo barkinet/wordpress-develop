@@ -642,23 +642,11 @@ function fetch_feed( $url ) {
 	 */
 	do_action_ref_array( 'wp_feed_options', array( &$feed, $url ) );
 	$feed->init();
+	$feed->set_output_encoding( get_option( 'blog_charset' ) ); 
 	$feed->handle_content_type();
 
 	if ( $feed->error() )
 		return new WP_Error( 'simplepie-error', $feed->error() );
 
 	return $feed;
-}
-
-/**
- * Convert emoji characters in a feed into static images.
- *
- * @ignore
- * @since 4.2.0
- *
- * @param string $content The content to convert.
- * @return The converted content.
- */
-function _wp_staticize_emoji_for_feeds( $content ) {
-	return wp_staticize_emoji( $content, true );
 }

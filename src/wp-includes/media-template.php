@@ -203,7 +203,7 @@ function wp_print_media_templates() {
 			<div class="upload-ui">
 				<h3 class="upload-instructions drop-instructions"><?php _e( 'Drop files anywhere to upload' ); ?></h3>
 				<p class="upload-instructions drop-instructions"><?php _ex( 'or', 'Uploader: Drop files here - or - Select Files' ); ?></p>
-				<a href="#" class="browser button button-hero"><?php _e( 'Select Files' ); ?></a>
+				<button type="button" class="browser button button-hero"><?php _e( 'Select Files' ); ?></button>
 			</div>
 
 			<div class="upload-inline-status"></div>
@@ -329,7 +329,7 @@ function wp_print_media_templates() {
 
 				<div class="attachment-actions">
 					<# if ( 'image' === data.type && ! data.uploading && data.sizes && data.can.save ) { #>
-						<a class="button edit-attachment" href="#"><?php _e( 'Edit Image' ); ?></a>
+					<button type="button" class="button edit-attachment"><?php _e( 'Edit Image' ); ?></button>
 					<# } #>
 				</div>
 			</div>
@@ -814,20 +814,10 @@ function wp_print_media_templates() {
 	<script type="text/html" id="tmpl-embed-link-settings">
 		<label class="setting link-text">
 			<span><?php _e( 'Link Text' ); ?></span>
-			<input type="text" class="alignment" data-setting="link-text" />
+			<input type="text" class="alignment" data-setting="linkText" />
 		</label>
 		<div class="embed-container" style="display: none;">
 			<div class="embed-preview"></div>
-		</div>
-		<div class="embed-link-dimensions">
-			<label class="setting width">
-				<span><?php _e( 'Maximum Width' ); ?></span>
-				<input type="text" class="alignment" data-setting="width" />
-			</label>
-			<label class="setting height">
-				<span><?php _e( 'Maximum Height' ); ?></span>
-				<input type="text" class="alignment" data-setting="height" />
-			</label>
 		</div>
 	</script>
 

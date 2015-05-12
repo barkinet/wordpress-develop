@@ -1603,7 +1603,7 @@ function _post_type_meta_capabilities( $capabilities = null ) {
  * - singular_name - name for one object of this post type. Default is Post/Page
  * - add_new - Default is Add New for both hierarchical and non-hierarchical types.
  *             When internationalizing this string, please use a gettext context
- *             {@link http://codex.wordpress.org/I18n_for_WordPress_Developers#Disambiguation_by_context}
+ *             {@link https://codex.wordpress.org/I18n_for_WordPress_Developers#Disambiguation_by_context}
  *             matching your post type. Example: `_x( 'Add New', 'product' );`.
  * - add_new_item - Default is Add New Post/Add New Page.
  * - edit_item - Default is Edit Post/Edit Page.
@@ -4317,25 +4317,38 @@ function get_page_by_title( $page_title, $output = OBJECT, $post_type = 'page' )
 }
 
 /**
- * Retrieve child pages from list of pages matching page ID.
+ * Identify descendants of a given page ID in a list of page objects.
  *
- * Matches against the pages parameter against the page ID. Also matches all
- * children for the same to retrieve all children of a page. Does not make any
- * SQL queries to get the children.
+ * Descendants are identified from the `$pages` array passed to the function. No database queries are performed.
  *
  * @since 1.5.1
  *
- * @param int   $page_id    Page ID.
- * @param array $pages      List of pages' objects.
+ * @param int   $page_id Page ID.
+ * @param array $pages   List of page objects from which descendants should be identified.
  * @return array List of page children.
  */
 function get_page_children( $page_id, $pages ) {
-	$page_list = array();
+	// Build a hash of ID -> children.
+	$children = array();
 	foreach ( (array) $pages as $page ) {
-		if ( $page->post_parent == $page_id ) {
-			$page_list[] = $page;
-			if ( $children = get_page_children( $page->ID, $pages ) ) {
-				$page_list = array_merge( $page_list, $children );
+		$children[ intval( $page->post_parent ) ][] = $page;
+	}
+
+	$page_list = array();
+
+	// Start the search by looking at immediate children.
+	if ( isset( $children[ $page_id ] ) ) {
+		// Always start at the end of the stack in order to preserve original `$pages` order.
+		$to_look = array_reverse( $children[ $page_id ] );
+
+		while ( $to_look ) {
+			$p = array_pop( $to_look );
+			$page_list[] = $p;
+			if ( isset( $children[ $p->ID ] ) ) {
+				foreach ( array_reverse( $children[ $p->ID ] ) as $child ) {
+					// Append to the `$to_look` stack to descend the tree.
+					$to_look[] = $child;
+				}
 			}
 		}
 	}
@@ -4992,12 +5005,9 @@ function wp_get_attachment_url( $post_id = 0 ) {
 		$url = get_the_guid( $post->ID );
 	}
 
-	/*
-	 * If currently on SSL, prefer HTTPS URLs when we know they're supported by the domain
-	 * (which is to say, when they share the domain name of the current SSL page).
-	 */
-	if ( is_ssl() && 'https' !== substr( $url, 0, 5 ) && parse_url( $url, PHP_URL_HOST ) === $_SERVER['HTTP_HOST'] ) {
-		$url = set_url_scheme( $url, 'https' );
+	// On SSL front-end, URLs should be HTTPS.
+	if ( is_ssl() && ! is_admin() && 'wp-login.php' !== $GLOBALS['pagenow'] ) {
+		$url = set_url_scheme( $url );
 	}
 
 	/**
@@ -5135,7 +5145,8 @@ function wp_attachment_is( $type, $post_id = 0 ) {
  * Checks if the attachment is an image.
  *
  * @since 2.1.0
- * @since 4.2.0 Modified into wrapper for wp_attachment_is()
+ * @since 4.2.0 Modified into wrapper for wp_attachment_is() and
+ *              allowed WP_Post object to be passed.
  *
  * @param int|WP_Post $post Optional. Attachment ID. Default 0.
  * @return bool Whether the attachment is an image.

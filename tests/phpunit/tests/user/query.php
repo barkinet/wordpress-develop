@@ -521,4 +521,169 @@ class Tests_User_Query extends WP_UnitTestCase {
 
 		$this->assertEquals( array( $author_ids[0], $author_ids[1] ), $query->get_results() );
 	}
+
+	public function test_roles_and_caps_should_be_populated_for_default_value_of_blog_id() {
+		$u = $this->factory->user->create( array( 'role' => 'author' ) );
+
+		$query = new WP_User_Query( array(
+			'include' => $u,
+		) );
+
+		$found = $query->get_results();
+
+		$this->assertNotEmpty( $found );
+		$user = reset( $found );
+		$this->assertSame( array( 'author' ), $user->roles );
+		$this->assertSame( array( 'author' => true ), $user->caps );
+	}
+
+	public function test_roles_and_caps_should_be_populated_for_explicit_value_of_blog_id_on_nonms() {
+		if ( is_multisite() ) {
+			$this->markTestSkipped( __METHOD__ . ' is a non-multisite-only test.' );
+		}
+
+		$u = $this->factory->user->create( array( 'role' => 'author' ) );
+
+		$query = new WP_User_Query( array(
+			'include' => $u,
+			'blog_id' => get_current_blog_id(),
+		) );
+
+		$found = $query->get_results();
+
+		$this->assertNotEmpty( $found );
+		$user = reset( $found );
+		$this->assertSame( array( 'author' ), $user->roles );
+		$this->assertSame( array( 'author' => true ), $user->caps );
+	}
+
+	public function test_roles_and_caps_should_be_populated_for_explicit_value_of_current_blog_id_on_ms() {
+		if ( ! is_multisite() ) {
+			$this->markTestSkipped( __METHOD__ . ' is a multisite-only test.' );
+		}
+
+		$u = $this->factory->user->create( array( 'role' => 'author' ) );
+
+		$query = new WP_User_Query( array(
+			'include' => $u,
+			'blog_id' => get_current_blog_id(),
+		) );
+
+		$found = $query->get_results();
+
+		$this->assertNotEmpty( $found );
+		$user = reset( $found );
+		$this->assertSame( array( 'author' ), $user->roles );
+		$this->assertSame( array( 'author' => true ), $user->caps );
+	}
+
+	public function test_roles_and_caps_should_be_populated_for_explicit_value_of_different_blog_id_on_ms_when_fields_all_with_meta() {
+		if ( ! is_multisite() ) {
+			$this->markTestSkipped( __METHOD__ . ' is a multisite-only test.' );
+		}
+
+		$b = $this->factory->blog->create();
+		$u = $this->factory->user->create();
+		add_user_to_blog( $b, $u, 'author' );
+
+		$query = new WP_User_Query( array(
+			'include' => $u,
+			'blog_id' => $b,
+			'fields' => 'all_with_meta',
+		) );
+
+		$found = $query->get_results();
+
+		$this->assertNotEmpty( $found );
+		$user = reset( $found );
+		$this->assertSame( array( 'author' ), $user->roles );
+		$this->assertSame( array( 'author' => true ), $user->caps );
+	}
+
+	/**
+	 * @ticket 31878
+	 */
+	public function test_roles_and_caps_should_be_populated_for_explicit_value_of_different_blog_id_on_ms_when_fields_all() {
+		if ( ! is_multisite() ) {
+			$this->markTestSkipped( __METHOD__ . ' is a multisite-only test.' );
+		}
+
+		$b = $this->factory->blog->create();
+		$u = $this->factory->user->create();
+		add_user_to_blog( $b, $u, 'author' );
+
+		$query = new WP_User_Query( array(
+			'fields' => 'all',
+			'include' => $u,
+			'blog_id' => $b,
+		) );
+
+		$found = $query->get_results();
+
+		$this->assertNotEmpty( $found );
+		$user = reset( $found );
+		$this->assertSame( array( 'author' ), $user->roles );
+		$this->assertSame( array( 'author' => true ), $user->caps );
+	}
+
+	/**
+	 * @ticket 32019
+	 */
+	public function test_who_authors() {
+		if ( ! is_multisite() ) {
+			$this->markTestSkipped( __METHOD__ . ' requires multisite.' );
+		}
+
+		$b = $this->factory->blog->create();
+		$users = $this->factory->user->create_many( 3 );
+
+		add_user_to_blog( $b, $users[0], 'subscriber' );
+		add_user_to_blog( $b, $users[1], 'author' );
+		add_user_to_blog( $b, $users[2], 'editor' );
+
+		$q = new WP_User_Query( array(
+			'who' => 'authors',
+			'blog_id' => $b,
+		) );
+
+		$found = wp_list_pluck( $q->get_results(), 'ID' );
+
+		$this->assertNotContains( $users[0], $found );
+		$this->assertContains( $users[1], $found );
+		$this->assertContains( $users[2], $found );
+	}
+
+	/**
+	 * @ticket 32019
+	 */
+	public function test_who_authors_should_work_alongside_meta_query() {
+		if ( ! is_multisite() ) {
+			$this->markTestSkipped( __METHOD__ . ' requires multisite.' );
+		}
+
+		$b = $this->factory->blog->create();
+		$users = $this->factory->user->create_many( 3 );
+
+		add_user_to_blog( $b, $users[0], 'subscriber' );
+		add_user_to_blog( $b, $users[1], 'author' );
+		add_user_to_blog( $b, $users[2], 'editor' );
+
+		add_user_meta( $users[1], 'foo', 'bar' );
+		add_user_meta( $users[2], 'foo', 'baz' );
+
+		$q = new WP_User_Query( array(
+			'who' => 'authors',
+			'blog_id' => $b,
+			'meta_query' => array(
+				'key' => 'foo',
+				'value' => 'bar',
+			),
+		) );
+
+		$found = wp_list_pluck( $q->get_results(), 'ID' );
+
+		$this->assertNotContains( $users[0], $found );
+		$this->assertContains( $users[1], $found );
+		$this->assertNotContains( $users[2], $found );
+	}
 }

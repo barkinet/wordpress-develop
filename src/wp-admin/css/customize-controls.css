@@ -29,12 +29,12 @@ body {
 }
 
 #customize-header-actions .spinner {
-	margin-top: 16px;
+	margin-top: 13px;
 	margin-right: 4px;
 }
 
 .saving #customize-header-actions .spinner {
-	display: block;
+	visibility: visible;
 }
 
 #customize-header-actions {
@@ -113,7 +113,7 @@ body {
 #customize-theme-controls .control-section .accordion-section-title:hover,
 #customize-theme-controls .control-section.open .accordion-section-title,
 #customize-theme-controls .control-section .accordion-section-title:focus {
-	color: #222;
+	color: #23282d;
 	background: #f5f5f5;
 }
 
@@ -242,6 +242,11 @@ body {
 	transition: left .18s ease-in-out, color .1s ease-in-out, background .1s ease-in-out;
 }
 
+.ios .control-panel-back {
+	-webkit-transition: left 0s;
+	transition: left 0s;
+}
+
 .collapsed .control-panel-back {
 	display: none;
 }
@@ -304,6 +309,12 @@ body {
 	transition: left ease-in-out .18s;
 }
 
+.ios #customize-info,
+.ios #customize-theme-controls > ul > .accordion-section {
+	-webkit-transition: left 0s;
+	transition: left 0s;
+}
+
 .in-sub-panel #customize-info,
 .in-sub-panel #customize-theme-controls > ul > .accordion-section {
 	left: -300px;
@@ -327,6 +338,11 @@ body {
 	left: -354px;
 	-webkit-transition: left ease-in-out .18s;
 	transition: left ease-in-out .18s;
+}
+
+.ios #customize-theme-controls .control-section.current-panel > h3.accordion-section-title {
+	-webkit-transition: left 0s;
+	transition: left 0s;
 }
 
 .control-section.control-panel .accordion-section-title .panel-title {
@@ -503,7 +519,7 @@ p.customize-section-description {
 }
 
 .collapsed .collapse-sidebar-arrow:before {
-	color: #888;
+	color: #82878c;
 }
 
 /* Style for custom settings */
@@ -554,11 +570,11 @@ p.customize-section-description {
 	-webkit-font-smoothing: antialiased;
 	-moz-osx-font-smoothing: grayscale;
 	text-decoration: none !important;
-	color: #333;
+	color: #32373c;
 }
 
 .customize-control .dropdown-status {
-	color: #333;
+	color: #32373c;
 	background: #eeeeee;
 	display: none;
 	max-width: 112px;
@@ -737,7 +753,7 @@ p.customize-section-description {
 	position: absolute;
 	height: auto;
 	top: 0; left: 0; bottom: 0; right: 0;
-	border: 4px solid #2ea2cc;
+	border: 4px solid #00a0d2;
 	-webkit-border-radius: 2px;
 	border-radius: 2px;
 }
@@ -748,29 +764,22 @@ p.customize-section-description {
 /* Header control: overlay "close" button */
 
 .customize-control-header .uploaded .header-view .close {
-	font-size: 2em;
-	color: grey;
+	font-size: 20px;
+	color: #fff;
+	background: #555;
+	background: rgba(0, 0, 0, 0.5);
 	position: absolute;
-	visibility: hidden;
 	top: 10px;
-	right: 10px;
+	right: -999px;
 	z-index: 1;
-	width: 20px;
-	height: 20px;
+	width: 26px;
+	height: 26px;
 	cursor: pointer;
 }
 
-.customize-control-header .uploaded .header-view .close:hover {
- color: black;
- text-shadow:
-    -1px -1px 0 #fff,
-    1px -1px 0 #fff,
-    -1px 1px 0 #fff,
-    1px 1px 0 #fff;
-}
-
-.customize-control-header .header-view:hover .close {
-	visibility: visible;
+.customize-control-header .header-view:hover .close,
+.customize-control-header .header-view .close:focus {
+	right: 10px;
 }
 
 /* Header control: randomiz(s)er */
@@ -1034,6 +1043,12 @@ p.customize-section-description {
 	overflow: visible; /* Prevent the top-level Customizer controls from becoming visible when elements on the right of the details modal are focused. */
 }
 
+.ie8 .wp-customizer .theme-overlay .theme-header,
+.ie8 .wp-customizer .theme-overlay .theme-about,
+.ie8 .wp-customizer .theme-overlay .theme-actions {
+	position: static;
+}
+
 /* Small Screens */
 @media (max-width:850px), (max-height:472px) {
 	.wp-customizer .theme-overlay .theme-wrap {
@@ -1072,6 +1087,10 @@ body.cheatin p {
 	.wp-customizer .theme:not(.active):hover .theme-actions,
 	.wp-customizer .theme:not(.active):focus .theme-actions {
 		display: block;
+	}
+
+	.wp-customizer .theme-browser .theme.active .theme-name span {
+		display: inline;
 	}
 }
 
@@ -1161,9 +1180,5 @@ body.cheatin p {
 
 	#customize-header-actions .button-primary {
 		margin-top: 6px;
-	}
-
-	#customize-header-actions .spinner {
-		margin-top: 13px;
 	}
 }

@@ -6,6 +6,7 @@
 	var PressThis = function() {
 		var editor, $mediaList, $mediaThumbWrap,
 			saveAlert             = false,
+			editLinkVisible       = false,
 			textarea              = document.createElement( 'textarea' ),
 			sidebarIsOpen         = false,
 			settings              = window.wpPressThisConfig || {},
@@ -102,9 +103,7 @@
 		 */
 		function showSpinner() {
 			$( '.spinner' ).addClass( 'is-active' );
-			$( '.post-actions button' ).each( function() {
-				$( this ).attr( 'disabled', 'disabled' );
-			} );
+			$( '.post-actions button' ).attr( 'disabled', 'disabled' );
 		}
 
 		/**
@@ -112,9 +111,7 @@
 		 */
 		function hideSpinner() {
 			$( '.spinner' ).removeClass( 'is-active' );
-			$( '.post-actions button' ).each( function() {
-				$( this ).removeAttr( 'disabled' );
-			} );
+			$( '.post-actions button' ).removeAttr( 'disabled' );
 		}
 
 		/**
@@ -166,7 +163,8 @@
 		 * @param action string publish|draft
 		 */
 		function submitPost( action ) {
-			var data;
+			var data,
+				keepFocus = $( document.activeElement ).hasClass( 'draft-button' );
 
 			saveAlert = false;
 			showSpinner();
@@ -184,7 +182,10 @@
 				data: data
 			}).always( function() {
 				hideSpinner();
+				clearNotices();
 			}).done( function( response ) {
+				var $link, $button;
+
 				if ( ! response.success ) {
 					renderError( response.data.errorMessage );
 				} else if ( response.data.redirect ) {
@@ -198,11 +199,34 @@
 						window.location.href = response.data.redirect;
 					}
 				} else if ( response.data.postSaved ) {
-					// show "success" message?
+					$link = $( '.edit-post-link' );
+					$button = $( '.draft-button' );
+					editLinkVisible = true;
+
+					$button.fadeOut( 200, function() {
+						$button.removeClass( 'is-saving' );
+						$link.fadeIn( 200, function() {
+							var active = document.activeElement;
+							// Different browsers move the focus to different places when the button is disabled.
+							if ( keepFocus && ( active === $button[0] || $( active ).hasClass( 'post-actions' ) || active.nodeName === 'BODY' ) ) {
+								$link.focus();
+							}
+						});
+					});
 				}
 			}).fail( function() {
 				renderError( __( 'serverError' ) );
 			});
+		}
+
+		function resetDraftButton() {
+			if ( editLinkVisible ) {
+				editLinkVisible = false;
+
+				$( '.edit-post-link' ).fadeOut( 200, function() {
+					$( '.draft-button' ).removeClass( 'is-saving' ).fadeIn( 200 );
+				});
+			}
 		}
 
 		/**
@@ -328,6 +352,10 @@
 			renderNotice( msg, true );
 		}
 
+		function clearNotices() {
+			$( 'div.alerts' ).empty();
+		}
+
 		/**
 		 * Render notices on page load, if any already
 		 */
@@ -337,11 +365,6 @@
 				$.each( data.errors, function( i, msg ) {
 					renderError( msg );
 				} );
-			}
-
-			// Prompt user to upgrade their bookmarklet if there is a version mismatch.
-			if ( data.v && settings.version && ( data.v + '' ) !== ( settings.version + '' ) ) {
-				$( '.should-upgrade-bookmarklet' ).removeClass( 'is-hidden' );
 			}
 		}
 
@@ -527,6 +550,7 @@
 
 			$titleField.on( 'focus', function() {
 				$placeholder.addClass( 'is-hidden' );
+				resetDraftButton();
 			}).on( 'blur', function() {
 				if ( ! $titleField.text() && ! $titleField.html() ) {
 					$placeholder.removeClass( 'is-hidden' );
@@ -623,12 +647,13 @@
 		/**
 		 * Set app events and other state monitoring related code.
 		 */
-		function monitor(){
+		function monitor() {
 			$( document ).on( 'tinymce-editor-init', function( event, ed ) {
 				editor = ed;
 
-				ed.on( 'focus', function() {
+				editor.on( 'nodechange', function() {
 					hasSetFocus = true;
+					resetDraftButton();
 				} );
 			}).on( 'click.press-this keypress.press-this', '.suggested-media-thumbnail', function( event ) {
 				if ( event.type === 'click' || event.keyCode === 13 ) {
@@ -637,21 +662,27 @@
 			});
 
 			// Publish, Draft and Preview buttons
-
 			$( '.post-actions' ).on( 'click.press-this', function( event ) {
-				var $target = $( event.target );
+				var $target = $( event.target ),
+					$button = $target.closest( 'button' );
 
-				if ( $target.hasClass( 'draft-button' ) ) {
-					submitPost( 'draft' );
-				} else if ( $target.hasClass( 'publish-button' ) ) {
-					submitPost( 'publish' );
-				} else if ( $target.hasClass( 'preview-button' ) ) {
-					prepareFormData();
-					window.opener && window.opener.focus();
+				if ( $button.length ) {
+					if ( $button.hasClass( 'draft-button' ) ) {
+						$button.addClass( 'is-saving' );
+						submitPost( 'draft' );
+					} else if ( $button.hasClass( 'publish-button' ) ) {
+						submitPost( 'publish' );
+					} else if ( $button.hasClass( 'preview-button' ) ) {
+						prepareFormData();
+						window.opener && window.opener.focus();
 
-					$( '#wp-preview' ).val( 'dopreview' );
-					$( '#pressthis-form' ).attr( 'target', '_blank' ).submit().attr( 'target', '' );
-					$( '#wp-preview' ).val( '' );
+						$( '#wp-preview' ).val( 'dopreview' );
+						$( '#pressthis-form' ).attr( 'target', '_blank' ).submit().attr( 'target', '' );
+						$( '#wp-preview' ).val( '' );
+					}
+				} else if ( $target.hasClass( 'edit-post-link' ) && window.opener ) {
+					window.opener.focus();
+					window.self.close();
 				}
 			});
 

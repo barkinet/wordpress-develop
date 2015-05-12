@@ -3229,7 +3229,7 @@ function get_media_embedded_in_content( $content, $types = null ) {
 	 * @param array $allowed_media_types An array of allowed media types. Default media types are
 	 *                                   'audio', 'video', 'object', 'embed', and 'iframe'.
 	 */
-	$allowed_media_types = apply_filters( 'get_media_embedded_in_content_allowed', array( 'audio', 'video', 'object', 'embed', 'iframe' ) );
+	$allowed_media_types = apply_filters( 'media_embedded_in_content_allowed_types', array( 'audio', 'video', 'object', 'embed', 'iframe' ) );
 
 	if ( ! empty( $types ) ) {
 		if ( ! is_array( $types ) ) {
@@ -3414,8 +3414,8 @@ function attachment_url_to_postid( $url ) {
 	 *
 	 * @since 4.2.0
 	 *
-	 * @param int|null $post_id  The post_id (if any) found by the function.
-	 * @param string   $url      The URL being looked up.
+	 * @param int|null $post_id The post_id (if any) found by the function.
+	 * @param string   $url     The URL being looked up.
 	 */
 	$post_id = apply_filters( 'attachment_url_to_postid', $post_id, $url );
 

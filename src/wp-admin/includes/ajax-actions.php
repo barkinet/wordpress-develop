@@ -2445,7 +2445,13 @@ function wp_ajax_send_attachment_to_editor() {
 		$align = isset( $attachment['align'] ) ? $attachment['align'] : 'none';
 		$size = isset( $attachment['image-size'] ) ? $attachment['image-size'] : 'medium';
 		$alt = isset( $attachment['image_alt'] ) ? $attachment['image_alt'] : '';
+
+		// No whitespace-only captions.
 		$caption = isset( $attachment['post_excerpt'] ) ? $attachment['post_excerpt'] : '';
+		if ( '' === trim( $caption ) ) {
+			$caption = '';
+		}
+
 		$title = ''; // We no longer insert title tags into <img> tags, as they are redundant.
 		$html = get_image_send_to_editor( $id, $caption, $title, $align, $url, (bool) $rel, $size, $alt );
 	} elseif ( wp_attachment_is( 'video', $post ) || wp_attachment_is( 'audio', $post )  ) {
@@ -2484,8 +2490,8 @@ function wp_ajax_send_link_to_editor() {
 	if ( ! $src = esc_url_raw( $src ) )
 		wp_send_json_error();
 
-	if ( ! $title = trim( wp_unslash( $_POST['title'] ) ) )
-		$title = wp_basename( $src );
+	if ( ! $link_text = trim( wp_unslash( $_POST['link_text'] ) ) )
+		$link_text = wp_basename( $src );
 
 	$post = get_post( isset( $_POST['post_id'] ) ? $_POST['post_id'] : 0 );
 
@@ -2498,8 +2504,8 @@ function wp_ajax_send_link_to_editor() {
 	if ( $check_embed !== $fallback ) {
 		// TinyMCE view for [embed] will parse this
 		$html = '[embed]' . $src . '[/embed]';
-	} elseif ( $title ) {
-		$html = '<a href="' . esc_url( $src ) . '">' . $title . '</a>';
+	} elseif ( $link_text ) {
+		$html = '<a href="' . esc_url( $src ) . '">' . $link_text . '</a>';
 	} else {
 		$html = '';
 	}
@@ -2511,7 +2517,7 @@ function wp_ajax_send_link_to_editor() {
 			$type = $ext_type;
 
 	/** This filter is documented in wp-admin/includes/media.php */
-	$html = apply_filters( $type . '_send_to_editor_url', $html, $src, $title );
+	$html = apply_filters( $type . '_send_to_editor_url', $html, $src, $link_text );
 
 	wp_send_json_success( $html );
 }
@@ -2715,6 +2721,8 @@ function wp_ajax_parse_embed() {
 		$url = $matches[5];
 	} elseif ( ! empty( $atts['src'] ) ) {
 		$url = $atts['src'];
+	} else {
+		$url = '';
 	}
 
 	$parsed = false;
@@ -2733,7 +2741,7 @@ function wp_ajax_parse_embed() {
 		}
 	}
 
-	if ( ! $parsed ) {
+	if ( $url && ! $parsed ) {
 		$parsed = $wp_embed->run_shortcode( $shortcode );
 	}
 
@@ -2881,6 +2889,8 @@ function wp_ajax_destroy_sessions() {
  * AJAX handler for updating a plugin.
  *
  * @since 4.2.0
+ *
+ * @see Plugin_Upgrader
  */
 function wp_ajax_update_plugin() {
 	$plugin = urldecode( $_POST['plugin'] );
@@ -2916,6 +2926,7 @@ function wp_ajax_update_plugin() {
 
 	if ( is_array( $result ) ) {
 		$plugin_update_data = current( $result );
+
 		/*
 		 * If the `update_plugins` site transient is empty (e.g. when you update
 		 * two plugins in quick succession before the transient repopulates),
@@ -2927,10 +2938,13 @@ function wp_ajax_update_plugin() {
 		if ( $plugin_update_data === true ) {
  			wp_send_json_error( $status );
 		}
+
 		$plugin_data = get_plugin_data( WP_PLUGIN_DIR . '/' . $plugin );
+
 		if ( $plugin_data['Version'] ) {
 			$status['newVersion'] = sprintf( __( 'Version %s' ), $plugin_data['Version'] );
 		}
+
 		wp_send_json_success( $status );
 	} else if ( is_wp_error( $result ) ) {
 		$status['error'] = $result->get_error_message();
@@ -2943,7 +2957,7 @@ function wp_ajax_update_plugin() {
 }
 
 /**
- * AJAX handler for saving a post from Ptrss This.
+ * AJAX handler for saving a post from Press This.
  *
  * @since 4.2.0
  */
@@ -2956,7 +2970,7 @@ function wp_ajax_press_this_save_post() {
 }
 
 /**
- * AJAX handler for creating new category from Ptrss This.
+ * AJAX handler for creating new category from Press This.
  *
  * @since 4.2.0
  */

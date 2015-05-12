@@ -14,7 +14,7 @@ if ( ! is_multisite() )
 	wp_die( __( 'Multisite support is not enabled.' ) );
 
 if ( ! current_user_can( 'manage_network_users' ) )
-	wp_die( __( 'You do not have permission to access this page.' ), '', array( 'response' => 403 ) );
+	wp_die( __( 'You do not have permission to access this page.' ), 403 );
 
 function confirm_delete_users( $users ) {
 	$current_user = wp_get_current_user();
@@ -86,7 +86,7 @@ function confirm_delete_users( $users ) {
 							<li><label><input type="radio" id="delete_option0" name="delete[<?php echo $details->userblog_id . '][' . $delete_user->ID ?>]" value="delete" checked="checked" />
 							<?php _e( 'Delete all content.' ); ?></label></li>
 							<li><label><input type="radio" id="delete_option1" name="delete[<?php echo $details->userblog_id . '][' . $delete_user->ID ?>]" value="reassign" />
-							<?php echo __( 'Attribute all content to:' ) . "</label>\n" . $user_dropdown; ?></li>
+							<?php _e( 'Attribute all content to:' ) . "</label>\n" . $user_dropdown; ?></li>
 						</ul>
 						<?php
 					}
@@ -127,7 +127,7 @@ if ( isset( $_GET['action'] ) ) {
 	switch ( $_GET['action'] ) {
 		case 'deleteuser':
 			if ( ! current_user_can( 'manage_network_users' ) )
-				wp_die( __( 'You do not have permission to access this page.' ), '', array( 'response' => 403 ) );
+				wp_die( __( 'You do not have permission to access this page.' ), 403 );
 
 			check_admin_referer( 'deleteuser' );
 
@@ -148,7 +148,7 @@ if ( isset( $_GET['action'] ) ) {
 
 		case 'allusers':
 			if ( !current_user_can( 'manage_network_users' ) )
-				wp_die( __( 'You do not have permission to access this page.' ), '', array( 'response' => 403 ) );
+				wp_die( __( 'You do not have permission to access this page.' ), 403 );
 
 			if ( ( isset( $_POST['action']) || isset($_POST['action2'] ) ) && isset( $_POST['allusers'] ) ) {
 				check_admin_referer( 'bulk-users-network' );
@@ -161,7 +161,7 @@ if ( isset( $_GET['action'] ) ) {
 						switch ( $doaction ) {
 							case 'delete':
 								if ( ! current_user_can( 'delete_users' ) )
-									wp_die( __( 'You do not have permission to access this page.' ), '', array( 'response' => 403 ) );
+									wp_die( __( 'You do not have permission to access this page.' ), 403 );
 								$title = __( 'Users' );
 								$parent_file = 'users.php';
 								require_once( ABSPATH . 'wp-admin/admin-header.php' );
@@ -210,7 +210,7 @@ if ( isset( $_GET['action'] ) ) {
 		case 'dodelete':
 			check_admin_referer( 'ms-users-delete' );
 			if ( ! ( current_user_can( 'manage_network_users' ) && current_user_can( 'delete_users' ) ) )
-				wp_die( __( 'You do not have permission to access this page.' ), '', array( 'response' => 403 ) );
+				wp_die( __( 'You do not have permission to access this page.' ), 403 );
 
 			if ( ! empty( $_POST['blog'] ) && is_array( $_POST['blog'] ) ) {
 				foreach ( $_POST['blog'] as $id => $users ) {
@@ -272,7 +272,7 @@ get_current_screen()->add_help_tab( array(
 
 get_current_screen()->set_help_sidebar(
 	'<p><strong>' . __('For more information:') . '</strong></p>' .
-	'<p>' . __('<a href="http://codex.wordpress.org/Network_Admin_Users_Screen" target="_blank">Documentation on Network Users</a>') . '</p>' .
+	'<p>' . __('<a href="https://codex.wordpress.org/Network_Admin_Users_Screen" target="_blank">Documentation on Network Users</a>') . '</p>' .
 	'<p>' . __('<a href="https://wordpress.org/support/forum/multisite/" target="_blank">Support Forums</a>') . '</p>'
 );
 

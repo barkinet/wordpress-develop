@@ -518,7 +518,6 @@ function wp_comment_reply( $position = 1, $checkbox = false, $mode = 'single', $
 	<br class="clear" />
 	</p>
 
-	<input type="hidden" name="user_ID" id="user_ID" value="<?php echo get_current_user_id(); ?>" />
 	<input type="hidden" name="action" id="action" value="" />
 	<input type="hidden" name="comment_ID" id="comment_ID" value="" />
 	<input type="hidden" name="comment_post_ID" id="comment_post_ID" value="" />
@@ -1557,7 +1556,7 @@ function _draft_or_post_title( $post = 0 ) {
 	$title = get_the_title( $post );
 	if ( empty( $title ) )
 		$title = __( '(no title)' );
-	return $title;
+	return esc_html( $title );
 }
 
 /**

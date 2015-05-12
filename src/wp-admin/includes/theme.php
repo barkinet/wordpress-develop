@@ -421,7 +421,7 @@ function wp_prepare_themes_for_js( $themes = null ) {
 	 * @param null|array $themes          An array of WP_Theme objects to prepare, if any.
 	 * @param string     $current_theme   The current theme slug.
 	 */
-	$prepared_themes = (array) apply_filters( 'pre_wp_prepare_themes_for_js', array(), $themes, $current_theme );
+	$prepared_themes = (array) apply_filters( 'pre_prepare_themes_for_js', array(), $themes, $current_theme );
 
 	if ( ! empty( $prepared_themes ) ) {
 		return $prepared_themes;
@@ -502,7 +502,8 @@ function wp_prepare_themes_for_js( $themes = null ) {
 	 * @param array $prepared_themes Array of themes.
 	 */
 	$prepared_themes = apply_filters( 'wp_prepare_themes_for_js', $prepared_themes );
-	return array_values( $prepared_themes );
+	$prepared_themes = array_values( $prepared_themes );
+	return array_filter( $prepared_themes );
 }
 
 /**
@@ -511,6 +512,8 @@ function wp_prepare_themes_for_js( $themes = null ) {
  * @since 4.2.0
  */
 function customize_themes_print_templates() {
+	$preview_url = esc_url( add_query_arg( 'theme', '__THEME__' ) ); // Token because esc_url() strips curly braces.
+	$preview_url = str_replace( '__THEME__', '{{ data.id }}', $preview_url );
 	?>
 	<script type="text/html" id="tmpl-customize-themes-details-view">
 		<div class="theme-backdrop"></div>
@@ -550,7 +553,7 @@ function customize_themes_print_templates() {
 			<# if ( ! data.active ) { #>
 				<div class="theme-actions">
 					<div class="inactive-theme">
-						<a href="<?php echo add_query_arg( 'theme', '{{ data.id }}' ); ?>" target="_top" class="button button-primary"><?php _e( 'Live Preview' ); ?></a>
+						<a href="<?php echo $preview_url; ?>" target="_top" class="button button-primary"><?php _e( 'Live Preview' ); ?></a>
 					</div>
 				</div>
 			<# } #>

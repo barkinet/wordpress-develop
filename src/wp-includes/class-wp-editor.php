@@ -117,12 +117,6 @@ final class _WP_Editors {
 			// A cookie (set when a user resizes the editor) overrides the height.
 			$cookie = (int) get_user_setting( 'ed_size' );
 
-			// Upgrade an old TinyMCE cookie if it is still around, and the new one isn't.
-			if ( ! $cookie && isset( $_COOKIE['TinyMCE_content_size'] ) ) {
-				parse_str( $_COOKIE['TinyMCE_content_size'], $cookie );
- 				$cookie = $cookie['ch'];
-			}
-
 			if ( $cookie )
 				$set['editor_height'] = $cookie;
 		}
@@ -1446,11 +1440,11 @@ final class _WP_Editors {
 		<div id="link-selector">
 			<div id="link-options">
 				<p class="howto"><?php _e( 'Enter the destination URL' ); ?></p>
-				<div class="wp-link-text-field">
-					<label><span><?php _e( 'Link Text' ); ?></span><input id="wp-link-text" type="text" /></label>
-				</div>
 				<div>
 					<label><span><?php _e( 'URL' ); ?></span><input id="wp-link-url" type="text" /></label>
+				</div>
+				<div class="wp-link-text-field">
+					<label><span><?php _e( 'Link Text' ); ?></span><input id="wp-link-text" type="text" /></label>
 				</div>
 				<div class="link-target">
 					<label><span>&nbsp;</span><input type="checkbox" id="wp-link-target" /> <?php _e( 'Open link in a new window/tab' ); ?></label>

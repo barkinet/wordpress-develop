@@ -1,3 +1,4 @@
+/* global tb_remove */
 window.wp = window.wp || {};
 
 (function( $, wp, pagenow ) {
@@ -232,6 +233,9 @@ window.wp = window.wp || {};
 		 * and any other updates can commence.
 		 */
 		wp.updates.updateLock = false;
+
+		$(document).trigger( 'wp-plugin-update-success', response );
+
 		wp.updates.queueChecker();
 	};
 
@@ -262,6 +266,7 @@ window.wp = window.wp || {};
 		$message.text( wp.updates.l10n.updateFailed );
 		wp.a11y.speak( wp.updates.l10n.updateFailed );
 
+		$(document).trigger( 'wp-plugin-update-error', response );
 	};
 
 	/**
@@ -368,7 +373,7 @@ window.wp = window.wp || {};
 		$( 'body' ).addClass( 'modal-open' );
 		$modal.show();
 
-		$modal.find( '#hostname' ).focus();
+		$modal.find( 'input:enabled:first' ).focus();
 		$modal.keydown( wp.updates.keydown );
 	};
 
@@ -413,6 +418,21 @@ window.wp = window.wp || {};
 		$message.html( $message.data( 'originaltext' ) );
 		wp.a11y.speak( wp.updates.l10n.updateCancel );
 	};
+	/**
+	 * Potentially add an AYS to a user attempting to leave the page
+	 *
+	 * If an update is on-going and a user attempts to leave the page,
+	 * open an "Are you sure?" alert.
+	 *
+	 * @since 4.2.0
+	 */
+
+	wp.updates.beforeunload = function() {
+		if ( wp.updates.updateLock ) {
+			return wp.updates.l10n.beforeunload;
+		}
+	};
+
 
 	$( document ).ready( function() {
 		/*
@@ -459,24 +479,6 @@ window.wp = window.wp || {};
 			wp.updates.updatePlugin( updateRow.data( 'plugin' ), updateRow.data( 'slug' ) );
 		} );
 
-		$( '#bulk-action-form' ).on( 'submit', function( e ) {
-			var $checkbox, plugin, slug;
-
-			if ( $( '#bulk-action-selector-top' ).val() == 'update-selected' ) {
-				e.preventDefault();
-
-				$( 'input[name="checked[]"]:checked' ).each( function( index, elem ) {
-					$checkbox = $( elem );
-					plugin = $checkbox.val();
-					slug = $checkbox.parents( 'tr' ).prop( 'id' );
-
-					wp.updates.updatePlugin( plugin, slug );
-
-					$checkbox.attr( 'checked', false );
-				} );
-			}
-		} );
-
 		$( '.plugin-card' ).on( 'click', '.update-now', function( e ) {
 			e.preventDefault();
 			var $button = $( e.target );
@@ -487,6 +489,26 @@ window.wp = window.wp || {};
 
 			wp.updates.updatePlugin( $button.data( 'plugin' ), $button.data( 'slug' ) );
 		} );
+
+		//
+		$( '#plugin_update_from_iframe' ).on( 'click' , function( e ) {
+			var target,	data;
+
+			target = window.parent == window ? null : window.parent,
+			$.support.postMessage = !! window.postMessage;
+
+			if ( $.support.postMessage === false || target === null || window.parent.location.pathname.indexOf( 'update-core.php' ) !== -1 )
+				return;
+
+			e.preventDefault();
+
+			data = {
+				'action' : 'updatePlugin',
+				'slug'	 : $(this).data('slug')
+			};
+
+			target.postMessage( JSON.stringify( data ), window.location.origin );
+		});
 
 	} );
 
@@ -502,12 +524,30 @@ window.wp = window.wp || {};
 
 		message = $.parseJSON( event.data );
 
-		if ( typeof message.action === 'undefined' || message.action !== 'decrementUpdateCount' ) {
+		if ( typeof message.action === 'undefined' ) {
 			return;
 		}
 
-		wp.updates.decrementCount( message.upgradeType );
+		switch (message.action){
+			case 'decrementUpdateCount' :
+				wp.updates.decrementCount( message.upgradeType );
+				break;
+			case 'updatePlugin' :
+				tb_remove();
+				if ( 'plugins' === pagenow || 'plugins-network' === pagenow ) {
+					// Return the user to the input box of the plugin's table row after closing the modal.
+					$( '#' + message.slug ).find( '.check-column input' ).focus();
+					// trigger the update
+					$( '.plugin-update-tr[data-slug="' + message.slug + '"]' ).find( '.update-link' ).trigger( 'click' );
+				} else if ( 'plugin-install' === pagenow ) {
+					$( '.plugin-card-' + message.slug ).find( 'h4 a' ).focus();
+					$( '.plugin-card-' + message.slug ).find( '[data-slug="' + message.slug + '"]' ).trigger( 'click' );
+				}
+				break;
+		}
 
 	} );
+
+	$( window ).on( 'beforeunload', wp.updates.beforeunload );
 
 })( jQuery, window.wp, window.pagenow, window.ajaxurl );

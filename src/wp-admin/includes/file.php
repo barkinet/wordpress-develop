@@ -146,7 +146,7 @@ function wp_tempnam( $filename = '', $dir = '' ) {
 		$dir = get_temp_dir();
 	}
 
-	if ( empty( $filename ) || '.' == $filename ) {
+	if ( empty( $filename ) || '.' == $filename || '/' == $filename ) {
 		$filename = time();
 	}
 
@@ -823,12 +823,10 @@ function copy_dir($from, $to, $skip_list = array() ) {
  *
  * @since 2.5.0
  *
- * @param array  $args                         Optional. Connection args, These are passed directly to
- *                                             the `WP_Filesystem_*()` classes. Default false.
- * @param string $context                      Optional. Context for {@see get_filesystem_method()}.
- *                                             Default false.
- * @param bool   $allow_relaxed_file_ownership Optional. Whether to allow Group/World writable.
- *                                             Default false.
+ * @param array|false  $args                         Optional. Connection args, These are passed directly to
+ *                                                   the `WP_Filesystem_*()` classes. Default false.
+ * @param string|false $context                      Optional. Context for get_filesystem_method(). Default false.
+ * @param bool         $allow_relaxed_file_ownership Optional. Whether to allow Group/World writable. Default false.
  * @return null|boolean false on failure, true on success.
  */
 function WP_Filesystem( $args = false, $context = false, $allow_relaxed_file_ownership = false ) {
@@ -1120,7 +1118,7 @@ jQuery(function($){
 	jQuery("#ftp, #ftps").click(function () {
 		jQuery("#ssh_keys").hide();
 	});
-	jQuery('form input[value=""]:first').focus();
+	jQuery('#request-filesystem-credentials-form input[value=""]:first').focus();
 });
 -->
 </script>
@@ -1148,7 +1146,7 @@ jQuery(function($){
 ?></p>
 <label for="hostname">
 	<span class="field-title"><?php _e( 'Hostname' ) ?></span>
-	<input name="hostname" type="text" id="hostname" aria-describedby="request-filesystem-credentials-desc" class="code" placeholder="<?php esc_attr_e( __( 'example: www.mysite.com' ) ) ?>" value="<?php echo esc_attr($hostname); if ( !empty($port) ) echo ":$port"; ?>"<?php disabled( defined('FTP_HOST') ); ?> />
+	<input name="hostname" type="text" id="hostname" aria-describedby="request-filesystem-credentials-desc" class="code" placeholder="<?php esc_attr_e( 'example: www.wordpress.org' ) ?>" value="<?php echo esc_attr($hostname); if ( !empty($port) ) echo ":$port"; ?>"<?php disabled( defined('FTP_HOST') ); ?> />
 </label>
 <div class="ftp-username">
 	<label for="username">
@@ -1203,7 +1201,7 @@ foreach ( (array) $extra_fields as $field ) {
 }
 
 /**
- * Print the credentials modal when needed  
+ * Print the filesystem credentials modal when needed.
  *
  * @since 4.2.0
  */
