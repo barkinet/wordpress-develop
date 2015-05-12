@@ -204,7 +204,7 @@ wpWidgets = {
 					}
 				};
 
-				if ( 'multi' !== addNew ) {
+				if ( 'multi' !== addNew || 'undefined' === typeof wpCustomizeWidgetsPlus ) {
 					continuation();
 					return;
 				}
@@ -509,7 +509,7 @@ wpWidgets = {
 			}, 250 );
 		};
 
-		if ( 'multi' !== add ) {
+		if ( 'multi' !== add || 'undefined' === typeof wpCustomizeWidgetsPlus ) {
 			continuation( n );
 			return;
 		}
