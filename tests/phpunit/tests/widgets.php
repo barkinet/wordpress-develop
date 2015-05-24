@@ -279,4 +279,23 @@ class Tests_Widgets extends WP_UnitTestCase {
 		$this->assertEquals( $overridden_title, $option_value[2]['title'] );
 	}
 
+	/**
+	 * @see WP_Widget::save_settings()
+	 */
+	function test_wp_widget_save_settings_delete() {
+		global $wp_registered_widgets;
+
+		wp_widgets_init();
+
+		/** @var WP_Widget_Search $wp_widget_search */
+		$wp_widget_search = $wp_registered_widgets['search-2']['callback'][0];
+
+		$settings = $wp_widget_search->get_settings();
+		$this->assertArrayHasKey( 2, $settings );
+		unset( $settings[2] );
+		$wp_widget_search->save_settings( $settings );
+		$option_value = get_option( $wp_widget_search->option_name );
+		$this->assertArrayNotHasKey( 2, $option_value );
+	}
+
 }
