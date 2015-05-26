@@ -1,6 +1,6 @@
 /* globals _wpCustomizeHeader, _wpCustomizeBackground, _wpMediaViewsL10n, MediaElementPlayer */
 (function( exports, $ ){
-	var Container, focus, api = wp.customize;
+	var Container, focus, removeContainer, api = wp.customize;
 
 	/**
 	 * @class
@@ -2060,10 +2060,27 @@
 	// Change objects contained within the main customize object to Settings.
 	api.defaultConstructor = api.Setting;
 
+	/**
+	 * Remove a Control, Section, or Panel's container when it is removed from its Values collection.
+	 *
+	 * @param {string} id
+	 * @this {wp.customize.Values}
+	 */
+	removeContainer = function ( id ) {
+		var value;
+		if ( this.has( id ) ) {
+			value = this.value( id );
+			if ( value.container ) {
+				value.container.remove();
+			}
+		}
+		api.Values.prototype.remove.call( this, id );
+	};
+
 	// Create the collections for Controls, Sections and Panels.
-	api.control = new api.Values({ defaultConstructor: api.Control });
-	api.section = new api.Values({ defaultConstructor: api.Section });
-	api.panel = new api.Values({ defaultConstructor: api.Panel });
+	api.control = new api.Values({ defaultConstructor: api.Control, remove: removeContainer });
+	api.section = new api.Values({ defaultConstructor: api.Section, remove: removeContainer });
+	api.panel = new api.Values({ defaultConstructor: api.Panel, remove: removeContainer });
 
 	/**
 	 * @class

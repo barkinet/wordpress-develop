@@ -1566,7 +1566,6 @@
 						// Delete any widget form controls for removed widgets
 						if ( removedControl && ! wasDraggedToAnotherSidebar ) {
 							api.control.remove( removedControl.id );
-							removedControl.container.remove();
 						}
 
 						// Move widget to inactive widgets sidebar (move it to trash) if has been previously saved
