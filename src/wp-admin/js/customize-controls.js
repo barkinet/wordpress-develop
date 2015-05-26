@@ -385,7 +385,7 @@
 			if ( 0 !== $( '#tmpl-' + container.templateSelector ).length ) {
 				template = wp.template( container.templateSelector );
 				if ( template && container.container ) {
-					return template( container.params );
+					return $.trim( template( container.params ) );
 				}
 			}
 
