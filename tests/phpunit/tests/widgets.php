@@ -234,9 +234,8 @@ class Tests_Widgets extends WP_UnitTestCase {
 		unset( $option_value['_multiwidget'] );
 
 		wp_widgets_init();
-
-		/** @var WP_Widget_Search $wp_widget_search */
 		$wp_widget_search = $wp_registered_widgets['search-2']['callback'][0];
+
 		$settings = $wp_widget_search->get_settings();
 		// @todo $this->assertArrayNotHasKey( '_multiwidget', $settings ); ?
 		$this->assertArrayHasKey( 2, $settings );
@@ -253,8 +252,6 @@ class Tests_Widgets extends WP_UnitTestCase {
 		global $wp_registered_widgets;
 
 		wp_widgets_init();
-
-		/** @var WP_Widget_Search $wp_widget_search */
 		$wp_widget_search = $wp_registered_widgets['search-2']['callback'][0];
 
 		$settings = $wp_widget_search->get_settings();
@@ -286,8 +283,6 @@ class Tests_Widgets extends WP_UnitTestCase {
 		global $wp_registered_widgets;
 
 		wp_widgets_init();
-
-		/** @var WP_Widget_Search $wp_widget_search */
 		$wp_widget_search = $wp_registered_widgets['search-2']['callback'][0];
 
 		$settings = $wp_widget_search->get_settings();
