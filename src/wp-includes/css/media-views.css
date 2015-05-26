@@ -19,6 +19,7 @@
 .media-frame {
 	font-family: "Open Sans", sans-serif;
 	font-size: 12px;
+	-webkit-overflow-scrolling: touch;
 }
 
 .media-frame input,
@@ -42,11 +43,11 @@
 }
 
 .media-frame a.button {
-	color: #333;
+	color: #32373c;
 }
 
 .media-frame a.button:hover {
-	color: #222;
+	color: #23282d;
 }
 
 .media-frame a.button-primary,
@@ -105,7 +106,7 @@
 }
 
 /*!
- * jQuery UI Draggable/Sortable 1.11.3
+ * jQuery UI Draggable/Sortable 1.11.4
  * http://jqueryui.com
  *
  * Copyright jQuery Foundation and other contributors
@@ -187,7 +188,7 @@
 }
 
 .media-modal-close:hover .media-modal-icon:before {
-	color: #2ea2cc;
+	color: #00a0d2;
 }
 
 .media-modal-close:active {
@@ -231,13 +232,11 @@
 .media-toolbar-primary {
 	float: right;
 	height: 100%;
-	max-width: 33%;
 }
 
 .media-toolbar-secondary {
 	float: left;
 	height: 100%;
-	max-width: 66%;
 }
 
 .media-toolbar-primary > .media-button,
@@ -503,7 +502,7 @@
 	margin: 0;
 	line-height: 18px;
 	font-size: 14px;
-	color: #0074a2;
+	color: #0073aa;
 	text-decoration: none;
 }
 
@@ -518,7 +517,7 @@
 
 .media-menu .active,
 .media-menu .active:hover {
-	color: #222;
+	color: #23282d;
 	font-weight: bold;
 }
 
@@ -569,7 +568,7 @@
 
 .media-router .active,
 .media-router .active:hover {
-	color: #333;
+	color: #32373c;
 }
 
 .media-router .active,
@@ -739,7 +738,13 @@
 .media-frame select.attachment-filters {
 	margin-top: 11px;
 	margin-right: 2%;
-	max-width: 47%;
+	max-width: 42%;
+	max-width: -webkit-calc(48% - 12px);
+	max-width: calc(48% - 12px);
+}
+
+.media-frame select.attachment-filters:last-of-type {
+	margin-right: 0;
 }
 
 /**
@@ -896,7 +901,7 @@
 	transform: translate( -50%, -50% );
 }
 
-.wp-core-ui .attachment .thumbnail .centered img.icon {
+.wp-core-ui .attachments-browser .attachment .thumbnail .centered img.icon {
 	-webkit-transform: translate( -50%, -70% );
 	-ms-transform: translate(-50%,-70%);
 	transform: translate( -50%, -70% );
@@ -1072,6 +1077,14 @@
 	display: none;
 }
 
+.attachments-browser .media-toolbar-primary {
+	max-width: 33%;
+}
+
+.attachments-browser .media-toolbar-secondary {
+	max-width: 66%;
+}
+
 .uploader-inline .close {
 	background-color: transparent;
 	border: 0;
@@ -1161,10 +1174,6 @@
 	max-width: 400px;
 }
 
-.media-sidebar .media-uploader-status {
-	border-bottom: 1px solid #dfdfdf;
-}
-
 .uploader-inline .media-uploader-status h3 {
 	display: none;
 }
@@ -1208,31 +1217,21 @@
 }
 
 .upload-errors .upload-error {
-	margin: 8px auto 0 auto;
-	padding: 8px;
-	border: 1px #c00 solid;
-	background: #ffebe8;
-	-webkit-border-radius: 3px;
-	border-radius: 3px;
+	padding: 12px;
+	margin-bottom: 12px; 
+	background: #fff; 
+ 	border-left: 4px solid #dd3d36; 
+ 	-webkit-box-shadow: 0 1px 1px 0 rgba(0, 0, 0, 0.1); 
+ 	box-shadow: 0 1px 1px 0 rgba(0, 0, 0, 0.1); 
 }
 
-.upload-errors .upload-error-label {
-	padding: 2px 4px;
-	margin-right: 8px;
+.upload-errors .upload-error-filename {
 	font-weight: bold;
-	color: #fff;
-	background: #e00;
-	background-image: -webkit-gradient(linear, left top, left bottom, from(#e00), to(#a00));
-	background-image: -webkit-linear-gradient(top, #e00, #a00);
-	background-image: linear-gradient(to bottom, #e00, #a00);
-	-webkit-border-radius: 3px;
-	border-radius: 3px;
 }
 
 .upload-errors .upload-error-message {
 	display: block;
 	padding-top: 8px;
-	color: #b44;
 	word-wrap: break-word;
 }
 
@@ -1440,8 +1439,6 @@
 	width: 40px;
 	padding: 0;
 	margin: 4px;
-	-webkit-box-shadow: none;
-	box-shadow: none;
 }
 
 .media-selection .attachment .thumbnail {
@@ -1461,7 +1458,23 @@
 	background: none;
 }
 
-.media-selection .attachment.selection.details .thumbnail {
+.wp-core-ui .media-selection .attachment:focus,
+.wp-core-ui .media-selection .selected.attachment:focus,
+.wp-core-ui .media-selection .attachment.details:focus {
+	-webkit-box-shadow:
+		0 0 0 1px #fff,
+		0 0 2px 3px #5b9dd9;
+	box-shadow:
+		0 0 0 1px #fff,
+		0 0 2px 3px #5b9dd9;
+}
+
+.wp-core-ui .media-selection .selected.attachment {
+	-webkit-box-shadow: none;
+	box-shadow: none;
+}
+
+.wp-core-ui .media-selection .attachment.details {
 	-webkit-box-shadow:
 		0 0 0 1px #fff,
 		0 0 0 3px #1e8cbe;
@@ -1494,12 +1507,19 @@
 	background: url(../images/spinner.gif) no-repeat;
 	-webkit-background-size: 20px 20px;
 	background-size: 20px 20px;
-	display: none;
+	float: right;
+	display: inline-block;
+	visibility: hidden;
 	opacity: 0.7;
 	filter: alpha(opacity=70);
 	width: 20px;
 	height: 20px;
 	margin: 0;
+	vertical-align: middle;
+}
+
+.media-frame .spinner.is-active {
+	visibility: visible;
 }
 
 .media-toolbar .spinner {
@@ -1521,7 +1541,7 @@
 }
 
 .attachment-details .settings-save-status .spinner {
-	margin: 0 5px 0;
+	margin-left: 5px;
 }
 
 .attachment-details .settings-save-status .saved {
@@ -1529,7 +1549,10 @@
 	display: none;
 }
 
-.attachment-details.save-waiting .settings-save-status .spinner,
+.attachment-details.save-waiting .settings-save-status .spinner {
+	visibility: visible;
+}
+
 .attachment-details.save-complete .settings-save-status .saved {
 	display: block;
 }
@@ -1772,7 +1795,7 @@
 }
 
 .media-frame .embed-loading .embed-url .spinner {
-	display: block;
+	visibility: visible;
 }
 
 .embed-link-settings,
@@ -1944,29 +1967,6 @@
 	clear: both;
 }
 
-.embed-link-settings .setting {
-	display: none;
-}
-
-.embed-link-dimensions:after {
-	content: '';
-	display: block;
-	clear: both;
-}
-
-.embed-link-dimensions .width,
-.embed-link-dimensions .height {
-	float: left;
-	width: 125px;
-	clear: none;
-	margin-right: 10px;
-}
-
-.embed-link-dimensions input {
-	width: auto;
-	max-width: 110px;
-}
-
 .image-details .embed-media-settings .setting {
 	float: none;
 	width: auto;
@@ -2013,7 +2013,6 @@
 .media-embed .setting span {
 	display: block;
 	width: 200px;
-	max-width: 100%;
 	font-size: 13px;
 	line-height: 24px;
 	color: #666;
@@ -2388,7 +2387,7 @@
 	}
 
 	.media-modal .attachments-browser .media-toolbar .spinner {
-		margin: 14px 8px 0;
+		margin: 14px 2px 0;
 	}
 
 	/* Text inputs need to be 16px, or they force zooming on iOS */

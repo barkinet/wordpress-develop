@@ -9,7 +9,7 @@
  * @augments wp.Backbone.View
  * @augments Backbone.View
  */
-var Attachment = require( '../attachment.js' ),
+var Attachment = wp.media.view.Attachment,
 	l10n = wp.media.view.l10n,
 	Details;
 
@@ -35,8 +35,7 @@ Details = Attachment.extend({
 		'click .untrash-attachment':      'untrashAttachment',
 		'click .edit-attachment':         'editAttachment',
 		'click .refresh-attachment':      'refreshAttachment',
-		'keydown':                        'toggleSelectionHandler',
-		'click .detach-from-parent':      'detachFromParent'
+		'keydown':                        'toggleSelectionHandler'
 	},
 
 	initialize: function() {
@@ -135,20 +134,6 @@ Details = Attachment.extend({
 			this.controller.trigger( 'attachment:keydown:arrow', event );
 			return;
 		}
-	},
-
-	/**
-	 * @param {Object} event
-	 */
-	detachFromParent: function( event ) {
-		event.preventDefault();
-
-		this.model.save({
-			'parent' : 0,
-			'uploadedTo' : 0,
-			'uploadedToLink' : '',
-			'uploadedToTitle' : ''
-		});
 	}
 });
 

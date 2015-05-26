@@ -134,7 +134,7 @@ function wp_authenticate_username_password($user, $username, $password) {
 	$user = get_user_by('login', $username);
 
 	if ( !$user )
-		return new WP_Error( 'invalid_username', sprintf( __( '<strong>ERROR</strong>: Invalid username. <a href="%s">Lost your password</a>?' ), wp_lostpassword_url() ) );
+		return new WP_Error( 'invalid_username', sprintf( __( '<strong>ERROR</strong>: Invalid username. <a href="%s">Lost your password?</a>' ), wp_lostpassword_url() ) );
 
 	/**
 	 * Filter whether the given user can be authenticated with the provided $password.
@@ -150,7 +150,7 @@ function wp_authenticate_username_password($user, $username, $password) {
 		return $user;
 
 	if ( !wp_check_password($password, $user->user_pass, $user->ID) )
-		return new WP_Error( 'incorrect_password', sprintf( __( '<strong>ERROR</strong>: The password you entered for the username <strong>%1$s</strong> is incorrect. <a href="%2$s">Lost your password</a>?' ),
+		return new WP_Error( 'incorrect_password', sprintf( __( '<strong>ERROR</strong>: The password you entered for the username <strong>%1$s</strong> is incorrect. <a href="%2$s">Lost your password?</a>' ),
 		$username, wp_lostpassword_url() ) );
 
 	return $user;
@@ -251,17 +251,19 @@ function wp_validate_logged_in_cookie( $user_id ) {
  *
  * @since 3.0.0
  * @since 4.1.0 Added `$post_type` argument.
+ * @since 4.3.0 Added `$public_only` argument. Added the ability to pass an array of post types to `$post_type`.
  *
  * @global wpdb $wpdb WordPress database object for queries.
  *
- * @param int    $userid    User ID.
- * @param string $post_type Optional. Post type to count the number of posts for. Default 'post'.
+ * @param int          $userid      User ID.
+ * @param array|string $post_type   Optional. Post type(s) to count the number of posts for. Default 'post'.
+ * @param bool         $public_only Optional. Only return counts for public posts. Defaults to false.
  * @return int Number of posts the user has written in this post type.
  */
-function count_user_posts( $userid, $post_type = 'post' ) {
+function count_user_posts( $userid, $post_type = 'post', $public_only = false ) {
 	global $wpdb;
 
-	$where = get_posts_by_author_sql( $post_type, true, $userid );
+	$where = get_posts_by_author_sql( $post_type, true, $userid, $public_only );
 
 	$count = $wpdb->get_var( "SELECT COUNT(*) FROM $wpdb->posts $where" );
 
@@ -270,10 +272,12 @@ function count_user_posts( $userid, $post_type = 'post' ) {
 	 *
 	 * @since 2.7.0
 	 * @since 4.1.0 Added `$post_type` argument.
+	 * @since 4.3.0 Added `$public_only` argument.
 	 *
-	 * @param int    $count     The user's post count.
-	 * @param int    $userid    User ID.
-	 * @param string $post_type Post type to count the number of posts for.
+	 * @param int          $count       The user's post count.
+	 * @param int          $userid      User ID.
+	 * @param string|array $post_types  Post types to count the number of posts for.
+	 * @param bool         $public_only Whether to limit counted posts to public posts.
 	 */
 	return apply_filters( 'get_usernumposts', $count, $userid, $post_type );
 }
@@ -283,9 +287,9 @@ function count_user_posts( $userid, $post_type = 'post' ) {
  *
  * @since 3.0.0
  *
- * @param array $users Array of user IDs.
- * @param string $post_type Optional. Post type to check. Defaults to post.
- * @param bool $public_only Optional. Only return counts for public posts.  Defaults to false.
+ * @param array        $users       Array of user IDs.
+ * @param string|array $post_type   Optional. Single post type or array of post types to check. Defaults to 'post'.
+ * @param bool         $public_only Optional. Only return counts for public posts.  Defaults to false.
  * @return array Amount of posts each user has written.
  */
 function count_many_users_posts( $users, $post_type = 'post', $public_only = false ) {
@@ -626,14 +630,21 @@ class WP_User_Query {
 			$include = false;
 		}
 
-		// Meta query.
-		$this->meta_query = new WP_Meta_Query();
-		$this->meta_query->parse_query_vars( $qv );
-
 		$blog_id = 0;
 		if ( isset( $qv['blog_id'] ) ) {
 			$blog_id = absint( $qv['blog_id'] );
 		}
+
+		if ( isset( $qv['who'] ) && 'authors' == $qv['who'] && $blog_id ) {
+			$qv['meta_key'] = $wpdb->get_blog_prefix( $blog_id ) . 'user_level';
+			$qv['meta_value'] = 0;
+			$qv['meta_compare'] = '!=';
+			$qv['blog_id'] = $blog_id = 0; // Prevent extra meta query
+		}
+
+		// Meta query.
+		$this->meta_query = new WP_Meta_Query();
+		$this->meta_query->parse_query_vars( $qv );
 
 		$role = '';
 		if ( isset( $qv['role'] ) ) {
@@ -775,13 +786,6 @@ class WP_User_Query {
 			$this->query_where .= $this->get_search_sql( $search, $search_columns, $wild );
 		}
 
-		if ( isset( $qv['who'] ) && 'authors' == $qv['who'] && $blog_id ) {
-			$qv['meta_key'] = $wpdb->get_blog_prefix( $blog_id ) . 'user_level';
-			$qv['meta_value'] = 0;
-			$qv['meta_compare'] = '!=';
-			$qv['blog_id'] = $blog_id = 0; // Prevent extra meta query
-		}
-
 		if ( ! empty( $include ) ) {
 			// Sanitized earlier.
 			$ids = implode( ',', $include );
@@ -857,7 +861,7 @@ class WP_User_Query {
 			$this->results = $r;
 		} elseif ( 'all' == $qv['fields'] ) {
 			foreach ( $this->results as $key => $user ) {
-				$this->results[ $key ] = new WP_User( $user );
+				$this->results[ $key ] = new WP_User( $user, '', $qv['blog_id'] );
 			}
 		}
 	}
@@ -1249,7 +1253,7 @@ function is_user_member_of_blog( $user_id = 0, $blog_id = 0 ) {
  * Post meta data is called "Custom Fields" on the Administration Screens.
  *
  * @since 3.0.0
- * @link http://codex.wordpress.org/Function_Reference/add_user_meta
+ * @link https://codex.wordpress.org/Function_Reference/add_user_meta
  *
  * @param int $user_id User ID.
  * @param string $meta_key Metadata name.
@@ -1269,7 +1273,7 @@ function add_user_meta($user_id, $meta_key, $meta_value, $unique = false) {
  * allows removing all metadata matching key, if needed.
  *
  * @since 3.0.0
- * @link http://codex.wordpress.org/Function_Reference/delete_user_meta
+ * @link https://codex.wordpress.org/Function_Reference/delete_user_meta
  *
  * @param int $user_id user ID
  * @param string $meta_key Metadata name.
@@ -1284,7 +1288,7 @@ function delete_user_meta($user_id, $meta_key, $meta_value = '') {
  * Retrieve user meta field for a user.
  *
  * @since 3.0.0
- * @link http://codex.wordpress.org/Function_Reference/get_user_meta
+ * @link https://codex.wordpress.org/Function_Reference/get_user_meta
  *
  * @param int $user_id User ID.
  * @param string $key Optional. The meta key to retrieve. By default, returns data for all keys.
@@ -1305,7 +1309,7 @@ function get_user_meta($user_id, $key = '', $single = false) {
  * If the meta field for the user does not exist, it will be added.
  *
  * @since 3.0.0
- * @link http://codex.wordpress.org/Function_Reference/update_user_meta
+ * @link https://codex.wordpress.org/Function_Reference/update_user_meta
  *
  * @param int $user_id User ID.
  * @param string $meta_key Metadata key.
@@ -1330,7 +1334,7 @@ function update_user_meta($user_id, $meta_key, $meta_value, $prev_value = '') {
  * @return array Includes a grand total and an array of counts indexed by role strings.
  */
 function count_users($strategy = 'time') {
-	global $wpdb, $wp_roles;
+	global $wpdb;
 
 	// Initialize
 	$id = get_current_blog_id();
@@ -1338,12 +1342,7 @@ function count_users($strategy = 'time') {
 	$result = array();
 
 	if ( 'time' == $strategy ) {
-		global $wp_roles;
-
-		if ( ! isset( $wp_roles ) )
-			$wp_roles = new WP_Roles();
-
-		$avail_roles = $wp_roles->get_names();
+		$avail_roles = wp_roles()->get_names();
 
 		// Build a CPU-intensive query that will return concise information.
 		$select_count = array();
@@ -1744,7 +1743,7 @@ function email_exists( $email ) {
 }
 
 /**
- * Checks whether an username is valid.
+ * Checks whether a username is valid.
  *
  * @since 2.0.1
  *
@@ -1766,7 +1765,7 @@ function validate_username( $username ) {
 }
 
 /**
- * Insert an user into the database.
+ * Insert a user into the database.
  *
  * Most of the $userdata array fields have filters associated with the values.
  * The exceptions are 'rich_editing', 'role', 'jabber', 'aim', 'yim',
@@ -1894,7 +1893,15 @@ function wp_insert_user( $userdata ) {
 	 */
 	$user_email = apply_filters( 'pre_user_email', $raw_user_email );
 
-	if ( ! $update && ! defined( 'WP_IMPORTING' ) && email_exists( $user_email ) ) {
+	/*
+	 * If there is no update, just check for `email_exists`. If there is an update,
+	 * check if current email and new email are the same, or not, and check `email_exists`
+	 * accordingly.
+	 */
+	if ( ( ! $update || ( ! empty( $old_user_data ) && $user_email !== $old_user_data->user_email ) )
+		&& ! defined( 'WP_IMPORTING' )
+		&& email_exists( $user_email )
+	) {
 		return new WP_Error( 'existing_user_email', __( 'Sorry, that email address is already used!' ) );
 	}
 	$nickname = empty( $userdata['nickname'] ) ? $user_login : $userdata['nickname'];
@@ -2052,7 +2059,7 @@ function wp_insert_user( $userdata ) {
 }
 
 /**
- * Update an user in the database.
+ * Update a user in the database.
  *
  * It is possible to update a user's password by specifying the 'user_pass'
  * value in the $userdata parameter array.
@@ -2128,7 +2135,7 @@ function wp_update_user($userdata) {
 }
 
 /**
- * A simpler way of inserting an user into the database.
+ * A simpler way of inserting a user into the database.
  *
  * Creates a new user with just the username, password, and email. For more
  * complex user creation use {@see wp_insert_user()} to specify more information.
@@ -2233,7 +2240,8 @@ function wp_get_password_hint() {
  * hashing process. This field is now hashed; old values are no longer accepted
  * but have a different WP_Error code so good user feedback can be provided.
  *
- * @global wpdb $wpdb WordPress database object for queries.
+ * @global wpdb         $wpdb      WordPress database object for queries.
+ * @global PasswordHash $wp_hasher Portable PHP password hashing framework instance.
  *
  * @param string $key       Hash to validate sending user's password.
  * @param string $login     The user login.

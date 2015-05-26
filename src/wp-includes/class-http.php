@@ -36,6 +36,8 @@ class WP_Http {
 	 * @access public
 	 * @since 2.7.0
 	 *
+	 * @global string $wp_version
+	 *
 	 * @param string       $url  The request URL.
 	 * @param string|array $args {
 	 *     Optional. Array or string of HTTP request arguments.
@@ -182,7 +184,9 @@ class WP_Http {
 		if ( function_exists( 'wp_kses_bad_protocol' ) ) {
 			if ( $r['reject_unsafe_urls'] )
 				$url = wp_http_validate_url( $url );
-			$url = wp_kses_bad_protocol( $url, array( 'http', 'https', 'ssl' ) );
+			if ( $url ) {
+				$url = wp_kses_bad_protocol( $url, array( 'http', 'https', 'ssl' ) );
+			}
 		}
 
 		$arrURL = @parse_url( $url );
@@ -226,7 +230,7 @@ class WP_Http {
 			$r['headers'] = array();
 
 		if ( ! is_array( $r['headers'] ) ) {
-			$processedHeaders = WP_Http::processHeaders( $r['headers'], $url );
+			$processedHeaders = self::processHeaders( $r['headers'], $url );
 			$r['headers'] = $processedHeaders['headers'];
 		}
 
@@ -245,7 +249,7 @@ class WP_Http {
 		}
 
 		// Construct Cookie: header if any cookies are set.
-		WP_Http::buildCookieHeader( $r );
+		self::buildCookieHeader( $r );
 
 		// Avoid issues where mbstring.func_overload is enabled.
 		mbstring_binary_safe_encoding();
@@ -2114,7 +2118,7 @@ class WP_Http_Encoding {
 		if ( false !== ( $decompressed = @gzinflate( $compressed ) ) )
 			return $decompressed;
 
-		if ( false !== ( $decompressed = WP_Http_Encoding::compatible_gzinflate( $compressed ) ) )
+		if ( false !== ( $decompressed = self::compatible_gzinflate( $compressed ) ) )
 			return $decompressed;
 
 		if ( false !== ( $decompressed = @gzuncompress( $compressed ) ) )
@@ -2192,7 +2196,7 @@ class WP_Http_Encoding {
 	 */
 	public static function accept_encoding( $url, $args ) {
 		$type = array();
-		$compression_enabled = WP_Http_Encoding::is_available();
+		$compression_enabled = self::is_available();
 
 		if ( ! $args['decompress'] ) // Decompression specifically disabled.
 			$compression_enabled = false;

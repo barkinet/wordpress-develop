@@ -4,7 +4,7 @@ module.exports = function(grunt) {
 		SOURCE_DIR = 'src/',
 		BUILD_DIR = 'build/',
 		mediaConfig = {},
-		mediaBuilds = ['audio-video', 'grid', 'models', 'views'];
+		mediaBuilds = ['audiovideo', 'grid', 'models', 'views'];
 
 	// Load tasks.
 	require('matchdep').filterDev(['grunt-*', '!grunt-legacy-util']).forEach( grunt.loadNpmTasks );
@@ -12,9 +12,9 @@ module.exports = function(grunt) {
 	grunt.util = require('grunt-legacy-util');
 
 	mediaBuilds.forEach( function ( build ) {
-		var path = SOURCE_DIR + 'wp-includes/js/media/';
+		var path = SOURCE_DIR + 'wp-includes/js/media';
 		mediaConfig[ build ] = { files : {} };
-		mediaConfig[ build ].files[ path + build + '.js' ] = [ path + build + '.manifest.js' ];
+		mediaConfig[ build ].files[ path + '-' + build + '.js' ] = [ path + '/' + build + '.manifest.js' ];
 	} );
 
 	// Project configuration.
@@ -62,6 +62,7 @@ module.exports = function(grunt) {
 						cwd: SOURCE_DIR,
 						src: [
 							'**',
+							'!wp-includes/js/media/**',
 							'!**/.{svn,git}/**', // Ignore version control directories.
 							// Ignore unminified versions of external libs we don't ship:
 							'!wp-includes/js/backbone.js',
@@ -272,12 +273,8 @@ module.exports = function(grunt) {
 				options: {
 					browserify: true
 				},
-				expand: true,
-				cwd: SOURCE_DIR,
 				src: [
-					'wp-includes/js/media/**/*.js',
-					'!wp-includes/js/media/*.js',
-					'wp-includes/js/media/*.manifest.js'
+					SOURCE_DIR + 'wp-includes/js/media/**/*.js'
 				]
 			},
 			core: {
@@ -286,6 +283,8 @@ module.exports = function(grunt) {
 				src: [
 					'wp-admin/js/*.js',
 					'wp-includes/js/*.js',
+					// Built scripts.
+					'!wp-includes/js/media-*',
 					// WordPress scripts inside directories
 					'wp-includes/js/jquery/jquery.table-hotkeys.js',
 					'wp-includes/js/mediaelement/wp-mediaelement.js',
@@ -302,6 +301,7 @@ module.exports = function(grunt) {
 					'!wp-includes/js/hoverIntent.js',
 					'!wp-includes/js/json2.js',
 					'!wp-includes/js/tw-sack.js',
+					'!wp-includes/js/twemoji.js',
 					'!**/*.min.js'
 				],
 				// Remove once other JSHint errors are resolved
@@ -407,13 +407,14 @@ module.exports = function(grunt) {
 					'wp-includes/js/tinymce/plugins/wp*/plugin.js',
 
 					// Exceptions
+					'!wp-admin/js/bookmarklet.*', // Minified and updated in /src with the precommit task. See uglify:bookmarklet.
 					'!wp-admin/js/custom-header.js', // Why? We should minify this.
 					'!wp-admin/js/farbtastic.js',
 					'!wp-admin/js/iris.min.js',
-					'!wp-admin/js/bookmarklet.js', // Minified and updated in /src with the precommit task. See uglify:bookmarklet.
-					'!wp-includes/js/backbone.min.js',
+					'!wp-includes/js/backbone.*',
+					'!wp-includes/js/masonry.min.js',
 					'!wp-includes/js/swfobject.js',
-					'!wp-includes/js/underscore.min.js',
+					'!wp-includes/js/underscore.*',
 					'!wp-includes/js/zxcvbn.min.js'
 				]
 			},
@@ -463,6 +464,19 @@ module.exports = function(grunt) {
 					BUILD_DIR + 'wp-includes/js/tinymce/plugins/*/plugin.min.js'
 				],
 				dest: BUILD_DIR + 'wp-includes/js/tinymce/wp-tinymce.js'
+			},
+			emoji: {
+				options: {
+					separator: '\n',
+					process: function( src, filepath ) {
+						return '// Source: ' + filepath.replace( BUILD_DIR, '' ) + '\n' + src;
+					}
+				},
+				src: [
+					BUILD_DIR + 'wp-includes/js/twemoji.min.js',
+					BUILD_DIR + 'wp-includes/js/wp-emoji.min.js'
+				],
+				dest: BUILD_DIR + 'wp-includes/js/wp-emoji-release.min.js'
 			}
 		},
 		compress: {
@@ -499,6 +513,12 @@ module.exports = function(grunt) {
 					'wp-includes/js/tinymce/skins/wordpress/images/*.{png,jpg,gif,jpeg}'
 				],
 				dest: SOURCE_DIR
+			}
+		},
+		includes: {
+			emoji: {
+				src: BUILD_DIR + 'wp-includes/formatting.php',
+				dest: '.'
 			}
 		},
 		_watch: {
@@ -589,8 +609,8 @@ module.exports = function(grunt) {
 		'imagemin:core',
 		'browserify',
 		'jshint:corejs',
-		'qunit:compiled',
-		'uglify:bookmarklet'
+		'uglify:bookmarklet',
+		'qunit:compiled'
 	] );
 
 	grunt.registerTask( 'copy:all', [
@@ -607,13 +627,13 @@ module.exports = function(grunt) {
 		'rtl',
 		'cssmin:rtl',
 		'cssmin:colors',
-		'browserify',
 		'uglify:core',
-		'uglify:media',
 		'uglify:jqueryui',
 		'concat:tinymce',
 		'compress:tinymce',
 		'clean:tinymce',
+		'concat:emoji',
+		'includes:emoji',
 		'jsvalidate:build'
 	] );
 

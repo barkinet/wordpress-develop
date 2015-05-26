@@ -123,7 +123,7 @@ CAP;
 		global $wp_embed;
 
 		$out = wp_oembed_get( 'http://www.youtube.com/watch?v=oHg5SJYRHA0' );
-		$this->assertContains( 'http://www.youtube.com/embed/oHg5SJYRHA0?feature=oembed', $out );
+		$this->assertContains( 'https://www.youtube.com/embed/oHg5SJYRHA0?feature=oembed', $out );
 
 		$out = wp_oembed_get( 'https://www.youtube.com/watch?v=oHg5SJYRHA0' );
 		$this->assertContains( 'https://www.youtube.com/embed/oHg5SJYRHA0?feature=oembed', $out );
@@ -531,13 +531,32 @@ VIDEO;
 		$this->assertEquals( 0, $post_id );
 	}
 
-	function test_wp_check_filetype() {
-		$url = 'http://example.com/testFile.mp4?autoplay=true&otherstuff=false';
-		$filetype = wp_check_filetype( $url );
-		$expected = array(
-			'ext'  => 'mp4',
-			'type' => 'video/mp4'
+	/**
+	 * @ticket 22768
+	 */
+	public function test_media_handle_upload_sets_post_excerpt() {
+		$iptc_file = DIR_TESTDATA . '/images/test-image-iptc.jpg';
+
+		// Make a copy of this file as it gets moved during the file upload
+		$tmp_name = wp_tempnam( $iptc_file );
+
+		copy( $iptc_file, $tmp_name );
+
+		$_FILES['upload'] = array(
+			'tmp_name' => $tmp_name,
+			'name'     => 'test-image-iptc.jpg',
+			'type'     => 'image/jpeg',
+			'error'    => 0,
+			'size'     => filesize( $iptc_file )
 		);
-		$this->assertEquals( $expected, $filetype );
+
+		$post_id = media_handle_upload( 'upload', 0, array(), array( 'action' => 'test_iptc_upload', 'test_form' => false ) );
+
+		unset( $_FILES['upload'] );
+
+		$post = get_post( $post_id );
+
+		$this->assertEquals( 'This is a comment. / Это комментарий. / Βλέπετε ένα σχόλιο.', $post->post_excerpt );
 	}
+
 }

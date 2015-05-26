@@ -60,7 +60,12 @@
 		} );
 	} )();
 
-	// Add or remove ARIA attributes.
+	/**
+	 * @summary Add or remove ARIA attributes.
+	 * Uses jQuery's width() function to determine the size of the window and add
+	 * the default ARIA attributes for the menu toggle if it's visible.
+	 * @since Twenty Fifteen 1.1
+	 */
 	function onResizeARIA() {
 		if ( 955 > $window.width() ) {
 			button.attr( 'aria-expanded', 'false' );
@@ -75,10 +80,7 @@
 
 	// Sidebar scrolling.
 	function resize() {
-		windowWidth   = $window.width();
-		windowHeight  = $window.height();
-		bodyHeight    = $body.height();
-		sidebarHeight = $sidebar.height();
+		windowWidth = $window.width();
 
 		if ( 955 > windowWidth ) {
 			top = bottom = false;
@@ -92,6 +94,10 @@
 		if ( 955 > windowWidth ) {
 			return;
 		}
+
+		sidebarHeight = $sidebar.height();
+		windowHeight  = $window.height();
+		bodyHeight    = $body.height();
 
 		if ( sidebarHeight + adminbarOffset > windowHeight ) {
 			if ( windowPos > lastWindowPos ) {

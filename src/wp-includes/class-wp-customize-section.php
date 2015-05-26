@@ -207,7 +207,7 @@ class WP_Customize_Section {
 	 * @since 4.1.0
 	 * @access public
 	 *
-	 * @return bool Always true.
+	 * @return true Always true.
 	 */
 	public function active_callback() {
 		return true;
@@ -359,35 +359,64 @@ class WP_Customize_Section {
  */
 class WP_Customize_Themes_Section extends WP_Customize_Section {
 
+	/**
+	 * Customize section type.
+	 *
+	 * @since 4.2.0
+	 * @access public
+	 * @var string
+	 */
 	public $type = 'themes';
 
 	/**
 	 * Render the themes section, which behaves like a panel.
 	 *
 	 * @since 4.2.0
+	 * @access protected
 	 */
 	protected function render() {
 		$classes = 'accordion-section control-section control-section-' . $this->type;
 		?>
 		<li id="accordion-section-<?php echo esc_attr( $this->id ); ?>" class="<?php echo esc_attr( $classes ); ?>">
-			<h3 class="accordion-section-title" tabindex="0">
-				<?php echo esc_html( $this->title ); ?>
-				<span class="screen-reader-text"><?php _e( 'Press return or enter to expand' ); ?></span>
+			<h3 class="accordion-section-title">
+				<?php
+				if ( $this->manager->is_theme_active() ) {
+					/* translators: %s: theme name */
+					printf( __( '<span>Active theme</span> %s' ), $this->title );
+				} else {
+					/* translators: %s: theme name */
+					printf( __( '<span>Previewing theme</span> %s' ), $this->title );
+				}
+				?>
+
+				<button type="button" class="button change-theme"><?php _ex( 'Change', 'theme' ); ?></button>
 			</h3>
-			<span class="control-panel-back themes-panel-back" tabindex="-1"><span class="screen-reader-text"><?php _e( 'Back' ); ?></span></span>
 			<div class="customize-themes-panel control-panel-content themes-php">
-				<h2><?php esc_html_e( 'Themes' ); ?>
-					<span class="title-count theme-count"><?php echo count( $this->controls ) - 1; ?></span>
-				<?php if ( ! is_multisite() && current_user_can( 'install_themes' ) ) : ?>
-					<a href="<?php echo admin_url( 'theme-install.php' ); ?>" target="_top" class="add-new-h2"><?php echo esc_html_x( 'Add New', 'Add new theme' ); ?></a>
-				<?php endif; ?>
+				<h2>
+					<?php _e( 'Themes' ); ?>
+					<span class="title-count theme-count"><?php echo count( $this->controls ) + 1 /* Active theme */; ?></span>
 				</h2>
-				<div class="theme-overlay" tabindex="0" role="dialog" aria-label="<?php esc_attr_e( 'Theme details' ); ?>"></div>
+
+				<h3 class="accordion-section-title customize-section-title">
+					<?php
+					if ( $this->manager->is_theme_active() ) {
+						/* translators: %s: theme name */
+						printf( __( '<span>Active theme</span> %s' ), $this->title );
+					} else {
+						/* translators: %s: theme name */
+						printf( __( '<span>Previewing theme</span> %s' ), $this->title );
+					}
+					?>
+					<button type="button" class="button customize-theme"><?php _e( 'Customize' ); ?></button>
+				</h3>
+
+				<div class="theme-overlay" tabindex="0" role="dialog" aria-label="<?php esc_attr_e( 'Theme Details' ); ?>"></div>
+
 				<div id="customize-container"></div>
-				<?php if ( 6 < count( $this->controls ) ) : ?>
+				<?php if ( count( $this->controls ) > 4 ) : ?>
 					<p><label for="themes-filter">
 						<span class="screen-reader-text"><?php _e( 'Search installed themes...' ); ?></span>
-						<input type="search" id="themes-filter" placeholder="<?php esc_attr_e( 'Search installed themes...' ); ?>" />
+						<input type="text" id="themes-filter" placeholder="<?php esc_attr_e( 'Search installed themes...' ); ?>" />
 					</label></p>
 				<?php endif; ?>
 				<div class="theme-browser rendered">

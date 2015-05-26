@@ -2,12 +2,10 @@
 	var encURI = window.encodeURIComponent,
 		form = document.createElement( 'form' ),
 		head = document.getElementsByTagName( 'head' )[0],
-		img = new Image(),
 		target = '_press_this_app',
 		canPost = true,
-		windowWidth, windowHeight,
-		metas, links, content, imgs, ifrs,
-		selection;
+		windowWidth, windowHeight, selection,
+		metas, links, content, images, iframes, img;
 
 	if ( ! pt_url ) {
 		return;
@@ -31,7 +29,7 @@
 		selection = document.selection.createRange().text || '';
 	}
 
-	pt_url += ( pt_url.indexOf( '?' ) > -1 ? '&' : '?' ) + 'buster=' + ( new Date().getTime() );
+	pt_url += '&buster=' + ( new Date().getTime() );
 
 	if ( ! canPost ) {
 		if ( document.title ) {
@@ -68,24 +66,20 @@
 		form.appendChild( input );
 	}
 
-	if ( href.match( /\/\/www\.youtube\.com\/watch/ ) ) {
-		add( '_embed[]', href );
-	} else if ( href.match( /\/\/vimeo\.com\/(.+\/)?([\d]+)$/ ) ) {
-		add( '_embed[]', href );
-	} else if ( href.match( /\/\/(www\.)?dailymotion\.com\/video\/.+$/ ) ) {
-		add( '_embed[]', href );
-	} else if ( href.match( /\/\/soundcloud\.com\/.+$/ ) ) {
-		add( '_embed[]', href );
-	} else if ( href.match( /\/\/twitter\.com\/[^\/]+\/status\/[\d]+$/ ) ) {
-		add( '_embed[]', href );
-	} else if ( href.match( /\/\/vine\.co\/v\/[^\/]+/ ) ) {
-		add( '_embed[]', href );
+	if ( href.match( /\/\/(www|m)\.youtube\.com\/watch/ ) ||
+		href.match( /\/\/vimeo\.com\/(.+\/)?([\d]+)$/ ) ||
+		href.match( /\/\/(www\.)?dailymotion\.com\/video\/.+$/ ) ||
+		href.match( /\/\/soundcloud\.com\/.+$/ ) ||
+		href.match( /\/\/twitter\.com\/[^\/]+\/status\/[\d]+$/ ) ||
+		href.match( /\/\/vine\.co\/v\/[^\/]+/ ) ) {
+
+		add( '_embeds[]', href );
 	}
 
 	metas = head.getElementsByTagName( 'meta' ) || [];
 
 	for ( var m = 0; m < metas.length; m++ ) {
-		if ( m >= 50 ) {
+		if ( m > 200 ) {
 			break;
 		}
 
@@ -94,10 +88,12 @@
 			q_prop = q.getAttribute( 'property' ),
 			q_cont = q.getAttribute( 'content' );
 
-		if ( q_name ) {
-			add( '_meta[' + q_name + ']', q_cont );
-		} else if ( q_prop ) {
-			add( '_meta[' + q_prop + ']', q_cont );
+		if ( q_cont ) {
+			if ( q_name ) {
+				add( '_meta[' + q_name + ']', q_cont );
+			} else if ( q_prop ) {
+				add( '_meta[' + q_prop + ']', q_cont );
+			}
 		}
 	}
 
@@ -111,20 +107,8 @@
 		var g = links[ y ],
 			g_rel = g.getAttribute( 'rel' );
 
-		if ( g_rel ) {
-			switch ( g_rel ) {
-				case 'canonical':
-				case 'icon':
-				case 'shortlink':
-					add( '_links[' + g_rel + ']', g.getAttribute( 'href' ) );
-					break;
-				case 'alternate':
-					if ( 'application/json+oembed' === g.getAttribute( 'type' ) ) {
-						add( '_links[' + g_rel + ']', g.getAttribute( 'href' ) );
-					} else if ( 'handheld' === g.getAttribute( 'media' ) ) {
-						add( '_links[' + g_rel + ']', g.getAttribute( 'href' ) );
-					}
-			}
+		if ( g_rel === 'canonical' || g_rel === 'icon' || g_rel === 'shortlink' ) {
+			add( '_links[' + g_rel + ']', g.getAttribute( 'href' ) );
 		}
 	}
 
@@ -133,32 +117,33 @@
 	}
 
 	content = document.getElementById( 'content' ) || content || document.body;
-	imgs = content.getElementsByTagName( 'img' ) || [];
+	images = content.getElementsByTagName( 'img' ) || [];
 
-	for ( var n = 0; n < imgs.length; n++ ) {
-		if ( n >= 50 ) {
+	for ( var n = 0; n < images.length; n++ ) {
+		if ( n >= 100 ) {
 			break;
 		}
 
-		if ( imgs[ n ].src.indexOf( 'avatar' ) > -1 || imgs[ n ].className.indexOf( 'avatar' ) > -1 ) {
+		img = images[ n ];
+
+		// If we know the image width and/or height, check them now and drop the "uninteresting" images.
+		if ( img.src.indexOf( 'avatar' ) > -1 || img.className.indexOf( 'avatar' ) > -1 ||
+			( img.width && img.width < 256 ) || ( img.height && img.height < 128 ) ) {
+
 			continue;
 		}
 
-		img.src = imgs[ n ].src;
-
-		if ( img.width >= 256 && img.height >= 128 ) {
-			add( '_img[]', img.src );
-		}
+		add( '_images[]', img.src );
 	}
 
-	ifrs = document.body.getElementsByTagName( 'iframe' ) || [];
+	iframes = document.body.getElementsByTagName( 'iframe' ) || [];
 
-	for ( var p = 0; p < ifrs.length; p++ ) {
+	for ( var p = 0; p < iframes.length; p++ ) {
 		if ( p >= 50 ) {
 			break;
 		}
 
-		add( '_embed[]', ifrs[ p ].src );
+		add( '_embeds[]', iframes[ p ].src );
 	}
 
 	if ( document.title ) {

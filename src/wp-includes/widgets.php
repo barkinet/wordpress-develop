@@ -6,8 +6,8 @@
  * This functionality was found in a plugin before WordPress 2.2 release which
  * included it in the core from that point on.
  *
- * @link http://codex.wordpress.org/Plugins/WordPress_Widgets WordPress Widgets
- * @link http://codex.wordpress.org/Plugins/WordPress_Widgets_Api Widgets API
+ * @link https://codex.wordpress.org/Plugins/WordPress_Widgets WordPress Widgets
+ * @link https://codex.wordpress.org/Plugins/WordPress_Widgets_Api Widgets API
  *
  * @package WordPress
  * @subpackage Widgets
@@ -569,8 +569,7 @@ class WP_Widget_Factory {
 	 * @param string $widget_class The name of a {@see WP_Widget} subclass.
 	 */
 	public function unregister( $widget_class ) {
-		if ( isset($this->widgets[$widget_class]) )
-			unset($this->widgets[$widget_class]);
+		unset( $this->widgets[ $widget_class ] );
 	}
 
 	/**
@@ -803,6 +802,8 @@ function register_sidebar($args = array()) {
 
 	$i = count($wp_registered_sidebars) + 1;
 
+	$id_is_empty = empty( $args['id'] );
+
 	$defaults = array(
 		'name' => sprintf(__('Sidebar %d'), $i ),
 		'id' => "sidebar-$i",
@@ -815,6 +816,11 @@ function register_sidebar($args = array()) {
 	);
 
 	$sidebar = wp_parse_args( $args, $defaults );
+
+	if ( $id_is_empty ) {
+		/* translators: 1: the id argument, 2: sidebar name, 3: recommended id value */
+		_doing_it_wrong( __FUNCTION__, sprintf( __( 'No %1$s was set in the arguments array for the "%2$s" sidebar. Defaulting to "%3$s". Manually set the %1$s to "%3$s" to silence this notice and keep existing sidebar content.' ), '<code>id</code>', $sidebar['name'], $sidebar['id'] ), '4.2.0' );
+	}
 
 	$wp_registered_sidebars[$sidebar['id']] = $sidebar;
 
@@ -844,8 +850,7 @@ function register_sidebar($args = array()) {
 function unregister_sidebar( $name ) {
 	global $wp_registered_sidebars;
 
-	if ( isset( $wp_registered_sidebars[$name] ) )
-		unset( $wp_registered_sidebars[$name] );
+	unset( $wp_registered_sidebars[ $name ] );
 }
 
 /**
@@ -886,12 +891,8 @@ function wp_register_sidebar_widget( $id, $name, $output_callback, $options = ar
 
 	$id_base = _get_widget_id_base($id);
 	if ( in_array($output_callback, $_wp_deprecated_widgets_callbacks, true) && !is_callable($output_callback) ) {
-		if ( isset($wp_registered_widget_controls[$id]) )
-			unset($wp_registered_widget_controls[$id]);
-
-		if ( isset($wp_registered_widget_updates[$id_base]) )
-			unset($wp_registered_widget_updates[$id_base]);
-
+		unset( $wp_registered_widget_controls[ $id ] );
+		unset( $wp_registered_widget_updates[ $id_base ] );
 		return;
 	}
 
@@ -1017,9 +1018,7 @@ function wp_register_widget_control( $id, $name, $control_callback, $options = a
 	}
 
 	if ( in_array($control_callback, $_wp_deprecated_widgets_callbacks, true) && !is_callable($control_callback) ) {
-		if ( isset($wp_registered_widgets[$id]) )
-			unset($wp_registered_widgets[$id]);
-
+		unset( $wp_registered_widgets[ $id ] );
 		return;
 	}
 

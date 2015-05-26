@@ -32,7 +32,7 @@ var findPosts;
 		},
 
 		close: function() {
-			$('#find-posts-response').html('');
+			$('#find-posts-response').empty();
 			$('#find-posts').hide();
 			$( '.ui-find-overlay' ).hide();
 		},
@@ -51,14 +51,14 @@ var findPosts;
 				},
 				spinner = $( '.find-box-search .spinner' );
 
-			spinner.show();
+			spinner.addClass( 'is-active' );
 
 			$.ajax( ajaxurl, {
 				type: 'POST',
 				data: post,
 				dataType: 'json'
 			}).always( function() {
-				spinner.hide();
+				spinner.removeClass( 'is-active' );
 			}).done( function( x ) {
 				if ( ! x.success ) {
 					$( '#find-posts-response' ).text( attachMediaBoxL10n.error );
@@ -72,13 +72,7 @@ var findPosts;
 	};
 
 	$( document ).ready( function() {
-		var settings,
-			$mediaGridWrap = $( '#wp-media-grid' ),
-			$form = $( '#posts-filter' );
-
-		$form.find( 'select' ).on( 'change', function () {
-			$form.submit();
-		} );
+		var settings, $mediaGridWrap = $( '#wp-media-grid' );
 
 		// Open up a manage media frame into the grid.
 		if ( $mediaGridWrap.length && window.wp && window.wp.media ) {

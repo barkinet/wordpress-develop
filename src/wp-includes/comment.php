@@ -161,7 +161,8 @@ function get_approved_comments( $post_id, $args = array() ) {
  *
  * @since 2.0.0
  *
- * @global wpdb $wpdb WordPress database abstraction object.
+ * @global wpdb   $wpdb WordPress database abstraction object.
+ * @global object $comment
  *
  * @param object|string|int $comment Comment to retrieve.
  * @param string $output Optional. OBJECT or ARRAY_A or ARRAY_N constants.
@@ -218,9 +219,7 @@ function get_comment(&$comment, $output = OBJECT) {
  *
  * @since 2.7.0
  *
- * @global wpdb $wpdb WordPress database abstraction object.
- *
- * @param string|array $args Optional. Array or string of arguments. See {@see WP_Comment_Query::query()}
+ * @param string|array $args Optional. Array or string of arguments. See {@see WP_Comment_Query::parse_query()}
  *                           for information on accepted arguments. Default empty.
  * @return int|array List of comments or number of found comments if `$count` argument is true.
  */
@@ -232,7 +231,7 @@ function get_comments( $args = '' ) {
 /**
  * WordPress Comment Query class.
  *
- * See {@see WP_Comment_Query::query()} for accepted arguments.
+ * See WP_Comment_Query::__construct() for accepted arguments.
  *
  * @since 3.1.0
  */
@@ -265,11 +264,28 @@ class WP_Comment_Query {
 	public $date_query = false;
 
 	/**
+	 * Query vars set by the user.
+	 *
+	 * @since 3.1.0
+	 * @access public
 	 * @var array
 	 */
 	public $query_vars;
 
 	/**
+	 * Default values for query vars.
+	 *
+	 * @since 4.2.0
+	 * @access public
+	 * @var array
+	 */
+	public $query_var_defaults;
+
+	/**
+	 * List of comments located by the query.
+	 *
+	 * @since 4.0.0
+	 * @access public
 	 * @var array
 	 */
 	public $comments;
@@ -282,7 +298,7 @@ class WP_Comment_Query {
 	 *
 	 * @param callable $name      Method to call.
 	 * @param array    $arguments Arguments to pass when calling.
-	 * @return mixed|bool Return value of the callback, false otherwise.
+	 * @return mixed|false Return value of the callback, false otherwise.
 	 */
 	public function __call( $name, $arguments ) {
 		if ( 'get_search_sql' === $name ) {
@@ -292,16 +308,15 @@ class WP_Comment_Query {
 	}
 
 	/**
-	 * Execute the query
+	 * Constructor.
 	 *
-	 * @since 3.1.0
-	 * @since 4.1.0 Introduced 'comment__in', 'comment__not_in', 'post_author__in',
-	 *              'post_author__not_in', 'author__in', 'author__not_in', 'post__in',
-	 *              'post__not_in', 'include_unapproved', 'type__in', and 'type__not_in'
-	 *              arguments to $query_vars.
+	 * Sets up the comment query, based on the query vars passed.
 	 *
-	 * @param string|array $query_vars {
-	 *     Optional. Array or query string of comment query parameters.
+	 * @since  4.2.0
+	 * @access public
+	 *
+	 * @param string|array $query {
+	 *     Optional. Array or query string of comment query parameters. Default empty.
 	 *
 	 *     @type string       $author_email        Comment author email address. Default empty.
 	 *     @type array        $author__in          Array of author IDs to include comments for. Default empty.
@@ -310,7 +325,7 @@ class WP_Comment_Query {
 	 *     @type array        $comment__not_in     Array of comment IDs to exclude. Default empty.
 	 *     @type bool         $count               Whether to return a comment count (true) or array of comment
 	 *                                             objects (false). Default false.
-	 *     @type array        $date_query          Date query clauses to limit comments by. See {@see WP_Date_Query}.
+	 *     @type array        $date_query          Date query clauses to limit comments by. See WP_Date_Query.
 	 *                                             Default null.
 	 *     @type string       $fields              Comment fields to return. Accepts 'ids' for comment IDs only or
 	 *                                             empty for all fields. Default empty.
@@ -322,7 +337,7 @@ class WP_Comment_Query {
 	 *     @type string       $meta_value          Include comments with a matching comment meta value. Requires
 	 *                                             `$meta_key` to be set. Default empty.
 	 *     @type array        $meta_query          Meta query clauses to limit retrieved comments by.
-	 *                                             See {@see WP_Meta_Query}. Default empty.
+	 *                                             See WP_Meta_Query. Default empty.
 	 *     @type int          $number              Maximum number of comments to retrieve. Default null (no limit).
 	 *     @type int          $offset              Number of comments to offset the query. Used to build LIMIT clause.
 	 *                                             Default 0.
@@ -363,12 +378,9 @@ class WP_Comment_Query {
 	 *     @type array        $type__not_in        Exclude comments from a given array of comment types. Default empty.
 	 *     @type int          $user_id             Include comments for a specific user ID. Default empty.
 	 * }
-	 * @return int|array Array of comments or number of found comments if `$count` is set to true.
 	 */
-	public function query( $query_vars ) {
-		global $wpdb;
-
-		$defaults = array(
+	public function __construct( $query = '' ) {
+		$this->query_var_defaults = array(
 			'author_email' => '',
 			'author__in' => '',
 			'author__not_in' => '',
@@ -407,9 +419,64 @@ class WP_Comment_Query {
 			'date_query' => null, // See WP_Date_Query
 		);
 
+		if ( ! empty( $query ) ) {
+			$this->query( $query );
+		}
+	}
+
+	/**
+	 * Parse arguments passed to the comment query with default query parameters.
+	 *
+	 * @since  4.2.0 Extracted from WP_Comment_Query::query().
+	 *
+	 * @access public
+	 *
+	 * @param string|array $query WP_Comment_Query arguments. See WP_Comment_Query::__construct()
+	 */
+	public function parse_query( $query = '' ) {
+		if ( empty( $query ) ) {
+			$query = $this->query_vars;
+		}
+
+		$this->query_vars = wp_parse_args( $query, $this->query_var_defaults );
+		do_action_ref_array( 'parse_comment_query', array( &$this ) );
+	}
+
+	/**
+	 * Sets up the WordPress query for retrieving comments.
+	 *
+	 * @since 3.1.0
+	 * @since 4.1.0 Introduced 'comment__in', 'comment__not_in', 'post_author__in',
+	 *              'post_author__not_in', 'author__in', 'author__not_in', 'post__in',
+	 *              'post__not_in', 'include_unapproved', 'type__in', and 'type__not_in'
+	 *              arguments to $query_vars.
+	 * @since 4.2.0 Moved parsing to WP_Comment_Query::parse_query().
+	 * @access public
+	 *
+	 * @param string|array $query Array or URL query string of parameters.
+	 * @return array|int List of comments, or number of comments when 'count' is passed as a query var.
+	 */
+	public function query( $query ) {
+		$this->query_vars = wp_parse_args( $query );
+		return $this->get_comments();
+	}
+
+	/**
+	 * Get a list of comments matching the query vars.
+	 *
+	 * @since 4.2.0
+	 * @access public
+	 *
+	 * @global wpdb $wpdb WordPress database abstraction object.
+	 *
+	 * @return int|array The list of comments.
+	 */
+	public function get_comments() {
+		global $wpdb;
+
 		$groupby = '';
 
-		$this->query_vars = wp_parse_args( $query_vars, $defaults );
+		$this->parse_query();
 
 		// Parse meta query
 		$this->meta_query = new WP_Meta_Query();
@@ -428,8 +495,8 @@ class WP_Comment_Query {
 		 */
 		do_action_ref_array( 'pre_get_comments', array( &$this ) );
 
-		// $args can be whatever, only use the args defined in defaults to compute the key
-		$key = md5( serialize( wp_array_slice_assoc( $this->query_vars, array_keys( $defaults ) ) )  );
+		// $args can include anything. Only use the args defined in the query_var_defaults to compute the key.
+		$key = md5( serialize( wp_array_slice_assoc( $this->query_vars, array_keys( $this->query_var_defaults ) ) ) );
 		$last_changed = wp_cache_get( 'last_changed', 'comment' );
 		if ( ! $last_changed ) {
 			$last_changed = microtime();
@@ -438,7 +505,8 @@ class WP_Comment_Query {
 		$cache_key = "get_comments:$key:$last_changed";
 
 		if ( $cache = wp_cache_get( $cache_key, 'comment' ) ) {
-			return $cache;
+			$this->comments = $cache;
+			return $this->comments;
 		}
 
 		$where = array();
@@ -628,12 +696,12 @@ class WP_Comment_Query {
 
 		// Parse comment IDs for an IN clause.
 		if ( ! empty( $this->query_vars['comment__in'] ) ) {
-			$where[] = 'comment_ID IN ( ' . implode( ',', wp_parse_id_list( $this->query_vars['comment__in'] ) ) . ' )';
+			$where[] = "$wpdb->comments.comment_ID IN ( " . implode( ',', wp_parse_id_list( $this->query_vars['comment__in'] ) ) . ' )';
 		}
 
 		// Parse comment IDs for a NOT IN clause.
 		if ( ! empty( $this->query_vars['comment__not_in'] ) ) {
-			$where[] = 'comment_ID NOT IN ( ' . implode( ',', wp_parse_id_list( $this->query_vars['comment__not_in'] ) ) . ' )';
+			$where[] = "$wpdb->comments.comment_ID NOT IN ( " . implode( ',', wp_parse_id_list( $this->query_vars['comment__not_in'] ) ) . ' )';
 		}
 
 		// Parse comment post IDs for an IN clause.
@@ -826,14 +894,17 @@ class WP_Comment_Query {
 
 		wp_cache_add( $cache_key, $comments, 'comment' );
 
-		return $comments;
+		$this->comments = $comments;
+		return $this->comments;
 	}
 
 	/**
 	 * Used internally to generate an SQL string for searching across multiple columns
 	 *
-	 * @access protected
 	 * @since 3.1.0
+	 * @access protected
+	 *
+	 * @global wpdb $wpdb
 	 *
 	 * @param string $string
 	 * @param array $cols
@@ -861,7 +932,7 @@ class WP_Comment_Query {
 	 * @global wpdb $wpdb WordPress database abstraction object.
 	 *
 	 * @param string $orderby Alias for the field to order by.
-	 * @return string|bool Value to used in the ORDER clause. False otherwise.
+	 * @return string|false Value to used in the ORDER clause. False otherwise.
 	 */
 	protected function parse_orderby( $orderby ) {
 		global $wpdb;
@@ -963,6 +1034,7 @@ function get_comment_statuses() {
  * @since 1.5.0
  *
  * @global wpdb $wpdb WordPress database abstraction object.
+ * @staticvar array $cache_lastcommentmodified
  *
  * @param string $timezone Which timezone to use in reference to 'gmt', 'blog',
  *		or 'server' locations.
@@ -1062,7 +1134,7 @@ function get_comment_count( $post_id = 0 ) {
  * Add meta data field to a comment.
  *
  * @since 2.9.0
- * @link http://codex.wordpress.org/Function_Reference/add_comment_meta
+ * @link https://codex.wordpress.org/Function_Reference/add_comment_meta
  *
  * @param int $comment_id Comment ID.
  * @param string $meta_key Metadata name.
@@ -1082,7 +1154,7 @@ function add_comment_meta($comment_id, $meta_key, $meta_value, $unique = false) 
  * allows removing all metadata matching key, if needed.
  *
  * @since 2.9.0
- * @link http://codex.wordpress.org/Function_Reference/delete_comment_meta
+ * @link https://codex.wordpress.org/Function_Reference/delete_comment_meta
  *
  * @param int $comment_id comment ID
  * @param string $meta_key Metadata name.
@@ -1097,7 +1169,7 @@ function delete_comment_meta($comment_id, $meta_key, $meta_value = '') {
  * Retrieve comment meta field for a comment.
  *
  * @since 2.9.0
- * @link http://codex.wordpress.org/Function_Reference/get_comment_meta
+ * @link https://codex.wordpress.org/Function_Reference/get_comment_meta
  *
  * @param int $comment_id Comment ID.
  * @param string $key Optional. The meta key to retrieve. By default, returns data for all keys.
@@ -1118,7 +1190,7 @@ function get_comment_meta($comment_id, $key = '', $single = false) {
  * If the meta field for the comment does not exist, it will be added.
  *
  * @since 2.9.0
- * @link http://codex.wordpress.org/Function_Reference/update_comment_meta
+ * @link https://codex.wordpress.org/Function_Reference/update_comment_meta
  *
  * @param int $comment_id Comment ID.
  * @param string $meta_key Metadata key.
@@ -1225,7 +1297,7 @@ function sanitize_comment_cookies() {
  * @global wpdb $wpdb WordPress database abstraction object.
  *
  * @param array $commentdata Contains information on the comment
- * @return mixed Signifies the approval status (0|1|'spam')
+ * @return int|string Signifies the approval status (0|1|'spam')
  */
 function wp_allow_comment( $commentdata ) {
 	global $wpdb;
@@ -1413,6 +1485,8 @@ function separate_comments(&$comments) {
  *
  * @uses Walker_Comment
  *
+ * @global WP_Query $wp_query
+ *
  * @param array $comments Optional array of comment objects. Defaults to $wp_query->comments
  * @param int $per_page Optional comments per page.
  * @param boolean $threaded Optional control over flat or threaded comments.
@@ -1457,6 +1531,8 @@ function get_comment_pages_count( $comments = null, $per_page = null, $threaded 
  * Calculate what page number a comment will appear on for comment paging.
  *
  * @since 2.7.0
+ *
+ * @global wpdb $wpdb
  *
  * @param int $comment_ID Comment ID.
  * @param array $args Optional args.
@@ -1580,8 +1656,10 @@ function wp_blacklist_check($author, $email, $url, $comment, $user_ip, $user_age
  *
  * @since 2.5.0
  *
+ * @global wpdb $wpdb
+ *
  * @param int $post_id Optional. Post ID.
- * @return object Comment stats.
+ * @return object|array Comment stats.
  */
 function wp_count_comments( $post_id = 0 ) {
 	global $wpdb;
@@ -2013,17 +2091,36 @@ function wp_get_current_commenter() {
 }
 
 /**
- * Inserts a comment to the database.
- *
- * The available comment data key names are 'comment_author_IP', 'comment_date',
- * 'comment_date_gmt', 'comment_parent', 'comment_approved', and 'user_id'.
+ * Inserts a comment into the database.
  *
  * @since 2.0.0
  *
  * @global wpdb $wpdb WordPress database abstraction object.
  *
- * @param array $commentdata Contains information on the comment.
- * @return int|bool The new comment's ID on success, false on failure.
+ * @param array $commentdata {
+ *     Array of arguments for inserting a new comment.
+ *
+ *     @type string     $comment_agent        The HTTP user agent of the `$comment_author` when
+ *                                            the comment was submitted. Default empty.
+ *     @type int|string $comment_approved     Whether the comment has been approved. Default 1.
+ *     @type string     $comment_author       The name of the author of the comment. Default empty.
+ *     @type string     $comment_author_email The email address of the `$comment_author`. Default empty.
+ *     @type string     $comment_author_IP    The IP address of the `$comment_author`. Default empty.
+ *     @type string     $comment_author_url   The URL address of the `$comment_author`. Default empty.
+ *     @type string     $comment_content      The content of the comment. Default empty.
+ *     @type string     $comment_date         The date the comment was submitted. To set the date
+ *                                            manually, `$comment_date_gmt` must also be specified.
+ *                                            Default is the current time.
+ *     @type string     $comment_date_gmt     The date the comment was submitted in the GMT timezone.
+ *                                            Default is `$comment_date` in the site's GMT timezone.
+ *     @type int        $comment_karma        The karma of the comment. Default 0.
+ *     @type int        $comment_parent       ID of this comment's parent, if any. Default 0.
+ *     @type int        $comment_post_ID      ID of the post that relates to the comment, if any.
+ *                                            Default empty.
+ *     @type string     $comment_type         Comment type. Default empty.
+ *     @type int        $user_id              ID of the user who submitted the comment. Default 0.
+ * }
+ * @return int|false The new comment's ID on success, false on failure.
  */
 function wp_insert_comment( $commentdata ) {
 	global $wpdb;
@@ -2049,17 +2146,7 @@ function wp_insert_comment( $commentdata ) {
 
 	$compacted = compact( 'comment_post_ID', 'comment_author', 'comment_author_email', 'comment_author_url', 'comment_author_IP', 'comment_date', 'comment_date_gmt', 'comment_content', 'comment_karma', 'comment_approved', 'comment_agent', 'comment_type', 'comment_parent', 'user_id' );
 	if ( ! $wpdb->insert( $wpdb->comments, $compacted ) ) {
-		$fields = array( 'comment_author', 'comment_author_email', 'comment_author_url', 'comment_content' );
-
-		foreach( $fields as $field ) {
-			if ( isset( $compacted[ $field ] ) ) {
-				$compacted[ $field ] = $wpdb->strip_invalid_text_for_column( $wpdb->comments, $field, $compacted[ $field ] );
-			}
-		}
-
-		if ( ! $wpdb->insert( $wpdb->comments, $compacted ) ) {
-			return false;
-		}
+		return false;
 	}
 
 	$id = (int) $wpdb->insert_id;
@@ -2179,10 +2266,18 @@ function wp_throttle_comment_flood($block, $time_lastcomment, $time_newcomment) 
  * See {@link https://core.trac.wordpress.org/ticket/9235}
  *
  * @since 1.5.0
- * @param array $commentdata Contains information on the comment.
- * @return int|bool The ID of the comment on success, false on failure.
+ *
+ * @see wp_insert_comment()
+ *
+ * @global wpdb $wpdb
+ *
+ * @param array $commentdata Contains information on the comment. See wp_insert_comment()
+ *                           for information on accepted arguments.
+ * @return int|false The ID of the comment on success, false on failure.
  */
 function wp_new_comment( $commentdata ) {
+	global $wpdb;
+
 	if ( isset( $commentdata['user_ID'] ) ) {
 		$commentdata['user_id'] = $commentdata['user_ID'] = (int) $commentdata['user_ID'];
 	}
@@ -2226,7 +2321,22 @@ function wp_new_comment( $commentdata ) {
 
 	$comment_ID = wp_insert_comment($commentdata);
 	if ( ! $comment_ID ) {
-		return false;
+		$fields = array( 'comment_author', 'comment_author_email', 'comment_author_url', 'comment_content' );
+
+		foreach( $fields as $field ) {
+			if ( isset( $commentdata[ $field ] ) ) {
+				$commentdata[ $field ] = $wpdb->strip_invalid_text_for_column( $wpdb->comments, $field, $commentdata[ $field ] );
+			}
+		}
+
+		$commentdata = wp_filter_comment( $commentdata );
+
+		$commentdata['comment_approved'] = wp_allow_comment( $commentdata );
+
+		$comment_ID = wp_insert_comment( $commentdata );
+		if ( ! $comment_ID ) {
+			return false;
+		}
 	}
 
 	/**
@@ -2261,6 +2371,8 @@ function wp_new_comment( $commentdata ) {
  * If the comment status is not in the list, then false is returned.
  *
  * @since 1.0.0
+ *
+ * global wpdb $wpdb
  *
  * @param int $comment_id Comment ID.
  * @param string $comment_status New comment status, either 'hold', 'approve', 'spam', or 'trash'.
@@ -2448,7 +2560,7 @@ function wp_defer_comment_counting($defer=null) {
  *
  * @param int $post_id Post ID
  * @param bool $do_deferred Whether to process previously deferred post comment counts
- * @return bool|null True on success, false on failure
+ * @return bool|void True on success, false on failure
  */
 function wp_update_comment_count($post_id, $do_deferred=false) {
 	static $_deferred = array();
@@ -2691,7 +2803,8 @@ function generic_ping( $post_id = 0 ) {
  * Pings back the links found in a post.
  *
  * @since 0.71
- * @uses $wp_version
+ *
+ * @global string $wp_version
  *
  * @param string $content Post content to check for links.
  * @param int $post_ID Post ID.
@@ -2804,7 +2917,7 @@ function privacy_ping_filter($sites) {
  * @param string $title Title of post.
  * @param string $excerpt Excerpt of post.
  * @param int $ID Post ID.
- * @return mixed Database query from update.
+ * @return int|false|void Database query from update.
  */
 function trackback($trackback_url, $title, $excerpt, $ID) {
 	global $wpdb;
@@ -2834,7 +2947,8 @@ function trackback($trackback_url, $title, $excerpt, $ID) {
  * Send a pingback.
  *
  * @since 1.2.0
- * @uses $wp_version
+ *
+ * @global string $wp_version
  *
  * @param string $server Host of blog to connect to.
  * @param string $path Path to send the ping.
@@ -2931,9 +3045,9 @@ function update_comment_cache($comments) {
  * @access private
  * @since 2.7.0
  *
- * @param object $posts Post data object.
- * @param object $query Query object.
- * @return object
+ * @param WP_Post  $posts Post data object.
+ * @param WP_Query $query Query object.
+ * @return array
  */
 function _close_comments_for_old_posts( $posts, $query ) {
 	if ( empty( $posts ) || ! $query->is_singular() || ! get_option( 'close_comments_for_old_posts' ) )

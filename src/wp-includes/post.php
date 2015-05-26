@@ -1603,7 +1603,7 @@ function _post_type_meta_capabilities( $capabilities = null ) {
  * - singular_name - name for one object of this post type. Default is Post/Page
  * - add_new - Default is Add New for both hierarchical and non-hierarchical types.
  *             When internationalizing this string, please use a gettext context
- *             {@link http://codex.wordpress.org/I18n_for_WordPress_Developers#Disambiguation_by_context}
+ *             {@link https://codex.wordpress.org/I18n_for_WordPress_Developers#Disambiguation_by_context}
  *             matching your post type. Example: `_x( 'Add New', 'product' );`.
  * - add_new_item - Default is Add New Post/Add New Page.
  * - edit_item - Default is Edit Post/Edit Page.
@@ -1755,8 +1755,7 @@ function add_post_type_support( $post_type, $feature ) {
 function remove_post_type_support( $post_type, $feature ) {
 	global $_wp_post_type_features;
 
-	if ( isset( $_wp_post_type_features[$post_type][$feature] ) )
-		unset( $_wp_post_type_features[$post_type][$feature] );
+	unset( $_wp_post_type_features[ $post_type ][ $feature ] );
 }
 
 /**
@@ -3048,6 +3047,7 @@ function wp_get_recent_posts( $args = array(), $output = ARRAY_A ) {
  * setting the value for 'comment_status' key.
  *
  * @since 1.0.0
+ * @since 4.2.0 Support was added for encoding emoji in the post title, content, and excerpt.
  *
  * @see sanitize_post()
  * @global wpdb $wpdb WordPress database abstraction object.
@@ -3328,6 +3328,17 @@ function wp_insert_post( $postarr, $wp_error = false ) {
 
 	// Expected_slashed (everything!).
 	$data = compact( 'post_author', 'post_date', 'post_date_gmt', 'post_content', 'post_content_filtered', 'post_title', 'post_excerpt', 'post_status', 'post_type', 'comment_status', 'ping_status', 'post_password', 'post_name', 'to_ping', 'pinged', 'post_modified', 'post_modified_gmt', 'post_parent', 'menu_order', 'post_mime_type', 'guid' );
+
+	$emoji_fields = array( 'post_title', 'post_content', 'post_excerpt' );
+
+	foreach( $emoji_fields as $emoji_field ) {
+		if ( isset( $data[ $emoji_field ] ) ) {
+			$charset = $wpdb->get_col_charset( $wpdb->posts, $emoji_field );
+			if ( 'utf8' === $charset ) {
+				$data[ $emoji_field ] = wp_encode_emoji( $data[ $emoji_field ] );
+			}
+		}
+	}
 
 	if ( 'attachment' === $post_type ) {
 		/**
@@ -4305,25 +4316,38 @@ function get_page_by_title( $page_title, $output = OBJECT, $post_type = 'page' )
 }
 
 /**
- * Retrieve child pages from list of pages matching page ID.
+ * Identify descendants of a given page ID in a list of page objects.
  *
- * Matches against the pages parameter against the page ID. Also matches all
- * children for the same to retrieve all children of a page. Does not make any
- * SQL queries to get the children.
+ * Descendants are identified from the `$pages` array passed to the function. No database queries are performed.
  *
  * @since 1.5.1
  *
- * @param int   $page_id    Page ID.
- * @param array $pages      List of pages' objects.
+ * @param int   $page_id Page ID.
+ * @param array $pages   List of page objects from which descendants should be identified.
  * @return array List of page children.
  */
 function get_page_children( $page_id, $pages ) {
-	$page_list = array();
+	// Build a hash of ID -> children.
+	$children = array();
 	foreach ( (array) $pages as $page ) {
-		if ( $page->post_parent == $page_id ) {
-			$page_list[] = $page;
-			if ( $children = get_page_children( $page->ID, $pages ) ) {
-				$page_list = array_merge( $page_list, $children );
+		$children[ intval( $page->post_parent ) ][] = $page;
+	}
+
+	$page_list = array();
+
+	// Start the search by looking at immediate children.
+	if ( isset( $children[ $page_id ] ) ) {
+		// Always start at the end of the stack in order to preserve original `$pages` order.
+		$to_look = array_reverse( $children[ $page_id ] );
+
+		while ( $to_look ) {
+			$p = array_pop( $to_look );
+			$page_list[] = $p;
+			if ( isset( $children[ $p->ID ] ) ) {
+				foreach ( array_reverse( $children[ $p->ID ] ) as $child ) {
+					// Append to the `$to_look` stack to descend the tree.
+					$to_look[] = $child;
+				}
 			}
 		}
 	}
@@ -4587,7 +4611,7 @@ function get_pages( $args = array() ) {
 	}
 
 	if ( 1 == count( $post_status ) ) {
-		$where_post_type = $wpdb->prepare( "post_type = %s AND post_status = %s", $r['post_type'], array_shift( $post_status ) );
+		$where_post_type = $wpdb->prepare( "post_type = %s AND post_status = %s", $r['post_type'], reset( $post_status ) );
 	} else {
 		$post_status = implode( "', '", $post_status );
 		$where_post_type = $wpdb->prepare( "post_type = %s AND post_status IN ('$post_status')", $r['post_type'] );
@@ -4980,12 +5004,9 @@ function wp_get_attachment_url( $post_id = 0 ) {
 		$url = get_the_guid( $post->ID );
 	}
 
-	/*
-	 * If currently on SSL, prefer HTTPS URLs when we know they're supported by the domain
-	 * (which is to say, when they share the domain name of the current SSL page).
-	 */
-	if ( is_ssl() && 'https' !== substr( $url, 0, 5 ) && parse_url( $url, PHP_URL_HOST ) === $_SERVER['HTTP_HOST'] ) {
-		$url = set_url_scheme( $url, 'https' );
+	// On SSL front-end, URLs should be HTTPS.
+	if ( is_ssl() && ! is_admin() && 'wp-login.php' !== $GLOBALS['pagenow'] ) {
+		$url = set_url_scheme( $url );
 	}
 
 	/**
@@ -5123,7 +5144,8 @@ function wp_attachment_is( $type, $post_id = 0 ) {
  * Checks if the attachment is an image.
  *
  * @since 2.1.0
- * @since 4.2.0 Modified into wrapper for wp_attachment_is()
+ * @since 4.2.0 Modified into wrapper for wp_attachment_is() and
+ *              allowed WP_Post object to be passed.
  *
  * @param int|WP_Post $post Optional. Attachment ID. Default 0.
  * @return bool Whether the attachment is an image.
@@ -5303,8 +5325,9 @@ function wp_check_for_changed_slugs( $post_id, $post, $post_before ) {
  * published posts, and all private posts to which the user has access.
  *
  * @since 2.2.0
+ * @since 4.3.0 Added the ability to pass an array to `$post_type`.
  *
- * @param string $post_type Post type. Currently only supports 'post' or 'page'.
+ * @param string|array $post_type Single post type or an array of post types. Currently only supports 'post' or 'page'.
  * @return string SQL code that can be added to a where clause.
  */
 function get_private_posts_cap_sql( $post_type ) {
@@ -5315,62 +5338,76 @@ function get_private_posts_cap_sql( $post_type ) {
  * Retrieve the post SQL based on capability, author, and type.
  *
  * @since 3.0.0
+ * @since 4.3.0 Introduced the ability to pass an array of post types to `$post_type`.
  *
  * @see get_private_posts_cap_sql()
  *
- * @param string $post_type   Post type.
- * @param bool   $full        Optional. Returns a full WHERE statement instead of just
- *                            an 'andalso' term. Default true.
- * @param int    $post_author Optional. Query posts having a single author ID. Default null.
- * @param bool   $public_only Optional. Only return public posts. Skips cap checks for
- *                            $current_user.  Default false.
+ * @param array|string   $post_type   Single post type or an array of post types.
+ * @param bool           $full        Optional. Returns a full WHERE statement instead of just
+ *                                    an 'andalso' term. Default true.
+ * @param int            $post_author Optional. Query posts having a single author ID. Default null.
+ * @param bool           $public_only Optional. Only return public posts. Skips cap checks for
+ *                                    $current_user.  Default false.
  * @return string SQL WHERE code that can be added to a query.
  */
 function get_posts_by_author_sql( $post_type, $full = true, $post_author = null, $public_only = false ) {
 	global $wpdb;
 
-	// Private posts.
-	$post_type_obj = get_post_type_object( $post_type );
-	if ( ! $post_type_obj )
-		return $full ? 'WHERE 1 = 0' : ' 1 = 0 ';
-
-	/**
-	 * Filter the capability to read private posts for a custom post type
-	 * when generating SQL for getting posts by author.
-	 *
-	 * @since 2.2.0
-	 * @deprecated 3.2.0 The hook transitioned from "somewhat useless" to "totally useless".
-	 *
-	 * @param string $cap Capability.
-	 */
-	if ( ! $cap = apply_filters( 'pub_priv_sql_capability', '' ) ) {
-		$cap = $post_type_obj->cap->read_private_posts;
+	if ( is_array( $post_type ) ) {
+		$post_types = $post_type;
+	} else {
+		$post_types = array( $post_type );
 	}
 
-	$sql = $wpdb->prepare( 'post_type = %s', $post_type );
+	$post_type_clauses = array();
+	foreach ( $post_types as $post_type ) {
+		$post_type_obj = get_post_type_object( $post_type );
+		if ( ! $post_type_obj ) {
+			continue;
+		}
+
+		/**
+		 * Filter the capability to read private posts for a custom post type
+		 * when generating SQL for getting posts by author.
+		 *
+		 * @since 2.2.0
+		 * @deprecated 3.2.0 The hook transitioned from "somewhat useless" to "totally useless".
+		 *
+		 * @param string $cap Capability.
+		 */
+		if ( ! $cap = apply_filters( 'pub_priv_sql_capability', '' ) ) {
+			$cap = current_user_can( $post_type_obj->cap->read_private_posts );
+		}
+
+		// Only need to check the cap if $public_only is false.
+		$post_status_sql = "post_status = 'publish'";
+		if ( false === $public_only ) {
+			if ( $cap ) {
+				// Does the user have the capability to view private posts? Guess so.
+				$post_status_sql .= " OR post_status = 'private'";
+			} elseif ( is_user_logged_in() ) {
+				// Users can view their own private posts.
+				$id = get_current_user_id();
+				if ( null === $post_author || ! $full ) {
+					$post_status_sql .= " OR post_status = 'private' AND post_author = $id";
+				} elseif ( $id == (int) $post_author ) {
+					$post_status_sql .= " OR post_status = 'private'";
+				} // else none
+			} // else none
+		}
+
+		$post_type_clauses[] = "( post_type = '" . $post_type . "' AND ( $post_status_sql ) )";
+	}
+
+	if ( empty( $post_type_clauses ) ) {
+		return $full ? 'WHERE 1 = 0' : '1 = 0';
+	}
+
+	$sql = '( '. implode( ' OR ', $post_type_clauses ) . ' )';
 
 	if ( null !== $post_author ) {
 		$sql .= $wpdb->prepare( ' AND post_author = %d', $post_author );
 	}
-
-	// Only need to check the cap if $public_only is false.
-	$post_status_sql = "post_status = 'publish'";
-	if ( false === $public_only ) {
-		if ( current_user_can( $cap ) ) {
-			// Does the user have the capability to view private posts? Guess so.
-			$post_status_sql .= " OR post_status = 'private'";
-		} elseif ( is_user_logged_in() ) {
-			// Users can view their own private posts.
-			$id = get_current_user_id();
-			if ( null === $post_author || ! $full ) {
-				$post_status_sql .= " OR post_status = 'private' AND post_author = $id";
-			} elseif ( $id == (int) $post_author ) {
-				$post_status_sql .= " OR post_status = 'private'";
-			} // else none
-		} // else none
-	}
-
-	$sql .= " AND ($post_status_sql)";
 
 	if ( $full ) {
 		$sql = 'WHERE ' . $sql;

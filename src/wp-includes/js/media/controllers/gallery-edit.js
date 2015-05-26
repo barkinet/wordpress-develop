@@ -18,6 +18,7 @@
  * @param {boolean}                    [attributes.multiple=false]        Whether multi-select is enabled.
  * @param {boolean}                    [attributes.searchable=false]      Whether the library is searchable.
  * @param {boolean}                    [attributes.sortable=true]         Whether the Attachments should be sortable. Depends on the orderby property being set to menuOrder on the attachments collection.
+ * @param {boolean}                    [attributes.date=true]             Whether to show the date filter in the browser's toolbar.
  * @param {string|false}               [attributes.content=browse]        Initial mode for the content region.
  * @param {string|false}               [attributes.toolbar=image-details] Initial mode for the toolbar region.
  * @param {boolean}                    [attributes.describe=true]         Whether to offer UI to describe attachments - e.g. captioning images in a gallery.
@@ -31,9 +32,7 @@
  * @param {view}                       [attributes.AttachmentView]        The single `Attachment` view to be used in the `Attachments`.
  *                                                                        If none supplied, defaults to wp.media.view.Attachment.EditLibrary.
  */
-var Library = require( './library.js' ),
-	EditLibraryView = require( '../views/attachment/edit-library.js' ),
-	GallerySettingsView = require( '../views/settings/gallery.js' ),
+var Library = wp.media.controller.Library,
 	l10n = wp.media.view.l10n,
 	GalleryEdit;
 
@@ -44,6 +43,7 @@ GalleryEdit = Library.extend({
 		multiple:         false,
 		searchable:       false,
 		sortable:         true,
+		date:             false,
 		display:          false,
 		content:          'browse',
 		toolbar:          'gallery-edit',
@@ -67,7 +67,7 @@ GalleryEdit = Library.extend({
 
 		// The single `Attachment` view to be used in the `Attachments` view.
 		if ( ! this.get('AttachmentView') ) {
-			this.set( 'AttachmentView', EditLibraryView );
+			this.set( 'AttachmentView', wp.media.view.Attachment.EditLibrary );
 		}
 
 		Library.prototype.initialize.apply( this, arguments );
@@ -121,7 +121,7 @@ GalleryEdit = Library.extend({
 		library.gallery = library.gallery || new Backbone.Model();
 
 		browser.sidebar.set({
-			gallery: new GallerySettingsView({
+			gallery: new wp.media.view.Settings.Gallery({
 				controller: this,
 				model:      library.gallery,
 				priority:   40

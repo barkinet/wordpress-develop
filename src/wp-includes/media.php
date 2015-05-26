@@ -3221,7 +3221,15 @@ function get_attached_media( $type, $post = 0 ) {
 function get_media_embedded_in_content( $content, $types = null ) {
 	$html = array();
 
-	$allowed_media_types = apply_filters( 'get_media_embedded_in_content_allowed', array( 'audio', 'video', 'object', 'embed', 'iframe' ) );
+	/**
+	 * Filter the embedded media types that are allowed to be returned from the content blob.
+	 *
+	 * @since 4.2.0
+	 *
+	 * @param array $allowed_media_types An array of allowed media types. Default media types are
+	 *                                   'audio', 'video', 'object', 'embed', and 'iframe'.
+	 */
+	$allowed_media_types = apply_filters( 'media_embedded_in_content_allowed_types', array( 'audio', 'video', 'object', 'embed', 'iframe' ) );
 
 	if ( ! empty( $types ) ) {
 		if ( ! is_array( $types ) ) {
@@ -3400,6 +3408,16 @@ function attachment_url_to_postid( $url ) {
 		$path
 	);
 	$post_id = $wpdb->get_var( $sql );
+
+	/**
+	 * Filter an attachment id found by URL.
+	 *
+	 * @since 4.2.0
+	 *
+	 * @param int|null $post_id The post_id (if any) found by the function.
+	 * @param string   $url     The URL being looked up.
+	 */
+	$post_id = apply_filters( 'attachment_url_to_postid', $post_id, $url );
 
 	return (int) $post_id;
 }

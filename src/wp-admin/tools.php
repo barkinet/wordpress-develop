@@ -25,7 +25,7 @@ get_current_screen()->add_help_tab( array(
 
 get_current_screen()->set_help_sidebar(
 	'<p><strong>' . __('For more information:') . '</strong></p>' .
-	'<p>' . __('<a href="http://codex.wordpress.org/Tools_Screen" target="_blank">Documentation on Tools</a>') . '</p>' .
+	'<p>' . __('<a href="https://codex.wordpress.org/Tools_Screen" target="_blank">Documentation on Tools</a>') . '</p>' .
 	'<p>' . __('<a href="https://wordpress.org/support/" target="_blank">Support Forums</a>') . '</p>'
 );
 
@@ -36,30 +36,28 @@ require_once( ABSPATH . 'wp-admin/admin-header.php' );
 <h2><?php echo esc_html( $title ); ?></h2>
 
 <?php if ( current_user_can('edit_posts') ) : ?>
-<div class="tool-box">
-	<h3 class="title"><?php _e('Press This') ?></h3>
-	<div class="postbox press-this-install">
-		<p><?php _e( 'Press This is a little app that lets you grab bits of the web and create new posts with ease.' );?></p>
-		<p><?php _e( 'Use Press This to clip text, images and videos from any web page. Then edit and add more straight from Press This before you save or publish it in a post on your site.' ); ?></p>
-	</div>
+<div class="card pressthis">
+	<h3><?php _e('Press This') ?></h3>
+	<p><?php _e( 'Press This is a little tool that lets you grab bits of the web and create new posts with ease.' );?></p>
+	<p><?php _e( 'Use Press This to clip text, images and videos from any web page. Then edit and add more straight from Press This before you save or publish it in a post on your site.' ); ?></p>
+
 
 	<form>
-	<div class="postbox press-this-install">
 		<h3><?php _e( 'Install Press This' ); ?></h3>
 		<h4><?php _e( 'Bookmarklet' ); ?></h4>
-		<p><?php _e( 'Drag the bookmarklet below to your bookmarks bar. Then, when you\'re on a page you want to share, simply "press" it.' ); ?></p>
+		<p><?php _e( 'Drag the bookmarklet below to your bookmarks bar. Then, when you&#8217;re on a page you want to share, simply &#8220;press&#8221; it.' ); ?></p>
 
-		<p class="pressthis">
-			<a class="" onclick="return false;" href="<?php echo htmlspecialchars( get_shortcut_link() ); ?>"><span><?php _e( 'Press This' ) ?></span></a>
-			<button type="button" class="button button-secondary js-show-pressthis-code-wrap" aria-expanded="false" aria-controls="pressthis-code-wrap">
+		<p class="pressthis-bookmarklet-wrapper">
+			<a class="pressthis-bookmarklet" onclick="return false;" href="<?php echo htmlspecialchars( get_shortcut_link() ); ?>"><span><?php _e( 'Press This' ); ?></span></a>
+			<button type="button" class="button button-secondary pressthis-js-toggle js-show-pressthis-code-wrap" aria-expanded="false" aria-controls="pressthis-code-wrap">
 				<span class="dashicons dashicons-clipboard"></span>
-				<span class="screen-reader-text"><?php _e( 'Copy Press This Bookmarklet' ) ?></span>
+				<span class="screen-reader-text"><?php _e( 'Copy &#8220;Press This&#8221; bookmarklet code' ) ?></span>
 			</button>
 		</p>
 
-		<div class="hidden js-pressthis-code-wrap" id="pressthis-code-wrap">
+		<div class="hidden js-pressthis-code-wrap clear" id="pressthis-code-wrap">
 			<p id="pressthis-code-desc">
-				<?php _e( 'If you can\'t drag it to your bookmarks, copy the following code and create new bookmark. Paste the code into the new bookmark\'s URL field.' ) ?>
+				<?php _e( 'If you can&#8217;t drag the bookmarklet to your bookmarks, copy the following code and create a new bookmark. Paste the code into the new bookmark&#8217;s URL field.' ) ?>
 			</p>
 			<p>
 				<textarea class="js-pressthis-code" rows="5" cols="120" readonly="readonly" aria-labelledby="pressthis-code-desc"><?php echo htmlspecialchars( get_shortcut_link() ); ?></textarea>
@@ -67,7 +65,7 @@ require_once( ABSPATH . 'wp-admin/admin-header.php' );
 		</div>
 
 		<h4><?php _e( 'Direct link (best for mobile)' ); ?></h4>
-		<p><?php _e( 'Follow the link to open Press This. Then add it to your device\'s bookmarks or home screen.' ); ?></p>
+		<p><?php _e( 'Follow the link to open Press This. Then add it to your device&#8217;s bookmarks or home screen.' ); ?></p>
 
 		<p>
 			<a class="button button-secondary" href="<?php echo htmlspecialchars( admin_url( 'press-this.php' ) ); ?>"><?php _e( 'Open Press This' ) ?></a>
@@ -92,7 +90,6 @@ require_once( ABSPATH . 'wp-admin/admin-header.php' );
 
 			});
 		</script>
-	</div>
 	</form>
 </div>
 <?php
@@ -102,7 +99,7 @@ if ( current_user_can( 'import' ) ) :
 $cats = get_taxonomy('category');
 $tags = get_taxonomy('post_tag');
 if ( current_user_can($cats->cap->manage_terms) || current_user_can($tags->cap->manage_terms) ) : ?>
-<div class="tool-box">
+<div class="card">
     <h3 class="title"><?php _e( 'Categories and Tags Converter' ) ?></h3>
     <p><?php printf( __('If you want to convert your categories to tags (or vice versa), use the <a href="%s">Categories and Tags Converter</a> available from the Import screen.'), 'import.php' ); ?></p>
 </div>

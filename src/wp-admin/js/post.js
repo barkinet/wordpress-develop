@@ -20,7 +20,7 @@ commentsBox = {
 
 		this.st += num;
 		this.total = total;
-		$('#commentsdiv .spinner').show();
+		$( '#commentsdiv .spinner' ).addClass( 'is-active' );
 
 		data = {
 			'action' : 'get-comments',
@@ -35,7 +35,7 @@ commentsBox = {
 			function(r) {
 				r = wpAjax.parseAjaxResponse(r);
 				$('#commentsdiv .widefat').show();
-				$('#commentsdiv .spinner').hide();
+				$( '#commentsdiv .spinner' ).removeClass( 'is-active' );
 
 				if ( 'object' == typeof r && r.responses[0] ) {
 					$('#the-comment-list').append( r.responses[0].data );
@@ -272,9 +272,9 @@ jQuery(document).ready( function($) {
 			$submitButtons.addClass( 'disabled' );
 
 			if ( $button.attr('id') === 'publish' ) {
-				$submitpost.find('#major-publishing-actions .spinner').show();
+				$submitpost.find( '#major-publishing-actions .spinner' ).addClass( 'is-active' );
 			} else {
-				$submitpost.find('#minor-publishing .spinner').show();
+				$submitpost.find( '#minor-publishing .spinner' ).addClass( 'is-active' );
 			}
 		});
 	});
@@ -676,7 +676,7 @@ jQuery(document).ready( function($) {
 					wp.autosave.enableButtons();
 				}
 
-				$('#publishing-action .spinner').hide();
+				$( '#publishing-action .spinner' ).removeClass( 'is-active' );
 			}
 		});
 
@@ -712,7 +712,11 @@ jQuery(document).ready( function($) {
 			revert_slug = real_slug.val(),
 			b = $('#edit-slug-buttons'),
 			revert_b = b.html(),
-			full = $('#editable-post-name-full').html();
+			full = $('#editable-post-name-full');
+
+		// Deal with Twemoji in the post-name
+		full.find( 'img' ).replaceWith( function() { return this.alt; } );
+		full = full.html();
 
 		$('#view-post-btn').hide();
 		b.html('<a href="#" class="save button button-small">'+postL10n.ok+'</a> <a class="cancel" href="#">'+postL10n.cancel+'</a>');
@@ -736,6 +740,7 @@ jQuery(document).ready( function($) {
 						box.removeClass('hidden');
 					});
 				}
+
 				b.html(revert_b);
 				real_slug.val(new_slug);
 				$('#view-post-btn').show();

@@ -15,7 +15,7 @@ $title = __('Discussion Settings');
 $parent_file = 'options-general.php';
 
 /**
- * Display JavaScript on the page.
+ * Output JavaScript to toggle display of additional settings if avatars are disabled.
  *
  * @since 4.2.0
  */
@@ -43,7 +43,7 @@ get_current_screen()->add_help_tab( array(
 
 get_current_screen()->set_help_sidebar(
 	'<p><strong>' . __('For more information:') . '</strong></p>' .
-	'<p>' . __('<a href="http://codex.wordpress.org/Settings_Discussion_Screen" target="_blank">Documentation on Discussion Settings</a>') . '</p>' .
+	'<p>' . __('<a href="https://codex.wordpress.org/Settings_Discussion_Screen" target="_blank">Documentation on Discussion Settings</a>') . '</p>' .
 	'<p>' . __('<a href="https://wordpress.org/support/" target="_blank">Support Forums</a>') . '</p>'
 );
 
@@ -66,7 +66,7 @@ include( ABSPATH . 'wp-admin/admin-header.php' );
 <br />
 <label for="default_ping_status">
 <input name="default_ping_status" type="checkbox" id="default_ping_status" value="open" <?php checked('open', get_option('default_ping_status')); ?> />
-<?php _e('Allow link notifications from other blogs (pingbacks and trackbacks)'); ?></label>
+<?php _e('Allow link notifications from other blogs (pingbacks and trackbacks) on new articles'); ?></label>
 <br />
 <label for="default_comment_status">
 <input name="default_comment_status" type="checkbox" id="default_comment_status" value="open" <?php checked('open', get_option('default_comment_status')); ?> />
@@ -272,7 +272,9 @@ foreach ( $avatar_defaults as $default_key => $default_name ) {
 	$avatar_list .= "\n\t<label><input type='radio' name='avatar_default' id='avatar_{$default_key}' value='" . esc_attr($default_key) . "' {$selected}/> ";
 
 	$avatar = get_avatar( $user_email, $size, $default_key );
-	$avatar_list .= preg_replace("/src='(.+?)'/", "src='\$1&amp;forcedefault=1'", $avatar);
+	$avatar = preg_replace( "/src='(.+?)'/", "src='\$1&amp;forcedefault=1'", $avatar );
+	$avatar = preg_replace( "/srcset='(.+?) 2x'/", "srcset='\$1&amp;forcedefault=1 2x'", $avatar );
+	$avatar_list .= $avatar;
 
 	$avatar_list .= ' ' . $default_name . '</label>';
 	$avatar_list .= '<br />';

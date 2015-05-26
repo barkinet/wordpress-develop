@@ -585,7 +585,10 @@ function wp_get_nav_menu_items( $menu, $args = array() ) {
 
 		if ( ! empty( $terms ) ) {
 			foreach ( array_keys($terms) as $taxonomy ) {
-				get_terms($taxonomy, array('include' => $terms[$taxonomy]) );
+				get_terms( $taxonomy, array(
+					'include' => $terms[ $taxonomy ],
+					'hierarchical' => false,
+				) );
 			}
 		}
 		unset($terms);
@@ -688,7 +691,7 @@ function wp_setup_nav_menu_item( $menu_item ) {
 				$menu_item->title = '' == $menu_item->post_title ? $original_title : $menu_item->post_title;
 
 			} else {
-				$menu_item->type_label = __('Custom');
+				$menu_item->type_label = __('Custom Link');
 				$menu_item->title = $menu_item->post_title;
 				$menu_item->url = empty( $menu_item->url ) ? get_post_meta( $menu_item->ID, '_menu_item_url', true ) : $menu_item->url;
 			}

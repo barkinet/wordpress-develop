@@ -215,7 +215,7 @@ class WP_Customize_Control {
 	 * @since 4.0.0
 	 * @access public
 	 *
-	 * @return bool Always true.
+	 * @return true Always true.
 	 */
 	public function active_callback() {
 		return true;
@@ -638,26 +638,49 @@ class WP_Customize_Color_Control extends WP_Customize_Control {
 }
 
 /**
- * Customize Upload Control class.
+ * Customize Media Control class.
  *
- * @since 3.4.0
+ * @since 4.2.0
  *
  * @see WP_Customize_Control
  */
-class WP_Customize_Upload_Control extends WP_Customize_Control {
-	public $type          = 'upload';
-	public $mime_type     = '';
+class WP_Customize_Media_Control extends WP_Customize_Control {
+	/**
+	 * Control type.
+	 *
+	 * @since 4.2.0
+	 * @access public
+	 * @var string
+	 */
+	public $type = 'media';
+
+	/**
+	 * Media control mime type.
+	 *
+	 * @since 4.2.0
+	 * @access public
+	 * @var string
+	 */
+	public $mime_type = '';
+
+	/**
+	 * Button labels.
+	 *
+	 * @since 4.2.0
+	 * @access public
+	 * @var array
+	 */
 	public $button_labels = array();
-	public $removed = ''; // unused
-	public $context; // unused
-	public $extensions = array(); // unused
 
 	/**
 	 * Constructor.
 	 *
 	 * @since 4.1.0
+	 * @since 4.2.0 Moved from WP_Customize_Upload_Control.
 	 *
 	 * @param WP_Customize_Manager $manager {@see WP_Customize_Manager} instance.
+	 * @param string $id
+	 * @param array $args
 	 */
 	public function __construct( $manager, $id, $args = array() ) {
 		parent::__construct( $manager, $id, $args );
@@ -677,6 +700,7 @@ class WP_Customize_Upload_Control extends WP_Customize_Control {
 	 * Enqueue control related scripts/styles.
 	 *
 	 * @since 3.4.0
+	 * @since 4.2.0 Moved from WP_Customize_Upload_Control.
 	 */
 	public function enqueue() {
 		wp_enqueue_media();
@@ -686,7 +710,9 @@ class WP_Customize_Upload_Control extends WP_Customize_Control {
 	 * Refresh the parameters passed to the JavaScript via JSON.
 	 *
 	 * @since 3.4.0
-	 * @uses WP_Customize_Control::to_json()
+	 * @since 4.2.0 Moved from WP_Customize_Upload_Control.
+	 *
+	 * @see WP_Customize_Control::to_json()
 	 */
 	public function to_json() {
 		parent::to_json();
@@ -698,6 +724,7 @@ class WP_Customize_Upload_Control extends WP_Customize_Control {
 		if ( is_object( $this->setting ) ) {
 			if ( $this->setting->default ) {
 				// Fake an attachment model - needs all fields used by template.
+				// Note that the default value must be a URL, NOT an attachment ID.
 				$type = in_array( substr( $this->setting->default, -3 ), array( 'jpg', 'png', 'gif', 'bmp' ) ) ? 'image' : 'document';
 				$default_attachment = array(
 					'id' => 1,
@@ -720,11 +747,7 @@ class WP_Customize_Upload_Control extends WP_Customize_Control {
 				// Set the default as the attachment.
 				$this->json['attachment'] = $this->json['defaultAttachment'];
 			} elseif ( $value ) {
-				// Get the attachment model for the existing file.
-				$attachment_id = attachment_url_to_postid( $value );
-				if ( $attachment_id ) {
-					$this->json['attachment'] = wp_prepare_attachment_for_js( $attachment_id );
-				}
+				$this->json['attachment'] = wp_prepare_attachment_for_js( $value );
 			}
 		}
 	}
@@ -732,15 +755,18 @@ class WP_Customize_Upload_Control extends WP_Customize_Control {
 	/**
 	 * Don't render any content for this control from PHP.
 	 *
-	 * @see WP_Customize_Upload_Control::content_template()
 	 * @since 3.4.0
+	 * @since 4.2.0 Moved from WP_Customize_Upload_Control.
+	 *
+	 * @see WP_Customize_Media_Control::content_template()
 	 */
 	public function render_content() {}
 
 	/**
-	 * Render a JS template for the content of the upload control.
+	 * Render a JS template for the content of the media control.
 	 *
 	 * @since 4.1.0
+	 * @since 4.2.0 Moved from WP_Customize_Upload_Control.
 	 */
 	public function content_template() {
 		?>
@@ -819,6 +845,42 @@ class WP_Customize_Upload_Control extends WP_Customize_Control {
 			</div>
 		<# } #>
 		<?php
+	}
+}
+
+/**
+ * Customize Upload Control Class.
+ *
+ * @since 3.4.0
+ *
+ * @see WP_Customize_Media_Control
+ */
+class WP_Customize_Upload_Control extends WP_Customize_Media_Control {
+	public $type          = 'upload';
+	public $mime_type     = '';
+	public $button_labels = array();
+	public $removed = ''; // unused
+	public $context; // unused
+	public $extensions = array(); // unused
+
+	/**
+	 * Refresh the parameters passed to the JavaScript via JSON.
+	 *
+	 * @since 3.4.0
+	 *
+	 * @uses WP_Customize_Media_Control::to_json()
+	 */
+	public function to_json() {
+		parent::to_json();
+
+		$value = $this->value();
+		if ( $value ) {
+			// Get the attachment model for the existing file.
+			$attachment_id = attachment_url_to_postid( $value );
+			if ( $attachment_id ) {
+				$this->json['attachment'] = wp_prepare_attachment_for_js( $attachment_id );
+			}
+		}
 	}
 }
 
@@ -986,6 +1048,10 @@ class WP_Customize_Header_Image_Control extends WP_Customize_Image_Control {
 		parent::enqueue();
 	}
 
+	/**
+	 *
+	 * @global Custom_Image_Header $custom_image_header
+	 */
 	public function prepare_control() {
 		global $custom_image_header;
 		if ( empty( $custom_image_header ) ) {
@@ -1002,19 +1068,19 @@ class WP_Customize_Header_Image_Control extends WP_Customize_Image_Control {
 		?>
 		<script type="text/template" id="tmpl-header-choice">
 			<# if (data.random) { #>
-					<button type="button" class="button display-options random">
-						<span class="dashicons dashicons-randomize dice"></span>
-						<# if ( data.type === 'uploaded' ) { #>
-							<?php _e( 'Randomize uploaded headers' ); ?>
-						<# } else if ( data.type === 'default' ) { #>
-							<?php _e( 'Randomize suggested headers' ); ?>
-						<# } #>
-					</button>
+			<button type="button" class="button display-options random">
+				<span class="dashicons dashicons-randomize dice"></span>
+				<# if ( data.type === 'uploaded' ) { #>
+					<?php _e( 'Randomize uploaded headers' ); ?>
+				<# } else if ( data.type === 'default' ) { #>
+					<?php _e( 'Randomize suggested headers' ); ?>
+				<# } #>
+			</button>
 
 			<# } else { #>
 
 			<# if (data.type === 'uploaded') { #>
-				<div class="dashicons dashicons-no close"></div>
+				<button type="button" class="dashicons dashicons-no close"><span class="screen-reader-text"><?php _e( 'Remove image' ); ?></span></button>
 			<# } #>
 
 			<button type="button" class="choice thumbnail"
@@ -1063,13 +1129,15 @@ class WP_Customize_Header_Image_Control extends WP_Customize_Image_Control {
 		<?php
 	}
 
+	/**
+	 * @return string|void
+	 */
 	public function get_current_image_src() {
 		$src = $this->value();
 		if ( isset( $this->get_url ) ) {
 			$src = call_user_func( $this->get_url, $src );
 			return $src;
 		}
-		return null;
 	}
 
 	public function render_content() {
@@ -1136,14 +1204,31 @@ class WP_Customize_Header_Image_Control extends WP_Customize_Image_Control {
  */
 class WP_Customize_Theme_Control extends WP_Customize_Control {
 
+	/**
+	 * Customize control type.
+	 *
+	 * @since 4.2.0
+	 * @access public
+	 * @var string
+	 */
 	public $type = 'theme';
+
+	/**
+	 * Theme object.
+	 *
+	 * @since 4.2.0
+	 * @access public
+	 * @var WP_Theme
+	 */
 	public $theme;
 
 	/**
 	 * Refresh the parameters passed to the JavaScript via JSON.
 	 *
 	 * @since 4.2.0
-	 * @uses WP_Customize_Control::to_json()
+	 * @access public
+	 *
+	 * @see WP_Customize_Control::to_json()
 	 */
 	public function to_json() {
 		parent::to_json();
@@ -1154,6 +1239,7 @@ class WP_Customize_Theme_Control extends WP_Customize_Control {
 	 * Don't render the control content from PHP, as it's rendered via JS on load.
 	 *
 	 * @since 4.2.0
+	 * @access public
 	 */
 	public function render_content() {}
 
@@ -1161,64 +1247,51 @@ class WP_Customize_Theme_Control extends WP_Customize_Control {
 	 * Render a JS template for theme display.
 	 *
 	 * @since 4.2.0
+	 * @access public
 	 */
 	public function content_template() {
-	?>
-		<div class="theme<# if ( data.theme.active ) { #> active<# } #>" tabindex="0" aria-describedby="{{ data.theme.id }}-action {{ data.theme.id }}-name">
+		$current_url = set_url_scheme( 'http://' . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'] );
+		$active_url  = esc_url( remove_query_arg( 'theme', $current_url ) );
+		$preview_url = esc_url( add_query_arg( 'theme', '__THEME__', $current_url ) ); // Token because esc_url() strips curly braces.
+		$preview_url = str_replace( '__THEME__', '{{ data.theme.id }}', $preview_url );
+		?>
+		<# if ( data.theme.isActiveTheme ) { #>
+			<div class="theme active" tabindex="0" data-preview-url="<?php echo esc_attr( $active_url ); ?>" aria-describedby="{{ data.theme.id }}-action {{ data.theme.id }}-name">
+		<# } else { #>
+			<div class="theme" tabindex="0" data-preview-url="<?php echo esc_attr( $preview_url ); ?>" aria-describedby="{{ data.theme.id }}-action {{ data.theme.id }}-name">
+		<# } #>
+
 			<# if ( data.theme.screenshot[0] ) { #>
 				<div class="theme-screenshot">
-					<img src="{{ data.theme.screenshot[0] }}" alt="" />
+					<img data-src="{{ data.theme.screenshot[0] }}" alt="" />
 				</div>
 			<# } else { #>
 				<div class="theme-screenshot blank"></div>
 			<# } #>
-			<span class="more-details" id="{{ data.theme.id }}-action"><?php _e( 'Theme Details' ); ?></span>
-			<div class="theme-author"><?php printf( __( 'By %s' ), '{{ data.theme.author }}' ); ?></div>
 
-			<# if ( data.theme.active ) { #>
-				<h3 class="theme-name" id="{{ data.theme.id }}-name"><span><?php _ex( 'Previewing:', 'theme' ); ?></span> {{ data.theme.name }}</h3>
+			<# if ( data.theme.isActiveTheme ) { #>
+				<span class="more-details" id="{{ data.theme.id }}-action"><?php _e( 'Customize' ); ?></span>
 			<# } else { #>
-				<h3 class="theme-name" id="{{ data.theme.id }}-name">{{ data.theme.name }}</h3>
+				<span class="more-details" id="{{ data.theme.id }}-action"><?php _e( 'Live Preview' ); ?></span>
 			<# } #>
 
-			<# if ( ! data.theme.active ) { #>
+			<div class="theme-author"><?php printf( __( 'By %s' ), '{{ data.theme.author }}' ); ?></div>
+
+			<# if ( data.theme.isActiveTheme ) { #>
+				<h3 class="theme-name" id="{{ data.theme.id }}-name">
+					<?php
+					/* translators: %s: theme name */
+					printf( __( '<span>Active:</span> %s' ), '{{ data.theme.name }}' );
+					?>
+				</h3>
+			<# } else { #>
+				<h3 class="theme-name" id="{{ data.theme.id }}-name">{{ data.theme.name }}</h3>
 				<div class="theme-actions">
-					<a class="button" href="<?php echo add_query_arg( 'theme', '{{ data.theme.id }}', remove_query_arg( 'theme' ) ); ?>" target="_top"><?php _e( 'Live Preview' ); ?></a>
+					<button type="button" class="button theme-details"><?php _e( 'Theme Details' ); ?></button>
 				</div>
 			<# } #>
 		</div>
 	<?php
-	}
-}
-
-/**
- * Customize New Theme Control class.
- *
- * @since 4.2.0
- *
- * @see WP_Customize_Control
- */
-class WP_Customize_New_Theme_Control extends WP_Customize_Control {
-
-	/**
-	 * Render the new control.
-	 *
-	 * @since 4.2.0
-	 */
-	public function render() {
-		if ( is_multisite() || ! current_user_can( 'install_themes') ) {
-			return;
-		}
-		?>
-		<div class="theme add-new-theme">
-			<a href="<?php echo admin_url( 'theme-install.php' ); ?>" target="_top">
-				<div class="theme-screenshot">
-					<span></span>
-				</div>
-				<h3 class="theme-name"><?php _e( 'Add New Theme' ); ?></h3>
-			</a>
-		</div>
-		<?php
 	}
 }
 
@@ -1249,7 +1322,7 @@ class WP_Widget_Area_Customize_Control extends WP_Customize_Control {
 
 		<span class="reorder-toggle" tabindex="0">
 			<span class="reorder"><?php _ex( 'Reorder', 'Reorder widgets in Customizer' ); ?></span>
-			<span class="reorder-done"><?php _ex( 'Done', 'Cancel reordering widgets in Customizer'  ); ?></span>
+			<span class="reorder-done"><?php _ex( 'Done', 'Cancel reordering widgets in Customizer' ); ?></span>
 		</span>
 		<?php
 	}
@@ -1281,6 +1354,10 @@ class WP_Widget_Form_Customize_Control extends WP_Customize_Control {
 		}
 	}
 
+	/**
+	 *
+	 * @global array $wp_registered_widgets
+	 */
 	public function render_content() {
 		global $wp_registered_widgets;
 		require_once ABSPATH . '/wp-admin/includes/widgets.php';

@@ -126,6 +126,7 @@
 	overflow: hidden;
 	clip: rect(0 0 0 0);
 	border: 0;
+	word-wrap: normal !important; /* many screen reader and browser combinations announce broken words as they would appear visually */
 }
 
 .screen-reader-shortcut {
@@ -227,6 +228,7 @@ body.modal-open {
 
 body.mobile.modal-open #wpwrap {
 	overflow: hidden;
+	position: fixed;
 	height: 100%;
 }
 
@@ -679,6 +681,20 @@ td.help {
 	color: #999;
 }
 
+/* For emoji replacement images */
+img.emoji {
+	display: inline !important;
+	border: none !important;
+	height: 1em !important;
+	width: 1em !important;
+	margin: 0 .07em !important;
+	vertical-align: -0.1em !important;
+	background: none !important;
+	padding: 0 !important;
+	-webkit-box-shadow: none !important;
+	box-shadow: none !important;
+}
+
 /*------------------------------------------------------------------------------
   1.0 - Text Styles
 ------------------------------------------------------------------------------*/
@@ -722,22 +738,24 @@ td.help {
 }
 
 /* @todo can we combine these into a class or use an existing dashicon one? */
-#welcome-panel.welcome-panel .welcome-panel-close:before,
+.welcome-panel .welcome-panel-close:before,
 .tagchecklist span a:before,
-#bulk-titles div a:before {
+#bulk-titles div a:before,
+.notice-dismiss:before {
 	background: none;
-	color: #bbb;
+	color: #b4b9be;
 	content: '\f153';
-	display: block !important;
+	display: block;
 	font: normal 16px/1 'dashicons';
 	speak: none;
-	height: 20px;
+	height: 16px;
 	text-align: center;
 	width: 20px;
-	-webkit-font-smoothing: antialiased !important;
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
 }
 
-#welcome-panel.welcome-panel .welcome-panel-close:before {
+.welcome-panel .welcome-panel-close:before {
 	margin: 0;
 }
 
@@ -746,7 +764,8 @@ td.help {
 	margin: 2px 0;
 }
 
-#welcome-panel.welcome-panel .welcome-panel-close:hover:before,
+.welcome-panel .welcome-panel-close:hover:before,
+.welcome-panel .welcome-panel-close:focus:before,
 .tagchecklist span a:hover:before,
 #bulk-titles div a:hover:before {
 	color: #c00;
@@ -915,7 +934,7 @@ th.action-links {
 	-moz-box-sizing: border-box;
 	box-sizing: border-box;
 	margin: 12px 0 25px;
-	padding: 0 20px;
+	padding: 0 10px;
 	width: 100%;
 	-webkit-box-shadow: 0 1px 1px rgba(0,0,0,0.04);
 	box-shadow: 0 1px 1px rgba(0,0,0,0.04);
@@ -1274,22 +1293,63 @@ div.error p,
 	padding: 2px;
 }
 
+.wp-core-ui .notice.is-dismissible {
+	padding-right: 38px;
+	position: relative;
+}
+
+.notice-dismiss {
+	position: absolute;
+	top: 0;
+	right: 1px;
+	border: none;
+	margin: 0;
+	padding: 9px;
+	background: none;
+	color: #b4b9be;
+	cursor: pointer;
+}
+
+.notice-dismiss:before {
+	position: relative;
+	top: 0;
+	left: 0;
+	line-height: 20px;
+}
+
+.notice-dismiss:hover:before,
+.notice-dismiss:active:before,
+.notice-dismiss:focus:before {
+	color: #c00;
+}
+
+.notice-dismiss:focus {
+	outline: none;
+	-webkit-box-shadow: 0 0 0 1px #5b9dd9, 0 0 2px 1px rgba(30, 140, 190, .8);
+	box-shadow: 0 0 0 1px #5b9dd9, 0 0 2px 1px rgba(30, 140, 190, .8);
+	color: #c00;
+}
+
+.ie8 .notice-dismiss:focus {
+	outline: 1px solid #5b9dd9;
+}
+
 .notice-success,
 div.updated {
-     border-color: #7ad03a;
+	border-color: #7ad03a;
 }
 
 .notice-warning {
-    border-color: #ffba00;
+	border-color: #ffba00;
 }
 
 .notice-error,
 div.error {
-    border-color: #dd3d36;
+	border-color: #dd3d36;
 }
 
 .notice-info {
-    border-color: #00a0d2;
+	border-color: #00a0d2;
 }
 
 .wrap .notice,
@@ -1452,7 +1512,7 @@ form.upgrade .hint {
 	-webkit-font-smoothing: antialiased;
 	-moz-osx-font-smoothing: grayscale;
 	text-decoration: none !important;
-	color: #bbb;
+	color: #b4b9be;
 }
 
 #screen-meta-links a.screen-meta-active:after {
@@ -1504,6 +1564,26 @@ form.upgrade .hint {
 
 .metabox-prefs label a {
 	display: none;
+}
+
+.metabox-prefs .screen-options {
+	padding-top: 10px;
+}
+
+.metabox-prefs .screen-options input,
+.metabox-prefs .screen-options label {
+	margin-top: 0;
+	margin-bottom: 0;
+	vertical-align: middle;
+}
+
+.metabox-prefs .screen-options .screen-per-page {
+	margin-right: 15px;
+}
+
+.metabox-prefs .screen-options label {
+	line-height: 28px;
+	padding-right: 0;
 }
 
 /*------------------------------------------------------------------------------
@@ -1665,7 +1745,7 @@ html.wp-toolbar {
 }
 
 .metabox-holder .postbox-container .empty-container {
-	border: 3px dashed #bbb;
+	border: 3px dashed #b4b9be;
 	height: 250px;
 }
 
@@ -1724,7 +1804,7 @@ html.wp-toolbar {
 }
 
 .sortable-placeholder {
-	border: 1px dashed #bbb;
+	border: 1px dashed #b4b9be;
 	margin-bottom: 20px;
 }
 
@@ -1888,13 +1968,19 @@ h2 .nav-tab {
 	background: url(../images/spinner.gif) no-repeat;
 	-webkit-background-size: 20px 20px;
 	background-size: 20px 20px;
-	display: none;
+	display: inline-block;
+	visibility: hidden;
 	float: right;
+	vertical-align: middle;
 	opacity: 0.7;
 	filter: alpha(opacity=70);
 	width: 20px;
 	height: 20px;
-	margin: 2px 5px 0;
+	margin: 4px 10px 0;
+}
+
+.spinner.is-active {
+	visibility: visible;
 }
 
 #template div {
@@ -1951,14 +2037,17 @@ td.media-icon {
 	padding-bottom: 8px;
 }
 
+td.media-icon a {
+	display: inline-block;
+}
+
 td.media-icon img {
+	display: block;
 	max-width: 80px;
 	max-height: 60px;
 	width: auto;
 	height: auto;
-}
-
-td.image-icon img {
+	border: 1px solid #e7e7e7;
 	border: 1px solid rgba(0, 0, 0, 0.07);
 }
 
@@ -2078,7 +2167,7 @@ div.star-holder .star-rating {
 	-webkit-transition: color .1s ease-in 0;
 	transition: color .1s ease-in 0;
 	text-align: center;
-	color: #0073aa;
+	color: #ffb900;
 }
 
 .star-rating .star-full:before {
@@ -2118,6 +2207,7 @@ div.action-links {
 
 #plugin-information-scrollable {
 	overflow: auto;
+	-webkit-overflow-scrolling: touch;
 	height: 100%;
 }
 
@@ -2141,8 +2231,8 @@ div.action-links {
 	margin-right: 0;
 	height: 250px;
 	bottom: 250px;
-	-webkit-background-size: 100% auto;
-	background-size: 100% auto;
+	-webkit-background-size: cover;
+	background-size: cover;
 }
 
 #plugin-information-title h2 {
@@ -2328,7 +2418,7 @@ div.action-links {
 
 #plugin-information .counter-bar {
 	height: 17px;
-	background-color: #fddb5a;
+	background-color: #ffc733; /* slightly lighter than stars due to larger expanse */
 	float: left;
 }
 
@@ -2802,7 +2892,7 @@ img {
 .item-edit,
 .sidebar-name-arrow,
 .accordion-section-title:after {
-	color: #aaa;
+	color: #a0a5aa;
 }
 
 .widget-action:hover,
@@ -2841,7 +2931,7 @@ img {
 }
 
 /*!
- * jQuery UI Draggable/Sortable 1.11.3
+ * jQuery UI Draggable/Sortable 1.11.4
  * http://jqueryui.com
  *
  * Copyright jQuery Foundation and other contributors
@@ -2905,7 +2995,7 @@ img {
 
 .accordion-section-title:hover:after,
 .accordion-section-title:focus:after {
-	border-color: #aaa transparent;
+	border-color: #a0a5aa transparent;
 }
 
 .cannot-expand .accordion-section-title {
@@ -3088,11 +3178,22 @@ img {
 	}
 
 	/* Feedback Messages */
-	.wrap div.updated, .wrap div.error, .media-upload-form div.error {
+	.notice,
+	.wrap div.updated,
+	.wrap div.error,
+	.media-upload-form div.error {
 		margin: 20px 0 10px 0;
 		padding: 5px 10px;
 		font-size: 14px;
 		line-height: 175%;
+	}
+
+	.wp-core-ui .notice.is-dismissible {
+		padding-right: 46px;
+	}
+
+	.notice-dismiss {
+		padding: 13px;
 	}
 
 	.wrap .icon32 + h2 {

@@ -373,6 +373,27 @@ $(document).ready( function() {
 	$firstHeading.nextAll( 'div.updated, div.error, div.notice' ).addClass( 'below-h2' );
 	$( 'div.updated, div.error, div.notice' ).not( '.below-h2, .inline' ).insertAfter( $firstHeading );
 
+	// Make notices dismissible
+	$( '.notice.is-dismissible' ).each( function() {
+		var $this = $( this ),
+			$button = $( '<button type="button" class="notice-dismiss"><span class="screen-reader-text"></span></button>' ),
+			btnText = commonL10n.dismiss || '';
+
+		// Ensure plain text
+		$button.find( '.screen-reader-text' ).text( btnText );
+
+		$this.append( $button );
+
+		$button.on( 'click.wp-dismiss-notice', function( event ) {
+			event.preventDefault();
+			$this.fadeTo( 100 , 0, function() {
+				$(this).slideUp( 100, function() {
+					$(this).remove();
+				});
+			});
+		});
+	});
+
 	// Init screen meta
 	screenMeta.init();
 
@@ -470,6 +491,8 @@ $(document).ready( function() {
 		var el = e.target, selStart, selEnd, val, scroll, sel;
 
 		if ( e.keyCode == 27 ) { // escape key
+			// when pressing Escape: Opera 12 and 27 blur form fields, IE 8 clears them
+			e.preventDefault();
 			$(el).data('tab-out', true);
 			return;
 		}
@@ -486,10 +509,6 @@ $(document).ready( function() {
 		selEnd = el.selectionEnd;
 		val = el.value;
 
-		try {
-			this.lastKey = 9; // not a standard DOM property, lastKey is to help stop Opera tab event. See blur handler below.
-		} catch(err) {}
-
 		if ( document.selection ) {
 			el.focus();
 			sel = document.selection.createRange();
@@ -505,11 +524,6 @@ $(document).ready( function() {
 			e.stopPropagation();
 		if ( e.preventDefault )
 			e.preventDefault();
-	});
-
-	$('#newcontent').bind('blur.wpevent_InsertTab', function() {
-		if ( this.lastKey && 9 == this.lastKey )
-			this.focus();
 	});
 
 	if ( pageInput.length ) {
@@ -846,7 +860,7 @@ $(document).ready( function() {
 	window.wpResponsive.init();
 	setPinMenu();
 
-	$document.on( 'wp-window-resized.pin-menu postboxes-columnchange.pin-menu postbox-toggled.pin-menu wp-collapse-menu.pin-menu wp-scroll-start.pin-menu', setPinMenu );
+	$document.on( 'wp-pin-menu wp-window-resized.pin-menu postboxes-columnchange.pin-menu postbox-toggled.pin-menu wp-collapse-menu.pin-menu wp-scroll-start.pin-menu', setPinMenu );
 });
 
 // Fire a custom jQuery event at the end of window resize

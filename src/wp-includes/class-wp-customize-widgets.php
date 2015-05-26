@@ -95,6 +95,7 @@ final class WP_Customize_Widgets {
 		add_action( 'customize_controls_print_footer_scripts', array( $this, 'print_footer_scripts' ) );
 		add_action( 'customize_controls_print_footer_scripts', array( $this, 'output_widget_control_templates' ) );
 		add_action( 'customize_preview_init',                  array( $this, 'customize_preview_init' ) );
+		add_filter( 'customize_refresh_nonces',                array( $this, 'refresh_nonces' ) );
 
 		add_action( 'dynamic_sidebar',                         array( $this, 'tally_rendered_widgets' ) );
 		add_filter( 'is_active_sidebar',                       array( $this, 'tally_sidebars_via_is_active_sidebar_calls' ), 10, 2 );
@@ -105,10 +106,10 @@ final class WP_Customize_Widgets {
 	 * Get the widget setting type given a setting ID.
 	 *
 	 * @since 4.2.0
+	 * @access protected
 	 *
-	 * @param $setting_id
-	 *
-	 * @return string|null
+	 * @param $setting_id Setting ID.
+	 * @return string|void Setting type.
 	 */
 	protected function get_setting_type( $setting_id ) {
 		static $cache = array();
@@ -121,13 +122,13 @@ final class WP_Customize_Widgets {
 				return $type;
 			}
 		}
-		return null;
 	}
 
 	/**
 	 * Inspect the incoming customized data for any widget settings, and dynamically add them up-front so widgets will be initialized properly.
 	 *
 	 * @since 4.2.0
+	 * @access public
 	 */
 	public function register_settings() {
 		$widget_setting_ids = array();
@@ -159,10 +160,11 @@ final class WP_Customize_Widgets {
 	 * Determine the arguments for a dynamically-created setting.
 	 *
 	 * @since 4.2.0
+	 * @access public
 	 *
-	 * @param false|array $args
-	 * @param string $setting_id
-	 * @return false|array
+	 * @param false|array $setting_args The arguments to the WP_Customize_Setting constructor.
+	 * @param string      $setting_id   ID for dynamic setting, usually coming from `$_POST['customized']`.
+	 * @return false|array Setting arguments, false otherwise.
 	 */
 	public function filter_customize_dynamic_setting_args( $args, $setting_id ) {
 		if ( $this->get_setting_type( $setting_id ) ) {
@@ -201,6 +203,9 @@ final class WP_Customize_Widgets {
 	 *
 	 * @since 3.9.0
 	 * @access public
+	 *
+	 * @global array $sidebars_widgets
+	 * @global array $_wp_sidebars_widgets
 	 */
 	public function override_sidebars_widgets_for_theme_switch() {
 		global $sidebars_widgets;
@@ -216,6 +221,8 @@ final class WP_Customize_Widgets {
 		$sidebars_widgets = $this->old_sidebars_widgets;
 		$sidebars_widgets = retrieve_widgets( 'customize' );
 		add_filter( 'option_sidebars_widgets', array( $this, 'filter_option_sidebars_widgets_for_theme_switch' ), 1 );
+		// reset global cache var used by wp_get_sidebars_widgets()
+		unset( $GLOBALS['_wp_sidebars_widgets'] );
 	}
 
 	/**
@@ -232,6 +239,7 @@ final class WP_Customize_Widgets {
 	 * @access public
 	 *
 	 * @param array $old_sidebars_widgets
+	 * @return array
 	 */
 	public function filter_customize_value_old_sidebars_widgets_data( $old_sidebars_widgets ) {
 		return $this->old_sidebars_widgets;
@@ -248,7 +256,10 @@ final class WP_Customize_Widgets {
 	 * @since 3.9.0
 	 * @access public
 	 *
+	 * @global array $sidebars_widgets
+	 *
 	 * @param array $sidebars_widgets
+	 * @return array
 	 */
 	public function filter_option_sidebars_widgets_for_theme_switch( $sidebars_widgets ) {
 		$sidebars_widgets = $GLOBALS['sidebars_widgets'];
@@ -298,13 +309,17 @@ final class WP_Customize_Widgets {
 	 *
 	 * @since 3.9.0
 	 * @access public
+	 *
+	 * @global array $wp_registered_widgets
+	 * @global array $wp_registered_widget_controls
+	 * @global array $wp_registered_sidebars
 	 */
 	public function customize_register() {
 		global $wp_registered_widgets, $wp_registered_widget_controls, $wp_registered_sidebars;
 
 		$sidebars_widgets = array_merge(
 			array( 'wp_inactive_widgets' => array() ),
-			array_fill_keys( array_keys( $GLOBALS['wp_registered_sidebars'] ), array() ),
+			array_fill_keys( array_keys( $wp_registered_sidebars ), array() ),
 			wp_get_sidebars_widgets()
 		);
 
@@ -332,6 +347,7 @@ final class WP_Customize_Widgets {
 			$setting_id = 'old_sidebars_widgets_data';
 			$setting_args = $this->get_setting_args( $setting_id, array(
 				'type' => 'global_variable',
+				'dirty' => true,
 			) );
 			$this->manager->add_setting( $setting_id, $setting_args );
 		}
@@ -347,7 +363,7 @@ final class WP_Customize_Widgets {
 				$sidebar_widget_ids = array();
 			}
 
-			$is_registered_sidebar = isset( $GLOBALS['wp_registered_sidebars'][$sidebar_id] );
+			$is_registered_sidebar = isset( $wp_registered_sidebars[ $sidebar_id ] );
 			$is_inactive_widgets   = ( 'wp_inactive_widgets' === $sidebar_id );
 			$is_active_sidebar     = ( $is_registered_sidebar && ! $is_inactive_widgets );
 
@@ -356,6 +372,9 @@ final class WP_Customize_Widgets {
 				$setting_id   = sprintf( 'sidebars_widgets[%s]', $sidebar_id );
 				$setting_args = $this->get_setting_args( $setting_id );
 				if ( ! $this->manager->get_setting( $setting_id ) ) {
+					if ( ! $this->manager->is_theme_active() ) {
+						$setting_args['dirty'] = true;
+					}
 					$this->manager->add_setting( $setting_id, $setting_args );
 				}
 				$new_setting_ids[] = $setting_id;
@@ -365,8 +384,8 @@ final class WP_Customize_Widgets {
 				if ( $is_active_sidebar ) {
 
 					$section_args = array(
-						'title' => $GLOBALS['wp_registered_sidebars'][ $sidebar_id ]['name'],
-						'description' => $GLOBALS['wp_registered_sidebars'][ $sidebar_id ]['description'],
+						'title' => $wp_registered_sidebars[ $sidebar_id ]['name'],
+						'description' => $wp_registered_sidebars[ $sidebar_id ]['description'],
 						'priority' => array_search( $sidebar_id, array_keys( $wp_registered_sidebars ) ),
 						'panel' => 'widgets',
 						'sidebar_id' => $sidebar_id,
@@ -401,13 +420,13 @@ final class WP_Customize_Widgets {
 			foreach ( $sidebar_widget_ids as $i => $widget_id ) {
 
 				// Skip widgets that may have gone away due to a plugin being deactivated.
-				if ( ! $is_active_sidebar || ! isset( $GLOBALS['wp_registered_widgets'][$widget_id] ) ) {
+				if ( ! $is_active_sidebar || ! isset( $wp_registered_widgets[$widget_id] ) ) {
 					continue;
 				}
 
-				$registered_widget = $GLOBALS['wp_registered_widgets'][$widget_id];
+				$registered_widget = $wp_registered_widgets[$widget_id];
 				$setting_id        = $this->get_setting_id( $widget_id );
-				$id_base           = $GLOBALS['wp_registered_widget_controls'][$widget_id]['id_base'];
+				$id_base           = $wp_registered_widget_controls[$widget_id]['id_base'];
 
 				$control = new WP_Widget_Form_Customize_Control( $this->manager, $setting_id, array(
 					'label'          => $registered_widget['name'],
@@ -464,6 +483,8 @@ final class WP_Customize_Widgets {
 	 *
 	 * @since 3.9.0
 	 * @access public
+	 *
+	 * @global $wp_registered_widget_controls
 	 *
 	 * @param string $widget_id Widget ID.
 	 * @return bool Whether or not the widget is a "wide" widget.
@@ -568,8 +589,14 @@ final class WP_Customize_Widgets {
 	 *
 	 * @since 3.9.0
 	 * @access public
+	 *
+	 * @global WP_Scripts $wp_scripts
+	 * @global array $wp_registered_sidebars
+	 * @global array $wp_registered_widgets
 	 */
 	public function enqueue_scripts() {
+		global $wp_scripts, $wp_registered_sidebars, $wp_registered_widgets;
+
 		wp_enqueue_style( 'customize-widgets' );
 		wp_enqueue_script( 'customize-widgets' );
 
@@ -613,12 +640,10 @@ final class WP_Customize_Widgets {
 			</div>'
 		);
 
-		global $wp_scripts;
-
 		$settings = array(
 			'nonce'                => wp_create_nonce( 'update-widget' ),
-			'registeredSidebars'   => array_values( $GLOBALS['wp_registered_sidebars'] ),
-			'registeredWidgets'    => $GLOBALS['wp_registered_widgets'],
+			'registeredSidebars'   => array_values( $wp_registered_sidebars ),
+			'registeredWidgets'    => $wp_registered_widgets,
 			'availableWidgets'     => $available_widgets, // @todo Merge this with registered_widgets
 			'l10n' => array(
 				'saveBtnLabel'     => __( 'Apply' ),
@@ -660,11 +685,13 @@ final class WP_Customize_Widgets {
 				<label class="screen-reader-text" for="widgets-search"><?php _e( 'Search Widgets' ); ?></label>
 				<input type="search" id="widgets-search" placeholder="<?php esc_attr_e( 'Search widgets&hellip;' ) ?>" />
 			</div>
+			<div id="available-widgets-list">
 			<?php foreach ( $this->get_available_widgets() as $available_widget ): ?>
 				<div id="widget-tpl-<?php echo esc_attr( $available_widget['id'] ) ?>" data-widget-id="<?php echo esc_attr( $available_widget['id'] ) ?>" class="widget-tpl <?php echo esc_attr( $available_widget['id'] ) ?>" tabindex="0">
 					<?php echo $available_widget['control_tpl']; ?>
 				</div>
 			<?php endforeach; ?>
+			</div><!-- #available-widgets-list -->
 		</div><!-- #available-widgets -->
 		</div><!-- #widgets-left -->
 		<?php
@@ -751,6 +778,10 @@ final class WP_Customize_Widgets {
 	 *
 	 * @since 3.9.0
 	 * @access public
+	 *
+	 * @global array $wp_registered_widgets
+	 * @global array $wp_registered_widget_controls
+	 * @staticvar array $available_widgets
 	 *
 	 * @see wp_list_widgets()
 	 *
@@ -882,6 +913,20 @@ final class WP_Customize_Widgets {
 	}
 
 	/**
+	 * Refresh nonce for widget updates.
+	 *
+	 * @since 4.2.0
+	 * @access public
+	 *
+	 * @param  array $nonces Array of nonces.
+	 * @return array $nonces Array of nonces.
+	 */
+	public function refresh_nonces( $nonces ) {
+		$nonces['update-widget'] = wp_create_nonce( 'update-widget' );
+		return $nonces;
+	}
+
+	/**
 	 * When previewing, make sure the proper previewing widgets are used.
 	 *
 	 * Because wp_get_sidebars_widgets() gets called early at init
@@ -894,6 +939,7 @@ final class WP_Customize_Widgets {
 	 * @access public
 	 *
 	 * @param array $sidebars_widgets List of widgets for the current sidebar.
+	 * @return array
 	 */
 	public function preview_sidebars_widgets( $sidebars_widgets ) {
 		$sidebars_widgets = get_option( 'sidebars_widgets' );
@@ -941,15 +987,18 @@ final class WP_Customize_Widgets {
 	 *
 	 * @since 3.9.0
 	 * @access public
+     *
+	 * @global array $wp_registered_sidebars
+	 * @global array $wp_registered_widgets
 	 */
 	public function export_preview_data() {
-
+		global $wp_registered_sidebars, $wp_registered_widgets;
 		// Prepare Customizer settings to pass to JavaScript.
 		$settings = array(
 			'renderedSidebars'   => array_fill_keys( array_unique( $this->rendered_sidebars ), true ),
 			'renderedWidgets'    => array_fill_keys( array_keys( $this->rendered_widgets ), true ),
-			'registeredSidebars' => array_values( $GLOBALS['wp_registered_sidebars'] ),
-			'registeredWidgets'  => $GLOBALS['wp_registered_widgets'],
+			'registeredSidebars' => array_values( $wp_registered_sidebars ),
+			'registeredWidgets'  => $wp_registered_widgets,
 			'l10n'               => array(
 				'widgetTooltip' => __( 'Shift-click to edit this widget.' ),
 			),
@@ -1014,8 +1063,11 @@ final class WP_Customize_Widgets {
 	 * @since 3.9.0
 	 * @access public
 	 *
+	 * @global array $wp_registered_sidebars
+	 *
 	 * @param bool   $is_active  Whether the sidebar is active.
 	 * @param string $sidebar_id Sidebar ID.
+	 * @return bool
 	 */
 	public function tally_sidebars_via_is_active_sidebar_calls( $is_active, $sidebar_id ) {
 		if ( isset( $GLOBALS['wp_registered_sidebars'][$sidebar_id] ) ) {
@@ -1039,8 +1091,11 @@ final class WP_Customize_Widgets {
 	 * @since 3.9.0
 	 * @access public
 	 *
+	 * @global array $wp_registered_sidebars
+	 *
 	 * @param bool   $has_widgets Whether the current sidebar has widgets.
 	 * @param string $sidebar_id  Sidebar ID.
+	 * @return bool
 	 */
 	public function tally_sidebars_via_dynamic_sidebar_calls( $has_widgets, $sidebar_id ) {
 		if ( isset( $GLOBALS['wp_registered_sidebars'][$sidebar_id] ) ) {
@@ -1081,7 +1136,7 @@ final class WP_Customize_Widgets {
 	 * @access public
 	 *
 	 * @param array $value Widget instance to sanitize.
-	 * @return array Sanitized widget instance.
+	 * @return array|void Sanitized widget instance.
 	 */
 	public function sanitize_widget_instance( $value ) {
 		if ( $value === array() ) {
@@ -1092,21 +1147,21 @@ final class WP_Customize_Widgets {
 			|| empty( $value['instance_hash_key'] )
 			|| empty( $value['encoded_serialized_instance'] ) )
 		{
-			return null;
+			return;
 		}
 
 		$decoded = base64_decode( $value['encoded_serialized_instance'], true );
 		if ( false === $decoded ) {
-			return null;
+			return;
 		}
 
 		if ( $this->get_instance_hash_key( $decoded ) !== $value['instance_hash_key'] ) {
-			return null;
+			return;
 		}
 
 		$instance = unserialize( $decoded );
 		if ( false === $instance ) {
-			return null;
+			return;
 		}
 
 		return $instance;
@@ -1144,6 +1199,8 @@ final class WP_Customize_Widgets {
 	 * @since 3.9.0
 	 * @access public
 	 *
+	 * @global array $wp_registered_widgets
+	 *
 	 * @param array $widget_ids List of widget IDs.
 	 * @return array Parsed list of widget IDs.
 	 */
@@ -1160,6 +1217,9 @@ final class WP_Customize_Widgets {
 	 *
 	 * @since 3.9.0
 	 * @access public
+	 *
+	 * @global array $wp_registered_widget_updates
+	 * @global array $wp_registered_widget_controls
 	 *
 	 * @param  string $widget_id Widget ID.
 	 * @return WP_Error|array Array containing the updated widget information.
@@ -1320,7 +1380,7 @@ final class WP_Customize_Widgets {
 
 		$updated_widget = $this->call_widget_update( $widget_id ); // => {instance,form}
 		if ( is_wp_error( $updated_widget ) ) {
-			wp_send_json_error( $updated_widget->get_error_message() );
+			wp_send_json_error( $updated_widget->get_error_code() );
 		}
 
 		$form = $updated_widget['form'];

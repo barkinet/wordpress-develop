@@ -409,8 +409,26 @@ function themes_api( $action, $args = null ) {
 function wp_prepare_themes_for_js( $themes = null ) {
 	$current_theme = get_stylesheet();
 
+	/**
+	 * Filter theme data before it is prepared for JavaScript.
+	 *
+	 * Passing a non-empty array will result in wp_prepare_themes_for_js() returning
+	 * early with that value instead.
+	 *
+	 * @since 4.2.0
+	 *
+	 * @param array      $prepared_themes An associative array of theme data. Default empty array.
+	 * @param null|array $themes          An array of WP_Theme objects to prepare, if any.
+	 * @param string     $current_theme   The current theme slug.
+	 */
+	$prepared_themes = (array) apply_filters( 'pre_prepare_themes_for_js', array(), $themes, $current_theme );
+
+	if ( ! empty( $prepared_themes ) ) {
+		return $prepared_themes;
+	}
+
 	// Make sure the current theme is listed first.
-	$prepared_themes = array( $current_theme => array() );
+	$prepared_themes[ $current_theme ] = array();
 
 	if ( null === $themes ) {
 		$themes = wp_get_themes( array( 'allowed' => true ) );
@@ -484,7 +502,8 @@ function wp_prepare_themes_for_js( $themes = null ) {
 	 * @param array $prepared_themes Array of themes.
 	 */
 	$prepared_themes = apply_filters( 'wp_prepare_themes_for_js', $prepared_themes );
-	return array_values( $prepared_themes );
+	$prepared_themes = array_values( $prepared_themes );
+	return array_filter( $prepared_themes );
 }
 
 /**
@@ -493,6 +512,8 @@ function wp_prepare_themes_for_js( $themes = null ) {
  * @since 4.2.0
  */
 function customize_themes_print_templates() {
+	$preview_url = esc_url( add_query_arg( 'theme', '__THEME__' ) ); // Token because esc_url() strips curly braces.
+	$preview_url = str_replace( '__THEME__', '{{ data.id }}', $preview_url );
 	?>
 	<script type="text/html" id="tmpl-customize-themes-details-view">
 		<div class="theme-backdrop"></div>
@@ -529,13 +550,13 @@ function customize_themes_print_templates() {
 				</div>
 			</div>
 
-			<div class="theme-actions">
-				<# if ( ! data.active ) { #>
+			<# if ( ! data.active ) { #>
+				<div class="theme-actions">
 					<div class="inactive-theme">
-						<a href="<?php echo add_query_arg( 'theme', '{{ data.id }}', remove_query_arg( 'theme' ) ); ?>" target="_top" class="button button-primary"><?php _e( 'Live Preview' ); ?></a>
+						<a href="<?php echo $preview_url; ?>" target="_top" class="button button-primary"><?php _e( 'Live Preview' ); ?></a>
 					</div>
-				<# } #>
-			</div>
+				</div>
+			<# } #>
 		</div>
 	</script>
 	<?php

@@ -20,6 +20,7 @@
  * @param {string}                     attributes.menu                   Initial mode for the menu region. @todo this needs a better explanation.
  * @param {boolean}                    [attributes.searchable=false]     Whether the library is searchable.
  * @param {boolean}                    [attributes.sortable=true]        Whether the Attachments should be sortable. Depends on the orderby property being set to menuOrder on the attachments collection.
+ * @param {boolean}                    [attributes.date=true]            Whether to show the date filter in the browser's toolbar.
  * @param {boolean}                    [attributes.describe=true]        Whether to offer UI to describe the attachments - e.g. captioning images in a gallery.
  * @param {boolean}                    [attributes.dragInfo=true]        Whether to show instructional text about the attachments being sortable.
  * @param {boolean}                    [attributes.dragInfoText]         Instructional text about the attachments being sortable.
@@ -34,9 +35,7 @@
  * @param {string}                     attributes.type                   The collection's media type. (e.g. 'video').
  * @param {string}                     attributes.collectionType         The collection type. (e.g. 'playlist').
  */
-var Library = require( './library.js' ),
-	View = require( '../views/view.js' ),
-	EditLibraryView = require( '../views/attachment/edit-library.js' ),
+var Library = wp.media.controller.Library,
 	l10n = wp.media.view.l10n,
 	$ = jQuery,
 	CollectionEdit;
@@ -45,6 +44,7 @@ CollectionEdit = Library.extend({
 	defaults: {
 		multiple:         false,
 		sortable:         true,
+		date:             false,
 		searchable:       false,
 		content:          'browse',
 		describe:         true,
@@ -75,7 +75,7 @@ CollectionEdit = Library.extend({
 		}
 		// The single `Attachment` view to be used in the `Attachments` view.
 		if ( ! this.get('AttachmentView') ) {
-			this.set( 'AttachmentView', EditLibraryView );
+			this.set( 'AttachmentView', wp.media.view.Attachment.EditLibrary );
 		}
 		Library.prototype.initialize.apply( this, arguments );
 	},
@@ -141,7 +141,7 @@ CollectionEdit = Library.extend({
 		attachmentsBrowserView.sidebar.set( obj );
 
 		if ( dragInfoText ) {
-			attachmentsBrowserView.toolbar.set( 'dragInfo', new View({
+			attachmentsBrowserView.toolbar.set( 'dragInfo', new wp.media.View({
 				el: $( '<div class="instructions">' + dragInfoText + '</div>' )[0],
 				priority: -40
 			}) );

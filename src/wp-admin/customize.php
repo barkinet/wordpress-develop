@@ -71,7 +71,7 @@ $body_class = 'wp-core-ui wp-customizer js';
 if ( wp_is_mobile() ) :
 	$body_class .= ' mobile';
 
-	?><meta name="viewport" id="viewport-meta" content="width=device-width, initial-scale=0.8, minimum-scale=0.5, maximum-scale=1.2" /><?php
+	?><meta name="viewport" id="viewport-meta" content="width=device-width, initial-scale=1.0, minimum-scale=0.5, maximum-scale=1.2" /><?php
 endif;
 
 $is_ios = wp_is_mobile() && preg_match( '/iPad|iPod|iPhone/', $_SERVER['HTTP_USER_AGENT'] );
@@ -119,19 +119,26 @@ do_action( 'customize_controls_print_scripts' );
 <div class="wp-full-overlay expanded">
 	<form id="customize-controls" class="wrap wp-full-overlay-sidebar">
 		<div id="customize-header-actions" class="wp-full-overlay-header">
-			<?php
-				$save_text = $wp_customize->is_theme_active() ? __( 'Save &amp; Publish' ) : __( 'Save &amp; Activate' );
-				submit_button( $save_text, 'primary save', 'save', false );
-			?>
-			<span class="spinner"></span>
-			<a class="customize-controls-preview-toggle" href="#">
-				<span class="controls"><?php _e( 'Customize' ); ?></span>
-				<span class="preview"><?php _e( 'Preview' ); ?></span>
-			</a>
-			<a class="customize-controls-close" href="<?php echo esc_url( $return ); ?>">
-				<span class="screen-reader-text"><?php _e( 'Cancel' ); ?></span>
-			</a>
-			<span class="control-panel-back" tabindex="-1"><span class="screen-reader-text"><?php _e( 'Back' ); ?></span></span>
+			<div class="primary-actions">
+				<?php
+					$save_text = $wp_customize->is_theme_active() ? __( 'Save &amp; Publish' ) : __( 'Save &amp; Activate' );
+					submit_button( $save_text, 'primary save', 'save', false );
+				?>
+				<span class="spinner"></span>
+				<a class="customize-controls-preview-toggle" href="#">
+					<span class="controls"><?php _e( 'Customize' ); ?></span>
+					<span class="preview"><?php _e( 'Preview' ); ?></span>
+				</a>
+				<a class="customize-controls-close" href="<?php echo esc_url( $return ); ?>">
+					<span class="screen-reader-text"><?php _e( 'Cancel' ); ?></span>
+				</a>
+				<span class="control-panel-back" tabindex="-1"><span class="screen-reader-text"><?php _e( 'Back' ); ?></span></span>
+			</div>
+			<div class="secondary-actions">
+				<button type="button" class="customize-overlay-close">
+					<span class="screen-reader-text"><?php _e( 'Close overlay' ); ?></span>
+				</button>
+			</div>
 		</div>
 
 		<div id="widgets-right"><!-- For Widget Customizer, many widgets try to look for instances under div#widgets-right, so we have to add that ID to a container div in the Customizer for compat -->
@@ -143,7 +150,7 @@ do_action( 'customize_controls_print_scripts' );
 					?></span>
 				</div>
 				<div class="accordion-section-content"><?php
-					echo __( 'The Customizer allows you to preview changes to your site before publishing them. You can also navigate to different pages on your site to preview them.' );
+					_e( 'The Customizer allows you to preview changes to your site before publishing them. You can also navigate to different pages on your site to preview them.' );
 				?></div>
 			</div>
 
@@ -253,6 +260,7 @@ do_action( 'customize_controls_print_scripts' );
 			$settings['settings'][ $id ] = array(
 				'value'     => $setting->js_value(),
 				'transport' => $setting->transport,
+				'dirty'     => $setting->dirty,
 			);
 		}
 	}

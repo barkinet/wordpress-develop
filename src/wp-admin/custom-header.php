@@ -120,7 +120,7 @@ class Custom_Image_Header {
 
 		get_current_screen()->set_help_sidebar(
 			'<p><strong>' . __( 'For more information:' ) . '</strong></p>' .
-			'<p>' . __( '<a href="http://codex.wordpress.org/Appearance_Header_Screen" target="_blank">Documentation on Custom Header</a>' ) . '</p>' .
+			'<p>' . __( '<a href="https://codex.wordpress.org/Appearance_Header_Screen" target="_blank">Documentation on Custom Header</a>' ) . '</p>' .
 			'<p>' . __( '<a href="https://wordpress.org/support/" target="_blank">Support Forums</a>' ) . '</p>'
 		);
 	}
@@ -267,7 +267,7 @@ class Custom_Image_Header {
 		if ( 1 < count( $headers ) ) {
 			echo '<div class="random-header">';
 			echo '<label><input name="default-header" type="radio" value="random-' . $type . '-image"' . checked( is_random_header_image( $type ), true, false ) . ' />';
-			echo __( '<strong>Random:</strong> Show a different image on each page.' );
+			_e( '<strong>Random:</strong> Show a different image on each page.' );
 			echo '</label>';
 			echo '</div>';
 		}

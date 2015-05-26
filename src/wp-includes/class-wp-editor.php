@@ -31,6 +31,7 @@ final class _WP_Editors {
 	/**
 	 * Parse default arguments for the editor instance.
 	 *
+	 * @static
 	 * @param string $editor_id ID for the current editor instance.
 	 * @param array  $settings {
 	 *     Array of editor arguments.
@@ -117,12 +118,6 @@ final class _WP_Editors {
 			// A cookie (set when a user resizes the editor) overrides the height.
 			$cookie = (int) get_user_setting( 'ed_size' );
 
-			// Upgrade an old TinyMCE cookie if it is still around, and the new one isn't.
-			if ( ! $cookie && isset( $_COOKIE['TinyMCE_content_size'] ) ) {
-				parse_str( $_COOKIE['TinyMCE_content_size'], $cookie );
- 				$cookie = $cookie['ch'];
-			}
-
 			if ( $cookie )
 				$set['editor_height'] = $cookie;
 		}
@@ -138,6 +133,7 @@ final class _WP_Editors {
 	/**
 	 * Outputs the HTML for a single instance of the editor.
 	 *
+	 * @static
 	 * @param string $content The initial content of the editor.
 	 * @param string $editor_id ID for the textarea and TinyMCE and Quicktags instances (can contain only ASCII letters and numbers).
 	 * @param array $settings See the _parse_settings() method for description.
@@ -251,10 +247,17 @@ final class _WP_Editors {
 	}
 
 	/**
+	 * @static
+	 *
+	 * @global string $wp_version
+	 * @global string $tinymce_version
+	 *
 	 * @param string $editor_id
 	 * @param array  $set
 	 */
 	public static function editor_settings($editor_id, $set) {
+		global $wp_version, $tinymce_version;
+
 		$first_run = false;
 
 		if ( empty(self::$first_init) ) {
@@ -360,6 +363,7 @@ final class _WP_Editors {
 						'wordpress',
 						'wpautoresize',
 						'wpeditimage',
+						'wpemoji',
 						'wpgallery',
 						'wplink',
 						'wpdialogs',
@@ -490,15 +494,6 @@ final class _WP_Editors {
 						],
 						strikethrough: {inline: 'del'}
 					}",
-					'block_formats' =>
-						'Paragraph=p;' .
-						'Pre=pre;' .
-						'Heading 1=h1;' .
-						'Heading 2=h2;' .
-						'Heading 3=h3;' .
-						'Heading 4=h4;' .
-						'Heading 5=h5;' .
-						'Heading 6=h6',
 					'relative_urls' => false,
 					'remove_script_host' => false,
 					'convert_urls' => false,
@@ -507,7 +502,7 @@ final class _WP_Editors {
 					'entities' => '38,amp,60,lt,62,gt',
 					'entity_encoding' => 'raw',
 					'keep_styles' => false,
-					'cache_suffix' => 'wp-mce-' . $GLOBALS['tinymce_version'],
+					'cache_suffix' => 'wp-mce-' . $tinymce_version,
 
 					// Limit the preview styles in the menu/toolbar
 					'preview_styles' => 'font-family font-size font-weight font-style text-decoration text-transform',
@@ -523,7 +518,7 @@ final class _WP_Editors {
 				}
 
 				$suffix = defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG ? '' : '.min';
-				$version = 'ver=' . $GLOBALS['wp_version'];
+				$version = 'ver=' . $wp_version;
 				$dashicons = includes_url( "css/dashicons$suffix.css?$version" );
 
 				// WordPress default stylesheet and dashicons
@@ -585,6 +580,12 @@ final class _WP_Editors {
 				 */
 				$mce_buttons = apply_filters( 'mce_buttons', $mce_buttons, $editor_id );
 
+				$mce_buttons_2 = array( 'formatselect', 'underline', 'alignjustify', 'forecolor', 'pastetext', 'removeformat', 'charmap', 'outdent', 'indent', 'undo', 'redo' );
+
+				if ( ! wp_is_mobile() ) {
+					$mce_buttons_2[] = 'wp_help';
+				}
+
 				/**
 				 * Filter the second-row list of TinyMCE buttons (Visual tab).
 				 *
@@ -593,7 +594,7 @@ final class _WP_Editors {
 				 * @param array  $buttons   Second-row list of buttons.
 				 * @param string $editor_id Unique editor identifier, e.g. 'content'.
 				 */
-				$mce_buttons_2 = apply_filters( 'mce_buttons_2', array( 'formatselect', 'underline', 'alignjustify', 'forecolor', 'pastetext', 'removeformat', 'charmap', 'outdent', 'indent', 'undo', 'redo', 'wp_help' ), $editor_id );
+				$mce_buttons_2 = apply_filters( 'mce_buttons_2', $mce_buttons_2, $editor_id );
 
 				/**
 				 * Filter the third-row list of TinyMCE buttons (Visual tab).
@@ -709,6 +710,12 @@ final class _WP_Editors {
 		} // end if self::$this_tinymce
 	}
 
+	/**
+	 *
+	 * @static
+	 * @param array $init
+	 * @return string
+	 */
 	private static function _parse_init($init) {
 		$options = '';
 
@@ -727,6 +734,10 @@ final class _WP_Editors {
 		return '{' . trim( $options, ' ,' ) . '}';
 	}
 
+	/**
+	 *
+	 * @static
+	 */
 	public static function enqueue_scripts() {
 		wp_enqueue_script('word-count');
 
@@ -768,6 +779,7 @@ final class _WP_Editors {
 	 * Translates the default TinyMCE strings and returns them as JSON encoded object ready to be loaded with tinymce.addI18n().
 	 * Can be used directly (_WP_Editors::wp_mce_translation()) by passing the same locale as set in the TinyMCE init object.
 	 *
+	 * @static
 	 * @param string $mce_locale The locale used for the editor.
 	 * @param bool $json_only optional Whether to include the JavaScript calls to tinymce.addI18n() and tinymce.ScriptLoader.markDone().
 	 * @return string Translation object, JSON encoded.
@@ -1054,8 +1066,16 @@ final class _WP_Editors {
 			"tinymce.ScriptLoader.markDone( '$baseurl/langs/$mce_locale.js' );\n";
 	}
 
+	/**
+	 *
+	 * @static
+	 * @global string $wp_version
+	 * @global string $tinymce_version
+	 * @global bool   $concatenate_scripts
+	 * @global bool   $compress_scripts
+	 */
 	public static function editor_js() {
-		global $tinymce_version, $concatenate_scripts, $compress_scripts;
+		global $wp_version, $tinymce_version, $concatenate_scripts, $compress_scripts;
 
 		/**
 		 * Filter "tiny_mce_version" is deprecated
@@ -1133,7 +1153,7 @@ final class _WP_Editors {
 
 		$baseurl = self::$baseurl;
 		// Load tinymce.js when running from /src, else load wp-tinymce.js.gz (production) or tinymce.min.js (SCRIPT_DEBUG)
-		$mce_suffix = false !== strpos( $GLOBALS['wp_version'], '-src' ) ? '' : '.min';
+		$mce_suffix = false !== strpos( $wp_version, '-src' ) ? '' : '.min';
 
 		if ( $tmce_on ) {
 			if ( $compressed ) {
@@ -1245,6 +1265,11 @@ final class _WP_Editors {
 		do_action( 'after_wp_tiny_mce', self::$mce_settings );
 	}
 
+	/**
+	 *
+	 * @static
+	 * @global int $content_width
+	 */
 	public static function wp_fullscreen_html() {
 		global $content_width;
 		$post = get_post();
@@ -1343,6 +1368,7 @@ final class _WP_Editors {
 	 *
 	 * @since 3.1.0
 	 *
+	 * @static
 	 * @param array $args Optional. Accepts 'pagenum' and 's' (search) arguments.
 	 * @return false|array Results.
 	 */
@@ -1431,6 +1457,8 @@ final class _WP_Editors {
 	 * Dialog for internal linking.
 	 *
 	 * @since 3.1.0
+	 *
+	 * @static
 	 */
 	public static function wp_link_dialog() {
 		$search_panel_visible = '1' == get_user_setting( 'wplink', '0' ) ? ' search-panel-visible' : '';
@@ -1449,13 +1477,13 @@ final class _WP_Editors {
 			<div id="link-options">
 				<p class="howto"><?php _e( 'Enter the destination URL' ); ?></p>
 				<div>
-					<label><span><?php _e( 'URL' ); ?></span><input id="url-field" type="text" name="href" /></label>
+					<label><span><?php _e( 'URL' ); ?></span><input id="wp-link-url" type="text" /></label>
 				</div>
-				<div>
-					<label><span><?php _e( 'Title' ); ?></span><input id="link-title-field" type="text" name="linktitle" /></label>
+				<div class="wp-link-text-field">
+					<label><span><?php _e( 'Link Text' ); ?></span><input id="wp-link-text" type="text" /></label>
 				</div>
 				<div class="link-target">
-					<label><span>&nbsp;</span><input type="checkbox" id="link-target-checkbox" /> <?php _e( 'Open link in a new window/tab' ); ?></label>
+					<label><span>&nbsp;</span><input type="checkbox" id="wp-link-target" /> <?php _e( 'Open link in a new window/tab' ); ?></label>
 				</div>
 			</div>
 			<p class="howto"><a href="#" id="wp-link-search-toggle"><?php _e( 'Or link to existing content' ); ?></a></p>
@@ -1463,7 +1491,7 @@ final class _WP_Editors {
 				<div class="link-search-wrapper">
 					<label>
 						<span class="search-label"><?php _e( 'Search' ); ?></span>
-						<input type="search" id="search-field" class="link-search-field" autocomplete="off" />
+						<input type="search" id="wp-link-search" class="link-search-field" autocomplete="off" />
 						<span class="spinner"></span>
 					</label>
 				</div>

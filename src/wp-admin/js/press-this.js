@@ -4,18 +4,14 @@
  */
 ( function( $, window ) {
 	var PressThis = function() {
-		var editor,
+		var editor, $mediaList, $mediaThumbWrap,
 			saveAlert             = false,
+			editLinkVisible       = false,
 			textarea              = document.createElement( 'textarea' ),
 			sidebarIsOpen         = false,
-			siteConfig            = window.wpPressThisConfig || {},
+			settings              = window.wpPressThisConfig || {},
 			data                  = window.wpPressThisData || {},
 			smallestWidth         = 128,
-			interestingImages	  = getInterestingImages( data ) || [],
-			interestingEmbeds	  = getInterestingEmbeds( data ) || [],
-			hasEmptyTitleStr      = false,
-			suggestedTitleStr     = getSuggestedTitle( data ),
-			suggestedContentStr   = getSuggestedContent( data ),
 			hasSetFocus           = false,
 			catsCache             = [],
 			isOffScreen           = 'is-off-screen',
@@ -75,10 +71,14 @@
 		 * @returns string Sanitized text.
 		 */
 		function sanitizeText( text ) {
-			text = stripTags( text );
-			textarea.innerHTML = text;
+			var _text = stripTags( text );
 
-			return stripTags( textarea.value );
+			try {
+				textarea.innerHTML = _text;
+				_text = stripTags( textarea.value );
+			} catch ( er ) {}
+
+			return _text;
 		}
 
 		/**
@@ -99,216 +99,45 @@
 		}
 
 		/**
-		 * Gets the source page's canonical link, based on passed location and meta data.
-		 *
-		 * @returns string Discovered canonical URL, or empty
-		 */
-		function getCanonicalLink() {
-			var link = '';
-
-			if ( data._links && data._links.canonical ) {
-				link = data._links.canonical;
-			}
-
-			if ( ! link && data.u ) {
-				link = data.u;
-			}
-
-			if ( ! link && data._meta ) {
-				if ( data._meta['twitter:url'] ) {
-					link = data._meta['twitter:url'];
-				} else if ( data._meta['og:url'] ) {
-					link = data._meta['og:url'];
-				}
-			}
-
-			return checkUrl( decodeURI( link ) );
-		}
-
-		/**
-		 * Gets the source page's site name, based on passed meta data.
-		 *
-		 * @returns string Discovered site name, or empty
-		 */
-		function getSourceSiteName() {
-			var name = '';
-
-			if ( data._meta ) {
-				if ( data._meta['og:site_name'] ) {
-					name = data._meta['og:site_name'];
-				} else if ( data._meta['application-name'] ) {
-					name = data._meta['application-name'];
-				}
-			}
-
-			return sanitizeText( name );
-		}
-
-		/**
-		 * Gets the source page's title, based on passed title and meta data.
-		 *
-		 * @returns string Discovered page title, or empty
-		 */
-		function getSuggestedTitle() {
-			var title = '';
-
-			if ( data.t ) {
-				title = data.t;
-			}
-
-			if ( ! title && data._meta ) {
-				if ( data._meta['twitter:title'] ) {
-					title = data._meta['twitter:title'];
-				} else if ( data._meta['og:title'] ) {
-					title = data._meta['og:title'];
-				} else if ( data._meta.title ) {
-					title = data._meta.title;
-				}
-			}
-
-			if ( ! title ) {
-				title = __( 'newPost' );
-				hasEmptyTitleStr = true;
-			}
-
-			return sanitizeText( title );
-		}
-
-		/**
-		 * Gets the source page's suggested content, based on passed data (description, selection, etc).
-		 * Features a blockquoted excerpt, as well as content attribution, if any.
-		 *
-		 * @returns string Discovered content, or empty
-		 */
-		function getSuggestedContent() {
-			var content  = '',
-				text     = '',
-				title    = getSuggestedTitle(),
-				url      = getCanonicalLink(),
-				siteName = getSourceSiteName();
-
-			if ( data.s ) {
-				text = data.s;
-			} else if ( data._meta ) {
-				if ( data._meta['twitter:description'] ) {
-					text = data._meta['twitter:description'];
-				} else if ( data._meta['og:description'] ) {
-					text = data._meta['og:description'];
-				} else if ( data._meta.description ) {
-					text = data._meta.description;
-				}
-			}
-
-			if ( text && siteConfig.html.quote ) {
-				// Wrap suggested content in specified HTML.
-				content = siteConfig.html.quote.replace( /%1\$s/g, sanitizeText( text ) );
-			}
-
-			// Add a source attribution if there is one available.
-			if ( url && siteConfig.html.link && ( ( title && __( 'newPost' ) !== title ) || siteName ) ) {
-				content += siteConfig.html.link.replace( /%1\$s/g, encodeURI( url ) ).replace( /%2\$s/g, ( title || siteName ) );
-			}
-
-			return content || '';
-		}
-
-		/**
-		 * Get a list of valid embeds from what was passed via WpPressThis_App.data._embed on page load.
-		 *
-		 * @returns array
-		 */
-		function getInterestingEmbeds() {
-			var embeds             = data._embed || [],
-				interestingEmbeds  = [],
-				alreadySelected    = [];
-
-			if ( embeds.length ) {
-				$.each( embeds, function ( i, src ) {
-					if ( ! src ) {
-						// Skip: no src value
-						return;
-					}
-
-					var schemelessSrc = src.replace( /^https?:/, '' );
-
-					if ( $.inArray( schemelessSrc, alreadySelected ) > -1 ) {
-						// Skip: already shown
-						return;
-					}
-
-					interestingEmbeds.push( src );
-					alreadySelected.push( schemelessSrc );
-				} );
-			}
-
-			return interestingEmbeds;
-		}
-
-		/**
-		 * Get a list of valid images from what was passed via WpPressThis_App.data._img and WpPressThis_App.data._meta on page load.
-		 *
-		 * @returns array
-		 */
-		function getInterestingImages( data ) {
-			var imgs             = data._img || [],
-				interestingImgs  = [],
-				alreadySelected  = [];
-
-			if ( imgs.length ) {
-				$.each( imgs, function ( i, src ) {
-					src = src.replace( /http:\/\/[\d]+\.gravatar\.com\//, 'https://secure.gravatar.com/' );
-					src = checkUrl( src );
-
-					if ( ! src ) {
-						// Skip: no src value
-						return;
-					}
-
-					var schemelessSrc = src.replace( /^https?:/, '' );
-
-					if ( Array.prototype.indexOf && alreadySelected.indexOf( schemelessSrc ) > -1 ) {
-						// Skip: already shown
-						return;
-					} else if ( src.indexOf( 'avatar' ) > -1 && interestingImgs.length >= 15 ) {
-						// Skip:  some type of avatar and we've already gathered more than 23 diff images to show
-						return;
-					}
-
-					interestingImgs.push( src );
-					alreadySelected.push( schemelessSrc );
-				} );
-			}
-
-			return interestingImgs;
-		}
-
-		/**
 		 * Show UX spinner
 		 */
 		function showSpinner() {
-			$( '#spinner' ).addClass( 'show' );
-			$( '.post-actions button' ).each( function() {
-				$( this ).attr( 'disabled', 'disabled' );
-			} );
+			$( '.spinner' ).addClass( 'is-active' );
+			$( '.post-actions button' ).attr( 'disabled', 'disabled' );
 		}
 
 		/**
 		 * Hide UX spinner
 		 */
 		function hideSpinner() {
-			$( '#spinner' ).removeClass( 'show' );
-			$( '.post-actions button' ).each( function() {
-				$( this ).removeAttr( 'disabled' );
-			} );
+			$( '.spinner' ).removeClass( 'is-active' );
+			$( '.post-actions button' ).removeAttr( 'disabled' );
+		}
+
+		/**
+		 * Replace emoji images with chars and sanitize the text content.
+		 */
+		function getTitleText() {
+			var $element = $( '#title-container' );
+
+			$element.find( 'img.emoji' ).each( function() {
+				var $image = $( this );
+				$image.replaceWith( $( '<span>' ).text( $image.attr( 'alt' ) ) );
+			});
+
+			return sanitizeText( $element.text() );
 		}
 
 		/**
 		 * Prepare the form data for saving.
-		 */		 		
+		 */
 		function prepareFormData() {
+			var $form = $( '#pressthis-form' ),
+				$input = $( '<input type="hidden" name="post_category[]" value="">' );
+
 			editor && editor.save();
 
-			$( '#post_title' ).val( sanitizeText( $( '#title-container' ).text() ) );
+			$( '#post_title' ).val( getTitleText() );
 
 			// Make sure to flush out the tags with tagBox before saving
 			if ( window.tagBox ) {
@@ -316,6 +145,16 @@
 					window.tagBox.flushTags( this, false, 1 );
 				} );
 			}
+
+			// Get selected categories
+			$( '.categories-select .category' ).each( function( i, element ) {
+				var $cat = $( element );
+
+				if ( $cat.hasClass( 'selected' ) ) {
+					// Have to append a node as we submit the actual form on preview
+					$form.append( $input.clone().val( $cat.attr( 'data-term-id' ) || '' ) );
+				}
+			});
 		}
 
 		/**
@@ -324,7 +163,8 @@
 		 * @param action string publish|draft
 		 */
 		function submitPost( action ) {
-			var data;
+			var data,
+				keepFocus = $( document.activeElement ).hasClass( 'draft-button' );
 
 			saveAlert = false;
 			showSpinner();
@@ -339,24 +179,54 @@
 			$.ajax( {
 				type: 'post',
 				url: window.ajaxurl,
-				data: data,
-				success: function( response ) {
-					if ( ! response.success ) {
-						renderError( response.data.errorMessage );
-						hideSpinner();
-					} else if ( response.data.redirect ) {
-						if ( window.opener && siteConfig.redirInParent ) {
-							try {
-								window.opener.location.href = response.data.redirect;
-							} catch( er ) {}
+				data: data
+			}).always( function() {
+				hideSpinner();
+				clearNotices();
+			}).done( function( response ) {
+				var $link, $button;
 
-							window.self.close();
-						} else {
-							window.location.href = response.data.redirect;
-						}
+				if ( ! response.success ) {
+					renderError( response.data.errorMessage );
+				} else if ( response.data.redirect ) {
+					if ( window.opener && settings.redirInParent ) {
+						try {
+							window.opener.location.href = response.data.redirect;
+						} catch( er ) {}
+
+						window.self.close();
+					} else {
+						window.location.href = response.data.redirect;
 					}
+				} else if ( response.data.postSaved ) {
+					$link = $( '.edit-post-link' );
+					$button = $( '.draft-button' );
+					editLinkVisible = true;
+
+					$button.fadeOut( 200, function() {
+						$button.removeClass( 'is-saving' );
+						$link.fadeIn( 200, function() {
+							var active = document.activeElement;
+							// Different browsers move the focus to different places when the button is disabled.
+							if ( keepFocus && ( active === $button[0] || $( active ).hasClass( 'post-actions' ) || active.nodeName === 'BODY' ) ) {
+								$link.focus();
+							}
+						});
+					});
 				}
-			} );
+			}).fail( function() {
+				renderError( __( 'serverError' ) );
+			});
+		}
+
+		function resetDraftButton() {
+			if ( editLinkVisible ) {
+				editLinkVisible = false;
+
+				$( '.edit-post-link' ).fadeOut( 200, function() {
+					$( '.draft-button' ).removeClass( 'is-saving' ).fadeIn( 200 );
+				});
+			}
 		}
 
 		/**
@@ -366,32 +236,31 @@
 		 * @param src string Source URL
 		 * @param link string Optional destination link, for images (defaults to src)
 		 */
-		function insertSelectedMedia( type, src, link ) {
-			var newContent = '';
+		function insertSelectedMedia( $element ) {
+			var src, link, newContent = '';
 
 			if ( ! editor ) {
 				return;
 			}
 
-			src = checkUrl( src );
-			link = checkUrl( link );
+			src = checkUrl( $element.attr( 'data-wp-src' ) || '' );
+			link = checkUrl( data.u );
 
-			if ( 'img' === type ) {
+			if ( $element.hasClass( 'is-image' ) ) {
 				if ( ! link ) {
 					link = src;
 				}
 
-				newContent = '<a href="' + link + '"><img class="alignnone size-full" src="' + src + '" /></a>\n';
+				newContent = '<a href="' + link + '"><img class="alignnone size-full" src="' + src + '" /></a>';
 			} else {
-				newContent = '[embed]' + src + '[/embed]\n';
+				newContent = '[embed]' + src + '[/embed]';
 			}
 
 			if ( ! hasSetFocus ) {
-				editor.focus();
+				editor.setContent( '<p>' + newContent + '</p>' + editor.getContent() );
+			} else {
+				editor.execCommand( 'mceInsertContent', false, newContent );
 			}
-
-			editor.execCommand( 'mceInsertContent', false, newContent );
-			hasSetFocus = true;
 		}
 
 		/**
@@ -417,18 +286,17 @@
 				if ( ! response.success ) {
 					renderError( response.data.errorMessage );
 				} else {
-					// TODO: change if/when the html changes.
 					var $parent, $ul,
 						$wrap = $( 'ul.categories-select' );
 
 					$.each( response.data, function( i, newCat ) {
-						var $node = $( '<li>' ).attr( 'id', 'category-' + newCat.term_id )
-							.append( $( '<label class="selectit">' ).text( newCat.name )
-								.append( $( '<input type="checkbox" name="post_category[]" checked>' ).attr( 'value', newCat.term_id ) ) );
+						var $node = $( '<li>' ).append( $( '<div class="category selected" tabindex="0" role="checkbox" aria-checked="true">' )
+							.attr( 'data-term-id', newCat.term_id )
+							.text( newCat.name ) );
 
 						if ( newCat.parent ) {
 							if ( ! $ul || ! $ul.length ) {
-								$parent = $wrap.find( '#category-' + newCat.parent );
+								$parent = $wrap.find( 'div[data-term-id="' + newCat.parent + '"]' ).parent();
 								$ul = $parent.find( 'ul.children:first' );
 
 								if ( ! $ul.length ) {
@@ -436,11 +304,12 @@
 								}
 							}
 
-							$ul.append( $node );
-							// TODO: set focus on
+							$ul.prepend( $node );
 						} else {
 							$wrap.prepend( $node );
 						}
+
+						$node.focus();
 					} );
 
 					refreshCatsCache();
@@ -456,7 +325,7 @@
 		 * Hide the form letting users enter a URL to be scanned, if a URL was already passed.
 		 */
 		function renderToolsVisibility() {
-			if ( data.u && data.u.match( /^https?:/ ) ) {
+			if ( data.hasData ) {
 				$( '#scanbar' ).hide();
 			}
 		}
@@ -483,6 +352,10 @@
 			renderNotice( msg, true );
 		}
 
+		function clearNotices() {
+			$( 'div.alerts' ).empty();
+		}
+
 		/**
 		 * Render notices on page load, if any already
 		 */
@@ -493,78 +366,36 @@
 					renderError( msg );
 				} );
 			}
-
-			// Prompt user to upgrade their bookmarklet if there is a version mismatch.
-			if ( data.v && data._version && ( data.v + '' ) !== ( data._version + '' ) ) {
-				$( '.should-upgrade-bookmarklet' ).removeClass( 'is-hidden' );
-			}
 		}
 
 		/**
-		 * Render the suggested title, if any
+		 * Add an image to the list of found images.
 		 */
-		function renderSuggestedTitle() {
-			var suggestedTitle = suggestedTitleStr || '',
-				$title = $( '#title-container' );
+		function addImg( src, displaySrc, i ) {
+			var $element = $mediaThumbWrap.clone().addClass( 'is-image' );
 
-			if ( ! hasEmptyTitleStr ) {
-				$( '#post_title' ).val( suggestedTitle );
-				$title.text( suggestedTitle );
-				$( '.post-title-placeholder' ).addClass( 'is-hidden' );
-			}
+			$element.attr( 'data-wp-src', src ).css( 'background-image', 'url(' + displaySrc + ')' )
+				.find( 'span' ).text( __( 'suggestedImgAlt' ).replace( '%d', i + 1 ) );
 
-			$title.on( 'keyup', function() {
-				saveAlert = true;
-			}).on( 'paste', function() {
-				saveAlert = true;
-
-				setTimeout( function() {
-					$title.text( $title.text() );
-				}, 100 );
-			} );
-
-		}
-
-		/**
-		 * Render the suggested content, if any
-		 */
-		function renderSuggestedContent() {
-			if ( ! suggestedContentStr ) {
-				return;
-			}
-
-			if ( ! editor ) {
-				editor = window.tinymce.get( 'pressthis' );
-			}
-
-			if ( editor ) {
-				editor.setContent( suggestedContentStr );
-				editor.on( 'focus', function() {
-					hasSetFocus = true;
-				} );
-			}
+			$mediaList.append( $element );
 		}
 
 		/**
 		 * Render the detected images and embed for selection, if any
 		 */
 		function renderDetectedMedia() {
-			var mediaContainer = $( '#featured-media-container'),
-				listContainer  = $( '#all-media-container' ),
-				found          = 0;
+			var found = 0;
 
-			listContainer.empty();
+			$mediaList = $( 'ul.media-list' );
+			$mediaThumbWrap = $( '<li class="suggested-media-thumbnail" tabindex="0"><span class="screen-reader-text"></span></li>' );
 
-			if ( interestingEmbeds || interestingImages ) {
-				listContainer.append( '<h2 class="screen-reader-text">' + __( 'allMediaHeading' ) + '</h2><ul class="wppt-all-media-list"/>' );
-			}
-
-			if ( interestingEmbeds ) {
-				$.each( interestingEmbeds, function ( i, src ) {
-					src = checkUrl( src );
-
+			if ( data._embeds ) {
+				$.each( data._embeds, function ( i, src ) {
 					var displaySrc = '',
-						cssClass   = 'suggested-media-thumbnail suggested-media-embed';
+						cssClass = '',
+						$element = $mediaThumbWrap.clone().addClass( 'is-embed' );
+
+					src = checkUrl( src );
 
 					if ( src.indexOf( 'youtube.com/' ) > -1 ) {
 						displaySrc = 'https://i.ytimg.com/vi/' + src.replace( /.+v=([^&]+).*/, '$1' ) + '/hqdefault.jpg';
@@ -583,61 +414,50 @@
 						cssClass += ' is-video';
 					}
 
-					$( '<li></li>', {
-						'id': 'embed-' + i + '-container',
-						'class': cssClass,
-						'tabindex': '0'
-					} ).css( {
-						'background-image': ( displaySrc ) ? 'url(' + displaySrc + ')' : null
-					} ).html(
-						'<span class="screen-reader-text">' + __( 'suggestedEmbedAlt' ).replace( '%d', i + 1 ) + '</span>'
-					).on( 'click keypress', function ( e ) {
-						if ( e.type === 'click' || e.which === 13 ) {
-							insertSelectedMedia( 'embed',src );
-						}
-					} ).appendTo( '.wppt-all-media-list', listContainer );
+					$element.attr( 'data-wp-src', src ).find( 'span' ).text( __( 'suggestedEmbedAlt' ).replace( '%d', i + 1 ) );
 
+					if ( displaySrc ) {
+						$element.css( 'background-image', 'url(' + displaySrc + ')' );
+					}
+
+					$mediaList.append( $element );
 					found++;
 				} );
 			}
 
-			if ( interestingImages ) {
-				$.each( interestingImages, function ( i, src ) {
-					src = checkUrl( src );
+			if ( data._images ) {
+				$.each( data._images, function( i, src ) {
+					var displaySrc, img = new Image();
 
-					var displaySrc = src.replace(/^(http[^\?]+)(\?.*)?$/, '$1');
+					src = checkUrl( src );
+					displaySrc = src.replace( /^(http[^\?]+)(\?.*)?$/, '$1' );
+
 					if ( src.indexOf( 'files.wordpress.com/' ) > -1 ) {
-						displaySrc = displaySrc.replace(/\?.*$/, '') + '?w=' + smallestWidth;
+						displaySrc = displaySrc.replace( /\?.*$/, '' ) + '?w=' + smallestWidth;
 					} else if ( src.indexOf( 'gravatar.com/' ) > -1 ) {
 						displaySrc = displaySrc.replace( /\?.*$/, '' ) + '?s=' + smallestWidth;
 					} else {
 						displaySrc = src;
 					}
 
-					$( '<li></li>', {
-						'id': 'img-' + i + '-container',
-						'class': 'suggested-media-thumbnail is-image',
-						'tabindex': '0'
-					} ).css( {
-						'background-image': 'url(' + displaySrc + ')'
-					} ).html(
-						'<span class="screen-reader-text">' +__( 'suggestedImgAlt' ).replace( '%d', i + 1 ) + '</span>'
-					).on( 'click keypress', function ( e ) {
-						if ( e.type === 'click' || e.which === 13 ) {
-							insertSelectedMedia( 'img', src, data.u );
-						}
-					} ).appendTo( '.wppt-all-media-list', listContainer );
+					img.onload = function() {
+						if ( ( img.width && img.width < 256 ) ||
+							( img.height && img.height < 128 ) ) {
 
+							return;
+						}
+
+						addImg( src, displaySrc, i );
+					};
+
+					img.src = src;
 					found++;
 				} );
 			}
 
-			if ( ! found ) {
-				mediaContainer.removeClass( 'all-media-visible' ).addClass( 'no-media');
-				return;
+			if ( found ) {
+				$( '.media-list-container' ).addClass( 'has-media' );
 			}
-
-			mediaContainer.removeClass( 'no-media' ).addClass( 'all-media-visible' );
 		}
 
 		/* ***************************************************************
@@ -653,7 +473,7 @@
 				$settingModal = $( '.setting-modal' ),
 				$modalClose   = $( '.modal-close' );
 
-			$postOption.on( 'click', function( event ) {
+			$postOption.on( 'click', function() {
 				var index = $( this ).index(),
 					$targetSettingModal = $settingModal.eq( index );
 
@@ -668,7 +488,7 @@
 					} );
 			} );
 
-			$modalClose.on( 'click', function( event ) {
+			$modalClose.on( 'click', function() {
 				var $targetSettingModal = $( this ).parent(),
 					index = $targetSettingModal.index();
 
@@ -695,46 +515,115 @@
 		function openSidebar() {
 			sidebarIsOpen = true;
 
-			$( '.options-open, .press-this-actions, #scanbar' ).addClass( isHidden );
-			$( '.options-close, .options-panel-back' ).removeClass( isHidden );
+			$( '.options' ).removeClass( 'closed' ).addClass( 'open' );
+			$( '.press-this-actions, #scanbar' ).addClass( isHidden );
+			$( '.options-panel-back' ).removeClass( isHidden );
 
 			$( '.options-panel' ).removeClass( offscreenHidden )
-				.one( 'transitionend', function() {
+				.one( transitionEndEvent, function() {
 					$( '.post-option:first' ).focus();
 				} );
 		}
-		
+
 		function closeSidebar() {
 			sidebarIsOpen = false;
 
-			$( '.options-close, .options-panel-back' ).addClass( isHidden );
-			$( '.options-open, .press-this-actions, #scanbar' ).removeClass( isHidden );
+			$( '.options' ).removeClass( 'open' ).addClass( 'closed' );
+			$( '.options-panel-back' ).addClass( isHidden );
+			$( '.press-this-actions, #scanbar' ).removeClass( isHidden );
 
 			$( '.options-panel' ).addClass( isOffScreen )
-				.one( 'transitionend', function() {
+				.one( transitionEndEvent, function() {
 					$( this ).addClass( isHidden );
 					// Reset to options list
 					$( '.post-options' ).removeClass( offscreenHidden );
 					$( '.setting-modal').addClass( offscreenHidden );
-				} );
+				});
 		}
 
 		/**
 		 * Interactive behavior for the post title's field placeholder
 		 */
 		function monitorPlaceholder() {
-			var $selector = $( '#title-container'),
-				$placeholder = $('.post-title-placeholder');
+			var $titleField = $( '#title-container' ),
+				$placeholder = $( '.post-title-placeholder' );
 
-			$selector.on( 'focus', function() {
-				$placeholder.addClass('is-hidden');
-			} );
-
-			$selector.on( 'blur', function() {
-				if ( ! $( this ).text() ) {
-					$placeholder.removeClass('is-hidden');
+			$titleField.on( 'focus', function() {
+				$placeholder.addClass( 'is-hidden' );
+				resetDraftButton();
+			}).on( 'blur', function() {
+				if ( ! $titleField.text() && ! $titleField.html() ) {
+					$placeholder.removeClass( 'is-hidden' );
 				}
-			} );
+			}).on( 'keyup', function() {
+				saveAlert = true;
+			}).on( 'paste', function( event ) {
+				var text, range,
+					clipboard = event.originalEvent.clipboardData || window.clipboardData;
+
+				if ( clipboard ) {
+					try{
+						text = clipboard.getData( 'Text' ) || clipboard.getData( 'text/plain' );
+
+						if ( text ) {
+							text = $.trim( text.replace( /\s+/g, ' ' ) );
+
+							if ( window.getSelection ) {
+								range = window.getSelection().getRangeAt(0);
+
+								if ( range ) {
+									if ( ! range.collapsed ) {
+										range.deleteContents();
+									}
+
+									range.insertNode( document.createTextNode( text ) );
+								}
+							} else if ( document.selection ) {
+								range = document.selection.createRange();
+
+								if ( range ) {
+									range.text = text;
+								}
+							}
+						}
+					} catch ( er ) {}
+
+					event.preventDefault();
+				}
+
+				saveAlert = true;
+
+				setTimeout( function() {
+					$titleField.text( getTitleText() );
+				}, 50 );
+			});
+
+			if ( $titleField.text() || $titleField.html() ) {
+				$placeholder.addClass('is-hidden');
+			}
+		}
+
+		function toggleCatItem( $element ) {
+			if ( $element.hasClass( 'selected' ) ) {
+				$element.removeClass( 'selected' ).attr( 'aria-checked', 'false' );
+			} else {
+				$element.addClass( 'selected' ).attr( 'aria-checked', 'true' );
+			}
+		}
+
+		function monitorCatList() {
+			$( '.categories-select' ).on( 'click.press-this keydown.press-this', function( event ) {
+				var $element = $( event.target );
+
+				if ( $element.is( 'div.category' ) ) {
+					if ( event.type === 'keydown' && event.keyCode !== 32 ) {
+						return;
+					}
+
+					toggleCatItem( $element );
+					event.preventDefault();
+				}
+			});
 		}
 
 		/* ***************************************************************
@@ -747,9 +636,7 @@
 		function render(){
 			// We're on!
 			renderToolsVisibility();
-			renderSuggestedTitle();
 			renderDetectedMedia();
-			$( document ).on( 'tinymce-editor-init', renderSuggestedContent );
 			renderStartupNotices();
 
 			if ( window.tagBox ) {
@@ -760,36 +647,56 @@
 		/**
 		 * Set app events and other state monitoring related code.
 		 */
-		function monitor(){
-			$( '#current-site a').click( function( e ) {
-				e.preventDefault();
-			} );
+		function monitor() {
+			$( document ).on( 'tinymce-editor-init', function( event, ed ) {
+				editor = ed;
 
-			// Publish and Draft buttons and submit
-			
+				editor.on( 'nodechange', function() {
+					hasSetFocus = true;
+					resetDraftButton();
+				} );
+			}).on( 'click.press-this keypress.press-this', '.suggested-media-thumbnail', function( event ) {
+				if ( event.type === 'click' || event.keyCode === 13 ) {
+					insertSelectedMedia( $( this ) );
+				}
+			});
 
+			// Publish, Draft and Preview buttons
 			$( '.post-actions' ).on( 'click.press-this', function( event ) {
-				var $target = $( event.target );
+				var $target = $( event.target ),
+					$button = $target.closest( 'button' );
 
-				if ( $target.hasClass( 'draft-button' ) ) {
-					submitPost( 'draft' );
-				} else if ( $target.hasClass( 'publish-button' ) ) {
-					submitPost( 'publish' );
-				} else if ( $target.hasClass( 'preview-button' ) ) {
-					prepareFormData();
-					window.opener && window.opener.focus();
+				if ( $button.length ) {
+					if ( $button.hasClass( 'draft-button' ) ) {
+						$button.addClass( 'is-saving' );
+						submitPost( 'draft' );
+					} else if ( $button.hasClass( 'publish-button' ) ) {
+						submitPost( 'publish' );
+					} else if ( $button.hasClass( 'preview-button' ) ) {
+						prepareFormData();
+						window.opener && window.opener.focus();
 
-					$( '#wp-preview' ).val( 'dopreview' );
-					$( '#pressthis-form' ).attr( 'target', '_blank' ).submit().attr( 'target', '' );
-					$( '#wp-preview' ).val( '' );
+						$( '#wp-preview' ).val( 'dopreview' );
+						$( '#pressthis-form' ).attr( 'target', '_blank' ).submit().attr( 'target', '' );
+						$( '#wp-preview' ).val( '' );
+					}
+				} else if ( $target.hasClass( 'edit-post-link' ) && window.opener ) {
+					window.opener.focus();
+					window.self.close();
 				}
 			});
 
 			monitorOptionsModal();
 			monitorPlaceholder();
+			monitorCatList();
 
-			$( '.options-open' ).on( 'click.press-this', openSidebar );
-			$( '.options-close' ).on( 'click.press-this', closeSidebar );
+			$( '.options' ).on( 'click.press-this', function() {
+				if ( $( this ).hasClass( 'open' ) ) {
+					closeSidebar();
+				} else {
+					openSidebar();
+				}
+			});
 
 			// Close the sidebar when focus moves outside of it.
 			$( '.options-panel, .options-panel-back' ).on( 'focusout.press-this', function() {
@@ -800,7 +707,7 @@
 					if ( sidebarIsOpen && node && ! $node.hasClass( 'options-panel-back' ) &&
 						( node.nodeName === 'BODY' ||
 							( ! $node.closest( '.options-panel' ).length &&
-							! $node.closest( '.options-open' ).length ) ) ) {
+							! $node.closest( '.options' ).length ) ) ) {
 
 						closeSidebar();
 					}
@@ -864,7 +771,7 @@
 				catsCache.push( {
 					node: $this,
 					parents: $this.parents( 'li' ),
-					text: $this.children( 'label' ).text().toLowerCase()
+					text: $this.children( '.category' ).text().toLowerCase()
 				} );
 			} );
 		}
@@ -876,8 +783,7 @@
 			refreshCatsCache();
 		});
 
-		// Expose public methods
-		// TODO: which are needed?
+		// Expose public methods?
 		return {
 			renderNotice: renderNotice,
 			renderError: renderError

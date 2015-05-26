@@ -116,22 +116,22 @@ class WP_Comments_List_Table extends WP_List_Table {
 		);
 
 		$_comments = get_comments( $args );
+		if ( is_array( $_comments ) ) {
+			update_comment_cache( $_comments );
 
-		update_comment_cache( $_comments );
+			$this->items = array_slice( $_comments, 0, $comments_per_page );
+			$this->extra_items = array_slice( $_comments, $comments_per_page );
 
-		$this->items = array_slice( $_comments, 0, $comments_per_page );
-		$this->extra_items = array_slice( $_comments, $comments_per_page );
+			$_comment_post_ids = array_unique( wp_list_pluck( $_comments, 'comment_post_ID' ) );
 
-		$total_comments = get_comments( array_merge( $args, array('count' => true, 'offset' => 0, 'number' => 0) ) );
-
-		$_comment_post_ids = array();
-		foreach ( $_comments as $_c ) {
-			$_comment_post_ids[] = $_c->comment_post_ID;
+			$this->pending_count = get_pending_comments_num( $_comment_post_ids );
 		}
 
-		$_comment_post_ids = array_unique( $_comment_post_ids );
-
-		$this->pending_count = get_pending_comments_num( $_comment_post_ids );
+		$total_comments = get_comments( array_merge( $args, array(
+			'count' => true,
+			'offset' => 0,
+			'number' => 0
+		) ) );
 
 		$this->set_pagination_args( array(
 			'total_items' => $total_comments,
@@ -361,6 +361,9 @@ class WP_Comments_List_Table extends WP_List_Table {
 
 		$comment = $a_comment;
 		$the_comment_class = wp_get_comment_status( $comment->comment_ID );
+		if ( ! $the_comment_class ) {
+			$the_comment_class = '';
+		}
 		$the_comment_class = join( ' ', get_comment_class( $the_comment_class, $comment->comment_ID, $comment->comment_post_ID ) );
 
 		$post = get_post( $comment->comment_post_ID );
@@ -386,21 +389,6 @@ class WP_Comments_List_Table extends WP_List_Table {
 
 		$comment_url = esc_url( get_comment_link( $comment->comment_ID ) );
 		$the_comment_status = wp_get_comment_status( $comment->comment_ID );
-
-		if ( $this->user_can ) {
-			$del_nonce = esc_html( '_wpnonce=' . wp_create_nonce( "delete-comment_$comment->comment_ID" ) );
-			$approve_nonce = esc_html( '_wpnonce=' . wp_create_nonce( "approve-comment_$comment->comment_ID" ) );
-
-			$url = "comment.php?c=$comment->comment_ID";
-
-			$approve_url = esc_url( $url . "&action=approvecomment&$approve_nonce" );
-			$unapprove_url = esc_url( $url . "&action=unapprovecomment&$approve_nonce" );
-			$spam_url = esc_url( $url . "&action=spamcomment&$del_nonce" );
-			$unspam_url = esc_url( $url . "&action=unspamcomment&$del_nonce" );
-			$trash_url = esc_url( $url . "&action=trashcomment&$del_nonce" );
-			$untrash_url = esc_url( $url . "&action=untrashcomment&$del_nonce" );
-			$delete_url = esc_url( $url . "&action=deletecomment&$del_nonce" );
-		}
 
 		echo '<div class="comment-author">';
 			$this->column_author( $comment );
@@ -438,6 +426,19 @@ class WP_Comments_List_Table extends WP_List_Table {
 		}
 
 		if ( $this->user_can ) {
+			$del_nonce = esc_html( '_wpnonce=' . wp_create_nonce( "delete-comment_$comment->comment_ID" ) );
+			$approve_nonce = esc_html( '_wpnonce=' . wp_create_nonce( "approve-comment_$comment->comment_ID" ) );
+
+			$url = "comment.php?c=$comment->comment_ID";
+
+			$approve_url = esc_url( $url . "&action=approvecomment&$approve_nonce" );
+			$unapprove_url = esc_url( $url . "&action=unapprovecomment&$approve_nonce" );
+			$spam_url = esc_url( $url . "&action=spamcomment&$del_nonce" );
+			$unspam_url = esc_url( $url . "&action=unspamcomment&$del_nonce" );
+			$trash_url = esc_url( $url . "&action=trashcomment&$del_nonce" );
+			$untrash_url = esc_url( $url . "&action=untrashcomment&$del_nonce" );
+			$delete_url = esc_url( $url . "&action=deletecomment&$del_nonce" );
+
 			// Preorder it: Approve | Reply | Quick Edit | Edit | Spam | Trash.
 			$actions = array(
 				'approve' => '', 'unapprove' => '',
@@ -481,7 +482,7 @@ class WP_Comments_List_Table extends WP_List_Table {
 
 				$format = '<a data-comment-id="%d" data-post-id="%d" data-action="%s" class="%s" title="%s" href="#">%s</a>';
 
-				$actions['quickedit'] = sprintf( $format, $comment->comment_ID, $post->ID, 'edit', 'vim-q comment-inline', esc_attr__( 'Quick Edit' ), __( 'Quick Edit' ) );
+				$actions['quickedit'] = sprintf( $format, $comment->comment_ID, $post->ID, 'edit', 'vim-q comment-inline',esc_attr__( 'Edit this item inline' ), __( 'Quick&nbsp;Edit' ) );
 
 				$actions['reply'] = sprintf( $format, $comment->comment_ID, $post->ID, 'replyto', 'vim-r comment-inline', esc_attr__( 'Reply to this comment' ), __( 'Reply' ) );
 			}
@@ -543,7 +544,7 @@ class WP_Comments_List_Table extends WP_List_Table {
 	}
 
 	public function column_date() {
-		return get_comment_date( __( 'Y/m/d \a\t g:ia' ) );
+		return get_comment_date( __( 'Y/m/d \a\t g:i a' ) );
 	}
 
 	public function column_response() {
@@ -558,9 +559,9 @@ class WP_Comments_List_Table extends WP_List_Table {
 
 		if ( current_user_can( 'edit_post', $post->ID ) ) {
 			$post_link = "<a href='" . get_edit_post_link( $post->ID ) . "'>";
-			$post_link .= get_the_title( $post->ID ) . '</a>';
+			$post_link .= esc_html( get_the_title( $post->ID ) ) . '</a>';
 		} else {
-			$post_link = get_the_title( $post->ID );
+			$post_link = esc_html( get_the_title( $post->ID ) );
 		}
 
 		echo '<div class="response-links"><span class="post-com-count-wrapper">';

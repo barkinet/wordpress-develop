@@ -61,7 +61,7 @@ if ( 'grid' === $mode ) {
 
 	get_current_screen()->set_help_sidebar(
 		'<p><strong>' . __( 'For more information:' ) . '</strong></p>' .
-		'<p>' . __( '<a href="http://codex.wordpress.org/Media_Library_Screen" target="_blank">Documentation on Media Library</a>' ) . '</p>' .
+		'<p>' . __( '<a href="https://codex.wordpress.org/Media_Library_Screen" target="_blank">Documentation on Media Library</a>' ) . '</p>' .
 		'<p>' . __( '<a href="https://wordpress.org/support/" target="_blank">Support Forums</a>' ) . '</p>'
 	);
 
@@ -173,7 +173,7 @@ $parent_file = 'upload.php';
 
 wp_enqueue_script( 'media' );
 
-add_screen_option( 'per_page', array('label' => _x( 'Media items', 'items per page (screen options)' )) );
+add_screen_option( 'per_page' );
 
 get_current_screen()->add_help_tab( array(
 'id'		=> 'overview',
@@ -198,7 +198,7 @@ get_current_screen()->add_help_tab( array(
 
 get_current_screen()->set_help_sidebar(
 	'<p><strong>' . __( 'For more information:' ) . '</strong></p>' .
-	'<p>' . __( '<a href="http://codex.wordpress.org/Media_Library_Screen" target="_blank">Documentation on Media Library</a>' ) . '</p>' .
+	'<p>' . __( '<a href="https://codex.wordpress.org/Media_Library_Screen" target="_blank">Documentation on Media Library</a>' ) . '</p>' .
 	'<p>' . __( '<a href="https://wordpress.org/support/" target="_blank">Support Forums</a>' ) . '</p>'
 );
 
@@ -219,12 +219,12 @@ if ( ! empty( $_REQUEST['s'] ) )
 <?php
 $message = '';
 if ( ! empty( $_GET['posted'] ) ) {
-	$message = __('Media attachment updated.');
+	$message = __( 'Media attachment updated.' );
 	$_SERVER['REQUEST_URI'] = remove_query_arg(array('posted'), $_SERVER['REQUEST_URI']);
 }
 
 if ( ! empty( $_GET['attached'] ) && $attached = absint( $_GET['attached'] ) ) {
-	$message = sprintf( _n('Reattached %d attachment.', 'Reattached %d attachments.', $attached), $attached );
+	$message = sprintf( _n( 'Reattached %d attachment.', 'Reattached %d attachments.', $attached ), $attached );
 	$_SERVER['REQUEST_URI'] = remove_query_arg( array( 'detach', 'attached' ), $_SERVER['REQUEST_URI'] );
 }
 
@@ -234,18 +234,33 @@ if ( ! empty( $_GET['detach'] ) && $detached = absint( $_GET['detach'] ) ) {
 }
 
 if ( ! empty( $_GET['deleted'] ) && $deleted = absint( $_GET['deleted'] ) ) {
-	$message = sprintf( _n( 'Media attachment permanently deleted.', '%d media attachments permanently deleted.', $deleted ), number_format_i18n( $_GET['deleted'] ) );
+	if ( 1 == $deleted ) {
+		$message = __( 'Media attachment permanently deleted.' );
+	} else {
+		$message = _n( '%d media attachment permanently deleted.', '%d media attachments permanently deleted.', $deleted );
+	}
+	$message = sprintf( $message, number_format_i18n( $deleted ) );
 	$_SERVER['REQUEST_URI'] = remove_query_arg(array('deleted'), $_SERVER['REQUEST_URI']);
 }
 
 if ( ! empty( $_GET['trashed'] ) && $trashed = absint( $_GET['trashed'] ) ) {
-	$message = sprintf( _n( 'Media attachment moved to the trash.', '%d media attachments moved to the trash.', $trashed ), number_format_i18n( $_GET['trashed'] ) );
+	if ( 1 == $trashed ) {
+		$message = __( 'Media attachment moved to the trash.' );
+	} else {
+		$message = _n( '%d media attachment moved to the trash.', '%d media attachments moved to the trash.', $trashed );
+	}
+	$message = sprintf( $message, number_format_i18n( $trashed ) );
 	$message .= ' <a href="' . esc_url( wp_nonce_url( 'upload.php?doaction=undo&action=untrash&ids='.(isset($_GET['ids']) ? $_GET['ids'] : ''), "bulk-media" ) ) . '">' . __('Undo') . '</a>';
 	$_SERVER['REQUEST_URI'] = remove_query_arg(array('trashed'), $_SERVER['REQUEST_URI']);
 }
 
 if ( ! empty( $_GET['untrashed'] ) && $untrashed = absint( $_GET['untrashed'] ) ) {
-	$message = sprintf( _n( 'Media attachment restored from the trash.', '%d media attachments restored from the trash.', $untrashed ), number_format_i18n( $_GET['untrashed'] ) );
+	if ( 1 == $untrashed ) {
+		$message = __( 'Media attachment restored from the trash.' );
+	} else {
+		$message = _n( '%d media attachment restored from the trash.', '%d media attachments restored from the trash.', $untrashed );
+	}
+	$message = sprintf( $message, number_format_i18n( $untrashed ) );
 	$_SERVER['REQUEST_URI'] = remove_query_arg(array('untrashed'), $_SERVER['REQUEST_URI']);
 }
 
@@ -261,7 +276,7 @@ if ( ! empty( $_GET['message'] ) && isset( $messages[ $_GET['message'] ] ) ) {
 }
 
 if ( !empty($message) ) { ?>
-<div id="message" class="updated"><p><?php echo $message; ?></p></div>
+<div id="message" class="updated notice is-dismissible"><p><?php echo $message; ?></p></div>
 <?php } ?>
 
 <form id="posts-filter" method="get">

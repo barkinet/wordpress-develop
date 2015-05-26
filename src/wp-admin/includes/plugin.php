@@ -576,9 +576,11 @@ function activate_plugin( $plugin, $redirect = '', $network_wide = false, $silen
 		}
 
 		if ( $network_wide ) {
+			$current = get_site_option( 'active_sitewide_plugins', array() );
 			$current[$plugin] = time();
 			update_site_option( 'active_sitewide_plugins', $current );
 		} else {
+			$current = get_option( 'active_plugins', array() );
 			$current[] = $plugin;
 			sort($current);
 			update_option('active_plugins', $current);
@@ -944,6 +946,7 @@ function is_uninstallable_plugin($plugin) {
  * @since 2.7.0
  *
  * @param string $plugin Relative plugin path from Plugin Directory.
+ * @return true True if a plugin's uninstall.php file has been found and included.
  */
 function uninstall_plugin($plugin) {
 	$file = plugin_basename($plugin);

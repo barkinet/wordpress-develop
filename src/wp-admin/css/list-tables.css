@@ -22,7 +22,7 @@
 	width: 0;
 	height: 0;
 	margin-left: 8px;
-	border-top: 5px solid #bbb;
+	border-top: 5px solid #b4b9be;
 	border-right: 5px solid transparent;
 }
 
@@ -36,7 +36,7 @@
 	display: inline-block;
 	-webkit-border-radius: 5px;
 	border-radius: 5px;
-	background-color: #bbb;
+	background-color: #b4b9be;
 	color: #fff;
 }
 
@@ -108,12 +108,6 @@ strong .post-com-count:after {
 	text-align: center;
 }
 
-#replysubmit .spinner {
-	padding: 2px 0 0;
-	vertical-align: top;
-	float: right;
-}
-
 #replysubmit .button {
 	margin-right: 5px;
 }
@@ -131,7 +125,8 @@ strong .post-com-count:after {
 	font-size: 1em;
 }
 
-#edithead .inside {
+#edithead .inside,
+#commentsdiv #edithead .inside {
 	float: left;
 	padding: 3px 0 2px 5px;
 	margin: 0;
@@ -363,8 +358,9 @@ table.fixed {
 	border-bottom: 0 none;
 }
 
-#commentsdiv .spinner {
-	padding-left: 5px;
+#commentsdiv #edithead .inside input {
+	vertical-align: middle;
+	width: 160px;
 }
 
 .sorting-indicator {
@@ -376,7 +372,6 @@ table.fixed {
 }
 
 .sorting-indicator:before {
-	background: none;
 	content: '\f142';
 	font: normal 20px/1 'dashicons';
 	speak: none;
@@ -400,12 +395,14 @@ table.fixed {
 }
 
 th.sorted.asc .sorting-indicator:before,
-th.desc:hover span.sorting-indicator:before {
+th.desc:hover span.sorting-indicator:before,
+th.desc a:focus span.sorting-indicator:before {
 	content: '\f142';
 }
 
 th.sorted.desc .sorting-indicator:before,
-th.asc:hover span.sorting-indicator:before {
+th.asc:hover span.sorting-indicator:before,
+th.asc a:focus span.sorting-indicator:before {
 	content: '\f140';
 }
 
@@ -486,16 +483,12 @@ th.sorted a span {
 	cursor: pointer;
 }
 
-th.sorted.asc .sorting-indicator,
-th.desc:hover span.sorting-indicator {
+th.sorted .sorting-indicator,
+th.desc:hover span.sorting-indicator,
+th.desc a:focus span.sorting-indicator,
+th.asc:hover span.sorting-indicator,
+th.asc a:focus span.sorting-indicator {
 	display: block;
-	background-position: 0 0;
-}
-
-th.sorted.desc .sorting-indicator,
-th.asc:hover span.sorting-indicator {
-	display: block;
-	background-position: -7px 0;
 }
 
 /* Bulk Actions */
@@ -567,16 +560,22 @@ th.asc:hover span.sorting-indicator {
 .tablenav .tablenav-pages a.disabled:hover,
 .tablenav .tablenav-pages a.disabled:focus,
 .tablenav .tablenav-pages a.disabled:active {
-	color: #aaa;
+	color: #a0a5aa;
 	background: #eee;
 	background: rgba( 0, 0, 0, 0.05 );
 }
 
 .tablenav .displaying-num {
-	margin-right: 2px;
+	margin-right: 7px;
 	color: #777;
 	font-size: 12px;
 	font-style: italic;
+}
+
+.tablenav .one-page .displaying-num {
+	display: inline-block;
+	margin-top: 2px;
+	margin-right: 0;
 }
 
 .tablenav .actions {
@@ -613,43 +612,43 @@ classes exist in paginate_links() but not seen in list table output. */
 
 .tablenav .view-switch {
 	float: right;
-	margin: 5px 16px 0 8px;
+	margin: 0 5px;
+	padding-top: 3px;
+	/* line-height in px same as .tablenav height */
+	line-height: 30px;
 }
 
 .wp-filter .view-switch {
 	display: inline-block;
 	vertical-align: middle;
-	padding: 15px 0;
-	margin: 0 20px 0 0;
+	padding: 12px 0;
+	margin: 0 8px 0 2px;
+}
+
+.media-toolbar.wp-filter .view-switch {
+	margin: 0 12px 0 2px;
 }
 
 .view-switch a {
-	text-decoration: none;
-}
-
-.view-switch > a {
-	display: inline-block;
-	width: 18px;
-	height: 18px;
-}
-
-.view-switch > a:before {
-	color: #bbb;
-	display: inline-block;
 	float: left;
+	width: 28px;
+	height: 28px;
+	text-align: center;
+	line-height: 24px;
+}
+
+.view-switch a:before {
+	color: #b4b9be;
+	display: inline-block;
 	font: normal 20px/1 'dashicons';
 	speak: none;
 	vertical-align: middle;
-	margin-left: 0;
 	-webkit-font-smoothing: antialiased;
 	-moz-osx-font-smoothing: grayscale;
 }
 
-.view-switch > .view-list:before {
-	content: '\f163';
-}
-
-.view-switch a:hover:before {
+.view-switch a:hover:before,
+.view-switch a:focus:before {
 	color: #727272;
 }
 
@@ -657,15 +656,15 @@ classes exist in paginate_links() but not seen in list table output. */
 	color: #0073aa;
 }
 
-.view-switch > a + a {
-	margin-left: 5px;
+.view-switch .view-list:before {
+	content: '\f163';
 }
 
-.view-switch > .view-excerpt:before {
+.view-switch .view-excerpt:before {
 	content: '\f164';
 }
 
-.view-switch > .view-grid:before {
+.view-switch .view-grid:before {
 	content: '\f509';
 }
 
@@ -813,6 +812,7 @@ tr.inline-edit-row td,
 
 .inline-edit-row fieldset .inline-edit-group {
 	clear: both;
+	line-height: 2.5;
 }
 
 .inline-edit-row fieldset .inline-edit-group:after {
@@ -839,19 +839,19 @@ tr.inline-edit-row td,
 .inline-edit-row h4 {
 	margin: .2em 0;
 	padding: 0;
-	line-height: 23px;
+	line-height: 2.5;
 }
 .inline-edit-row fieldset span.title,
 .inline-edit-row fieldset span.checkbox-title {
 	margin: 0;
 	padding: 0;
-	line-height: 27px;
 }
 
 .inline-edit-row fieldset label,
 .inline-edit-row fieldset span.inline-edit-categories-label {
 	display: block;
 	margin: .2em 0;
+	line-height: 2.5;
 }
 
 .inline-edit-row fieldset label.inline-edit-tags {
@@ -867,6 +867,7 @@ tr.inline-edit-row td,
 	display: block;
 	float: left;
 	width: 5em;
+	line-height: 2.5;
 }
 
 .inline-edit-row fieldset label span.input-text-wrap {
@@ -879,17 +880,23 @@ tr.inline-edit-row td,
 	padding-right: 0.5em;
 }
 
+.inline-edit-row .inline-edit-or {
+	margin: .2em 6px .2em 0;
+	line-height: 2.5;
+}
+
 .inline-edit-row .input-text-wrap input[type=text] {
 	width: 100%;
 }
 
 .inline-edit-row fieldset label input[type=checkbox] {
-	vertical-align: text-bottom;
+	vertical-align: middle;
 }
 
 .inline-edit-row fieldset label textarea {
 	width: 100%;
 	height: 4em;
+	vertical-align: top;
 }
 
 #wpbody-content .bulk-edit-row fieldset .inline-edit-group label {
@@ -904,12 +911,6 @@ tr.inline-edit-row td,
 	width: 6em;
 }
 
-.inline-edit-save .spinner {
-	padding: 4px 10px 0;
-	vertical-align: top;
-	float: right;
-}
-
 /*	Styling */
 .inline-edit-row h4 {
 	text-transform: uppercase;
@@ -918,7 +919,6 @@ tr.inline-edit-row td,
 .inline-edit-row fieldset span.title,
 .inline-edit-row fieldset span.checkbox-title {
 	font-style: italic;
-	line-height: 1.8em;
 }
 
 /*	Specific Elements */
@@ -1173,7 +1173,9 @@ tr.active.update + tr.plugin-update-tr .plugin-update {
 }
 
 .plugins .update .second,
-.plugins .update .row-actions {
+.plugins .update .row-actions,
+.plugins .updated .second,
+.plugins .updated .row-actions {
 	padding-bottom: 0;
 }
 
@@ -1254,7 +1256,7 @@ tr.active.update + tr.plugin-update-tr .plugin-update {
 	content: '\f147';
 }
 
-.plugins .plugin-update {
+.plugins .plugin-update-tr .plugin-update {
 	padding: 0;
 	border: none;
 	-webkit-box-shadow: inset 0 -1px 0 rgba(0,0,0,0.1);
@@ -1552,6 +1554,12 @@ div.action-links,
 		display: none;
 	}
 
+	.view-switch a {
+		width: 36px;
+		height: 36px;
+		line-height: 33px;
+	}
+
 	/* Pagination */
 	.tablenav.top .displaying-num {
 		display: none;
@@ -1703,6 +1711,10 @@ div.action-links,
 
 	.inline-edit-row fieldset input[name=aa] {
 		width: 4.5em;
+	}
+
+	.inline-edit-row .inline-edit-or {
+		margin: 0 6px 0 0;
 	}
 
 	#bulk-titles div {
@@ -1914,5 +1926,15 @@ div.action-links,
 		display: block;
 		-webkit-box-shadow: inset 0 -1px 0 rgba(0,0,0,0.1);
 		box-shadow: inset 0 -1px 0 rgba(0,0,0,0.1);
+	}
+}
+
+/* Smartphone */
+@media screen and (max-width: 600px) {
+	/* Remove slug column from taxonomy list page
+	   and role column from users list page */
+	.tags .column-slug,
+	.users .column-role {
+		display: none;
 	}
 }

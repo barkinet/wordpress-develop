@@ -16,7 +16,6 @@ if ( !defined('ABSPATH') )
 <h2><?php _e('Edit Comment'); ?></h2>
 
 <div id="poststuff">
-<input type="hidden" name="user_ID" value="<?php echo (int) $user_ID; ?>" />
 <input type="hidden" name="action" value="editedcomment" />
 <input type="hidden" name="comment_ID" value="<?php echo esc_attr( $comment->comment_ID ); ?>" />
 <input type="hidden" name="comment_post_ID" value="<?php echo esc_attr( $comment->comment_post_ID ); ?>" />
@@ -101,7 +100,7 @@ if ( !defined('ABSPATH') )
 <div class="misc-pub-section curtime misc-pub-curtime">
 <?php
 /* translators: Publish box date format, see http://php.net/date */
-$datef = __( 'M j, Y @ G:i' );
+$datef = __( 'M j, Y @ H:i' );
 $stamp = __('Submitted on: <b>%1$s</b>');
 $date = date_i18n( $datef, strtotime( $comment->comment_date ) );
 ?>
@@ -168,12 +167,13 @@ do_action( 'add_meta_boxes_comment', $comment );
 
 do_meta_boxes(null, 'normal', $comment);
 
+$referer = wp_get_referer();
 ?>
 </div>
 
 <input type="hidden" name="c" value="<?php echo esc_attr($comment->comment_ID) ?>" />
 <input type="hidden" name="p" value="<?php echo esc_attr($comment->comment_post_ID) ?>" />
-<input name="referredby" type="hidden" id="referredby" value="<?php echo esc_url( wp_get_referer() ); ?>" />
+<input name="referredby" type="hidden" id="referredby" value="<?php echo $referer ? esc_url( $referer ) : ''; ?>" />
 <?php wp_original_referer_field(true, 'previous'); ?>
 <input type="hidden" name="noredir" value="1" />
 

@@ -13,6 +13,9 @@
  *
  * @since 3.1.0
  * @access private
+ *
+ * @global WP_Admin_Bar $wp_admin_bar
+ *
  * @return bool Whether the admin bar was successfully initialized.
  */
 function _wp_admin_bar_init() {
@@ -55,12 +58,14 @@ function _wp_admin_bar_init() {
  * right before the admin bar is rendered. This also gives you access to the $post global, among others.
  *
  * @since 3.1.0
+ *
+ * @global WP_Admin_Bar $wp_admin_bar
  */
 function wp_admin_bar_render() {
 	global $wp_admin_bar;
 
 	if ( ! is_admin_bar_showing() || ! is_object( $wp_admin_bar ) )
-		return false;
+		return;
 
 	/**
 	 * Load all necessary admin bar items.
@@ -127,7 +132,7 @@ function wp_admin_bar_wp_menu( $wp_admin_bar ) {
 		'parent'    => 'wp-logo-external',
 		'id'        => 'documentation',
 		'title'     => __('Documentation'),
-		'href'      => __('http://codex.wordpress.org/'),
+		'href'      => __('https://codex.wordpress.org/'),
 	) );
 
 	// Add forums link
@@ -329,10 +334,16 @@ function wp_admin_bar_my_sites_menu( $wp_admin_bar ) {
 	if ( count( $wp_admin_bar->user->blogs ) < 1 && ! is_super_admin() )
 		return;
 
+	if ( $wp_admin_bar->user->active_blog ) {
+		$my_sites_url = get_admin_url( $wp_admin_bar->user->active_blog->blog_id, 'my-sites.php' );
+	} else {
+		$my_sites_url = admin_url( 'my-sites.php' );
+	}
+
 	$wp_admin_bar->add_menu( array(
 		'id'    => 'my-sites',
 		'title' => __( 'My Sites' ),
-		'href'  => get_admin_url( $wp_admin_bar->user->active_blog->blog_id, 'my-sites.php' ),
+		'href'  => $my_sites_url,
 	) );
 
 	if ( is_super_admin() ) {
@@ -473,6 +484,9 @@ function wp_admin_bar_shortlink_menu( $wp_admin_bar ) {
  * Provide an edit link for posts and terms.
  *
  * @since 3.1.0
+ *
+ * @global object   $tag
+ * @global WP_Query $wp_the_query
  *
  * @param WP_Admin_Bar $wp_admin_bar
  */
@@ -884,8 +898,9 @@ function _admin_bar_bump_cb() { ?>
  *
  * @since 3.1.0
  *
+ * @global WP_Admin_Bar $wp_admin_bar
+ *
  * @param bool $show Whether to allow the admin bar to show.
- * @return void
  */
 function show_admin_bar( $show ) {
 	global $show_admin_bar;
@@ -896,6 +911,9 @@ function show_admin_bar( $show ) {
  * Determine whether the admin bar should be showing.
  *
  * @since 3.1.0
+ *
+ * @global WP_Admin_Bar $wp_admin_bar
+ * @global string       $pagenow
  *
  * @return bool Whether the admin bar should be showing.
  */
