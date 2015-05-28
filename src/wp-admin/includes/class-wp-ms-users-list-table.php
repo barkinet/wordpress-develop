@@ -13,6 +13,13 @@ class WP_MS_Users_List_Table extends WP_List_Table {
 		return current_user_can( 'manage_network_users' );
 	}
 
+	/**
+	 *
+	 * @global string $usersearch
+	 * @global string $role
+	 * @global wpdb   $wpdb
+	 * @global string $mode
+	 */
 	public function prepare_items() {
 		global $usersearch, $role, $wpdb, $mode;
 
@@ -86,6 +93,11 @@ class WP_MS_Users_List_Table extends WP_List_Table {
 		_e( 'No users found.' );
 	}
 
+	/**
+	 *
+	 * @global string $role
+	 * @return array
+	 */
 	protected function get_views() {
 		global $role;
 
@@ -146,6 +158,10 @@ class WP_MS_Users_List_Table extends WP_List_Table {
 		);
 	}
 
+	/**
+	 *
+	 * @global string $mode
+	 */
 	public function display_rows() {
 		global $mode;
 
@@ -252,14 +268,18 @@ class WP_MS_Users_List_Table extends WP_List_Table {
 									$actions['edit'] = '<a href="'. esc_url( network_admin_url( 'site-info.php?id=' . $val->userblog_id ) ) .'">' . __( 'Edit' ) . '</a>';
 
 									$class = '';
-									if ( get_blog_status( $val->userblog_id, 'spam' ) == 1 )
+									if ( $val->spam == 1 ) {
 										$class .= 'site-spammed ';
-									if ( get_blog_status( $val->userblog_id, 'mature' ) == 1 )
+									}
+									if ( $val->mature == 1 ) {
 										$class .= 'site-mature ';
-									if ( get_blog_status( $val->userblog_id, 'deleted' ) == 1 )
+									}
+									if ( $val->deleted == 1 ) {
 										$class .= 'site-deleted ';
-									if ( get_blog_status( $val->userblog_id, 'archived' ) == 1 )
+									}
+									if ( $val->archived == 1 ) {
 										$class .= 'site-archived ';
+									}
 
 									$actions['view'] = '<a class="' . $class . '" href="' . esc_url( get_home_url( $val->userblog_id ) ) . '">' . __( 'View' ) . '</a>';
 
