@@ -309,7 +309,7 @@ class WP_Customize_Section {
 	 * This function is only run for section types that have been registered with
 	 * {@see WP_Customize_Manager::register_section_type()}.
 	 *
-	 * @since 4.2.0
+	 * @since 4.3.0
 	 */
 	public function print_template() {
         ?>
@@ -327,7 +327,7 @@ class WP_Customize_Section {
 	 *
 	 * @see WP_Customize_Section::print_template()
 	 *
-	 * @since 4.2.0
+	 * @since 4.3.0
 	 */
 	protected function render_template() {
 		?>

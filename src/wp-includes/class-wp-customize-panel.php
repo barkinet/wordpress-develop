@@ -312,7 +312,7 @@ class WP_Customize_Panel {
 	 * This function is only run for panel types that have been registered with
 	 * {@see WP_Customize_Manager::register_panel_type()}.
 	 *
-	 * @since 4.2.0
+	 * @since 4.3.0
 	 */
 	public function print_template() {
 		?>
@@ -333,7 +333,7 @@ class WP_Customize_Panel {
 	 *
 	 * @see WP_Customize_Panel::print_template()
 	 *
-	 * @since 4.2.0
+	 * @since 4.3.0
 	 */
 	protected function render_template() {
 		?>
@@ -355,7 +355,7 @@ class WP_Customize_Panel {
 	 *
 	 * @see WP_Customize_Panel::print_template()
 	 *
-	 * @since 4.2.0
+	 * @since 4.3.0
 	 */
 	protected function content_template() {
 		?>

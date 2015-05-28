@@ -376,7 +376,7 @@
 		/**
 		 * Return the container html, generated from its JS template, if it exists.
 		 *
-		 * @since 4.2.0
+		 * @since 4.3.0
 		 */
 		getContainer: function () {
 			var template,
@@ -1176,7 +1176,7 @@
 		 *
 		 * The panel's container must already exist in the DOM.
 		 *
-		 * @since 4.2.0
+		 * @since 4.3.0
 		 */
 		renderContent: function () {
 			var template,

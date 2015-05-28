@@ -62,7 +62,7 @@ final class WP_Customize_Manager {
 	/**
 	 * Panel types that may be rendered from JS templates.
 	 *
-	 * @since 4.2.0
+	 * @since 4.3.0
 	 * @access protected
 	 * @var array
 	 */
@@ -71,7 +71,7 @@ final class WP_Customize_Manager {
 	/**
 	 * Section types that may be rendered from JS templates.
 	 *
-	 * @since 4.2.0
+	 * @since 4.3.0
 	 * @access protected
 	 * @var array
 	 */
@@ -997,7 +997,7 @@ final class WP_Customize_Manager {
 	 *
 	 * Registered types are eligible to be rendered via JS and created dynamically.
 	 *
-	 * @since 4.2.0
+	 * @since 4.3.0
 	 * @access public
 	 *
 	 * @param string $panel Name of a custom panel which is a subclass of
@@ -1010,7 +1010,7 @@ final class WP_Customize_Manager {
 	/**
 	 * Render JS templates for all registered panel types.
 	 *
-	 * @since 4.2.0
+	 * @since 4.3.0
 	 * @access public
 	 */
 	public function render_panel_templates() {
@@ -1066,7 +1066,7 @@ final class WP_Customize_Manager {
 	 *
 	 * Registered types are eligible to be rendered via JS and created dynamically.
 	 *
-	 * @since 4.2.0
+	 * @since 4.3.0
 	 * @access public
 	 *
 	 * @param string $section Name of a custom section which is a subclass of
@@ -1079,7 +1079,7 @@ final class WP_Customize_Manager {
 	/**
 	 * Render JS templates for all registered section types.
 	 *
-	 * @since 4.2.0
+	 * @since 4.3.0
 	 * @access public
 	 */
 	public function render_section_templates() {
