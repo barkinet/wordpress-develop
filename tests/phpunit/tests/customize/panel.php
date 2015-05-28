@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Tests for the WP_Customize_Manager class.
+ * Tests for the WP_Customize_Panel class.
  *
  * @group customize
  */
@@ -26,6 +26,9 @@ class Tests_WP_Customize_Panel extends WP_UnitTestCase {
 		parent::tearDown();
 	}
 
+	/**
+	 * @see WP_Customize_Panel::__construct()
+	 */
 	function test_construct_default_args() {
 		$panel = new WP_Customize_Panel( $this->manager, 'foo' );
 		$this->assertInternalType( 'int', $panel->instance_number );
@@ -41,6 +44,9 @@ class Tests_WP_Customize_Panel extends WP_UnitTestCase {
 		$this->assertEquals( array( $panel, 'active_callback' ), $panel->active_callback );
 	}
 
+	/**
+	 * @see WP_Customize_Panel::__construct()
+	 */
 	function test_construct_custom_args() {
 		$args = array(
 			'priority' => 200,
@@ -58,11 +64,18 @@ class Tests_WP_Customize_Panel extends WP_UnitTestCase {
 		}
 	}
 
+	/**
+	 * @see WP_Customize_Panel::__construct()
+	 */
 	function test_construct_custom_type() {
 		$panel = new Custom_Panel_Test( $this->manager, 'foo' );
 		$this->assertEquals( 'titleless', $panel->type );
 	}
 
+	/**
+	 * @see WP_Customize_Panel::active()
+	 * @see WP_Customize_Panel::active_callback()
+	 */
 	function test_active() {
 		$panel = new WP_Customize_Panel( $this->manager, 'foo' );
 		$this->assertTrue( $panel->active() );
@@ -87,6 +100,9 @@ class Tests_WP_Customize_Panel extends WP_UnitTestCase {
 		return $active;
 	}
 
+	/**
+	 * @see WP_Customize_Panel::json()
+	 */
 	function test_json() {
 		$args = array(
 			'priority' => 200,
@@ -108,6 +124,9 @@ class Tests_WP_Customize_Panel extends WP_UnitTestCase {
 		$this->assertInternalType( 'int', $data['instanceNumber'] );
 	}
 
+	/**
+	 * @see WP_Customize_Panel::check_capabilities()
+	 */
 	function test_check_capabilities() {
 		$user_id = $this->factory->user->create( array( 'role' => 'administrator' ) );
 		wp_set_current_user( $user_id );
@@ -123,11 +142,17 @@ class Tests_WP_Customize_Panel extends WP_UnitTestCase {
 		$this->assertFalse( $panel->check_capabilities() );
 	}
 
+	/**
+	 * @see WP_Customize_Panel::get_content()
+	 */
 	function test_get_content() {
 		$panel = new WP_Customize_Panel( $this->manager, 'foo' );
 		$this->assertEmpty( $panel->get_content() );
 	}
 
+	/**
+	 * @see WP_Customize_Panel::maybe_render()
+	 */
 	function test_maybe_render() {
 		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
 		$panel = new WP_Customize_Panel( $this->manager, 'bar' );
@@ -142,10 +167,17 @@ class Tests_WP_Customize_Panel extends WP_UnitTestCase {
 		$this->assertEquals( 1, did_action( "customize_render_panel_{$panel->id}" ), "Unexpected did_action count for customize_render_panel_{$panel->id}" );
 	}
 
+	/**
+	 * @see WP_Customize_Panel::maybe_render()
+	 * @param WP_Customize_Panel $panel
+	 */
 	function action_customize_render_panel_test( $panel ) {
 		$this->assertInstanceOf( 'WP_Customize_Panel', $panel );
 	}
 
+	/**
+	 * @see WP_Customize_Panel::print_template()
+	 */
 	function test_print_templates_standard() {
 		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
 
@@ -161,7 +193,9 @@ class Tests_WP_Customize_Panel extends WP_UnitTestCase {
 		$this->assertContains( 'preview-notice', $content );
 	}
 
-
+	/**
+	 * @see WP_Customize_Panel::print_template()
+	 */
 	function test_print_templates_custom() {
 		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
 
