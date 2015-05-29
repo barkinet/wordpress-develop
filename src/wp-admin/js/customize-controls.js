@@ -446,7 +446,7 @@
 			var section = this;
 
 			// Expand/Collapse accordion sections on click.
-			section.container.find( '.accordion-section-title' ).on( 'click keydown', function( event ) {
+			section.container.find( '.accordion-section-title, .customize-section-title' ).on( 'click keydown', function( event ) {
 				if ( api.utils.isKeydownButNotEnterEvent( event ) ) {
 					return;
 				}
@@ -499,8 +499,10 @@
 		 * @param {Object}  args
 		 */
 		onChangeExpanded: function ( expanded, args ) {
-			var section = this,
+			var position, scroll, section = this,
+				container = section.container.closest( '.accordion-container' ),
 				content = section.container.find( '.accordion-section-content' ),
+				overlay = section.container.closest( '.wp-full-overlay' ),
 				expand;
 
 			if ( expanded ) {
@@ -509,8 +511,11 @@
 					expand = args.completeCallback;
 				} else {
 					expand = function () {
-						content.stop().slideDown( args.duration, args.completeCallback );
 						section.container.addClass( 'open' );
+						overlay.addClass( 'section-open' );
+						position = content.offset().top;
+						scroll = container.scrollTop();
+						content.css( 'margin-top', ( 45 - position - scroll ) );
 					};
 				}
 
@@ -533,7 +538,9 @@
 
 			} else {
 				section.container.removeClass( 'open' );
-				content.slideUp( args.duration, args.completeCallback );
+				overlay.removeClass( 'section-open' );
+				content.css( 'margin-top', 'inherit' );
+				container.scrollTop( 0 );
 			}
 		}
 	});
@@ -1012,9 +1019,21 @@
 				}
 			});
 
+			// Close panel.
+			panel.container.find( '.customize-panel-back' ).on( 'click keydown', function( event ) {
+				if ( api.utils.isKeydownButNotEnterEvent( event ) ) {
+					return;
+				}
+				event.preventDefault(); // Keep this AFTER the key filter above
+
+				if ( panel.expanded() ) {
+					panel.collapse();
+				}
+			});
+
 			meta = panel.container.find( '.panel-meta:first' );
 
-			meta.find( '> .accordion-section-title' ).on( 'click keydown', function( event ) {
+			meta.find( '> .accordion-section-title .customize-help-toggle' ).on( 'click keydown', function( event ) {
 				if ( api.utils.isKeydownButNotEnterEvent( event ) ) {
 					return;
 				}
@@ -1024,7 +1043,7 @@
 					return;
 				}
 
-				var content = meta.find( '.accordion-section-content:first' );
+				var content = meta.find( '.customize-panel-description:first' );
 				if ( meta.hasClass( 'open' ) ) {
 					meta.toggleClass( 'open' );
 					content.slideUp( panel.defaultExpandedArguments.duration );
@@ -1089,12 +1108,12 @@
 			// Note: there is a second argument 'args' passed
 			var position, scroll,
 				panel = this,
-				section = panel.container.closest( '.accordion-section' ),
+				section = panel.container.closest( '.accordion-section' ), // This is actually the panel.
 				overlay = section.closest( '.wp-full-overlay' ),
 				container = section.closest( '.wp-full-overlay-sidebar-content' ),
 				siblings = container.find( '.open' ),
 				topPanel = overlay.find( '#customize-theme-controls > ul > .accordion-section > .accordion-section-title' ).add( '#customize-info > .accordion-section-title' ),
-				backBtn = overlay.find( '.control-panel-back' ),
+				backBtn = section.find( '.customize-panel-back' ),
 				panelTitle = section.find( '.accordion-section-title' ).first(),
 				content = section.find( '.control-panel-content' );
 
@@ -2573,7 +2592,7 @@
 		var parent, topFocus,
 			body = $( document.body ),
 			overlay = body.children( '.wp-full-overlay' ),
-			title = $( '#customize-info .theme-name.site-title' ),
+			title = $( '#customize-info .panel-title.site-title' ),
 			closeBtn = $( '.customize-controls-close' ),
 			saveBtn = $( '#save' );
 
@@ -2588,14 +2607,14 @@
 		});
 
 		// Expand/Collapse the main customizer customize info.
-		$( '#customize-info' ).find( '> .accordion-section-title' ).on( 'click keydown', function( event ) {
+		$( '.customize-info' ).find( '> .accordion-section-title .customize-help-toggle' ).on( 'click keydown', function( event ) {
 			if ( api.utils.isKeydownButNotEnterEvent( event ) ) {
 				return;
 			}
 			event.preventDefault(); // Keep this AFTER the key filter above
 
-			var section = $( this ).parent(),
-				content = section.find( '.accordion-section-content:first' );
+			var section = $( this ).closest( '.accordion-section' ),
+				content = section.find( '.customize-panel-description:first' );
 
 			if ( section.hasClass( 'cannot-expand' ) ) {
 				return;

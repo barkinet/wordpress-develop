@@ -585,7 +585,7 @@ body.adding-widget #customize-preview {
 
 
 @media screen and (max-height: 700px) and (min-width: 981px) {
-	.customize-control {
+	.customize-control-widget {
 		margin-bottom: 0;
 	}
 	.widget-top {

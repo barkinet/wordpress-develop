@@ -315,15 +315,17 @@ class WP_Customize_Panel {
 	 */
 	protected function render_content() {
 		?>
-		<li class="panel-meta accordion-section control-section<?php if ( empty( $this->description ) ) { echo ' cannot-expand'; } ?>">
-			<div class="accordion-section-title" tabindex="0">
+		<li class="panel-meta customize-info accordion-section <?php if ( empty( $this->description ) ) { echo ' cannot-expand'; } ?>">
+			<span class="customize-panel-back" tabindex="-1"><span class="screen-reader-text"><?php _e( 'Back' ); ?></span></span>
+			<div class="accordion-section-title">
 				<span class="preview-notice"><?php
 					/* translators: %s is the site/panel title in the Customizer */
 					echo sprintf( __( 'You are customizing %s' ), '<strong class="panel-title">' . esc_html( $this->title ) . '</strong>' );
 				?></span>
+				<span class="customize-help-toggle dashicons dashicons-editor-help" tabindex="0"><span class="screen-reader-text"><?php _e( 'Help' ); ?></span></span>
 			</div>
 			<?php if ( ! empty( $this->description ) ) : ?>
-				<div class="accordion-section-content description">
+				<div class="description customize-panel-description">
 					<?php echo $this->description; ?>
 				</div>
 			<?php endif; ?>

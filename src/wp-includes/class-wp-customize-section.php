@@ -305,14 +305,18 @@ class WP_Customize_Section {
 		<li id="accordion-section-<?php echo esc_attr( $this->id ); ?>" class="<?php echo esc_attr( $classes ); ?>">
 			<h3 class="accordion-section-title" tabindex="0">
 				<?php echo esc_html( $this->title ); ?>
-				<span class="screen-reader-text"><?php _e( 'Press return or enter to expand' ); ?></span>
+				<span class="screen-reader-text"><?php _e( 'Press return or enter to open' ); ?></span>
 			</h3>
 			<ul class="accordion-section-content">
-				<?php if ( ! empty( $this->description ) ) : ?>
-					<li class="customize-section-description-container">
+				<li class="customize-section-description-container">
+					<h3 class="customize-section-title" tabindex="0">
+						<?php echo esc_html( $this->title ); ?>
+						<span class="screen-reader-text"><?php _e( 'Press return or enter to close' ); ?></span>
+					</h3>
+					<?php if ( ! empty( $this->description ) ) : ?>
 						<p class="description customize-section-description"><?php echo $this->description; ?></p>
-					</li>
-				<?php endif; ?>
+					<?php endif; ?>
+				</li>
 			</ul>
 		</li>
 		<?php
