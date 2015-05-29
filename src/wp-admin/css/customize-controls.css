@@ -107,6 +107,7 @@ body {
 	width: 20px;
 	height: 20px;
 	cursor: pointer;
+	-webkit-box-shadow: none;
 	box-shadow: none;
 	-webkit-appearance: none;
 	background: transparent;
@@ -252,7 +253,13 @@ h3.customize-section-title {
 #customize-theme-controls {
 	position: relative;
 	left: 0;
+	-webkit-transition: .18s left ease-in-out;
 	transition: .18s left ease-in-out;
+}
+
+.ios #customize-theme-controls {
+	-webkit-transition: left 0s;
+	transition: left 0s;
 }
 
 .section-open #customize-info,
@@ -343,6 +350,7 @@ h3.customize-section-title {
 	background: #fff;
 	border: none;
 	border-right: 1px solid #ddd;
+	-webkit-box-shadow: none;
 	box-shadow: none;
 	cursor: pointer;
 	-webkit-transition: left .18s ease-in-out, color .1s ease-in-out, background .1s ease-in-out;

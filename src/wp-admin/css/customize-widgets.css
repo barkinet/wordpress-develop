@@ -353,9 +353,14 @@ body.adding-widget .add-new-widget:before {
 	margin: 0;
 	z-index: 1;
 	background: #eee !important;
-	-webkit-transition: all 0.2s;
-	transition: all 0.2s;
+	-webkit-transition: left .18s;
+	transition: left .18s;
 	border-right: 1px solid #ddd;
+}
+
+.ios #available-widgets {
+	-webkit-transition: left 0s;
+	transition: left 0s;
 }
 
 #available-widgets-list {
@@ -641,7 +646,7 @@ body.adding-widget #customize-preview {
 		display: block;
 		margin: 0;
 	}
-	
+
 	#available-widgets .customize-section-back {
 		height: 69px;
 	}

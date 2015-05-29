@@ -762,7 +762,6 @@
 				overlay = section.closest( '.wp-full-overlay' ),
 				container = section.closest( '.wp-full-overlay-sidebar-content' ),
 				siblings = container.find( '.open' ),
-				topPanel = overlay.find( '#customize-theme-controls > ul > .accordion-section > .accordion-section-title' ),
 				customizeBtn = section.find( '.customize-theme' ),
 				changeBtn = section.find( '.change-theme' ),
 				content = section.find( '.control-panel-content' );
