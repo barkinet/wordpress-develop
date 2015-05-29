@@ -170,6 +170,9 @@
 			container.params = {};
 			$.extend( container, options || {} );
 			container.templateSelector = 'customize-' + container.containerType + '-' + container.params.type;
+			if ( ! document.getElementById( 'tmpl-' + container.templateSelector ) ) {
+				container.templateSelector = 'customize-' + container.containerType + '-default';
+			}
 			container.container = $( container.params.content );
 			if ( 0 === container.container.length ) {
 				container.container = $( container.getContainer() );
@@ -1211,11 +1214,18 @@
 		 */
 		renderContent: function () {
 			var template,
+				templateSelector,
 				panel = this;
 
+			if ( document.getElementById( 'tmpl-' + panel.templateSelector + '-content' ) ) {
+				templateSelector = panel.templateSelector + '-content';
+			} else {
+				templateSelector = 'customize-' + panel.containerType + '-default-content';
+			}
+
 			// Add the content to the container.
-			if ( 0 !== $( '#tmpl-' + panel.templateSelector + '-content' ).length ) {
-				template = wp.template( panel.templateSelector + '-content' );
+			if ( 0 !== $( '#tmpl-' + templateSelector ).length ) {
+				template = wp.template( templateSelector );
 				if ( template && panel.container ) {
 					panel.container.find( '.accordion-sub-container' ).html( template( panel.params ) );
 				}
