@@ -225,6 +225,14 @@ class WP_Customize_Section {
 		$array['content'] = $this->get_content();
 		$array['active'] = $this->active();
 		$array['instanceNumber'] = $this->instance_number;
+
+		if ( $this->panel ) {
+			/* translators: &#9656; is the unicode right-pointing triangle, and %s is the section title in the Customizer */
+			$array['customizeAction'] = sprintf( __( 'Customizing &#9656; %s' ), esc_html( $this->manager->get_panel( $this->panel )->title ) );
+		} else {
+			$array['customizeAction'] = __( 'Customizing' );
+		}
+
 		return $array;
 	}
 
@@ -334,14 +342,25 @@ class WP_Customize_Section {
 		<li id="accordion-section-{{ data.id }}" class="accordion-section control-section control-section-{{ data.type }}">
 			<h3 class="accordion-section-title" tabindex="0">
 				{{ data.title }}
-				<span class="screen-reader-text"><?php _e( 'Press return or enter to expand' ); ?></span>
+				<span class="screen-reader-text"><?php _e( 'Press return or enter to open' ); ?></span>
 			</h3>
 			<ul class="accordion-section-content">
-				<# if ( data.description ) { #>
-					<li class="customize-section-description-container">
+				<li class="customize-section-description-container">
+					<div class="customize-section-title">
+						<button class="customize-section-back" tabindex="-1">
+							<span class="screen-reader-text"><?php _e( 'Back' ); ?></span>
+						</button>
+						<h3>
+							<span class="customize-action">
+								{{{ data.customizeAction }}}
+							</span>
+							{{ data.title }}
+						</h3>
+					</div>
+					<# if ( data.description ) { #>
 						<p class="description customize-section-description">{{{ data.description }}}</p>
-					</li>
-				<# } #>
+					<# } #>
+				</li>
 			</ul>
 		</li>
 		<?php
@@ -382,29 +401,29 @@ class WP_Customize_Themes_Section extends WP_Customize_Section {
 				<?php
 				if ( $this->manager->is_theme_active() ) {
 					/* translators: %s: theme name */
-					printf( __( '<span>Active theme</span> %s' ), $this->title );
+					printf( __( '<span class="customize-action">Active theme</span> %s' ), $this->title );
 				} else {
 					/* translators: %s: theme name */
-					printf( __( '<span>Previewing theme</span> %s' ), $this->title );
+					printf( __( '<span class="customize-action">Previewing theme</span> %s' ), $this->title );
 				}
 				?>
 
-				<button type="button" class="button change-theme"><?php _ex( 'Change', 'theme' ); ?></button>
+				<button type="button" class="button change-theme" tabindex="0"><?php _ex( 'Change', 'theme' ); ?></button>
 			</h3>
 			<div class="customize-themes-panel control-panel-content themes-php">
-				<h2>
+				<h3 class="accordion-section-title customize-section-title">
+					<span class="customize-action"><?php _e( 'Customizing' ); ?></span>
 					<?php _e( 'Themes' ); ?>
 					<span class="title-count theme-count"><?php echo count( $this->controls ) + 1 /* Active theme */; ?></span>
-				</h2>
-
+				</h3>
 				<h3 class="accordion-section-title customize-section-title">
 					<?php
 					if ( $this->manager->is_theme_active() ) {
 						/* translators: %s: theme name */
-						printf( __( '<span>Active theme</span> %s' ), $this->title );
+						printf( __( '<span class="customize-action">Active theme</span> %s' ), $this->title );
 					} else {
 						/* translators: %s: theme name */
-						printf( __( '<span>Previewing theme</span> %s' ), $this->title );
+						printf( __( '<span class="customize-action">Previewing theme</span> %s' ), $this->title );
 					}
 					?>
 					<button type="button" class="button customize-theme"><?php _e( 'Customize' ); ?></button>
