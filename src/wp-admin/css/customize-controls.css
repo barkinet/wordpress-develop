@@ -93,6 +93,7 @@ body {
 }
 
 #customize-controls .customize-info .customize-help-toggle {
+	color: #555;
 	position: absolute;
 	top: 4px;
 	right: 1px;
@@ -112,14 +113,19 @@ body {
 	left: 5px;
 }
 
+#customize-controls .customize-info .customize-help-toggle:hover,
+#customize-controls .customize-info .customize-help-toggle:active,
+#customize-controls .customize-info .customize-help-toggle:focus,
 #customize-controls .customize-info.open .customize-help-toggle {
 	color: #0073aa;
+	outline: none;
 }
 
 #customize-controls .customize-info .customize-panel-description {
 	display: none;
 	background: #fff;
-	padding: 0 12px 16px 12px;
+	border-top: 1px solid #ddd;
+	padding: 12px 15px 15px;
 }
 
 #customize-controls .customize-info .customize-panel-description p:first-child {
