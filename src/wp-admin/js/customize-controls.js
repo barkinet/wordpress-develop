@@ -727,7 +727,7 @@
 				overlay = section.closest( '.wp-full-overlay' ),
 				container = section.closest( '.wp-full-overlay-sidebar-content' ),
 				siblings = container.find( '.open' ),
-				topPanel = overlay.find( '#customize-theme-controls > ul > .accordion-section > .accordion-section-title' ).add( '#customize-info > .accordion-section-title' ),
+				topPanel = overlay.find( '#customize-theme-controls > ul > .accordion-section > .accordion-section-title' ),
 				customizeBtn = section.find( '.customize-theme' ),
 				changeBtn = section.find( '.change-theme' ),
 				content = section.find( '.control-panel-content' );
@@ -1116,7 +1116,7 @@
 				overlay = section.closest( '.wp-full-overlay' ),
 				container = section.closest( '.wp-full-overlay-sidebar-content' ),
 				siblings = container.find( '.open' ),
-				topPanel = overlay.find( '#customize-theme-controls > ul > .accordion-section > .accordion-section-title' ).add( '#customize-info > .accordion-section-title' ),
+				topPanel = overlay.find( '#customize-theme-controls > ul > .accordion-section > .accordion-section-title' ),
 				backBtn = section.find( '.customize-panel-back' ),
 				panelTitle = section.find( '.accordion-section-title' ).first(),
 				content = section.find( '.control-panel-content' );

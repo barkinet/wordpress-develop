@@ -93,7 +93,6 @@ body {
 }
 
 #customize-controls .customize-info .customize-help-toggle {
-	color: #555;
 	position: absolute;
 	top: 4px;
 	right: 1px;
@@ -104,6 +103,7 @@ body {
 	box-shadow: none;
 	-webkit-appearance: none;
 	background: transparent;
+	color: #555;
 	border: none;
 }
 
@@ -113,19 +113,17 @@ body {
 	left: 5px;
 }
 
-#customize-controls .customize-info .customize-help-toggle:hover,
-#customize-controls .customize-info .customize-help-toggle:active,
+#customize-controls .customize-info.open .customize-help-toggle,
 #customize-controls .customize-info .customize-help-toggle:focus,
-#customize-controls .customize-info.open .customize-help-toggle {
+#customize-controls .customize-info .customize-help-toggle:hover {
 	color: #0073aa;
-	outline: none;
 }
 
 #customize-controls .customize-info .customize-panel-description {
 	display: none;
 	background: #fff;
+	padding: 12px 15px;
 	border-top: 1px solid #ddd;
-	padding: 12px 15px 15px;
 }
 
 #customize-controls .customize-info .customize-panel-description p:first-child {
@@ -378,7 +376,8 @@ h3.customize-section-title:focus:before {
 }
 
 
-.ios .control-panel-back {
+.ios .control-panel-back,
+.ios .customize-panel-back {
 	-webkit-transition: left 0s;
 	transition: left 0s;
 }

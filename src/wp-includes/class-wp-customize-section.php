@@ -310,7 +310,7 @@ class WP_Customize_Section {
 			<ul class="accordion-section-content">
 				<li class="customize-section-description-container">
 					<h3 class="customize-section-title" tabindex="0">
-						<span class="customize-action"><?php _e( 'Customizing' ); ?><?php if ( $this->panel ) { echo ' &#9656; ' . esc_html( $this->manager->get_panel( $this->panel )->title ); } ?></span>
+						<span class="customize-action"><?php if ( $this->panel ) { echo _x( 'Customizing &#9656; ', 'Customizer sub-section breadcrumbs.' ) . esc_html( $this->manager->get_panel( $this->panel )->title ); } else { _e( 'Customizing' ); } ?></span>
 						<?php echo esc_html( $this->title ); ?>
 						<span class="screen-reader-text"><?php _e( 'Press return or enter to close' ); ?></span>
 					</h3>
