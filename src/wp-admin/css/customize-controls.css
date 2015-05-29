@@ -96,8 +96,20 @@ body {
 	position: absolute;
 	top: 4px;
 	right: 1px;
-	padding: 10px 8px 10px 10px;
+	padding: 20px 20px 10px 10px;
+	width: 20px;
+	height: 20px;
 	cursor: pointer;
+	box-shadow: none;
+	-webkit-appearance: none;
+	background: transparent;
+	border: none;
+}
+
+#customize-controls .customize-info .customize-help-toggle:before {
+	position: absolute;
+	top: 5px;
+	left: 5px;
 }
 
 #customize-controls .customize-info.open .customize-help-toggle {
@@ -346,11 +358,14 @@ h3.customize-section-title:focus:before {
 .customize-panel-back {
 	display: block;
 	float: left;
-	width: 45px;
+	width: 48px;
 	height: 69px;
-	padding-right: 2px;
+	padding: 0 24px 0 0;
+	margin: 0;
 	background: #fff;
+	border: none;
 	border-right: 1px solid #ddd;
+	box-shadow: none;
 	cursor: pointer;
 	-webkit-transition: left .18s ease-in-out, color .1s ease-in-out, background .1s ease-in-out;
 	transition: left .18s ease-in-out, color .1s ease-in-out, background .1s ease-in-out;

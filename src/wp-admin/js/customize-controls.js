@@ -1049,9 +1049,11 @@
 				if ( meta.hasClass( 'open' ) ) {
 					meta.toggleClass( 'open' );
 					content.slideUp( panel.defaultExpandedArguments.duration );
+					$( this ).attr( 'aria-expanded', false );
 				} else {
 					content.slideDown( panel.defaultExpandedArguments.duration );
 					meta.toggleClass( 'open' );
+					$( this ).attr( 'aria-expanded', true );
 				}
 			});
 
@@ -2625,9 +2627,11 @@
 			if ( section.hasClass( 'open' ) ) {
 				section.toggleClass( 'open' );
 				content.slideUp( api.Panel.prototype.defaultExpandedArguments.duration );
+				$( this ).attr( 'aria-expanded', false );
 			} else {
 				content.slideDown( api.Panel.prototype.defaultExpandedArguments.duration );
 				section.toggleClass( 'open' );
+				$( this ).attr( 'aria-expanded', true );
 			}
 		});
 
