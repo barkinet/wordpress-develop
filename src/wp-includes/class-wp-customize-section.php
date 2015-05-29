@@ -314,7 +314,14 @@ class WP_Customize_Section {
 							<span class="screen-reader-text"><?php _e( 'Back' ); ?></span>
 						</button>
 						<h3>
-							<span class="customize-action"><?php if ( $this->panel ) { echo _x( 'Customizing &#9656; ', 'Customizer sub-section breadcrumbs.' ) . esc_html( $this->manager->get_panel( $this->panel )->title ); } else { _e( 'Customizing' ); } ?></span>
+							<span class="customize-action"><?php
+								if ( $this->panel ) {
+									/* translators: &#9656; is the unicode right-pointing triangle, and %s is the section title in the Customizer */
+									echo sprintf( __( 'Customizing &#9656; %s' ), esc_html( $this->manager->get_panel( $this->panel )->title ) );
+								} else {
+									_e( 'Customizing' );
+								}
+							?></span>
 							<?php echo esc_html( $this->title ); ?>
 						</h3>
 					</div>
