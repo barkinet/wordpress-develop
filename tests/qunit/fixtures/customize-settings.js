@@ -39,8 +39,24 @@ window._wpCustomizeSettings = {
 			'description': 'Lorem ipsum',
 			'instanceNumber': 1,
 			'priority': 110,
-			'title': 'Lorem Ipsum',
+			'title': 'Fixture panel with content',
 			'type': 'default'
+		},
+		'fixture-panel-default-templated': {
+			'active': true,
+			'description': 'Lorem ipsum',
+			'instanceNumber': 2,
+			'priority': 110,
+			'title': 'Fixture default panel using template',
+			'type': 'default'
+		},
+		'fixture-panel-titleless-templated': {
+			'active': true,
+			'description': 'Lorem ipsum',
+			'instanceNumber': 3,
+			'priority': 110,
+			'title': 'Fixture titleless panel using template',
+			'type': 'titleless'
 		}
 	},
 	'sections': {
@@ -53,6 +69,24 @@ window._wpCustomizeSettings = {
 			'priority': 20,
 			'title': 'Fixture Section',
 			'type': 'default'
+		},
+		'fixture-section-default-templated': {
+			'active': true,
+			'description': '',
+			'instanceNumber': 3,
+			'panel': 'fixture-panel',
+			'priority': 20,
+			'title': 'Fixture default section using template',
+			'type': 'default'
+		},
+		'fixture-section-titleless-templated': {
+			'active': true,
+			'description': '',
+			'instanceNumber': 4,
+			'panel': 'fixture-panel',
+			'priority': 20,
+			'title': 'Fixture titleless section using template',
+			'type': 'titleless'
 		}
 	},
 	'settings': {
