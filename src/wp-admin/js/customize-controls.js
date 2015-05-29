@@ -196,7 +196,9 @@
 				container.onChangeExpanded( expanded, args );
 			});
 
-			container.attachEvents();
+			container.deferred.embedded.done( function () {
+				container.attachEvents();
+			});
 
 			api.utils.bubbleChildValueChanges( container, [ 'priority', 'active' ] );
 
