@@ -117,6 +117,9 @@ class Tests_WP_Customize_Section extends WP_UnitTestCase {
 			'panel' => 'bar',
 			'active_callback' => '__return_true',
 		);
+
+		$this->manager->add_panel( 'bar' );
+
 		$section = new WP_Customize_Section( $this->manager, 'foo', $args );
 		$data = $section->json();
 		$this->assertEquals( 'foo', $data['id'] );
