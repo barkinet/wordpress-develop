@@ -14,6 +14,10 @@
 	display: none;
 }
 
+.control-section.control-section-sidebar .accordion-section-content.ui-sortable {
+	overflow: visible;
+}
+
 .customize-control-widget_form .widget-top {
 	-webkit-transition: opacity 0.5s;
 	transition: opacity 0.5s;
@@ -351,7 +355,7 @@ body.adding-widget .add-new-widget:before {
 	background: #eee !important;
 	-webkit-transition: all 0.2s;
 	transition: all 0.2s;
-	border-right: 1px solid #dddddd;
+	border-right: 1px solid #ddd;
 }
 
 #available-widgets-list {
@@ -634,10 +638,21 @@ body.adding-widget #customize-preview {
 	}
 
 	#available-widgets .customize-section-title {
-		margin: 0 0 0 47px;
+		display: block;
+		margin: 0;
+	}
+	
+	#available-widgets .customize-section-back {
+		height: 69px;
+	}
+
+	#available-widgets .customize-section-title h3 {
 		font-size: 20px;
 		font-weight: 200;
+		padding: 9px 10px 12px 14px;
+		margin: 0;
 		line-height: 24px;
+		color: #555;
 		display: block;
 		overflow: hidden;
 		white-space: nowrap;
@@ -648,15 +663,20 @@ body.adding-widget #customize-preview {
 		font-size: 13px;
 		display: block;
 		font-weight: 400;
+		overflow: hidden;
+		white-space: nowrap;
+		text-overflow: ellipsis;
 	}
 
 	#available-widgets-filter {
-		position: static;
+		position: relative;
 		width: 100%;
+		background: #fff;
 		height: auto;
+		padding: 10px 15px;
 	}
 
 	#available-widgets-list {
-		top: 122px;
+		top: 140px;
 	}
 }

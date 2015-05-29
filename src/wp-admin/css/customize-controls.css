@@ -20,7 +20,7 @@ body {
 }
 
 #customize-controls .description {
-	color: #666666;
+	color: #555;
 }
 
 #customize-header-actions .button-primary {
@@ -81,12 +81,19 @@ body {
 	line-height: 24px;
 }
 
-#customize-controls .control-section .customize-section-title,
+#customize-controls .control-section .customize-section-title h3,
+#customize-controls .control-section h3.customize-section-title,
 #customize-controls .customize-info .panel-title {
 	font-size: 20px;
 	font-weight: 200;
 	line-height: 24px;
 	display: block;
+	overflow: hidden;
+	white-space: nowrap;
+	text-overflow: ellipsis;
+}
+
+#customize-controls .customize-section-title span.customize-action {
 	overflow: hidden;
 	white-space: nowrap;
 	text-overflow: ellipsis;
@@ -120,6 +127,7 @@ body {
 }
 
 #customize-controls .customize-info .customize-panel-description {
+	color: #555;
 	display: none;
 	background: #fff;
 	padding: 12px 15px;
@@ -134,14 +142,18 @@ body {
 	margin-bottom: 0;
 }
 
+#customize-controls .current-panel .control-section > h3.accordion-section-title {
+	padding-right: 30px;
+}
+
 #customize-theme-controls .control-section {
 	border: none;
 }
 
 #customize-theme-controls .accordion-section-title {
-	color: #555555;
+	color: #555;
 	background-color: #fff;
-	border-bottom: 1px solid #eeeeee;
+	border-bottom: 1px solid #eee;
 }
 
 #customize-theme-controls .accordion-section-title:after {
@@ -180,11 +192,11 @@ body {
 }
 
 #customize-theme-controls .control-section.open {
-	border-bottom: 1px solid #eeeeee;
+	border-bottom: 1px solid #eee;
 }
 
 #customize-theme-controls .control-section.open .accordion-section-title {
-	border-bottom-color: #eeeeee !important;
+	border-bottom-color: #eee !important;
 }
 
 #customize-theme-controls .control-section:last-of-type.open,
@@ -210,43 +222,27 @@ body {
 	margin-bottom: 15px;
 }
 
+.customize-section-title {
+	margin: -12px;
+	border-bottom: 1px solid #ddd;
+	background: #fff;
+}
+
+#customize-theme-controls .customize-themes-panel h3.customize-section-title:first-child {
+	border-bottom: 1px solid #ddd;
+	padding: 12px 12px 12px 12px;
+}
+
+.ios #customize-theme-controls .customize-themes-panel h3.customize-section-title:first-child {
+	padding: 12px 12px 13px 12px;
+}
+
+.customize-section-title h3,
 h3.customize-section-title {
-	margin: -12px -12px -12px 35px;
-	padding: 12px;
-	border-bottom: 1px solid #ddd;
-	border-left: 1px solid #ddd;
-	background: #fff;
-	color: #555;
-	cursor: pointer;
-}
-
-h3.customize-section-title:before {
-	font: normal 20px/72px dashicons;
-	content: "\f341";
-	-webkit-font-smoothing: antialiased;
-	-moz-osx-font-smoothing: grayscale;
-	position: absolute;
-	top: 0;
-	left: 0;
-	width: 47px;
+	padding: 10px 10px 12px 14px;
 	margin: 0;
-	text-align: center;
-	background: #fff;
-	border-bottom: 1px solid #ddd;
-}
-
-.rtl h3.customize-section-title:before {
-	content: "\f345";
-}
-
-h3.customize-section-title:hover,
-h3.customize-section-title:hover:before,
-h3.customize-section-title:focus,
-h3.customize-section-title:focus:before {
-	background: #0073aa;
-	color: #fff;
-	box-shadow: none;
-	outline: none;
+	line-height: 21px;
+	color: #555;
 }
 
 #customize-theme-controls .control-section .accordion-section-content > li.customize-control:nth-child(2) {
@@ -306,6 +302,11 @@ h3.customize-section-title:focus:before {
 	transition: left ease-in-out .18s;
 }
 
+.ios .accordion-sub-container.control-panel-content {
+	-webkit-transition: left 0s;
+	transition: left 0s;
+}
+
 .accordion-sub-container.control-panel-content.animating {
 	display: block;
 }
@@ -359,7 +360,8 @@ h3.customize-section-title:focus:before {
 	transition: left .18s ease-in-out, color .1s ease-in-out, background .1s ease-in-out;
 }
 
-.customize-panel-back {
+.customize-panel-back,
+.customize-section-back {
 	display: block;
 	float: left;
 	width: 48px;
@@ -375,15 +377,24 @@ h3.customize-section-title:focus:before {
 	transition: left .18s ease-in-out, color .1s ease-in-out, background .1s ease-in-out;
 }
 
+.customize-section-back {
+	height: 70px;
+}
 
 .ios .control-panel-back,
-.ios .customize-panel-back {
+.ios .customize-panel-back,
+.ios .customize-section-back {
 	-webkit-transition: left 0s;
 	transition: left 0s;
 }
 
-.collapsed .control-panel-back {
+.collapsed .control-panel-back,
+.ios .customize-panel-back {
 	display: none;
+}
+
+.ios .expanded.in-sub-panel .customize-panel-back {
+	display: block;
 }
 
 .panel-meta.customize-info .accordion-section-title {
@@ -412,7 +423,9 @@ h3.customize-section-title:focus:before {
 }
 
 .customize-panel-back:hover,
-.customize-panel-back:focus {
+.customize-panel-back:focus,
+.customize-section-back:hover,
+.customize-section-back:focus {
 	background: #0073aa;
 	border-color: #ccc;
 	color: #fff;
@@ -430,7 +443,8 @@ h3.customize-section-title:focus:before {
 	left: 13px;
 }
 
-.customize-panel-back:before {
+.customize-panel-back:before,
+.customize-section-back:before {
 	font: normal 20px/69px dashicons;
 	content: "\f341";
 	position: relative;
@@ -447,10 +461,6 @@ h3.customize-section-title:focus:before {
 
 .in-sub-panel .control-panel-back {
 /*	left: 0; @todo decide whether to bring back the back buttons in the header */
-}
-
-.current-panel > .accordion-section-title {
-	height: 22px;
 }
 
 .wp-full-overlay-sidebar .wp-full-overlay-header {
@@ -648,7 +658,7 @@ p.customize-section-description {
 }
 
 .wp-full-overlay-sidebar {
-	background: #eeeeee;
+	background: #eee;
 	border-right: 1px solid #ddd;
 }
 
@@ -692,7 +702,7 @@ p.customize-section-description {
 	line-height: 16px;
 	margin-right: 16px;
 	padding: 4px 5px;
-	border: 2px solid #eeeeee;
+	border: 2px solid #eee;
 	-webkit-user-select: none;
 	-moz-user-select: none;
 	-ms-user-select: none;
@@ -705,7 +715,7 @@ p.customize-section-description {
 	bottom: 0;
 	right: 0;
 	width: 20px;
-	background: #eeeeee;
+	background: #eee;
 }
 
 .customize-control .dropdown-arrow:after {
@@ -725,7 +735,7 @@ p.customize-section-description {
 
 .customize-control .dropdown-status {
 	color: #32373c;
-	background: #eeeeee;
+	background: #eee;
 	display: none;
 	max-width: 112px;
 }
@@ -745,7 +755,7 @@ p.customize-section-description {
 }
 
 .customize-control-color .dropdown .dropdown-content {
-	background-color: #555555;
+	background-color: #555;
 	border: 1px solid rgba(0, 0, 0, 0.15);
 }
 
@@ -1047,7 +1057,7 @@ p.customize-section-description {
 
 #customize-theme-controls .control-section-themes .accordion-section-title:hover,
 #customize-theme-controls .control-section-themes .accordion-section-title:focus {
-	color: #555555;
+	color: #555;
 	background-color: #fff;
 }
 

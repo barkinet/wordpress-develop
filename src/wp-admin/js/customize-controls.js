@@ -443,10 +443,12 @@
 		 * @since 4.1.0
 		 */
 		attachEvents: function () {
-			var section = this;
+			var section = this,
+				backBtn = section.container.find( '.customize-section-back' ),
+				sectionTitle = section.container.find( '.accordion-section-title' ).first();
 
 			// Expand/Collapse accordion sections on click.
-			section.container.find( '.accordion-section-title, .customize-section-title' ).on( 'click keydown', function( event ) {
+			section.container.find( '.accordion-section-title, .customize-section-back' ).on( 'click keydown', function( event ) {
 				if ( api.utils.isKeydownButNotEnterEvent( event ) ) {
 					return;
 				}
@@ -454,8 +456,14 @@
 
 				if ( section.expanded() ) {
 					section.collapse();
+					backBtn.attr( 'tabindex', '-1' );
+					sectionTitle.attr( 'tabindex', '0' );
+					sectionTitle.focus();
 				} else {
 					section.expand();
+					sectionTitle.attr( 'tabindex', '-1' );
+					backBtn.attr( 'tabindex', '0' );
+					backBtn.focus();
 				}
 			});
 		},
@@ -757,8 +765,6 @@
 						args.completeCallback();
 					}
 				} );
-				topPanel.attr( 'tabindex', '-1' );
-				changeBtn.attr( 'tabindex', '-1' );
 				customizeBtn.focus();
 			} else {
 				siblings.removeClass( 'open' );
@@ -771,7 +777,6 @@
 						args.completeCallback();
 					}
 				} );
-				topPanel.attr( 'tabindex', '0' );
 				customizeBtn.attr( 'tabindex', '0' );
 				changeBtn.focus();
 				container.scrollTop( 0 );

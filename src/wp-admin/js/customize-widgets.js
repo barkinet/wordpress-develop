@@ -366,7 +366,7 @@
 				this.close( { returnFocus: true } );
 			}
 
-			if ( isTab && ( isShift && isSearchFocused || ! isShift && isLastWidgetFocused ) ) {
+			if ( this.currentSidebarControl && isTab && ( isShift && isSearchFocused || ! isShift && isLastWidgetFocused ) ) {
 				this.currentSidebarControl.container.find( '.add-new-widget' ).focus();
 				event.preventDefault();
 			}

@@ -309,11 +309,15 @@ class WP_Customize_Section {
 			</h3>
 			<ul class="accordion-section-content">
 				<li class="customize-section-description-container">
-					<h3 class="customize-section-title" tabindex="0">
-						<span class="customize-action"><?php if ( $this->panel ) { echo _x( 'Customizing &#9656; ', 'Customizer sub-section breadcrumbs.' ) . esc_html( $this->manager->get_panel( $this->panel )->title ); } else { _e( 'Customizing' ); } ?></span>
-						<?php echo esc_html( $this->title ); ?>
-						<span class="screen-reader-text"><?php _e( 'Press return or enter to close' ); ?></span>
-					</h3>
+					<div class="customize-section-title">
+						<button class="customize-section-back" tabindex="-1">
+							<span class="screen-reader-text"><?php _e( 'Back' ); ?></span>
+						</button>
+						<h3>
+							<span class="customize-action"><?php if ( $this->panel ) { echo _x( 'Customizing &#9656; ', 'Customizer sub-section breadcrumbs.' ) . esc_html( $this->manager->get_panel( $this->panel )->title ); } else { _e( 'Customizing' ); } ?></span>
+							<?php echo esc_html( $this->title ); ?>
+						</h3>
+					</div>
 					<?php if ( ! empty( $this->description ) ) : ?>
 						<p class="description customize-section-description"><?php echo $this->description; ?></p>
 					<?php endif; ?>
@@ -365,7 +369,7 @@ class WP_Customize_Themes_Section extends WP_Customize_Section {
 				}
 				?>
 
-				<button type="button" class="button change-theme"><?php _ex( 'Change', 'theme' ); ?></button>
+				<button type="button" class="button change-theme" tabindex="0"><?php _ex( 'Change', 'theme' ); ?></button>
 			</h3>
 			<div class="customize-themes-panel control-panel-content themes-php">
 				<h3 class="accordion-section-title customize-section-title">

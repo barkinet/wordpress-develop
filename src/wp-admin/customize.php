@@ -89,8 +89,6 @@ if ( is_rtl() ) {
 }
 $body_class .= ' locale-' . sanitize_html_class( strtolower( str_replace( '_', '-', get_locale() ) ) );
 
-$body_class .= ' admin-color-' . sanitize_html_class( get_user_option( 'admin_color' ), 'fresh' );
-
 if ( $wp_customize->is_theme_active() ) {
 	$document_title_tmpl = _x( 'Customize: %s', 'Placeholder is the document title from the preview' );
 } else {
