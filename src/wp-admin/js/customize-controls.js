@@ -500,16 +500,17 @@
 		 */
 		onChangeExpanded: function ( expanded, args ) {
 			var position, scroll, section = this,
-				container = section.container.closest( '.accordion-container' ),
+				container = section.container.closest( '.wp-full-overlay-sidebar-content' ),
 				content = section.container.find( '.accordion-section-content' ),
 				overlay = section.container.closest( '.wp-full-overlay' ),
 				expand;
 
-			if ( expanded ) {
+			if ( expanded && ! section.container.hasClass( 'open' ) ) {
 
 				if ( args.unchanged ) {
 					expand = args.completeCallback;
 				} else {
+					container.scrollTop( 0 );
 					expand = function () {
 						section.container.addClass( 'open' );
 						overlay.addClass( 'section-open' );
@@ -536,11 +537,12 @@
 					expand();
 				}
 
-			} else {
+			} else if ( section.container.hasClass( 'open' ) ) {
 				section.container.removeClass( 'open' );
 				overlay.removeClass( 'section-open' );
 				content.css( 'margin-top', 'inherit' );
 				container.scrollTop( 0 );
+				section.container.find( '.accordion-section-title' ).focus();
 			}
 		}
 	});

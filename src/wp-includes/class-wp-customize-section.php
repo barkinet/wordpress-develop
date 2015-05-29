@@ -310,6 +310,7 @@ class WP_Customize_Section {
 			<ul class="accordion-section-content">
 				<li class="customize-section-description-container">
 					<h3 class="customize-section-title" tabindex="0">
+						<span class="customize-action"><?php _e( 'Customizing' ); ?><?php if ( $this->panel ) { echo ' &#9656; ' . esc_html( $this->manager->get_panel( $this->panel )->title ); } ?></span>
 						<?php echo esc_html( $this->title ); ?>
 						<span class="screen-reader-text"><?php _e( 'Press return or enter to close' ); ?></span>
 					</h3>
@@ -357,29 +358,29 @@ class WP_Customize_Themes_Section extends WP_Customize_Section {
 				<?php
 				if ( $this->manager->is_theme_active() ) {
 					/* translators: %s: theme name */
-					printf( __( '<span>Active theme</span> %s' ), $this->title );
+					printf( __( '<span class="customize-action">Active theme</span> %s' ), $this->title );
 				} else {
 					/* translators: %s: theme name */
-					printf( __( '<span>Previewing theme</span> %s' ), $this->title );
+					printf( __( '<span class="customize-action">Previewing theme</span> %s' ), $this->title );
 				}
 				?>
 
 				<button type="button" class="button change-theme"><?php _ex( 'Change', 'theme' ); ?></button>
 			</h3>
 			<div class="customize-themes-panel control-panel-content themes-php">
-				<h2>
+				<h3 class="accordion-section-title customize-section-title">
+					<span class="customize-action"><?php _e( 'Customizing' ); ?></span>
 					<?php _e( 'Themes' ); ?>
 					<span class="title-count theme-count"><?php echo count( $this->controls ) + 1 /* Active theme */; ?></span>
-				</h2>
-
+				</h3>
 				<h3 class="accordion-section-title customize-section-title">
 					<?php
 					if ( $this->manager->is_theme_active() ) {
 						/* translators: %s: theme name */
-						printf( __( '<span>Active theme</span> %s' ), $this->title );
+						printf( __( '<span class="customize-action">Active theme</span> %s' ), $this->title );
 					} else {
 						/* translators: %s: theme name */
-						printf( __( '<span>Previewing theme</span> %s' ), $this->title );
+						printf( __( '<span class="customize-action">Previewing theme</span> %s' ), $this->title );
 					}
 					?>
 					<button type="button" class="button customize-theme"><?php _e( 'Customize' ); ?></button>

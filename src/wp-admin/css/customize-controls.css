@@ -54,11 +54,12 @@ body {
 	border: none;
 	border-top: 1px solid #ddd;
 	border-bottom: 1px solid #ddd;
+	margin-bottom: 15px;
 }
 
 #customize-controls .customize-info .accordion-section-title {
-	background: transparent !important;
-	color: #555 !important;
+	background: #fff;
+	color: #555;
 	border-left: none;
 	border-right: none;
 	border-bottom: none;
@@ -86,6 +87,9 @@ body {
 	font-weight: 200;
 	line-height: 24px;
 	display: block;
+	overflow: hidden;
+	white-space: nowrap;
+	text-overflow: ellipsis;
 }
 
 #customize-controls .customize-info .customize-help-toggle {
@@ -102,8 +106,16 @@ body {
 
 #customize-controls .customize-info .customize-panel-description {
 	display: none;
-	background: transparent;
+	background: #fff;
 	padding: 0 12px 16px 12px;
+}
+
+#customize-controls .customize-info .customize-panel-description p:first-child {
+	margin-top: 0;
+}
+
+#customize-controls .customize-info .customize-panel-description p:last-child {
+	margin-bottom: 0;
 }
 
 #customize-theme-controls .control-section {
@@ -178,23 +190,33 @@ body {
 	padding: 12px;
 }
 
+.customize-section-description-container {
+	margin-bottom: 15px;
+}
+
 h3.customize-section-title {
-	margin: -12px;
+	margin: -12px -12px -12px 35px;
 	padding: 12px;
 	border-bottom: 1px solid #ddd;
+	border-left: 1px solid #ddd;
 	background: #fff;
 	color: #555;
 	cursor: pointer;
 }
 
 h3.customize-section-title:before {
-	font: normal 20px/1 dashicons;
+	font: normal 20px/72px dashicons;
 	content: "\f341";
 	-webkit-font-smoothing: antialiased;
 	-moz-osx-font-smoothing: grayscale;
-	position: relative;
-	top: 3px;
-	margin: 0 6px 0 2px;
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 47px;
+	margin: 0;
+	text-align: center;
+	background: #fff;
+	border-bottom: 1px solid #ddd;
 }
 
 .rtl h3.customize-section-title:before {
@@ -202,9 +224,13 @@ h3.customize-section-title:before {
 }
 
 h3.customize-section-title:hover,
-h3.customize-section-title:focus {
+h3.customize-section-title:hover:before,
+h3.customize-section-title:focus,
+h3.customize-section-title:focus:before {
 	background: #0073aa;
 	color: #fff;
+	box-shadow: none;
+	outline: none;
 }
 
 #customize-theme-controls .control-section .accordion-section-content > li.customize-control:nth-child(2) {
@@ -323,7 +349,7 @@ h3.customize-section-title:focus {
 	width: 45px;
 	height: 69px;
 	padding-right: 2px;
-	background: #eee;
+	background: #fff;
 	border-right: 1px solid #ddd;
 	cursor: pointer;
 	-webkit-transition: left .18s ease-in-out, color .1s ease-in-out, background .1s ease-in-out;
@@ -341,8 +367,12 @@ h3.customize-section-title:focus {
 }
 
 .panel-meta.customize-info .accordion-section-title {
-	margin-left: 47px;
-	border-left: 1px solid #ddd;
+	margin-left: 48px;
+}
+
+#customize-controls .panel-meta.customize-info .accordion-section-title:hover {
+	background: #fff;
+	color: #555;
 }
 
 .customize-overlay-close:focus,
@@ -1002,7 +1032,7 @@ p.customize-section-description {
 }
 
 .control-section-themes .accordion-section-title {
-	margin: 0 0 15px 0;
+	margin: 15px 0;
 }
 
 .customize-themes-panel .accordion-section-title {
@@ -1013,8 +1043,9 @@ p.customize-section-description {
 	padding-right: 100px; /* Space for the button */
 }
 
-.control-section-themes .accordion-section-title span {
-	font-size: small;
+.control-section-themes .accordion-section-title span.customize-action,
+#customize-controls .customize-section-title span.customize-action {
+	font-size: 13px;
 	display: block;
 	font-weight: 400;
 }
@@ -1042,6 +1073,14 @@ p.customize-section-description {
 	box-sizing: border-box;
 }
 
+.customize-themes-panel .accordion-section-title:first-child {
+	margin-top: 0;
+}
+
+#customize-controls .customize-themes-panel .accordion-section-title:nth-child(2) {
+	font-size: 14px;
+	font-weight: 600;
+}
 
 .customize-themes-panel > h2 {
 	padding: 15px 8px 0 8px;
@@ -1279,14 +1318,6 @@ body.cheatin p {
 		vertical-align: middle;
 		height: auto;
 		margin-bottom: 4px;
-	}
-
-	.adding-widget #customize-header-actions .primary-actions {
-		display: none;
-	}
-
-	.adding-widget #customize-header-actions .secondary-actions {
-		display: block;
 	}
 
 	#customize-header-actions .button-primary {

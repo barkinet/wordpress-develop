@@ -681,6 +681,11 @@ final class WP_Customize_Widgets {
 		?>
 		<div id="widgets-left"><!-- compatibility with JS which looks for widget templates here -->
 		<div id="available-widgets">
+			<h3 class="customize-section-title" tabindex="0">
+				<span class="customize-action"><?php _e( 'Customizing' ); echo ' &#9656; '; _e( 'Widgets' ); ?></span>
+				<?php _e( 'Add a Widget' ); ?>
+				<span class="screen-reader-text"><?php _e( 'Press return or enter to close' ); ?></span>
+			</h3>
 			<div id="available-widgets-filter">
 				<label class="screen-reader-text" for="widgets-search"><?php _e( 'Search Widgets' ); ?></label>
 				<input type="search" id="widgets-search" placeholder="<?php esc_attr_e( 'Search widgets&hellip;' ) ?>" />

@@ -348,7 +348,7 @@ body.adding-widget .add-new-widget:before {
 	width: 300px;
 	margin: 0;
 	z-index: 1;
-	background: #fff !important;
+	background: #eee !important;
 	-webkit-transition: all 0.2s;
 	transition: all 0.2s;
 	border-right: 1px solid #dddddd;
@@ -384,6 +384,7 @@ body.adding-widget .add-new-widget:before {
 #available-widgets .widget-tpl {
 	position: relative;
 	padding: 20px 15px 20px 60px;
+	background: #fff;
 	border-bottom: 1px solid #e4e4e4;
 	cursor: pointer;
 	display: none;
@@ -391,7 +392,8 @@ body.adding-widget .add-new-widget:before {
 
 #available-widgets .widget-tpl:hover,
 #available-widgets .widget-tpl.selected {
-	background: #fafafa;
+	background: #eee;
+	border-bottom-color: #ccc;
 }
 
 #available-widgets .widget-top,
@@ -583,6 +585,9 @@ body.adding-widget #customize-preview {
 #available-widgets [class*="tweet"] .widget-title:before,
 #available-widgets [class*="twitter"] .widget-title:before { content: "\f301"; }
 
+#available-widgets .customize-section-title {
+	display: none;
+}
 
 @media screen and (max-height: 700px) and (min-width: 981px) {
 	.customize-control-widget {
@@ -628,9 +633,30 @@ body.adding-widget #customize-preview {
 		width: 100%;
 	}
 
+	#available-widgets .customize-section-title {
+		margin: 0 0 0 47px;
+		font-size: 20px;
+		font-weight: 200;
+		line-height: 24px;
+		display: block;
+		overflow: hidden;
+		white-space: nowrap;
+		text-overflow: ellipsis;
+	}
+
+	#available-widgets .customize-section-title .customize-action {
+		font-size: 13px;
+		display: block;
+		font-weight: 400;
+	}
+
 	#available-widgets-filter {
 		position: static;
 		width: 100%;
 		height: auto;
+	}
+
+	#available-widgets-list {
+		top: 122px;
 	}
 }
