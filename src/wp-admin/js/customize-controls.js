@@ -386,9 +386,11 @@
 
 			if ( 0 !== $( '#tmpl-' + container.templateSelector ).length ) {
 				template = wp.template( container.templateSelector );
-				if ( template && container.container ) {
-					return $.trim( template( container.params ) );
-				}
+			} else {
+				template = wp.template( 'customize-' + container.containerType + '-default' );
+			}
+			if ( template && container.container ) {
+				return $.trim( template( container.params ) );
 			}
 
 			return '<li></li>';
@@ -1216,9 +1218,11 @@
 			// Add the content to the container.
 			if ( 0 !== $( '#tmpl-' + panel.templateSelector + '-content' ).length ) {
 				template = wp.template( panel.templateSelector + '-content' );
-				if ( template && panel.container ) {
-					panel.container.find( '.accordion-sub-container' ).html( template( panel.params ) );
-				}
+			} else {
+				template = wp.template( 'customize-panel-default-content' );
+			}
+			if ( template && panel.container ) {
+				panel.container.find( '.accordion-sub-container' ).html( template( panel.params ) );
 			}
 		}
 	});
