@@ -57,6 +57,14 @@ window._wpCustomizeSettings = {
 			'priority': 110,
 			'title': 'Fixture titleless panel using template',
 			'type': 'titleless'
+		},
+		'fixture-panel-reusing-default-template': {
+			'active': true,
+			'description': 'Lorem ipsum',
+			'instanceNumber': 3,
+			'priority': 110,
+			'title': 'Fixture panel of custom type re-using default template',
+			'type': 'reusing-default-template'
 		}
 	},
 	'sections': {
@@ -87,6 +95,15 @@ window._wpCustomizeSettings = {
 			'priority': 20,
 			'title': 'Fixture titleless section using template',
 			'type': 'titleless'
+		},
+		'fixture-section-reusing-default-template': {
+			'active': true,
+			'description': '',
+			'instanceNumber': 4,
+			'panel': 'fixture-panel',
+			'priority': 20,
+			'title': 'Fixture section of custom type re-using default template',
+			'type': 'reusing-default-template'
 		}
 	},
 	'settings': {
