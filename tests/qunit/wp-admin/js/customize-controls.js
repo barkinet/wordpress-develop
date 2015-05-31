@@ -137,7 +137,7 @@ jQuery( window ).load( function (){
 		ok( 1 === section.container.find( '> .accordion-section-content' ).length );
 	} );
 	module( 'Customizer Custom Type Section Lacking Specific Template' );
-	test( 'Fixture panel has expected content', function () {
+	test( 'Fixture section has expected content', function () {
 		var id = 'fixture-section-reusing-default-template', section;
 		section = wp.customize.section( id );
 		ok( ! section.params.content );
@@ -145,6 +145,26 @@ jQuery( window ).load( function (){
 		ok( section.container.is( '.control-section.control-section-' + section.params.type ) );
 		ok( 1 === section.container.find( '> .accordion-section-title' ).length );
 		ok( 1 === section.container.find( '> .accordion-section-content' ).length );
+	} );
+	module( 'Customizer Section lacking any params' );
+	test( 'Fixture section has default params supplied', function () {
+		var id = 'fixture-section-without-params', section, defaultParams;
+		section = wp.customize.section( id );
+		defaultParams = {
+			title: '',
+			description: '',
+			priority: 100,
+			panel: null,
+			type: 'default',
+			content: null,
+			active: true,
+			instanceNumber: null,
+			customizeAction: ''
+		};
+		jQuery.each( defaultParams, function ( key, value ) {
+			ok( 'undefined' !== typeof section.params[ key ] );
+			equal( value, section.params[ key ] );
+		} );
 	} );
 
 
@@ -219,6 +239,24 @@ jQuery( window ).load( function (){
 		ok( panel.container.is( '.control-panel.control-panel-' + panel.params.type ) );
 		ok( 1 === panel.container.find( '> .accordion-section-title' ).length );
 		ok( 1 === panel.container.find( '> .control-panel-content' ).length );
+	} );
+	module( 'Customizer Panel lacking any params' );
+	test( 'Fixture panel has default params supplied', function () {
+		var id = 'fixture-panel-without-params', panel, defaultParams;
+		panel = wp.customize.panel( id );
+		defaultParams = {
+			title: '',
+			description: '',
+			priority: 100,
+			type: 'default',
+			content: null,
+			active: true,
+			instanceNumber: null
+		};
+		jQuery.each( defaultParams, function ( key, value ) {
+			ok( 'undefined' !== typeof panel.params[ key ] );
+			equal( value, panel.params[ key ] );
+		} );
 	} );
 
 	module( 'Dynamically-created Customizer Setting Model' );

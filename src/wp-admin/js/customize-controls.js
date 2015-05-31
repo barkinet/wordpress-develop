@@ -165,10 +165,29 @@
 		 * @param {Object} options
 		 */
 		initialize: function ( id, options ) {
-			var container = this;
+			var container = this, defaultParams;
 			container.id = id;
-			container.params = {};
-			$.extend( container, options || {} );
+			options = options || {};
+			defaultParams = {
+				title: '',
+				description: '',
+				priority: 100,
+				type: 'default',
+				content: null,
+				active: true,
+				instanceNumber: null
+			};
+			if ( 'section' === container.containerType ) {
+				$.extend( defaultParams, {
+					panel: null,
+					customizeAction: ''
+				});
+			}
+			options.params = $.extend(
+				defaultParams,
+				options.params || {}
+			);
+			$.extend( container, options );
 			container.templateSelector = 'customize-' + container.containerType + '-' + container.params.type;
 			container.container = $( container.params.content );
 			if ( 0 === container.container.length ) {
@@ -202,7 +221,7 @@
 
 			api.utils.bubbleChildValueChanges( container, [ 'priority', 'active' ] );
 
-			container.priority.set( isNaN( container.params.priority ) ? 100 : container.params.priority );
+			container.priority.set( container.params.priority );
 			container.active.set( container.params.active );
 			container.expanded.set( false );
 		},
@@ -409,8 +428,17 @@
 		/**
 		 * @since 4.1.0
 		 *
-		 * @param {String} id
-		 * @param {Array}  options
+		 * @param {string}         id - The ID for the section.
+		 * @param {object}         options - Object containing one property: params.
+		 * @param {object}         options.params - Object containing the following properties.
+		 * @param {string}         options.params.title - Title shown when section is collapsed and expanded.
+		 * @param {string=}        [options.params.description] - Description shown at the top of the section.
+		 * @param {number=100}     [options.params.priority] - The sort priority for the section.
+		 * @param {string=default} [options.params.type] - The type of the section. See wp.customize.sectionConstructor.
+		 * @param {string=}        [options.params.content] - The markup to be used for the section container. If empty, a JS template is used.
+		 * @param {boolean=true}   [options.params.active] - Whether the section is active or not.
+		 * @param {string}         options.params.panel - The ID for the panel this section is associated with.
+		 * @param {string=}        [options.params.customizeAction] - Additional context information shown before the section title when expanded.
 		 */
 		initialize: function ( id, options ) {
 			var section = this;
@@ -1011,8 +1039,15 @@
 		/**
 		 * @since 4.1.0
 		 *
-		 * @param  {String} id
-		 * @param  {Object} options
+		 * @param {string}         id - The ID for the panel.
+		 * @param {object}         options - Object containing one property: params.
+		 * @param {object}         options.params - Object containing the following properties.
+		 * @param {string}         options.params.title - Title shown when panel is collapsed and expanded.
+		 * @param {string=}        [options.params.description] - Description shown at the top of the panel.
+		 * @param {number=100}     [options.params.priority] - The sort priority for the panel.
+		 * @param {string=default} [options.params.type] - The type of the panel. See wp.customize.panelConstructor.
+		 * @param {string=}        [options.params.content] - The markup to be used for the panel container. If empty, a JS template is used.
+		 * @param {boolean=true}   [options.params.active] - Whether the panel is active or not.
 		 */
 		initialize: function ( id, options ) {
 			var panel = this;

@@ -65,7 +65,8 @@ window._wpCustomizeSettings = {
 			'priority': 110,
 			'title': 'Fixture panel of custom type re-using default template',
 			'type': 'reusing-default-template'
-		}
+		},
+		'fixture-panel-without-params': {}
 	},
 	'sections': {
 		'fixture-section': {
@@ -104,7 +105,8 @@ window._wpCustomizeSettings = {
 			'priority': 20,
 			'title': 'Fixture section of custom type re-using default template',
 			'type': 'reusing-default-template'
-		}
+		},
+		'fixture-section-without-params': {}
 	},
 	'settings': {
 		'fixture-setting': {
