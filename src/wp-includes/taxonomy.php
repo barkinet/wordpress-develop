@@ -1346,16 +1346,16 @@ function get_term($term, $taxonomy, $output = OBJECT, $filter = 'raw') {
 	/**
 	 * Filter the term before it is retrieved by get_term().
 	 *
-	 * If the filter returns a non-false value, the function will be short-circuited
+	 * If the filter returns a non-null value, the function will be short-circuited
 	 * and will return this value instead.
 	 *
 	 * @since 4.3.0
 	 *
-	 * @param bool|mixed $pre_term   Potential override of the normal return value for get_term().
+	 * @param null|mixed $pre_term   Potential override of the normal return value for get_term().
 	 * @param array      $args       These arguments are defined on get_term().
 	 */
-	$pre_term = apply_filters( 'pre_get_term', false, compact( 'term', 'taxonomy', 'output', 'filter' ) );
-	if ( false !== $pre_term ) {
+	$pre_term = apply_filters( 'pre_get_term', null, compact( 'term', 'taxonomy', 'output', 'filter' ) );
+	if ( null !== $pre_term ) {
 		return $pre_term;
 	}
 
