@@ -1343,6 +1343,22 @@ class WP_Tax_Query {
 function get_term($term, $taxonomy, $output = OBJECT, $filter = 'raw') {
 	global $wpdb;
 
+	/**
+	 * Filter the term before it is retrieved by get_term().
+	 *
+	 * If the filter returns a non-false value, the function will be short-circuited
+	 * and will return this value instead.
+	 *
+	 * @since 4.3.0
+	 *
+	 * @param bool|mixed $pre_term   Potential override of the normal return value for get_term().
+	 * @param array      $args       These arguments are defined on get_term().
+	 */
+	$pre_term = apply_filters( 'pre_get_term', false, compact( 'term', 'taxonomy', 'output', 'filter' ) );
+	if ( false !== $pre_term ) {
+		return $pre_term;
+	}
+
 	if ( empty( $term ) ) {
 		return new WP_Error( 'invalid_term', __( 'Empty Term' ) );
 	}
