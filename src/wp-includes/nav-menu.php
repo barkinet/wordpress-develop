@@ -556,16 +556,20 @@ function wp_get_nav_menu_items( $menu, $args = array() ) {
 	static $fetched = array();
 
 	$items = get_objects_in_term( $menu->term_id, 'nav_menu' );
-
-	if ( empty( $items ) )
-		return $items;
+	if ( is_wp_error( $items ) ) {
+		return false;
+	}
 
 	$defaults = array( 'order' => 'ASC', 'orderby' => 'menu_order', 'post_type' => 'nav_menu_item',
 		'post_status' => 'publish', 'output' => ARRAY_A, 'output_key' => 'menu_order', 'nopaging' => true );
 	$args = wp_parse_args( $args, $defaults );
 	$args['include'] = $items;
 
-	$items = get_posts( $args );
+	if ( ! empty( $items ) ) {
+		$items = get_posts( $args );
+	} else {
+		$items = array();
+	}
 
 	if ( is_wp_error( $items ) || ! is_array( $items ) )
 		return false;
@@ -627,7 +631,7 @@ function wp_get_nav_menu_items( $menu, $args = array() ) {
 	 * @param object $menu  The menu object.
 	 * @param array  $args  An array of arguments used to retrieve menu item objects.
 	 */
-	return apply_filters( 'wp_get_nav_menu_items',  $items, $menu, $args );
+	return apply_filters( 'wp_get_nav_menu_items', $items, $menu, $args );
 }
 
 /**
