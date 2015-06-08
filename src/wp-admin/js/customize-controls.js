@@ -596,6 +596,9 @@
 						position = content.offset().top;
 						scroll = container.scrollTop();
 						content.css( 'margin-top', ( 45 - position - scroll ) );
+						if ( args.completeCallback ) {
+							args.completeCallback();
+						}
 					};
 				}
 
@@ -622,6 +625,9 @@
 				content.css( 'margin-top', 'inherit' );
 				container.scrollTop( 0 );
 				section.container.find( '.accordion-section-title' ).focus();
+				if ( args.completeCallback ) {
+					args.completeCallback();
+				}
 			}
 		}
 	});
