@@ -909,7 +909,7 @@ final class WP_Customize_Manager {
 			 *
 			 * @param string $setting_class WP_Customize_Setting or a subclass.
 			 * @param string $setting_id    ID for dynamic setting, usually coming from `$_POST['customized']`.
-			 * @param string $setting_args  WP_Customize_Setting or a subclass.
+			 * @param array  $setting_args  WP_Customize_Setting or a subclass.
 			 */
 			$setting_class = apply_filters( 'customize_dynamic_setting_class', $setting_class, $setting_id, $setting_args );
 
