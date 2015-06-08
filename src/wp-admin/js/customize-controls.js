@@ -284,17 +284,25 @@
 		 * @param {Object}  args.completeCallback
 		 */
 		onChangeActive: function ( active, args ) {
-			var duration = ( 'resolved' === api.previewer.deferred.active.state() ? args.duration : 0 );
-			if ( ! $.contains( document, this.container ) ) {
+			var duration = ( 'resolved' === api.previewer.deferred.active.state() ? args.duration : 0 ),
+				construct = this;
+			if ( ! $.contains( document, construct.container[0] ) ) {
 				// jQuery.fn.slideUp is not hiding an element if it is not in the DOM
-				this.container.toggle( active );
+				construct.container.toggle( active );
 				if ( args.completeCallback ) {
 					args.completeCallback();
 				}
 			} else if ( active ) {
-				this.container.stop( true, true ).slideDown( duration, args.completeCallback );
+				construct.container.stop( true, true ).slideDown( duration, args.completeCallback );
 			} else {
-				this.container.stop( true, true ).slideUp( duration, args.completeCallback );
+				if ( construct.expanded() ) {
+					construct.collapse({
+						duration: duration,
+						completeCallback: args.completeCallback
+					});
+				} else {
+					construct.container.stop( true, true ).slideUp( duration, args.completeCallback );
+				}
 			}
 		},
 
