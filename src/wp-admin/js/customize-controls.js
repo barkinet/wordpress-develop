@@ -284,8 +284,8 @@
 		 * @param {Object}  args.completeCallback
 		 */
 		onChangeActive: function ( active, args ) {
-			var duration = ( 'resolved' === api.previewer.deferred.active.state() ? args.duration : 0 ),
-				construct = this;
+			var duration, construct = this;
+			duration = ( 'resolved' === api.previewer.deferred.active.state() ? args.duration : 0 );
 			if ( ! $.contains( document, construct.container[0] ) ) {
 				// jQuery.fn.slideUp is not hiding an element if it is not in the DOM
 				construct.container.toggle( active );
@@ -298,7 +298,9 @@
 				if ( construct.expanded() ) {
 					construct.collapse({
 						duration: duration,
-						completeCallback: args.completeCallback
+						completeCallback: function() {
+							construct.container.stop( true, true ).slideUp( duration, args.completeCallback );
+						}
 					});
 				} else {
 					construct.container.stop( true, true ).slideUp( duration, args.completeCallback );
