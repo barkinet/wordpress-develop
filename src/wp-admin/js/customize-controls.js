@@ -629,12 +629,16 @@
 					expand();
 				}
 
-			} else if ( section.container.hasClass( 'open' ) ) {
+			} else if ( ! expanded && section.container.hasClass( 'open' ) ) {
 				section.container.removeClass( 'open' );
 				overlay.removeClass( 'section-open' );
 				content.css( 'margin-top', 'inherit' );
 				container.scrollTop( 0 );
 				section.container.find( '.accordion-section-title' ).focus();
+				if ( args.completeCallback ) {
+					args.completeCallback();
+				}
+			} else {
 				if ( args.completeCallback ) {
 					args.completeCallback();
 				}
