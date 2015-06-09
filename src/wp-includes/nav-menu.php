@@ -146,6 +146,10 @@ function get_nav_menu_locations() {
  * @return bool Whether location has a menu.
  */
 function has_nav_menu( $location ) {
+	if ( is_customize_preview() ) {
+		return true;
+	}
+
 	$registered_nav_menus = get_registered_nav_menus();
 	if ( ! isset( $registered_nav_menus[ $location ] ) ) {
 		return false;
