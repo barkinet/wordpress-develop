@@ -711,10 +711,10 @@ function wp_setup_nav_menu_item( $menu_item ) {
 			} else {
 				$menu_item->type_label = __('Custom Link');
 				$menu_item->title = $menu_item->post_title;
-				$menu_item->url = empty( $menu_item->url ) ? get_post_meta( $menu_item->ID, '_menu_item_url', true ) : $menu_item->url;
+				$menu_item->url = ! isset( $menu_item->url ) ? get_post_meta( $menu_item->ID, '_menu_item_url', true ) : $menu_item->url;
 			}
 
-			$menu_item->target = empty( $menu_item->target ) ? get_post_meta( $menu_item->ID, '_menu_item_target', true ) : $menu_item->target;
+			$menu_item->target = ! isset( $menu_item->target ) ? get_post_meta( $menu_item->ID, '_menu_item_target', true ) : $menu_item->target;
 
 			/**
 			 * Filter a navigation menu item's title attribute.
@@ -723,9 +723,9 @@ function wp_setup_nav_menu_item( $menu_item ) {
 			 *
 			 * @param string $item_title The menu item title attribute.
 			 */
-			$menu_item->attr_title = empty( $menu_item->attr_title ) ? apply_filters( 'nav_menu_attr_title', $menu_item->post_excerpt ) : $menu_item->attr_title;
+			$menu_item->attr_title = ! isset( $menu_item->attr_title ) ? apply_filters( 'nav_menu_attr_title', $menu_item->post_excerpt ) : $menu_item->attr_title;
 
-			if ( empty( $menu_item->description ) ) {
+			if ( ! isset( $menu_item->description ) ) {
 				/**
 				 * Filter a navigation menu item's description.
 				 *
@@ -736,8 +736,8 @@ function wp_setup_nav_menu_item( $menu_item ) {
 				$menu_item->description = apply_filters( 'nav_menu_description', wp_trim_words( $menu_item->post_content, 200 ) );
 			}
 
-			$menu_item->classes = empty( $menu_item->classes ) ? (array) get_post_meta( $menu_item->ID, '_menu_item_classes', true ) : $menu_item->classes;
-			$menu_item->xfn = empty( $menu_item->xfn ) ? get_post_meta( $menu_item->ID, '_menu_item_xfn', true ) : $menu_item->xfn;
+			$menu_item->classes = ! isset( $menu_item->classes ) ? (array) get_post_meta( $menu_item->ID, '_menu_item_classes', true ) : $menu_item->classes;
+			$menu_item->xfn = ! isset( $menu_item->xfn ) ? get_post_meta( $menu_item->ID, '_menu_item_xfn', true ) : $menu_item->xfn;
 		} else {
 			$menu_item->db_id = 0;
 			$menu_item->menu_item_parent = 0;
