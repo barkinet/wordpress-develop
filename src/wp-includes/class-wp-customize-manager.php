@@ -1205,7 +1205,7 @@ final class WP_Customize_Manager {
 		$sections = array();
 
 		foreach ( $this->sections as $section ) {
-			if ( ! $section->check_capabilities() || ! $section->controls ) {
+			if ( ! $section->check_capabilities() ) {
 				continue;
 			}
 
@@ -1228,7 +1228,7 @@ final class WP_Customize_Manager {
 		$panels = array();
 
 		foreach ( $this->panels as $panel ) {
-			if ( ! $panel->check_capabilities() || ! $panel->sections ) {
+			if ( ! $panel->check_capabilities() ) {
 				continue;
 			}
 
