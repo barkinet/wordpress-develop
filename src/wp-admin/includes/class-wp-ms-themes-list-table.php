@@ -245,14 +245,14 @@ class WP_MS_Themes_List_Table extends WP_List_Table {
 	}
 
 	/**
-	 * Get the name of the default primary column.
+	 * Get the name of the primary column.
 	 *
 	 * @since 4.3.0
 	 * @access protected
 	 *
-	 * @return string Name of the default primary column name, in this case, 'name'.
+	 * @return string Unalterable name of the primary column name, in this case, 'name'.
 	 */
-	protected function get_default_primary_column_name() {
+	protected function get_primary_column_name() {
 		return 'name';
 	}
 
@@ -434,23 +434,22 @@ class WP_MS_Themes_List_Table extends WP_List_Table {
 		list( $columns, $hidden, $sortable, $primary ) = $this->get_column_info();
 
 		foreach ( $columns as $column_name => $column_display_name ) {
-			$style = '';
-			if ( in_array( $column_name, $hidden ) )
-				$style = ' style="display:none;"';
+			$extra_classes = '';
+			if ( in_array( $column_name, $hidden ) ) {
+				$extra_classes .= ' hidden';
+			}
 
 			switch ( $column_name ) {
 				case 'cb':
 					echo "<th scope='row' class='check-column'>$checkbox</th>";
 					break;
 				case 'name':
-					echo "<td class='theme-title'$style><strong>" . $theme->display('Name') . "</strong>";
-					if ( $primary === $column_name ) {
-						echo $this->row_actions($actions, true);
-					}
+					echo "<td class='theme-title column-primary{$extra_classes}'><strong>" . $theme->display('Name') . "</strong>";
+					echo $this->row_actions($actions, true);
 					echo "</td>";
 					break;
 				case 'description':
-					echo "<td class='column-description desc'$style>";
+					echo "<td class='column-description desc{$extra_classes}'>";
 					if ( $theme->errors() ) {
 						$pre = $status == 'broken' ? __( 'Broken Theme:' ) . ' ' : '';
 						echo '<p><strong class="attention">' . $pre . $theme->errors()->get_error_message() . '</strong></p>';
@@ -485,14 +484,11 @@ class WP_MS_Themes_List_Table extends WP_List_Table {
 					echo implode( ' | ', $theme_meta );
 
 					echo '</div>';
-					if ( $primary === $column_name ) {
-						echo $this->row_actions($actions, true);
-					}
 					echo '</td>';
 					break;
 
 				default:
-					echo "<td class='$column_name column-$column_name'$style>";
+					echo "<td class='$column_name column-$column_name{$extra_classes}'>";
 
 					/**
 					 * Fires inside each custom column of the Multisite themes list table.
@@ -505,9 +501,6 @@ class WP_MS_Themes_List_Table extends WP_List_Table {
 					 */
 					do_action( 'manage_themes_custom_column', $column_name, $stylesheet, $theme );
 
-					if ( $primary === $column_name ) {
-						echo $this->row_actions($actions, true);
-					}
 					echo "</td>";
 			}
 		}

@@ -1550,7 +1550,7 @@ function wp_notify_moderator($comment_id) {
 	$user = get_userdata( $post->post_author );
 	// Send to the administration and to the post author if the author can modify the comment.
 	$emails = array( get_option( 'admin_email' ) );
-	if ( user_can( $user->ID, 'edit_comment', $comment_id ) && ! empty( $user->user_email ) ) {
+	if ( $user && user_can( $user->ID, 'edit_comment', $comment_id ) && ! empty( $user->user_email ) ) {
 		if ( 0 !== strcasecmp( $user->user_email, get_option( 'admin_email' ) ) )
 			$emails[] = $user->user_email;
 	}
@@ -2229,20 +2229,20 @@ function get_avatar( $id_or_email, $size = 96, $default = '', $alt = '', $args =
 		return false;
 	}
 
-	$url2x = get_avatar_url( $id_or_email, array_merge( $args, array( 'size' => $args['size'] * 2 ) ) );
-
 	$args = get_avatar_data( $id_or_email, $args );
 
 	$url = $args['url'];
 
 	if ( ! $url || is_wp_error( $url ) ) {
-        return false;
+		return false;
 	}
+
+	$url2x = add_query_arg( array( 's' => $args['size'] * 2 ), $args['url'] );
 
 	$class = array( 'avatar', 'avatar-' . (int) $args['size'], 'photo' );
 
 	if ( ! $args['found_avatar'] || $args['force_default'] ) {
-        $class[] = 'avatar-default';
+		$class[] = 'avatar-default';
 	}
 
 	if ( $args['class'] ) {

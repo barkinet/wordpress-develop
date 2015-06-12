@@ -247,7 +247,6 @@ class WP_Media_List_Table extends WP_List_Table {
 	public function get_columns() {
 		$posts_columns = array();
 		$posts_columns['cb'] = '<input type="checkbox" />';
-		$posts_columns['icon'] = '';
 		/* translators: column name */
 		$posts_columns['title'] = _x( 'File', 'column name' );
 		$posts_columns['author'] = __( 'Author' );
@@ -341,12 +340,11 @@ foreach ( $columns as $column_name => $column_display_name ) {
 		$classes .= ' has-row-actions column-primary';
 	}
 
-	$style = '';
 	if ( in_array( $column_name, $hidden ) ) {
-		$style = ' style="display:none;"';
+		$classes .= ' hidden';
 	}
 
-	$attributes = "class='$classes'$style";
+	$attributes = "class='$classes'";
 
 	if ( 'cb' === $column_name ) {
 ?>
@@ -361,11 +359,12 @@ foreach ( $columns as $column_name => $column_display_name ) {
 		echo "<td $attributes>";
 
 		switch ( $column_name ) {
-			case 'icon':
+			case 'title':
 				list( $mime ) = explode( '/', $post->post_mime_type );
-				$attributes = 'class="column-icon media-icon ' . $mime . '-icon"' . $style;
 
-				if ( $thumb = wp_get_attachment_image( $post->ID, array( 80, 60 ), true ) ) {
+				echo "<div class='media-icon {$mime}-icon'>";
+
+				if ( $thumb = wp_get_attachment_image( $post->ID, array( 60, 60 ), true ) ) {
 					if ( $this->is_trash || ! $user_can_edit ) {
 						echo $thumb;
 					} else { ?>
@@ -374,9 +373,8 @@ foreach ( $columns as $column_name => $column_display_name ) {
 					</a><?php
 					}
 				}
-				break;
 
-			case 'title':
+				echo '</div><div class="media-info">';
 ?>
 					<strong>
 					<?php if ( $this->is_trash || ! $user_can_edit ) {
@@ -388,6 +386,7 @@ foreach ( $columns as $column_name => $column_display_name ) {
 					<?php }
 					_media_states( $post ); ?></strong>
 					<p class="filename"><?php echo wp_basename( $post->guid ); ?></p>
+				</div>
 <?php
 				break;
 
@@ -497,7 +496,7 @@ foreach ( $columns as $column_name => $column_display_name ) {
 						/* translators: used between list items, there is a space after the comma */
 						echo join( __( ', ' ), $out );
 					} else {
-						echo '&#8212;';
+						echo '<span aria-hidden="true">&#8212;</span><span class="screen-reader-text">' . get_taxonomy( $taxonomy )->labels->not_found . '</span>';
 					}
 
 					break;

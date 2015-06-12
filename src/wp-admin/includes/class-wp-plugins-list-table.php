@@ -581,12 +581,10 @@ class WP_Plugins_List_Table extends WP_List_Table {
 
 		list( $columns, $hidden, $sortable, $primary ) = $this->get_column_info();
 
-		$extra_class = ' has-row-actions column-primary';
-
 		foreach ( $columns as $column_name => $column_display_name ) {
-			$style = '';
+			$extra_classes = '';
 			if ( in_array( $column_name, $hidden ) ) {
-				$style = ' style="display:none;"';
+				$extra_classes = ' hidden';
 			}
 
 			switch ( $column_name ) {
@@ -594,21 +592,14 @@ class WP_Plugins_List_Table extends WP_List_Table {
 					echo "<th scope='row' class='check-column'>$checkbox</th>";
 					break;
 				case 'name':
-					if ( $primary === $column_name || ! isset( $columns[ $primary ] ) ) {
-						echo "<td class='plugin-title $extra_class'$style><strong>$plugin_name</strong>";
-						echo $this->row_actions( $actions, true );
-					} else {
-						echo "<td class='plugin-title'$style><strong>$plugin_name</strong>";
-					}
+					echo "<td class='plugin-title column-primary'><strong>$plugin_name</strong>";
+					echo $this->row_actions( $actions, true );
 					echo "</td>";
 					break;
 				case 'description':
 					$classes = 'column-description desc';
-					if ( $primary === $column_name ) {
-						$classes .= " $extra_class";
-					}
 
-					echo "<td class='$classes'$style>
+					echo "<td class='$classes{$extra_classes}'>
 						<div class='plugin-description'>$description</div>
 						<div class='$class second plugin-version-author-uri'>";
 
@@ -655,18 +646,12 @@ class WP_Plugins_List_Table extends WP_List_Table {
 					$plugin_meta = apply_filters( 'plugin_row_meta', $plugin_meta, $plugin_file, $plugin_data, $status );
 					echo implode( ' | ', $plugin_meta );
 
-					if ( $primary === $column_name ) {
-						echo $this->row_actions( $actions, true );
-					}
 					echo "</div></td>";
 					break;
 				default:
 					$classes = "$column_name column-$column_name$class";
-					if ( $primary === $column_name ) {
-						$classes .= " $extra_class";
-					}
 
-					echo "<td class='$classes'$style>";
+					echo "<td class='$classes{$extra_classes}'>";
 
 					/**
 					 * Fires inside each custom column of the Plugins list table.
@@ -679,9 +664,6 @@ class WP_Plugins_List_Table extends WP_List_Table {
 					 */
 					do_action( 'manage_plugins_custom_column', $column_name, $plugin_file, $plugin_data );
 
-					if ( $primary === $column_name ) {
-						echo $this->row_actions( $actions, true );
-					}
 					echo "</td>";
 			}
 		}
@@ -719,14 +701,14 @@ class WP_Plugins_List_Table extends WP_List_Table {
 	}
 
 	/**
-	 * Get the name of default primary column for this specific list table.
+	 * Get the name of primary column for this specific list table.
 	 *
 	 * @since 4.3.0
 	 * @access protected
 	 *
-	 * @return string Name for the default primary column, in this case, 'plugin'.
+	 * @return string Unalterable name for the primary column, in this case, 'name'.
 	 */
-	protected function get_default_primary_column_name() {
-		return 'plugin';
+	protected function get_primary_column_name() {
+		return 'name';
 	}
 }
