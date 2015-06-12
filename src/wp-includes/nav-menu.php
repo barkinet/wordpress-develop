@@ -140,28 +140,31 @@ function get_nav_menu_locations() {
 /**
  * Whether a registered nav menu location has a menu assigned to it.
  *
- * Returns true in Customizer preview even if a menu is not assigned to a location
- * so that if any wp_nav_menu() call will happen if wrapped in a condition using
- * has_nav_menu(); this ensures that the menu can be previewed via partial refresh
- * and not having to refresh the entire preview.
- *
  * @since 3.0.0
  *
  * @param string $location Menu location identifier.
  * @return bool Whether location has a menu.
  */
 function has_nav_menu( $location ) {
+	$has_nav_menu = false;
+
 	$registered_nav_menus = get_registered_nav_menus();
-	if ( ! isset( $registered_nav_menus[ $location ] ) ) {
-		return false;
+	if ( isset( $registered_nav_menus[ $location ] ) ) {
+		$locations = get_nav_menu_locations();
+		$has_nav_menu = ( ! empty( $locations[ $location ] ) );
 	}
 
-	if ( is_customize_preview() ) {
-		return true;
-	}
+	/**
+	 * Filter whether a nav menu is assigned to the specified location.
+	 *
+	 * @since 4.3.0
+	 *
+	 * @param bool   $has_nav_menu Whether there is a menu assigned to a location.
+	 * @param string $location     Menu location.
+	 */
+	$has_nav_menu = apply_filters( 'has_nav_menu', $has_nav_menu, $location );
 
-	$locations = get_nav_menu_locations();
-	return ( ! empty( $locations[ $location ] ) );
+	return $has_nav_menu;
 }
 
 /**
