@@ -17,7 +17,6 @@ if ( has_nav_menu( 'primary' ) || has_nav_menu( 'social' ) || is_active_sidebar(
 					wp_nav_menu( array(
 						'menu_class'     => 'nav-menu',
 						'theme_location' => 'primary',
-						'fallback_cb'    => '', // So it does not default to wp_page_menu() in the Customizer preview, since has_nav_menu() will return true.
 					) );
 				?>
 			</nav><!-- .main-navigation -->
@@ -29,7 +28,6 @@ if ( has_nav_menu( 'primary' ) || has_nav_menu( 'social' ) || is_active_sidebar(
 					// Social links navigation menu.
 					wp_nav_menu( array(
 						'theme_location' => 'social',
-						'fallback_cb'    => '', // So it does not default to wp_page_menu() in the Customizer preview, since has_nav_menu() will return true.
 						'depth'          => 1,
 						'link_before'    => '<span class="screen-reader-text">',
 						'link_after'     => '</span>',
