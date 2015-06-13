@@ -151,7 +151,7 @@ function has_nav_menu( $location ) {
 	$registered_nav_menus = get_registered_nav_menus();
 	if ( isset( $registered_nav_menus[ $location ] ) ) {
 		$locations = get_nav_menu_locations();
-		$has_nav_menu = ( ! empty( $locations[ $location ] ) );
+		$has_nav_menu = ! empty( $locations[ $location ] );
 	}
 
 	/**
@@ -162,9 +162,7 @@ function has_nav_menu( $location ) {
 	 * @param bool   $has_nav_menu Whether there is a menu assigned to a location.
 	 * @param string $location     Menu location.
 	 */
-	$has_nav_menu = apply_filters( 'has_nav_menu', $has_nav_menu, $location );
-
-	return $has_nav_menu;
+	return apply_filters( 'has_nav_menu', $has_nav_menu, $location );
 }
 
 /**
@@ -562,8 +560,9 @@ function _is_valid_nav_menu_item( $item ) {
 function wp_get_nav_menu_items( $menu, $args = array() ) {
 	$menu = wp_get_nav_menu_object( $menu );
 
-	if ( ! $menu )
+	if ( ! $menu ) {
 		return false;
+	}
 
 	static $fetched = array();
 
@@ -582,9 +581,6 @@ function wp_get_nav_menu_items( $menu, $args = array() ) {
 	} else {
 		$items = array();
 	}
-
-	if ( is_wp_error( $items ) || ! is_array( $items ) )
-		return false;
 
 	// Get all posts and terms at once to prime the caches
 	if ( empty( $fetched[$menu->term_id] ) || wp_using_ext_object_cache() ) {
@@ -622,8 +618,9 @@ function wp_get_nav_menu_items( $menu, $args = array() ) {
 
 	$items = array_map( 'wp_setup_nav_menu_item', $items );
 
-	if ( ! is_admin() ) // Remove invalid items only in frontend
+	if ( ! is_admin() ) { // Remove invalid items only in frontend
 		$items = array_filter( $items, '_is_valid_nav_menu_item' );
+	}
 
 	if ( ARRAY_A == $args['output'] ) {
 		$GLOBALS['_menu_item_sort_prop'] = $args['output_key'];

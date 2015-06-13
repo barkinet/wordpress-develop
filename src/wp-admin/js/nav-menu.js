@@ -740,7 +740,6 @@ var wpNavMenu;
 			});
 
 			function updateSharedVars(ui) {
-
 				var depth;
 
 				prev = ui.placeholder.prev( '.menu-item' );

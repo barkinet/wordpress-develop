@@ -682,17 +682,13 @@ class WP_Posts_List_Table extends WP_List_Table {
 	 * @param WP_Post $post
 	 */
 	public function column_cb( $post ) {
-		$can_edit_post = current_user_can( 'edit_post', $post->ID );
-		$title = _draft_or_post_title();
-		?>
-		<th scope="row" class="check-column">
-		<?php if ( $can_edit_post ) { ?>
-			<label class="screen-reader-text" for="cb-select-<?php the_ID(); ?>"><?php printf( __( 'Select %s' ), $title ); ?></label>
+		if ( current_user_can( 'edit_post', $post->ID ) ): ?>
+			<label class="screen-reader-text" for="cb-select-<?php the_ID(); ?>"><?php
+				printf( __( 'Select %s' ), _draft_or_post_title() );
+			?></label>
 			<input id="cb-select-<?php the_ID(); ?>" type="checkbox" name="post[]" value="<?php the_ID(); ?>" />
 			<div class="locked-indicator"></div>
-		<?php } ?>
-		</th>
-		<?php
+		<?php endif;
 	}
 
 	/**
@@ -768,7 +764,7 @@ class WP_Posts_List_Table extends WP_List_Table {
 			echo '<div class="locked-info"><span class="locked-avatar">' . $locked_avatar . '</span> <span class="locked-text">' . $locked_text . "</span></div>\n";
 		}
 
-		if ( ! $this->hierarchical_display && 'excerpt' == $mode && current_user_can( 'read_post', $post->ID ) ) {
+		if ( ! is_post_type_hierarchical( $this->screen->post_type ) && 'excerpt' == $mode && current_user_can( 'read_post', $post->ID ) ) {
 			the_excerpt();
 		}
 
@@ -980,7 +976,11 @@ class WP_Posts_List_Table extends WP_List_Table {
 			$attributes = "class='$classes'";
 
 			if ( 'cb' === $column_name ) {
+				echo '<th scope="row" class="check-column">';
+
 				$this->column_cb( $item );
+
+				echo '</th>';
 			} else {
 				echo "<td $attributes>";
 
