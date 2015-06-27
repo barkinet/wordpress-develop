@@ -1182,6 +1182,7 @@ class WP_Customize_Nav_Menu_Item_Setting extends WP_Customize_Setting {
 				if ( false === $nav_menu_setting->save() ) {
 					$this->update_status = 'error';
 					$this->update_error  = new WP_Error( 'nav_menu_setting_failure' );
+					return;
 				}
 
 				if ( $nav_menu_setting->previous_term_id !== intval( $value['nav_menu_term_id'] ) ) {
@@ -1207,6 +1208,7 @@ class WP_Customize_Nav_Menu_Item_Setting extends WP_Customize_Setting {
 				if ( false === $parent_nav_menu_item_setting->save() ) {
 					$this->update_status = 'error';
 					$this->update_error  = new WP_Error( 'nav_menu_item_setting_failure' );
+					return;
 				}
 
 				if ( $parent_nav_menu_item_setting->previous_post_id !== intval( $value['menu_item_parent'] ) ) {
