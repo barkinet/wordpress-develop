@@ -2299,7 +2299,7 @@
 		var insertedMenuIdMapping = {};
 
 		_( data.nav_menu_updates ).each(function( update ) {
-			var oldCustomizeId, newCustomizeId, oldSetting, newSetting, settingValue, oldSection, newSection;
+			var oldCustomizeId, newCustomizeId, customizeId, oldSetting, newSetting, setting, settingValue, oldSection, newSection, wasSaved;
 			if ( 'inserted' === update.status ) {
 				if ( ! update.previous_term_id ) {
 					throw new Error( 'Expected previous_term_id' );
@@ -2321,7 +2321,7 @@
 				if ( ! settingValue ) {
 					throw new Error( 'Did not expect setting to be empty (deleted).' );
 				}
-				settingValue = _.clone( settingValue );
+				settingValue = $.extend( _.clone( settingValue ), update.saved_value );
 
 				insertedMenuIdMapping[ update.previous_term_id ] = update.term_id;
 				newCustomizeId = 'nav_menu[' + String( update.term_id ) + ']';
@@ -2379,6 +2379,20 @@
 				}
 
 				// @todo Update the Custom Menu selects, ensuring the newly-inserted IDs are used for any that have selected a placeholder menu.
+			} else if ( 'updated' === update.status ) {
+				customizeId = 'nav_menu[' + String( update.term_id ) + ']';
+				if ( ! api.has( customizeId ) ) {
+					throw new Error( 'Expected setting to exist: ' + customizeId );
+				}
+
+				// Make sure the setting gets updated with its sanitized server value (specifically the conflict-resolved name).
+				setting = api( customizeId );
+				if ( ! _.isEqual( update.saved_value, setting.get() ) ) {
+					wasSaved = api.state( 'saved' ).get();
+					setting.set( update.saved_value );
+					setting._dirty = false;
+					api.state( 'saved' ).set( wasSaved );
+				}
 			}
 		} );
 
