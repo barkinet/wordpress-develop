@@ -706,7 +706,17 @@
 		},
 
 		populateControls: function() {
-			var section = this, menuNameControlId, menuControl, menuNameControl;
+			var section = this, setting, menuNameControlId, menuControl, menuNameControl;
+
+			// Ensure menu name is always populated.
+			setting = api( section.id );
+			setting.validate = function( menu ) {
+				if ( menu && ! menu.name ) {
+					menu.name = api.Menus.data.l10n.unnamed;
+				}
+				return menu;
+			};
+			setting.set( setting.validate( setting.get() ) );
 
 			// Add the control for managing the menu name.
 			menuNameControlId = section.id + '[name]';
@@ -2206,7 +2216,7 @@
 				{},
 				api.Menus.data.defaultSettingValues.nav_menu,
 				{
-					name: name
+					name: name || api.Menus.data.l10n.unnamed
 				}
 			) );
 
@@ -2219,7 +2229,7 @@
 				params: {
 					id: customizeId,
 					panel: 'nav_menus',
-					title: name,
+					title: api( customizeId ).get().name,
 					customizeAction: api.Menus.data.l10n.customizingMenus,
 					type: 'nav_menu',
 					priority: 10,

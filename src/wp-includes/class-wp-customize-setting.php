@@ -1608,6 +1608,10 @@ class WP_Customize_Nav_Menu_Setting extends WP_Customize_Setting {
 		$value = array_merge( $default, $value );
 		$value = wp_array_slice_assoc( $value, array_keys( $default ) );
 
+		if ( '' === $value['name'] ) {
+			$value['name'] = _x( '(unnamed)', 'Missing menu name.' );
+		}
+
 		$value['name']        = trim( esc_html( $value['name'] ) ); // This sanitization code is used in wp-admin/nav-menus.php.
 		$value['description'] = sanitize_text_field( $value['description'] );
 		$value['parent']      = max( 0, intval( $value['parent'] ) );
