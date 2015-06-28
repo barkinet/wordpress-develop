@@ -706,17 +706,7 @@
 		},
 
 		populateControls: function() {
-			var section = this, setting, menuNameControlId, menuControl, menuNameControl;
-
-			// Ensure menu name is always populated.
-			setting = api( section.id );
-			setting.validate = function( menu ) {
-				if ( menu && ! menu.name ) {
-					menu.name = api.Menus.data.l10n.unnamed;
-				}
-				return menu;
-			};
-			setting.set( setting.validate( setting.get() ) );
+			var section = this, menuNameControlId, menuControl, menuNameControl;
 
 			// Add the control for managing the menu name.
 			menuNameControlId = section.id + '[name]';
@@ -910,7 +900,7 @@
 					return;
 				}
 				menuId = matches[1];
-				option = new Option( setting().name, menuId );
+				option = new Option( setting().name || api.Menus.data.l10n.unnamed, menuId );
 				control.container.find( 'select' ).append( option );
 			});
 			api.bind( 'remove', function( setting ) {
@@ -936,7 +926,7 @@
 					}
 					control.container.find( 'option[value=' + menuId + ']' ).remove();
 				} else {
-					control.container.find( 'option[value=' + menuId + ']' ).text( setting().name );
+					control.container.find( 'option[value=' + menuId + ']' ).text( setting().name || api.Menus.data.l10n.unnamed );
 				}
 			});
 		}
@@ -1646,7 +1636,9 @@
 		 */
 		ready: function() {
 			var control = this,
-				menuId = control.params.menu_id;
+				menuId = control.params.menu_id,
+				menu = control.setting(),
+				name;
 
 			if ( 'undefined' === typeof this.params.menu_id ) {
 				throw new Error( 'params.menu_id was not defined' );
@@ -1677,17 +1669,19 @@
 			this._setupTitle();
 
 			// Add menu to Custom Menu widgets.
-			if ( control.setting() ) {
+			if ( menu ) {
+				name = menu.name || api.Menus.data.l10n.unnamed;
+
 				api.control.each( function( widgetControl ) {
 					if ( ! widgetControl.extended( api.controlConstructor.widget_form ) || 'nav_menu' !== widgetControl.params.widget_id_base ) {
 						return;
 					}
 					var select = widgetControl.container.find( 'select' );
 					if ( select.find( 'option[value=' + String( menuId ) + ']' ).length === 0 ) {
-						select.append( new Option( control.setting().name, menuId ) );
+						select.append( new Option( name, menuId ) );
 					}
 				} );
-				$( '#available-widgets-list .widget-inside:has(input.id_base[value=nav_menu]) select:first' ).append( new Option( control.setting().name, menuId ) );
+				$( '#available-widgets-list .widget-inside:has(input.id_base[value=nav_menu]) select:first' ).append( new Option( name, menuId ) );
 			}
 		},
 
@@ -1718,18 +1712,20 @@
 			});
 
 			control.setting.bind( function( to ) {
+				var name;
 				if ( false === to ) {
 					control._handleDeletion();
 				} else {
 					// Update names in the Custom Menu widgets.
+					name = to.name || api.Menus.data.l10n.unnamed;
 					api.control.each( function( widgetControl ) {
 						if ( ! widgetControl.extended( api.controlConstructor.widget_form ) || 'nav_menu' !== widgetControl.params.widget_id_base ) {
 							return;
 						}
 						var select = widgetControl.container.find( 'select' );
-						select.find( 'option[value=' + String( menuId ) + ']' ).text( to.name );
+						select.find( 'option[value=' + String( menuId ) + ']' ).text( name );
 					});
-					$( '#available-widgets-list .widget-inside:has(input.id_base[value=nav_menu]) select:first option[value=' + String( menuId ) + ']' ).text( to.name );
+					$( '#available-widgets-list .widget-inside:has(input.id_base[value=nav_menu]) select:first option[value=' + String( menuId ) + ']' ).text( name );
 				}
 			} );
 
@@ -1888,7 +1884,7 @@
 					if ( ! selectedMenuId || ! menuSetting || ! menuSetting() ) {
 						container.find( '.theme-location-set' ).hide();
 					} else {
-						container.find( '.theme-location-set' ).show().find( 'span' ).text( menuSetting().name );
+						container.find( '.theme-location-set' ).show().find( 'span' ).text( menuSetting().name || api.Menus.data.l10n.unnamed );
 					}
 				};
 
@@ -1920,41 +1916,39 @@
 					return;
 				}
 
-				// Empty names are not allowed (will not be saved), don't update to one.
-				if ( menu.name ) {
-					var section = control.container.closest( '.accordion-section' ),
-						menuId = control.params.menu_id,
-						controlTitle = section.find( '.accordion-section-title' ),
-						sectionTitle = section.find( '.customize-section-title h3' ),
-						location = section.find( '.menu-in-location' ),
-						action = sectionTitle.find( '.customize-action' );
+				var section = control.container.closest( '.accordion-section' ),
+					menuId = control.params.menu_id,
+					controlTitle = section.find( '.accordion-section-title' ),
+					sectionTitle = section.find( '.customize-section-title h3' ),
+					location = section.find( '.menu-in-location' ),
+					action = sectionTitle.find( '.customize-action' ),
+					name = menu.name || api.Menus.data.l10n.unnamed;
 
-					// Update the control title
-					controlTitle.text( menu.name );
-					if ( location.length ) {
-						location.appendTo( controlTitle );
-					}
-
-					// Update the section title
-					sectionTitle.text( menu.name );
-					if ( action.length ) {
-						action.prependTo( sectionTitle );
-					}
-
-					// Update the nav menu name in location selects.
-					api.control.each( function( control ) {
-						if ( /^nav_menu_locations\[/.test( control.id ) ) {
-							control.container.find( 'option[value=' + menuId + ']' ).text( menu.name );
-						}
-					} );
-
-					// Update the nav menu name in all location checkboxes.
-					section.find( '.customize-control-checkbox input' ).each( function() {
-						if ( $( this ).prop( 'checked' ) ) {
-							$( '.current-menu-location-name-' + $( this ).data( 'location-id' ) ).text( menu.name );
-						}
-					} );
+				// Update the control title
+				controlTitle.text( name );
+				if ( location.length ) {
+					location.appendTo( controlTitle );
 				}
+
+				// Update the section title
+				sectionTitle.text( name );
+				if ( action.length ) {
+					action.prependTo( sectionTitle );
+				}
+
+				// Update the nav menu name in location selects.
+				api.control.each( function( control ) {
+					if ( /^nav_menu_locations\[/.test( control.id ) ) {
+						control.container.find( 'option[value=' + menuId + ']' ).text( name );
+					}
+				} );
+
+				// Update the nav menu name in all location checkboxes.
+				section.find( '.customize-control-checkbox input' ).each( function() {
+					if ( $( this ).prop( 'checked' ) ) {
+						$( '.current-menu-location-name-' + $( this ).data( 'location-id' ) ).text( name );
+					}
+				} );
 			} );
 		},
 
@@ -2221,7 +2215,7 @@
 				{},
 				api.Menus.data.defaultSettingValues.nav_menu,
 				{
-					name: name || api.Menus.data.l10n.unnamed
+					name: name
 				}
 			) );
 
@@ -2234,7 +2228,7 @@
 				params: {
 					id: customizeId,
 					panel: 'nav_menus',
-					title: api( customizeId ).get().name,
+					title: name || api.Menus.data.l10n.unnamed,
 					customizeAction: api.Menus.data.l10n.customizingMenus,
 					type: 'nav_menu',
 					priority: 10,
