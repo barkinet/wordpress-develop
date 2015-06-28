@@ -873,6 +873,7 @@
 				button.removeClass( 'open' );
 				button.attr( 'aria-expanded', 'false' );
 				content.slideUp( 'fast' );
+				content.find( '.menu-name-field' ).removeClass( 'invalid' );
 			}
 		}
 	});
@@ -2191,8 +2192,6 @@
 
 		/**
 		 * Create the new menu with the name supplied.
-		 *
-		 * @returns {boolean}
 		 */
 		submit: function() {
 
@@ -2203,6 +2202,12 @@
 				menuSection,
 				customizeId,
 				placeholderId = api.Menus.generatePlaceholderAutoIncrementId();
+
+			if ( ! name ) {
+				nameInput.addClass( 'invalid' );
+				nameInput.focus();
+				return;
+			}
 
 			customizeId = 'nav_menu[' + String( placeholderId ) + ']';
 
@@ -2240,6 +2245,7 @@
 
 			// Clear name field.
 			nameInput.val( '' );
+			nameInput.removeClass( 'invalid' );
 
 			wp.a11y.speak( api.Menus.data.l10n.menuAdded );
 
