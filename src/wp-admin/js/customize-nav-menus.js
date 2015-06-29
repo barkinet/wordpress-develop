@@ -900,7 +900,7 @@
 					return;
 				}
 				menuId = matches[1];
-				option = new Option( setting().name || api.Menus.data.l10n.unnamed, menuId );
+				option = new Option( displayNavMenuName( setting().name ), menuId );
 				control.container.find( 'select' ).append( option );
 			});
 			api.bind( 'remove', function( setting ) {
@@ -926,7 +926,7 @@
 					}
 					control.container.find( 'option[value=' + menuId + ']' ).remove();
 				} else {
-					control.container.find( 'option[value=' + menuId + ']' ).text( setting().name || api.Menus.data.l10n.unnamed );
+					control.container.find( 'option[value=' + menuId + ']' ).text( displayNavMenuName( setting().name ) );
 				}
 			});
 		}
@@ -1670,7 +1670,7 @@
 
 			// Add menu to Custom Menu widgets.
 			if ( menu ) {
-				name = menu.name || api.Menus.data.l10n.unnamed;
+				name = displayNavMenuName( menu.name );
 
 				api.control.each( function( widgetControl ) {
 					if ( ! widgetControl.extended( api.controlConstructor.widget_form ) || 'nav_menu' !== widgetControl.params.widget_id_base ) {
@@ -1717,7 +1717,7 @@
 					control._handleDeletion();
 				} else {
 					// Update names in the Custom Menu widgets.
-					name = to.name || api.Menus.data.l10n.unnamed;
+					name = displayNavMenuName( to.name );
 					api.control.each( function( widgetControl ) {
 						if ( ! widgetControl.extended( api.controlConstructor.widget_form ) || 'nav_menu' !== widgetControl.params.widget_id_base ) {
 							return;
@@ -1884,7 +1884,7 @@
 					if ( ! selectedMenuId || ! menuSetting || ! menuSetting() ) {
 						container.find( '.theme-location-set' ).hide();
 					} else {
-						container.find( '.theme-location-set' ).show().find( 'span' ).text( menuSetting().name || api.Menus.data.l10n.unnamed );
+						container.find( '.theme-location-set' ).show().find( 'span' ).text( displayNavMenuName( menuSetting().name ) );
 					}
 				};
 
@@ -1922,7 +1922,7 @@
 					sectionTitle = section.find( '.customize-section-title h3' ),
 					location = section.find( '.menu-in-location' ),
 					action = sectionTitle.find( '.customize-action' ),
-					name = menu.name || api.Menus.data.l10n.unnamed;
+					name = displayNavMenuName( menu.name );
 
 				// Update the control title
 				controlTitle.text( name );
@@ -2228,7 +2228,7 @@
 				params: {
 					id: customizeId,
 					panel: 'nav_menus',
-					title: name || api.Menus.data.l10n.unnamed,
+					title: displayNavMenuName( name ),
 					customizeAction: api.Menus.data.l10n.customizingMenus,
 					type: 'nav_menu',
 					priority: 10,
@@ -2548,6 +2548,19 @@
 	 */
 	function menuItemIdToSettingId( menuItemId ) {
 		return 'nav_menu_item[' + menuItemId + ']';
+	}
+
+	/**
+	 * Apply sanitize_text_field()-like logic to the supplied name, returning a
+	 * "unnammed" fallback string if the name is then empty.
+	 *
+	 * @param {string} name
+	 * @returns {string}
+	 */
+	function displayNavMenuName( name ) {
+		name = $( '<div>' ).text( name ).html(); // Emulate esc_html() which is used in wp-admin/nav-menus.php.
+		name = $.trim( name );
+		return name || api.Menus.data.l10n.unnamed;
 	}
 
 })( wp.customize, wp, jQuery );
