@@ -497,6 +497,8 @@ class WP_List_Table {
 		}
 		$out .= '</div>';
 
+		$out .= '<button type="button" class="toggle-row"><span class="screen-reader-text">' . __( 'Show more details' ) . '</span></button>';
+
 		return $out;
 	}
 
@@ -943,7 +945,7 @@ class WP_List_Table {
 	 * @param bool $with_id Whether to set the id attribute or not
 	 */
 	public function print_column_headers( $with_id = true ) {
-		list( $columns, $hidden, $sortable ) = $this->get_column_info();
+		list( $columns, $hidden, $sortable, $primary ) = $this->get_column_info();
 
 		$current_url = set_url_scheme( 'http://' . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'] );
 		$current_url = remove_query_arg( 'paged', $current_url );
@@ -977,6 +979,10 @@ class WP_List_Table {
 			elseif ( in_array( $column_key, array( 'posts', 'comments', 'links' ) ) )
 				$class[] = 'num';
 
+			if ( $column_key === $primary ) {
+				$class[] = 'column-primary';
+			}
+
 			if ( isset( $sortable[$column_key] ) ) {
 				list( $orderby, $desc_first ) = $sortable[$column_key];
 
@@ -993,12 +999,14 @@ class WP_List_Table {
 				$column_display_name = '<a href="' . esc_url( add_query_arg( compact( 'orderby', 'order' ), $current_url ) ) . '"><span>' . $column_display_name . '</span><span class="sorting-indicator"></span></a>';
 			}
 
+			$tag = ( 'cb' === $column_key ) ? 'td' : 'th';
+			$scope = ( 'th' === $tag ) ? 'scope="col"' : '';
 			$id = $with_id ? "id='$column_key'" : '';
 
 			if ( !empty( $class ) )
 				$class = "class='" . join( ' ', $class ) . "'";
 
-			echo "<th scope='col' $id $class>$column_display_name</th>";
+			echo "<$tag $scope $id $class>$column_display_name</$tag>";
 		}
 	}
 
@@ -1161,7 +1169,11 @@ class WP_List_Table {
 				$classes .= ' hidden';
 			}
 
-			$attributes = "class='$classes'";
+			// Comments column uses HTML in the display name with screen reader text.
+			// Instead of using esc_attr(), we strip tags to get closer to a user-friendly string.
+			$data = 'data-colname="' . wp_strip_all_tags( $column_display_name ) . '"';
+
+			$attributes = "class='$classes' $data";
 
 			if ( 'cb' == $column_name ) {
 				echo '<th scope="row" class="check-column">';

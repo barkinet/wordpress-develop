@@ -6,11 +6,11 @@
 .menu-in-location,
 .menu-in-locations {
 	display: block;
-	color: #999;
 	font-weight: 600;
 	font-size: 10px;
 }
 
+#customize-controls .theme-location-set,
 #customize-controls .control-section .accordion-section-title:focus .menu-in-location,
 #customize-controls .control-section .accordion-section-title:hover .menu-in-location,
 #customize-controls .control-section .accordion-section-title:focus .menu-in-locations,
@@ -469,6 +469,10 @@
 	border-color: #a0a5aa;
 }
 
+.menu-item-transport li.customize-control {
+	float: none;
+}
+
 .control-section-nav_menu .menu ul.menu-item-transport .menu-item-bar {
 	margin-top: 0;
 }
@@ -555,6 +559,10 @@
 	position: absolute;
 	top: 9px;
 	left: 5px;
+}
+
+.ie8 .menu-item-bar .item-delete:before {
+	top: -10px;
 }
 
 .menu-item-bar .item-delete:hover,
