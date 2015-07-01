@@ -1675,8 +1675,9 @@ class WP_Customize_Nav_Menu_Setting extends WP_Customize_Setting {
 		} else {
 			// Insert or update menu.
 			$menu_data = wp_array_slice_assoc( $value, array( 'description', 'parent' ) );
-			if ( isset( $value['name'] ) ) {
-				$menu_data['menu-name'] = $value['name'];
+			$menu_data['menu-name'] = $value['name'];
+			if ( '' === trim( $menu_data['menu-name'] ) ) {
+				$menu_data['menu-name'] = _x( '(unnamed)', 'Missing menu name.' );
 			}
 
 			$menu_id = $is_placeholder ? 0 : $this->term_id;
