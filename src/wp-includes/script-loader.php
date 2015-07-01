@@ -365,7 +365,7 @@ function wp_default_scripts( &$scripts ) {
 
 	$scripts->add( 'password-strength-meter', "/wp-admin/js/password-strength-meter$suffix.js", array( 'jquery', 'zxcvbn-async' ), false, 1 );
 	did_action( 'init' ) && $scripts->localize( 'password-strength-meter', 'pwsL10n', array(
-		'empty' => __('Strength indicator'),
+		'empty' => __('&nbsp;'),
 		'short' => __('Very weak'),
 		'bad' => __('Weak'),
 		/* translators: password strength */
@@ -611,6 +611,9 @@ function wp_default_scripts( &$scripts ) {
 			'saveAlert' => __( 'The changes you made will be lost if you navigate away from this page.' ),
 			'untitled' => _x( '(no label)', 'missing menu item navigation label' )
 		) );
+
+		$scripts->add( 'site-icon', '/wp-admin/js/site-icon.js', array( 'jquery' ), false, 1 );
+		$scripts->add( 'site-icon-crop', '/wp-admin/js/site-icon-crop.js', array( 'jcrop' ), false, 1 );
 
 		$scripts->add( 'custom-header', "/wp-admin/js/custom-header.js", array( 'jquery-masonry' ), false, 1 );
 		$scripts->add( 'custom-background', "/wp-admin/js/custom-background$suffix.js", array( 'wp-color-picker', 'media-views' ), false, 1 );

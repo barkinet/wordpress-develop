@@ -1138,7 +1138,7 @@ function remove_accents( $string ) {
 		// Used for locale-specific rules
 		$locale = get_locale();
 
-		if ( 'de_DE' == $locale ) {
+		if ( 'de_DE' == $locale || 'de_DE_formal' == $locale ) {
 			$chars[ chr(195).chr(132) ] = 'Ae';
 			$chars[ chr(195).chr(164) ] = 'ae';
 			$chars[ chr(195).chr(150) ] = 'Oe';
@@ -3421,6 +3421,7 @@ function sanitize_option( $option, $value ) {
 		case 'thread_comments_depth':
 		case 'users_can_register':
 		case 'start_of_week':
+		case 'site_icon':
 			$value = absint( $value );
 			break;
 
