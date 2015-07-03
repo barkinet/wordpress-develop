@@ -795,10 +795,11 @@ final class WP_Customize_Nav_Menus {
 	 */
 	public function filter_wp_nav_menu( $nav_menu_content, $args ) {
 		if ( ! empty( $args->can_partial_refresh ) && ! empty( $args->instance_number ) ) {
-			$nav_menu_content = sprintf(
-				'<div id="partial-refresh-menu-container-%1$d" class="partial-refresh-menu-container" data-instance-number="%1$d">%2$s</div>',
-				$args->instance_number,
-				$nav_menu_content
+			$nav_menu_content = preg_replace(
+				'/(?<=class=")/',
+				sprintf( 'partial-refreshable-nav-menu partial-refreshable-nav-menu-%1$d ', $args->instance_number ),
+				$nav_menu_content,
+				1 // Only update the class on the first element found, the menu container.
 			);
 		}
 		return $nav_menu_content;

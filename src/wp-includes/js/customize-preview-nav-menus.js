@@ -163,14 +163,15 @@ wp.customize.menusPreview = ( function( $, api ) {
 	 * @param {int} instanceNumber
 	 */
 	self.refreshMenuInstance = function( instanceNumber ) {
-		var self = this, data, customized, container, request, wpNavArgs, instance;
+		var self = this, data, customized, container, request, wpNavArgs, instance, containerInstanceClassName;
 
 		if ( ! self.navMenuInstanceArgs[ instanceNumber ] ) {
 			throw new Error( 'unknown_instance_number' );
 		}
 		instance = self.navMenuInstanceArgs[ instanceNumber ];
 
-		container = $( '#partial-refresh-menu-container-' + String( instanceNumber ) );
+		containerInstanceClassName = 'partial-refreshable-nav-menu-' + String( instanceNumber );
+		container = $( '.' + containerInstanceClassName );
 
 		if ( ! instance.can_partial_refresh || 0 === container.length ) {
 			api.preview.send( 'refresh' );
@@ -207,8 +208,11 @@ wp.customize.menusPreview = ( function( $, api ) {
 			url: self.requestUri
 		} );
 		request.done( function( data ) {
-			var eventParam;
-			container.empty().append( $( data ) );
+			var eventParam, previousContainer = container;
+			container = $( data );
+			container.addClass( containerInstanceClassName );
+			container.addClass( 'partial-refreshable-nav-menu customize-partial-refreshing' );
+			previousContainer.replaceWith( container );
 			eventParam = {
 				instanceNumber: instanceNumber,
 				wpNavArgs: wpNavArgs
