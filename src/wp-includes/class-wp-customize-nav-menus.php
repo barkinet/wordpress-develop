@@ -767,12 +767,23 @@ final class WP_Customize_Nav_Menus {
 			( empty( $args['fallback_cb'] ) || is_string( $args['fallback_cb'] ) )
 			&&
 			( empty( $args['walker'] ) || is_string( $args['walker'] ) )
+			&&
+			(
+				! empty( $args['theme_location'] )
+				||
+				( ! empty( $args['menu'] ) && ( is_numeric( $args['menu'] ) || is_object( $args['menu'] ) ) )
+			)
 		);
 		$args['can_partial_refresh'] = $can_partial_refresh;
 
 		if ( ! $can_partial_refresh ) {
 			$args['fallback_cb'] = '';
 			$args['walker'] = '';
+		}
+
+		// Replace menu object with a menu_id, as this exports better to JS and is easier to compare hashes.
+		if ( ! empty( $args['menu'] ) && is_object( $args['menu'] ) ) {
+			$args['menu'] = $args['menu']->term_id;
 		}
 
 		ksort( $args );
