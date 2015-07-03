@@ -163,7 +163,7 @@ wp.customize.menusPreview = ( function( $, api ) {
 	 * @param {int} instanceNumber
 	 */
 	self.refreshMenuInstance = function( instanceNumber ) {
-		var self = this, data, customized, container, request, wpNavArgs, instance, containerInstanceClassName;
+		var self = this, data, menuId, customized, container, request, wpNavArgs, instance, containerInstanceClassName;
 
 		if ( ! self.navMenuInstanceArgs[ instanceNumber ] ) {
 			throw new Error( 'unknown_instance_number' );
@@ -173,10 +173,17 @@ wp.customize.menusPreview = ( function( $, api ) {
 		containerInstanceClassName = 'partial-refreshable-nav-menu-' + String( instanceNumber );
 		container = $( '.' + containerInstanceClassName );
 
-		if ( ! instance.can_partial_refresh || 0 === container.length ) {
+		if ( _.isNumber( instance.menu ) ) {
+			menuId = instance.menu;
+		} else if ( instance.theme_location && api.has( 'nav_menu_locations[' + instance.theme_location + ']' ) ) {
+			menuId = api( 'nav_menu_locations[' + instance.theme_location + ']' ).get();
+		}
+
+		if ( ! menuId || ! instance.can_partial_refresh || 0 === container.length ) {
 			api.preview.send( 'refresh' );
 			return;
 		}
+		menuId = parseInt( menuId, 10 );
 
 		data = {
 			nonce: self.previewCustomizeNonce, // for Customize Preview
@@ -188,8 +195,8 @@ wp.customize.menusPreview = ( function( $, api ) {
 		data[ self.renderQueryVar ] = '1';
 		customized = {};
 		api.each( function( setting, id ) {
-			// @todo We need to limit this to just the menu items that are associated with this menu/location.
-			if ( /^(nav_menu|nav_menu_locations)/.test( id ) ) {
+			// @todo Core should propagate the dirty state into the Preview as well so we can use that here.
+			if ( id === 'nav_menu[' + String( menuId ) + ']' || ( /^nav_menu_item\[/.test( id ) && setting() && menuId === setting().nav_menu_term_id ) ) {
 				customized[ id ] = setting.get();
 			}
 		} );
