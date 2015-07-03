@@ -266,9 +266,13 @@ jQuery(document).ready( function($) {
 				wp.autosave.server.suspend();
 			}
 
-			// Close the comment edit/reply form if open to stop the form
-			// action from interfering with the post's form action.
-			commentReply.close();
+			if ( typeof commentReply !== 'undefined' ) {
+				/*
+				 * Close the comment edit/reply form if open to stop the form
+				 * action from interfering with the post's form action.
+				 */
+				commentReply.close();
+			}
 
 			releaseLock = false;
 			$(window).off( 'beforeunload.edit-post' );
@@ -953,10 +957,10 @@ jQuery(document).ready( function($) {
 
 			contentEditor = editor;
 
-			editor.on( 'nodechange keyup', _.debounce( update, 2000 ) );
+			editor.on( 'nodechange keyup', _.debounce( update, 1000 ) );
 		} );
 
-		$content.on( 'input keyup', _.debounce( update, 2000 ) );
+		$content.on( 'input keyup', _.debounce( update, 1000 ) );
 
 		update();
 	} );

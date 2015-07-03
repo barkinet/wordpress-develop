@@ -256,45 +256,45 @@ class WP_Press_This {
 	 * @return string Source's HTML sanitized markup
 	 */
 	public function fetch_source_html( $url ) {
-		// Download source page to tmp file.
-		$source_tmp_file = ( ! empty( $url ) ) ? download_url( $url, 30 ) : '';
-		$source_content  = '';
+		global $wp_version;
 
-		if ( ! is_wp_error( $source_tmp_file ) && file_exists( $source_tmp_file ) ) {
-
-			// Get the content of the source page from the tmp file..
-			$source_content = wp_kses(
-				@file_get_contents( $source_tmp_file ),
-				array(
-					'img' => array(
-						'src'      => array(),
-						'width'    => array(),
-						'height'   => array(),
-					),
-					'iframe' => array(
-						'src'      => array(),
-					),
-					'link' => array(
-						'rel'      => array(),
-						'itemprop' => array(),
-						'href'     => array(),
-					),
-					'meta' => array(
-						'property' => array(),
-						'name'     => array(),
-						'content'  => array(),
-					)
-				)
-			);
-
-			// All done with backward compatibility. Let's do some cleanup, for good measure :)
-			unlink( $source_tmp_file );
-
-		} else if ( is_wp_error( $source_tmp_file ) ) {
-			$source_content = new WP_Error( 'upload-error',  sprintf( __( 'ERROR: %s' ), sprintf( __( 'Could not download the source URL (native error: %s).' ), $source_tmp_file->get_error_message() ) ) );
-		} else if ( ! file_exists( $source_tmp_file ) ) {
-			$source_content = new WP_Error( 'no-local-file',  sprintf( __( 'ERROR: %s' ), __( 'Could not save or locate the temporary download file for the source URL.' ) ) );
+		if ( empty( $url ) ) {
+			return new WP_Error( 'invalid-url', __( 'A valid URL was not provided.' ) );
 		}
+
+		$remote_url = wp_safe_remote_get( $url, array(
+			'timeout' => 30,
+			// Use an explicit user-agent for Press This
+			'user-agent' => 'Press This (WordPress/' . $wp_version . '); ' . get_bloginfo( 'url' )
+		) );
+
+		if ( is_wp_error( $remote_url ) ) {
+			return $remote_url;
+		}
+
+		$useful_html_elements = array(
+			'img' => array(
+				'src'      => true,
+				'width'    => true,
+				'height'   => true,
+			),
+			'iframe' => array(
+				'src'      => true,
+			),
+			'link' => array(
+				'rel'      => true,
+				'itemprop' => true,
+				'href'     => true,
+			),
+			'meta' => array(
+				'property' => true,
+				'name'     => true,
+				'content'  => true,
+			)
+		);
+
+		$source_content = wp_remote_retrieve_body( $remote_url );
+		$source_content = wp_kses( $source_content, $useful_html_elements );
 
 		return $source_content;
 	}
@@ -944,7 +944,7 @@ class WP_Press_This {
 	 * @access public
 	 *
 	 * @param array $data The site's data.
-	 * @returns array Embeds selected to be available.
+	 * @return array Embeds selected to be available.
 	 */
 	public function get_embeds( $data ) {
 		$selected_embeds = array();
@@ -977,7 +977,7 @@ class WP_Press_This {
 	 * @access public
 	 *
 	 * @param array $data The site's data.
-	 * @returns array
+	 * @return array
 	 */
 	public function get_images( $data ) {
 		$selected_images = array();
@@ -1011,7 +1011,7 @@ class WP_Press_This {
 	 * @access public
 	 *
  	 * @param array $data The site's data.
-	 * @returns string Discovered canonical URL, or empty
+	 * @return string Discovered canonical URL, or empty
 	 */
 	public function get_canonical_link( $data ) {
 		$link = '';
@@ -1042,7 +1042,7 @@ class WP_Press_This {
 	 * @access public
 	 *
 	 * @param array $data The site's data.
-	 * @returns string Discovered site name, or empty
+	 * @return string Discovered site name, or empty
 	 */
 	public function get_source_site_name( $data ) {
 		$name = '';
@@ -1065,7 +1065,7 @@ class WP_Press_This {
 	 * @access public
 	 *
 	 * @param array $data The site's data.
-	 * @returns string Discovered page title, or empty
+	 * @return string Discovered page title, or empty
 	 */
 	public function get_suggested_title( $data ) {
 		$title = '';
@@ -1094,7 +1094,7 @@ class WP_Press_This {
 	 * @access public
 	 *
 	 * @param array $data The site's data.
-	 * @returns string Discovered content, or empty
+	 * @return string Discovered content, or empty
 	 */
 	public function get_suggested_content( $data ) {
 		$content = $text = '';
