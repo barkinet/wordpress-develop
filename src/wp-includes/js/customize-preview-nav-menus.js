@@ -208,6 +208,12 @@ wp.customize.menusPreview = ( function( $, api ) {
 			url: self.requestUri
 		} );
 		request.done( function( data ) {
+			// If the menu is now not visible, refresh since the page layout may have changed.
+			if ( false === data ) {
+				api.preview.send( 'refresh' );
+				return;
+			}
+
 			var eventParam, previousContainer = container;
 			container = $( data );
 			container.addClass( containerInstanceClassName );
@@ -217,13 +223,8 @@ wp.customize.menusPreview = ( function( $, api ) {
 				instanceNumber: instanceNumber,
 				wpNavArgs: wpNavArgs
 			};
-			$( document ).trigger( 'customize-preview-menu-refreshed', [ eventParam ] );
-		} );
-		request.fail( function() {
-			// @todo provide some indication for why
-		} );
-		request.always( function() {
 			container.removeClass( 'customize-partial-refreshing' );
+			$( document ).trigger( 'customize-preview-menu-refreshed', [ eventParam ] );
 		} );
 	};
 
