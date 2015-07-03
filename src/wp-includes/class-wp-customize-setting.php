@@ -1778,7 +1778,7 @@ class WP_Customize_Nav_Menu_Setting extends WP_Customize_Setting {
 			'previous_term_id' => $this->previous_term_id,
 			'error'            => $this->update_error ? $this->update_error->get_error_code() : null,
 			'status'           => $this->update_status,
-			'saved_value'      => $this->value(),
+			'saved_value'      => 'deleted' === $this->update_status ? null : $this->value(),
 		);
 
 		return $data;
