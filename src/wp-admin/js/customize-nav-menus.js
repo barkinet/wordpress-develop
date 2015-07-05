@@ -866,7 +866,7 @@
 			// Add/remove menus from the available options when they are added and removed.
 			api.bind( 'add', function( setting ) {
 				var option, menuId, matches = setting.id.match( navMenuIdRegex );
-				if ( ! matches || false === setting() ) {
+				if ( ! matches || 'undefined' === typeof setting().name ) {
 					return;
 				}
 				menuId = matches[1];
