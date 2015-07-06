@@ -228,7 +228,9 @@ wp.customize.menusPreview = ( function( $, api ) {
 			previousContainer.replaceWith( container );
 			eventParam = {
 				instanceNumber: instanceNumber,
-				wpNavArgs: wpNavArgs
+				wpNavArgs: wpNavArgs,
+				oldContainer: previousContainer,
+				newContainer: container
 			};
 			container.removeClass( 'customize-partial-refreshing' );
 			$( document ).trigger( 'customize-preview-menu-refreshed', [ eventParam ] );
