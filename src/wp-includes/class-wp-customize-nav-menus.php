@@ -785,7 +785,7 @@ final class WP_Customize_Nav_Menus {
 			$args['walker'] = '';
 		}
 
-		// Replace menu object with a menu_id, as this exports better to JS and is easier to compare hashes.
+		// Replace object menu arg with a term_id menu arg, as this exports better to JS and is easier to compare hashes.
 		if ( ! empty( $args['menu'] ) && is_object( $args['menu'] ) ) {
 			$args['menu'] = $args['menu']->term_id;
 		}
