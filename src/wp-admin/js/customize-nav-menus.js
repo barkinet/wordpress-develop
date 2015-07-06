@@ -866,7 +866,7 @@
 			// Add/remove menus from the available options when they are added and removed.
 			api.bind( 'add', function( setting ) {
 				var option, menuId, matches = setting.id.match( navMenuIdRegex );
-				if ( ! matches || 'undefined' === typeof setting().name ) {
+				if ( ! matches || false === setting() ) {
 					return;
 				}
 				menuId = matches[1];
@@ -2545,6 +2545,7 @@
 	 * @returns {string}
 	 */
 	function displayNavMenuName( name ) {
+		name = name || '';
 		name = $( '<div>' ).text( name ).html(); // Emulate esc_html() which is used in wp-admin/nav-menus.php.
 		name = $.trim( name );
 		return name || api.Menus.data.l10n.unnamed;
