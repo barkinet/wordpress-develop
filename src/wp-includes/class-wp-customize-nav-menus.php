@@ -777,20 +777,22 @@ final class WP_Customize_Nav_Menus {
 		);
 		$args['can_partial_refresh'] = $can_partial_refresh;
 
+		$hashed_args = $args;
+
 		if ( ! $can_partial_refresh ) {
-			$args['fallback_cb'] = '';
-			$args['walker'] = '';
+			$hashed_args['fallback_cb'] = '';
+			$hashed_args['walker'] = '';
 		}
 
 		// Replace object menu arg with a term_id menu arg, as this exports better to JS and is easier to compare hashes.
-		if ( ! empty( $args['menu'] ) && is_object( $args['menu'] ) ) {
-			$args['menu'] = $args['menu']->term_id;
+		if ( ! empty( $hashed_args['menu'] ) && is_object( $hashed_args['menu'] ) ) {
+			$hashed_args['menu'] = $hashed_args['menu']->term_id;
 		}
 
-		ksort( $args );
-		$args['args_hash'] = $this->hash_nav_menu_args( $args );
+		ksort( $hashed_args );
+		$hashed_args['args_hash'] = $this->hash_nav_menu_args( $hashed_args );
 
-		$this->preview_nav_menu_instance_args[ $this->preview_nav_menu_instance_number ] = $args;
+		$this->preview_nav_menu_instance_args[ $this->preview_nav_menu_instance_number ] = $hashed_args;
 		return $args;
 	}
 
