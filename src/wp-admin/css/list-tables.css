@@ -296,6 +296,18 @@ table.fixed {
 	float: left;
 }
 
+td.column-title strong,
+td.plugin-title strong {
+	display: block;
+	margin-bottom: .2em;
+	font-size: 14px;
+}
+
+td.column-title p,
+td.plugin-title p {
+	margin: 6px 0;
+}
+
 /* Media file column */
 table.media .column-title {
 	position: relative;
@@ -1733,8 +1745,12 @@ div.action-links,
 
 	.wp-list-table th:not(.column-primary),
 	.wp-list-table th:not(.column-primary),
-	.wp-list-table tr:not(.inline-edit-row) td:not(.column-primary):not(.check-column) {
+	.wp-list-table tr:not(.inline-edit-row):not(.no-items) td:not(.column-primary):not(.check-column) {
 		display: none;
+	}
+
+	.wp-list-table thead th.column-primary {
+		width: 100%;
 	}
 
 	/* Checkboxes need to show */
@@ -1747,7 +1763,7 @@ div.action-links,
 		display: block;
 	}
 
-	.wp-list-table tr:not(.inline-edit-row) td:not(.check-column) {
+	.wp-list-table tr:not(.inline-edit-row):not(.no-items) td:not(.check-column) {
 		position: relative;
 		clear: both;
 		display: block;
@@ -1758,11 +1774,11 @@ div.action-links,
 		padding-right: 50px; /* space for toggle button */
 	}
 
-	.wp-list-table tr:not(.inline-edit-row) td:not(.column-primary):not(.check-column) {
+	.wp-list-table tr:not(.inline-edit-row):not(.no-items) td:not(.column-primary):not(.check-column) {
 		padding: 3px 8px 3px 35%;
 	}
 
-	.wp-list-table tr:not(.inline-edit-row) td:not(.column-primary)::before {
+	.wp-list-table tr:not(.inline-edit-row):not(.no-items) td:not(.column-primary)::before {
 		position: absolute;
 		left: 10px; /* match padding of regular table cell */
 		display: block;
@@ -1899,11 +1915,13 @@ div.action-links,
 		overflow: hidden;
 	}
 
-	/* Plugin/Theme Management Page */
+	/* List tables that don't toggle rows */
+	.comments-box .toggle-row,
 	.wp-list-table.plugins .toggle-row {
 		display: none;
 	}
 
+	/* Plugin/Theme Management */
 	#wpbody-content .wp-list-table.plugins td {
 		display: block;
 		width: auto;
@@ -1920,11 +1938,17 @@ div.action-links,
 		padding-bottom: 4px;
 	}
 
-	.plugins tr.active + tr.inactive td,
-	.wp-list-table.plugins .plugin-title,
-	.wp-list-table.plugins .theme-title {
+	.plugins #the-list tr > td:not(:last-child),
+	.plugins #the-list .update th,
+	.plugins #the-list .update td,
+	.wp-list-table.plugins #the-list .theme-title {
 		-webkit-box-shadow: none;
 		box-shadow: none;
+		border-top: none;
+	}
+
+	.plugins #the-list tr td {
+		border-top: none;
 	}
 
 	.plugins tbody {
@@ -1954,7 +1978,7 @@ div.action-links,
 		background-color: #fef7f1;
 	}
 
-	.plugins .plugin-update-tr .plugin-update {
+	.plugins #the-list .plugin-update-tr .plugin-update {
 		border-left: none;
 	}
 
