@@ -934,6 +934,37 @@ class WP_Customize_Nav_Menu_Item_Setting extends WP_Customize_Setting {
 				$this->value[ $key ] = intval( $this->value[ $key ] );
 			}
 		}
+
+		// Remove remaining properties available on a setup nav_menu_item post object which aren't relevant to the setting value.
+		$irrelevant_properties = array(
+			'ID',
+			'comment_count',
+			'comment_status',
+			'db_id',
+			'filter',
+			'guid',
+			'ping_status',
+			'pinged',
+			'post_author',
+			'post_content',
+			'post_content_filtered',
+			'post_date',
+			'post_date_gmt',
+			'post_excerpt',
+			'post_mime_type',
+			'post_modified',
+			'post_modified_gmt',
+			'post_name',
+			'post_parent',
+			'post_password',
+			'post_title',
+			'post_type',
+			'to_ping',
+			'type_label',
+		);
+		foreach ( $irrelevant_properties as $property ) {
+			unset( $this->value[ $property ] );
+		}
 	}
 
 	/**
