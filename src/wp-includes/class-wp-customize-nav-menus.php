@@ -484,10 +484,14 @@ final class WP_Customize_Nav_Menus {
 			$menu_items = (array) wp_get_nav_menu_items( $menu_id );
 
 			foreach ( array_values( $menu_items ) as $i => $item ) {
-
 				// Create a setting for each menu item (which doesn't actually manage data, currently).
 				$menu_item_setting_id = 'nav_menu_item[' . $item->ID . ']';
-				$this->manager->add_setting( new WP_Customize_Nav_Menu_Item_Setting( $this->manager, $menu_item_setting_id ) );
+
+				$value = (array) $item;
+				$value['nav_menu_term_id'] = $menu_id;
+				$this->manager->add_setting( new WP_Customize_Nav_Menu_Item_Setting( $this->manager, $menu_item_setting_id, array(
+					'value' => $value,
+				) ) );
 
 				// Create a control for each menu item.
 				$this->manager->add_control( new WP_Customize_Nav_Menu_Item_Control( $this->manager, $menu_item_setting_id, array(
