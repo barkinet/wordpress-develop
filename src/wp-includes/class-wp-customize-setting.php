@@ -701,8 +701,6 @@ class WP_Customize_Nav_Menu_Item_Setting extends WP_Customize_Setting {
 	 *
 	 * A negative value represents a placeholder ID for a new menu not yet saved.
 	 *
-	 * @todo Should this be $db_id, and also use this for WP_Customize_Nav_Menu_Setting::$term_id
-	 *
 	 * @since 4.3.0
 	 * @access public
 	 * @var int
@@ -712,6 +710,8 @@ class WP_Customize_Nav_Menu_Item_Setting extends WP_Customize_Setting {
 	/**
 	 * Storage of pre-setup menu item to prevent wasted calls to wp_setup_nav_menu_item().
 	 *
+	 * @since 4.3.0
+	 * @access protected
 	 * @var array
 	 */
 	protected $value;
