@@ -394,7 +394,7 @@ if ( apply_filters( 'show_password_fields', true ) ) : ?>
 		<th scope="row">
 			<label for="pass1">
 				<?php _e( 'Password' ); ?>
-				<span class="description hide-if-js"><?php /* translators: password input field */_e( '(required)' ); ?></span>
+				<span class="description hide-if-js"><?php _e( '(required)' ); ?></span>
 			</label>
 		</th>
 		<td>
@@ -405,15 +405,15 @@ if ( apply_filters( 'show_password_fields', true ) ) : ?>
 				<input type="password" name="pass1" id="pass1" class="regular-text" autocomplete="off" data-reveal="1" data-pw="<?php echo esc_attr( $initial_password ); ?>" />
 				<button type="button" class="button button-secondary wp-hide-pw hide-if-no-js" data-toggle="0">
 					<span class="dashicons dashicons-visibility"></span>
-					<span class="text">hide</span>
+					<span class="text"><?php _e( 'Hide' ); ?></span>
 				</button>
 				<div style="display:none" id="pass-strength-result"></div>
 			</div>
-			<p><span class="description"><?php _e( 'A password reset link will be sent to the user via email' ); ?></span></p>
+			<p><span class="description"><?php _e( 'A password reset link will be sent to the user via email.' ); ?></span></p>
 		</td>
 	</tr>
 	<tr class="form-field form-required user-pass2-wrap hide-if-js">
-		<th scope="row"><label for="pass2"><?php _e( 'Repeat Password' ); ?> <span class="description"><?php /* translators: password input field */_e('(required)'); ?></span></label></th>
+		<th scope="row"><label for="pass2"><?php _e( 'Repeat Password' ); ?> <span class="description"><?php _e( '(required)' ); ?></span></label></th>
 		<td>
 		<input name="pass2" type="password" id="pass2" autocomplete="off" />
 		</td>
