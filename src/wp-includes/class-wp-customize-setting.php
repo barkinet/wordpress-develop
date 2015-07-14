@@ -830,6 +830,9 @@ class WP_Customize_Nav_Menu_Item_Setting extends WP_Customize_Setting {
 	/**
 	 * Clear the cached value when a nav menu item is updated.
 	 *
+	 * @since 4.3.0
+	 * @access public
+	 *
 	 * @param int $menu_id       The term ID for the menu.
 	 * @param int $menu_item_id  The post ID for the menu item.
 	 */
@@ -893,6 +896,9 @@ class WP_Customize_Nav_Menu_Item_Setting extends WP_Customize_Setting {
 	 * removes others.
 	 *
 	 * @since 4.3.0
+	 * @access protected
+	 *
+	 * @see WP_Customize_Nav_Menu_Item_Setting::value()
 	 */
 	protected function populate_value() {
 		if ( ! is_array( $this->value ) ) {
