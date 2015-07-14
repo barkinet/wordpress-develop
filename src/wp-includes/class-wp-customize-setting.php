@@ -828,7 +828,7 @@ class WP_Customize_Nav_Menu_Item_Setting extends WP_Customize_Setting {
 	}
 
 	/**
-	 * Clear the cached value when a nav menu item is updated.
+	 * Clear the cached value when this nav menu item is updated.
 	 *
 	 * @since 4.3.0
 	 * @access public
@@ -892,8 +892,7 @@ class WP_Customize_Nav_Menu_Item_Setting extends WP_Customize_Setting {
 	/**
 	 * Ensure that the value is fully populated with the necessary properties.
 	 *
-	 * Translates some properties added by {@see wp_setup_nav_menu_item()} and
-	 * removes others.
+	 * Translates some properties added by wp_setup_nav_menu_item() and removes others.
 	 *
 	 * @since 4.3.0
 	 * @access protected
