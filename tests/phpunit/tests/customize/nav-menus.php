@@ -235,11 +235,12 @@ class Test_WP_Customize_Nav_Menus extends WP_UnitTestCase {
 		foreach ( $post_ids as $post_id ) {
 			$expected = array(
 				'id'         => 'post-' . $post_id,
+				'title'      => html_entity_decode( get_the_title( $post_id ) ),
 				'type'       => 'post_type',
 				'type_label' => get_post_type_object( 'post' )->labels->singular_name,
 				'object'     => 'post',
 				'object_id'  => intval( $post_id ),
-				'title'      => html_entity_decode( get_the_title( $post_id ) ),
+				'url'        => get_permalink( intval( $post_id ) ),
 			);
 			wp_set_object_terms( $post_id, $term_ids, 'category' );
 			$search = $post_id === $post_ids[0] ? 'test & search' : 'other title';
@@ -253,11 +254,12 @@ class Test_WP_Customize_Nav_Menus extends WP_UnitTestCase {
 			$term = get_term_by( 'id', $term_id, 'category' );
 			$expected = array(
 				'id'         => 'term-' . $term_id,
+				'title'      => $term->name,
 				'type'       => 'taxonomy',
 				'type_label' => get_taxonomy( 'category' )->labels->singular_name,
 				'object'     => 'category',
 				'object_id'  => intval( $term_id ),
-				'title'      => $term->name,
+				'url'        => get_term_link( intval( $term_id ), 'category' ),
 			);
 			$s = sanitize_text_field( wp_unslash( $term->name ) );
 			$results = $menus->search_available_items_query( array( 'pagenum' => 1, 's' => $s ) );
@@ -489,12 +491,12 @@ class Test_WP_Customize_Nav_Menus extends WP_UnitTestCase {
 			'echo'            => true,
 			'fallback_cb'     => 'wp_page_menu',
 			'walker'          => '',
+			'menu'            => wp_create_nav_menu( 'Foo' ),
 		) );
 		$this->assertEquals( 1, $results['can_partial_refresh'] );
 
 		$expected = array(
 			'echo',
-			'args_hash',
 			'can_partial_refresh',
 			'fallback_cb',
 			'instance_number',
@@ -506,9 +508,14 @@ class Test_WP_Customize_Nav_Menus extends WP_UnitTestCase {
 			'walker'          => new Walker_Nav_Menu(),
 		) );
 		$this->assertEqualSets( $expected, array_keys( $results ) );
-		$this->assertEquals( '', $results['fallback_cb'] );
-		$this->assertEquals( '', $results['walker'] );
+		$this->assertEquals( 'wp_page_menu', $results['fallback_cb'] );
 		$this->assertEquals( 0, $results['can_partial_refresh'] );
+
+		$this->assertNotEmpty( $menus->preview_nav_menu_instance_args[ $results['instance_number'] ] );
+		$preview_nav_menu_instance_args = $menus->preview_nav_menu_instance_args[ $results['instance_number'] ];
+		$this->assertEquals( '', $preview_nav_menu_instance_args['fallback_cb'] );
+		$this->assertEquals( '', $preview_nav_menu_instance_args['walker'] );
+		$this->assertNotEmpty( $preview_nav_menu_instance_args['args_hash'] );
 	}
 
 	/**
@@ -522,6 +529,7 @@ class Test_WP_Customize_Nav_Menus extends WP_UnitTestCase {
 
 		$args = $menus->filter_wp_nav_menu_args( array(
 			'echo'        => true,
+			'menu'        => wp_create_nav_menu( 'Foo' ),
 			'fallback_cb' => 'wp_page_menu',
 			'walker'      => '',
 		) );
@@ -533,11 +541,10 @@ class Test_WP_Customize_Nav_Menus extends WP_UnitTestCase {
 		$object_args = json_decode( json_encode( $args ), false );
 		$result = $menus->filter_wp_nav_menu( $nav_menu_content, $object_args );
 		$expected = sprintf(
-			'<div id="partial-refresh-menu-container-%1$d" class="partial-refresh-menu-container" data-instance-number="%1$d">%2$s</div>',
-			$args['instance_number'],
-			$nav_menu_content
+			'<div class="partial-refreshable-nav-menu partial-refreshable-nav-menu-%1$d menu">',
+			$args['instance_number']
 		);
-		$this->assertEquals( $expected, $result );
+		$this->assertStringStartsWith( $expected, $result );
 	}
 
 	/**

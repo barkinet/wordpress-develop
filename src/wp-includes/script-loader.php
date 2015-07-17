@@ -365,16 +365,19 @@ function wp_default_scripts( &$scripts ) {
 
 	$scripts->add( 'password-strength-meter', "/wp-admin/js/password-strength-meter$suffix.js", array( 'jquery', 'zxcvbn-async' ), false, 1 );
 	did_action( 'init' ) && $scripts->localize( 'password-strength-meter', 'pwsL10n', array(
-		'empty' => __('&nbsp;'),
-		'short' => __('Very weak'),
-		'bad' => __('Weak'),
-		/* translators: password strength */
-		'good' => _x('Medium', 'password strength'),
-		'strong' => __('Strong'),
-		'mismatch' => __('Mismatch')
+		'short'    => _x( 'Very weak', 'password strength' ),
+		'bad'      => _x( 'Weak', 'password strength' ),
+		'good'     => _x( 'Medium', 'password strength' ),
+		'strong'   => _x( 'Strong', 'password strength' ),
+		'mismatch' => _x( 'Mismatch', 'password mismatch' ),
 	) );
 
 	$scripts->add( 'user-profile', "/wp-admin/js/user-profile$suffix.js", array( 'jquery', 'password-strength-meter', 'wp-util' ), false, 1 );
+	did_action( 'init' ) && $scripts->localize( 'user-profile', 'userProfileL10n', array(
+		'show' => __( 'Show' ),
+		'hide' => __( 'Hide' ),
+	) );
+
 	$scripts->add( 'language-chooser', "/wp-admin/js/language-chooser$suffix.js", array( 'jquery' ), false, 1 );
 
 	$scripts->add( 'user-suggest', "/wp-admin/js/user-suggest$suffix.js", array( 'jquery-ui-autocomplete' ), false, 1 );
@@ -395,8 +398,10 @@ function wp_default_scripts( &$scripts ) {
 	$scripts->add( 'word-count', "/wp-admin/js/word-count$suffix.js", array(), false, 1 );
 	did_action( 'init' ) && $scripts->localize( 'word-count', 'wordCountL10n', array(
 		/* translators: If your word count is based on single characters (East Asian characters),
-		   enter 'characters'. Otherwise, enter 'words'. Do not translate into your own language. */
-		'type' => _x( 'words', 'word count: words or characters?' )
+		   enter 'characters', or 'all' to include spaces. Otherwise, enter 'words'.
+		   Do not translate into your own language. */
+		'type' => _x( 'words', 'word count: words, characters or all?' ),
+		'shortcodes' => ! empty( $GLOBALS['shortcode_tags'] ) ? array_keys( $GLOBALS['shortcode_tags'] ) : array()
 	) );
 
 	$scripts->add( 'media-upload', "/wp-admin/js/media-upload$suffix.js", array( 'thickbox', 'shortcode' ), false, 1 );
@@ -407,7 +412,7 @@ function wp_default_scripts( &$scripts ) {
 	$scripts->add( 'customize-loader',   "/wp-includes/js/customize-loader$suffix.js",   array( 'customize-base' ), false, 1 );
 	$scripts->add( 'customize-preview',  "/wp-includes/js/customize-preview$suffix.js",  array( 'customize-base' ), false, 1 );
 	$scripts->add( 'customize-models',   "/wp-includes/js/customize-models.js", array( 'underscore', 'backbone' ), false, 1 );
-	$scripts->add( 'customize-views',    "/wp-includes/js/customize-views.js",  array( 'jquery', 'underscore', 'imgareaselect', 'customize-models' ), false, 1 );
+	$scripts->add( 'customize-views',    "/wp-includes/js/customize-views.js",  array( 'jquery', 'underscore', 'imgareaselect', 'customize-models', 'media-editor', 'media-views' ), false, 1 );
 	$scripts->add( 'customize-controls', "/wp-admin/js/customize-controls$suffix.js", array( 'customize-base' ), false, 1 );
 	did_action( 'init' ) && $scripts->localize( 'customize-controls', '_wpCustomizeControlsL10n', array(
 		'activate'           => __( 'Save &amp; Activate' ),
@@ -419,9 +424,10 @@ function wp_default_scripts( &$scripts ) {
 		'cheatin'            => __( 'Cheatin&#8217; uh?' ),
 		'previewIframeTitle' => __( 'Site Preview' ),
 		'loginIframeTitle'   => __( 'Session expired' ),
-
+		'collapseSidebar'    => __( 'Collapse Sidebar' ),
+		'expandSidebar'      => __( 'Expand Sidebar' ),
 		// Used for overriding the file types allowed in plupload.
-		'allowedFiles' => __( 'Allowed Files' ),
+		'allowedFiles'       => __( 'Allowed Files' ),
 	) );
 
 	$scripts->add( 'customize-widgets', "/wp-admin/js/customize-widgets$suffix.js", array( 'jquery', 'jquery-ui-sortable', 'jquery-ui-droppable', 'wp-backbone', 'customize-controls' ), false, 1 );

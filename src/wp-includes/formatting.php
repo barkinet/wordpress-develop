@@ -322,10 +322,11 @@ function wptexturize( $text, $reset = false ) {
  *
  * @since 4.3.0
  *
- * @param string $haystack The plain text to be searched.
- * @param string $needle The character to search for such as ' or ".
- * @param string $prime The prime char to use for replacement.
- * @param string $open_quote The opening quote char. Opening quote replacement must be accomplished already.
+ * @param string $haystack    The plain text to be searched.
+ * @param string $needle      The character to search for such as ' or ".
+ * @param string $prime       The prime char to use for replacement.
+ * @param string $open_quote  The opening quote char. Opening quote replacement must be
+ *                            accomplished already.
  * @param string $close_quote The closing quote char to use for replacement.
  * @return string The $haystack value after primes and quotes replacements.
  */
@@ -3067,8 +3068,8 @@ function ent2ncr( $text ) {
  * Generally the browsers treat everything inside a textarea as text, but
  * it is still a good idea to HTML entity encode `<`, `>` and `&` in the content.
  *
- * The filter 'format_for_editor' is applied here. If $text is empty the filter will
- * be applied to an empty string.
+ * The filter {@see 'format_for_editor'} is applied here. If `$text` is empty the
+ * filter will be applied to an empty string.
  *
  * @since 4.3.0
  *
@@ -3076,10 +3077,7 @@ function ent2ncr( $text ) {
  * @return string The formatted text after filter is applied.
  */
 function format_for_editor( $text, $default_editor = null ) {
-	// Back-compat: check if any characters need encoding.
-	if ( ! empty( $text ) && ( false !== strpos( $text, '<' ) || false !== strpos( $text, '>' ) ||
-		preg_match( '/&(?!#(?:\d+|x[a-f0-9]+);|[a-z1-4]{1,8};)/i', $text ) ) ) {
-
+	if ( $text ) {
 		$text = htmlspecialchars( $text, ENT_NOQUOTES, get_option( 'blog_charset' ) );
 	}
 
