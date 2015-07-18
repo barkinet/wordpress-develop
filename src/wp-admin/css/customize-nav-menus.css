@@ -651,6 +651,24 @@ button.not-a-button {
 	box-shadow: 0 0 0 1px #5b9dd9, 0 0 2px 1px rgba(30, 140, 190, .8);
 }
 
+#available-menu-items .accordion-section-title .no-items {
+	display: none;
+}
+
+#available-menu-items .cannot-expand .accordion-section-title {
+	background: transparent;
+	color: #777;
+}
+
+#available-menu-items .cannot-expand .accordion-section-title .no-items {
+	display: inline-block;
+	color: #82878c;
+	font-weight: normal;
+	position: absolute;
+	right: 15px;
+	top: 13px;
+}
+
 #available-menu-items .accordion-section-content {
 	padding: 1px 15px 15px 15px;
 	margin: 0;

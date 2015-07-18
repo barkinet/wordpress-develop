@@ -295,10 +295,9 @@
 
 		// Load available menu items.
 		loadItems: function( type, obj_type ) {
-			var self = this, params, request, itemTemplate, typeInner;
+			var self = this, params, request, itemTemplate;
 			itemTemplate = wp.template( 'available-menu-item' );
-			typeInner = $( '#available-menu-items-' + type + ' .accordion-section-content' );
-			
+
 			if ( 0 > self.pages[type] ) {
 				return;
 			}
@@ -314,22 +313,27 @@
 			request = wp.ajax.post( 'load-available-menu-items-customizer', params );
 
 			request.done(function( data ) {
-				var items;
+				var items, typeInner;
 				items = data.items;
 				if ( 0 === items.length ) {
+					if ( 0 === self.pages[type] ) {
+						$( '#available-menu-items-' + type ).addClass( 'cannot-expand' )
+						                                    .removeClass( 'loading' );
+					}
 					self.pages[ type ] = -1;
 					return;
 				}
 				items = new api.Menus.AvailableItemCollection( items ); // @todo Why is this collection created and then thrown away?
-				self.collection.add( items.models );				
+				self.collection.add( items.models );
+				typeInner = $( '#available-menu-items-' + type + ' .accordion-section-content' );
 				items.each(function( menu_item ) {
 					typeInner.append( itemTemplate( menu_item.attributes ) );
 				});
 				self.pages[ type ] = self.pages[ type ] + 1;
 			});
 			request.fail(function( data ) {
-				if ( data.message !== 'undefined' ) {
-					typeInner.empty().append( $( '<p class="nothing-found"></p>' ).text( data.message ) );
+				if ( typeof console !== 'undefined' && console.error ) {
+					console.error( data );
 				}
 			});
 			request.always(function() {

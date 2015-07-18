@@ -156,11 +156,7 @@ final class WP_Customize_Nav_Menus {
 			}
 		}
 
-		if ( empty( $items ) ) {
-			wp_send_json_error( array( 'message' => __( 'No results found.' ) ) );
-		} else {
-			wp_send_json_success( array( 'items' => $items ) );
-		}
+		wp_send_json_success( array( 'items' => $items ) );
 	}
 
 	/**
@@ -691,7 +687,7 @@ final class WP_Customize_Nav_Menus {
 				foreach ( $post_types as $type ) :
 					?>
 					<div id="available-menu-items-<?php echo esc_attr( $type->name ); ?>" class="accordion-section">
-						<h4 class="accordion-section-title"><?php echo esc_html( $type->label ); ?> <span class="spinner"></span> <button type="button" class="not-a-button"><span class="screen-reader-text"><?php _e( 'Toggle' ); ?></span></button></h4>
+						<h4 class="accordion-section-title"><?php echo esc_html( $type->label ); ?> <span class="spinner"></span> <span class="no-items"><?php _e( 'No items' ); ?></span> <button type="button" class="not-a-button"><span class="screen-reader-text"><?php _e( 'Toggle' ); ?></span></button></h4>
 						<ul class="accordion-section-content" data-type="<?php echo esc_attr( $type->name ); ?>" data-obj_type="post_type"></ul>
 					</div>
 				<?php
@@ -703,7 +699,7 @@ final class WP_Customize_Nav_Menus {
 				foreach ( $taxonomies as $tax ) :
 					?>
 					<div id="available-menu-items-<?php echo esc_attr( $tax->name ); ?>" class="accordion-section">
-						<h4 class="accordion-section-title"><?php echo esc_html( $tax->label ); ?> <span class="spinner"></span> <button type="button" class="not-a-button"><span class="screen-reader-text"><?php _e( 'Toggle' ); ?></span></button></h4>
+						<h4 class="accordion-section-title"><?php echo esc_html( $tax->label ); ?> <span class="spinner"></span> <span class="no-items"><?php _e( 'No items' ); ?></span> <button type="button" class="not-a-button"><span class="screen-reader-text"><?php _e( 'Toggle' ); ?></span></button></h4>
 						<ul class="accordion-section-content" data-type="<?php echo esc_attr( $tax->name ); ?>" data-obj_type="taxonomy"></ul>
 					</div>
 				<?php
