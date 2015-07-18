@@ -427,8 +427,7 @@ class Tests_Ajax_CustomizeMenus extends WP_Ajax_UnitTestCase {
 	}
 
 	/**
-	 *
-	 * Data provider.
+	 * Data provider for test_ajax_search_available_items_caps_check().
 	 *
 	 * Provides various post_args to induce error messages in the that can be
 	 * compared to the expected_results.
@@ -503,7 +502,7 @@ class Tests_Ajax_CustomizeMenus extends WP_Ajax_UnitTestCase {
 	}
 
 	/**
-	 * Data provider.
+	 * Data provider for test_ajax_search_available_items_results().
 	 *
 	 * Provides various post_args to test the results.
 	 *
