@@ -152,7 +152,11 @@ final class WP_Customize_Nav_Menus {
 			}
 		}
 
-		wp_send_json_success( array( 'items' => $items ) );
+		if ( empty( $items ) ) {
+			wp_send_json_error( array( 'message' => __( 'No results found.' ) ) );
+		} else {
+			wp_send_json_success( array( 'items' => $items ) );
+		}
 	}
 
 	/**
