@@ -184,8 +184,8 @@ function wp_default_scripts( &$scripts ) {
 	$scripts->add( 'cropper', '/wp-includes/js/crop/cropper.js', array('scriptaculous-dragdrop') );
 
 	// jQuery
-	$scripts->add( 'jquery', false, array( 'jquery-core', 'jquery-migrate' ), '1.11.2' );
-	$scripts->add( 'jquery-core', '/wp-includes/js/jquery/jquery.js', array(), '1.11.2' );
+	$scripts->add( 'jquery', false, array( 'jquery-core', 'jquery-migrate' ), '1.11.3' );
+	$scripts->add( 'jquery-core', '/wp-includes/js/jquery/jquery.js', array(), '1.11.3' );
 	$scripts->add( 'jquery-migrate', "/wp-includes/js/jquery/jquery-migrate$suffix.js", array(), '1.2.1' );
 
 	// full jQuery UI
@@ -365,13 +365,11 @@ function wp_default_scripts( &$scripts ) {
 
 	$scripts->add( 'password-strength-meter', "/wp-admin/js/password-strength-meter$suffix.js", array( 'jquery', 'zxcvbn-async' ), false, 1 );
 	did_action( 'init' ) && $scripts->localize( 'password-strength-meter', 'pwsL10n', array(
-		'empty' => __('Strength indicator'),
-		'short' => __('Very weak'),
-		'bad' => __('Weak'),
-		/* translators: password strength */
-		'good' => _x('Medium', 'password strength'),
-		'strong' => __('Strong'),
-		'mismatch' => __('Mismatch')
+		'short'    => _x( 'Very weak', 'password strength' ),
+		'bad'      => _x( 'Weak', 'password strength' ),
+		'good'     => _x( 'Medium', 'password strength' ),
+		'strong'   => _x( 'Strong', 'password strength' ),
+		'mismatch' => _x( 'Mismatch', 'password mismatch' ),
 	) );
 
 	$scripts->add( 'user-profile', "/wp-admin/js/user-profile$suffix.js", array( 'jquery', 'password-strength-meter', 'wp-util' ), false, 1 );
@@ -419,9 +417,10 @@ function wp_default_scripts( &$scripts ) {
 		'cheatin'            => __( 'Cheatin&#8217; uh?' ),
 		'previewIframeTitle' => __( 'Site Preview' ),
 		'loginIframeTitle'   => __( 'Session expired' ),
-
+		'collapseSidebar'    => __( 'Collapse Sidebar' ),
+		'expandSidebar'      => __( 'Expand Sidebar' ),
 		// Used for overriding the file types allowed in plupload.
-		'allowedFiles' => __( 'Allowed Files' ),
+		'allowedFiles'       => __( 'Allowed Files' ),
 	) );
 
 	$scripts->add( 'customize-widgets', "/wp-admin/js/customize-widgets$suffix.js", array( 'jquery', 'jquery-ui-sortable', 'jquery-ui-droppable', 'wp-backbone', 'customize-controls' ), false, 1 );
@@ -611,6 +610,9 @@ function wp_default_scripts( &$scripts ) {
 			'saveAlert' => __( 'The changes you made will be lost if you navigate away from this page.' ),
 			'untitled' => _x( '(no label)', 'missing menu item navigation label' )
 		) );
+
+		$scripts->add( 'site-icon', '/wp-admin/js/site-icon.js', array( 'jquery' ), false, 1 );
+		$scripts->add( 'site-icon-crop', '/wp-admin/js/site-icon-crop.js', array( 'jcrop' ), false, 1 );
 
 		$scripts->add( 'custom-header', "/wp-admin/js/custom-header.js", array( 'jquery-masonry' ), false, 1 );
 		$scripts->add( 'custom-background', "/wp-admin/js/custom-background$suffix.js", array( 'wp-color-picker', 'media-views' ), false, 1 );

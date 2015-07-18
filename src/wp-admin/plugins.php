@@ -330,13 +330,13 @@ if ( $action ) {
 						}
 					?>
 					<?php wp_nonce_field('bulk-plugins') ?>
-					<?php submit_button( $data_to_delete ? __( 'Yes, Delete these files and data' ) : __( 'Yes, Delete these files' ), 'button', 'submit', false ); ?>
+					<?php submit_button( $data_to_delete ? __( 'Yes, delete these files and data' ) : __( 'Yes, delete these files' ), 'button', 'submit', false ); ?>
 				</form>
 				<?php
 				$referer = wp_get_referer();
 				?>
 				<form method="post" action="<?php echo $referer ? esc_url( $referer ) : ''; ?>" style="display:inline;">
-					<?php submit_button( __( 'No, Return me to the plugin list' ), 'button', 'submit', false ); ?>
+					<?php submit_button( __( 'No, return me to the plugin list' ), 'button', 'submit', false ); ?>
 				</form>
 
 				<p><a href="#" onclick="jQuery('#files-list').toggle(); return false;"><?php _e('Click to view entire list of files which will be deleted'); ?></a></p>
@@ -448,7 +448,7 @@ if ( !empty($invalid) )
 <div class="wrap">
 <h1><?php echo esc_html( $title );
 if ( ( ! is_multisite() || is_network_admin() ) && current_user_can('install_plugins') ) { ?>
- <a href="<?php echo self_admin_url( 'plugin-install.php' ); ?>" class="add-new-h2"><?php echo esc_html_x('Add New', 'plugin'); ?></a>
+ <a href="<?php echo self_admin_url( 'plugin-install.php' ); ?>" class="page-title-action"><?php echo esc_html_x('Add New', 'plugin'); ?></a>
 <?php }
 if ( $s )
 	printf( '<span class="subtitle">' . __('Search results for &#8220;%s&#8221;') . '</span>', esc_html( $s ) ); ?>

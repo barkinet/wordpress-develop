@@ -232,13 +232,19 @@ textarea[readonly] {
    color: #a9a9a9;
 }
 
-.form-invalid {
-	background-color: #ffebe8 !important;
+.form-invalid input, .form-invalid input:focus, 
+.form-invalid select, .form-invalid select:focus {
+	border-color: #dc3232 !important;
+	-webkit-box-shadow: 0 0 2px rgba( 204, 0, 0, 0.8 ); 
+ 	box-shadow: 0 0 2px rgba( 204, 0, 0, 0.8 ); 
 }
 
-.form-invalid input,
-.form-invalid select {
-	border-color: #c00 !important;
+.form-table .form-required.form-invalid td:after {
+	content: '\f534';
+	font: normal 20px/1 dashicons;
+	color: #dc3232;
+	margin-left: -25px;
+	vertical-align: middle;
 }
 
 .form-input-tip {
@@ -352,8 +358,7 @@ textarea.large-text {
 	width: 99%;
 }
 
-input.regular-text,
-#adduser .form-field input {
+input.regular-text {
 	width: 25em;
 }
 
@@ -401,6 +406,11 @@ input[type="number"].small-text {
 	color: #777;
 }
 
+button.wp-hide-pw > .dashicons {
+	position: relative;
+	top: 3px;
+}
+
 label,
 #your-profile label + a {
 	vertical-align: middle;
@@ -434,32 +444,58 @@ fieldset label,
 #pass-strength-result {
 	background-color: #eee;
 	border: 1px solid #ddd;
-	float: left;
-	margin: 13px 5px 5px 1px;
+	margin: -2px 5px 5px 1px;
 	padding: 3px 5px;
 	text-align: center;
-	width: 200px;
-	display: none;
+	width: 25em;
+	-webkit-box-sizing: border-box;
+	-moz-box-sizing: border-box;
+	box-sizing: border-box;
+	opacity: 0;
 }
 
 #pass-strength-result.short {
+	opacity: 1;
 	background-color: #ffa0a0;
 	border-color: #f04040;
 }
 
 #pass-strength-result.bad {
+	opacity: 1;
 	background-color: #ffb78c;
 	border-color: #ff853c;
 }
 
 #pass-strength-result.good {
+	opacity: 1;
 	background-color: #ffec8b;
 	border-color: #fc0;
 }
 
 #pass-strength-result.strong {
+	opacity: 1;
 	background-color: #c3ff88;
 	border-color: #8dff1c;
+}
+
+#pass1.short {
+	border-color: #f04040;
+}
+
+#pass1.bad {
+	border-color: #ff853c;
+}
+
+#pass1.good {
+	border-color: #fc0;
+}
+
+#pass1.strong {
+	border-color: #8dff1c;
+}
+
+.pw-weak{
+	display:none;
 }
 
 .indicator-hint {
@@ -629,6 +665,7 @@ table.form-table td .updated p {
 	width: 15em;
 }
 
+#adduser .form-field input,
 #createuser .form-field input {
 	width: 25em;
 }
@@ -832,6 +869,10 @@ table.form-table td .updated p {
   21.0 - Network Admin
 ------------------------------------------------------------------------------*/
 
+.setup-php textarea {
+	max-width: 100%;
+}
+
 .form-field #site-address {
 	max-width: 25em;
 }
@@ -850,6 +891,11 @@ table.form-table td .updated p {
 
 .form-field #path {
 	margin-bottom: 5px;
+}
+
+#search-users,
+#search-sites {
+	max-width: 100%;
 }
 
 /*------------------------------------------------------------------------------
@@ -944,16 +990,24 @@ table.form-table td .updated p {
 		padding-top: 10px;
 	}
 
-	input[type="checkbox"], .widefat th input[type="checkbox"] {
+	input[type="checkbox"],
+	.widefat th input[type="checkbox"],
+	.widefat thead td input[type="checkbox"],
+	.widefat tfoot td input[type="checkbox"] {
 		-webkit-appearance: none;
 		padding: 10px;
 	}
 
-	.widefat th input[type="checkbox"] {
+	.widefat th input[type="checkbox"],
+	.widefat thead td input[type="checkbox"],
+	.widefat tfoot td input[type="checkbox"] {
 		margin-bottom: 8px;
 	}
 
-	input[type="checkbox"]:checked:before, .widefat th input[type="checkbox"]:before {
+	input[type="checkbox"]:checked:before,
+	.widefat th input[type="checkbox"]:before,
+	.widefat thead td input[type="checkbox"]:before,
+	.widefat tfoot td input[type="checkbox"]:before {
 		font: normal 30px/1 'Dashicons';
 		margin: -3px -5px;
 	}
@@ -991,6 +1045,7 @@ table.form-table td .updated p {
 		font-size: 14px;
 	}
 
+	#adduser .form-field input,
 	#createuser .form-field input {
 		width: 100%;
 	}
@@ -1038,6 +1093,11 @@ table.form-table td .updated p {
 		-webkit-box-sizing: border-box;
 		-moz-box-sizing: border-box;
 		box-sizing: border-box;
+	}
+
+	.form-table .form-required.form-invalid td:after {
+		float: right;
+		margin: -30px 3px 0 0;
 	}
 
 	#wpbody .form-table td select {
@@ -1187,4 +1247,3 @@ table.form-table td .updated p {
 		width: 49%;
 	}
 }
-

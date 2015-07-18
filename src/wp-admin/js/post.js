@@ -1,5 +1,5 @@
 /* global postL10n, ajaxurl, wpAjax, setPostThumbnailL10n, postboxes, pagenow, tinymce, alert, deleteUserSetting */
-/* global theList:true, theExtraList:true, getUserSetting, setUserSetting */
+/* global theList:true, theExtraList:true, getUserSetting, setUserSetting, commentReply */
 
 var commentsBox, WPSetThumbnailHTML, WPSetThumbnailID, WPRemoveThumbnail, wptitlehint, makeSlugeditClickable, editPermalink;
 // Back-compat: prevent fatal errors
@@ -264,6 +264,14 @@ jQuery(document).ready( function($) {
 			// Stop autosave
 			if ( wp.autosave ) {
 				wp.autosave.server.suspend();
+			}
+
+			if ( typeof commentReply !== 'undefined' ) {
+				/*
+				 * Close the comment edit/reply form if open to stop the form
+				 * action from interfering with the post's form action.
+				 */
+				commentReply.close();
 			}
 
 			releaseLock = false;
@@ -949,10 +957,10 @@ jQuery(document).ready( function($) {
 
 			contentEditor = editor;
 
-			editor.on( 'nodechange keyup', _.debounce( update, 2000 ) );
+			editor.on( 'nodechange keyup', _.debounce( update, 1000 ) );
 		} );
 
-		$content.on( 'input keyup', _.debounce( update, 2000 ) );
+		$content.on( 'input keyup', _.debounce( update, 1000 ) );
 
 		update();
 	} );

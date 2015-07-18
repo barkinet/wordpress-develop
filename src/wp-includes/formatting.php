@@ -751,13 +751,24 @@ function _wp_specialchars( $string, $quote_style = ENT_NOQUOTES, $charset = fals
 		$quote_style = ENT_NOQUOTES;
 	}
 
-	if ( ! $double_encode ) {
-		// Guarantee every &entity; is valid, convert &garbage; into &amp;garbage;
-		// This is required for PHP < 5.4.0 because ENT_HTML401 flag is unavailable.
-		$string = wp_kses_normalize_entities( $string );
-	}
+	// Handle double encoding ourselves
+	if ( $double_encode ) {
+		$string = @htmlspecialchars( $string, $quote_style, $charset );
+	} else {
+		// Decode &amp; into &
+		$string = wp_specialchars_decode( $string, $_quote_style );
 
-	$string = @htmlspecialchars( $string, $quote_style, $charset, $double_encode );
+		// Guarantee every &entity; is valid or re-encode the &
+		$string = wp_kses_normalize_entities( $string );
+
+		// Now re-encode everything except &entity;
+		$string = preg_split( '/(&#?x?[0-9a-z]+;)/i', $string, -1, PREG_SPLIT_DELIM_CAPTURE );
+
+		for ( $i = 0, $c = count( $string ); $i < $c; $i += 2 ) {
+			$string[$i] = @htmlspecialchars( $string[$i], $quote_style, $charset );
+		}
+		$string = implode( '', $string );
+	}
 
 	// Backwards compatibility
 	if ( 'single' === $_quote_style )
@@ -1138,7 +1149,7 @@ function remove_accents( $string ) {
 		// Used for locale-specific rules
 		$locale = get_locale();
 
-		if ( 'de_DE' == $locale ) {
+		if ( 'de_DE' == $locale || 'de_DE_formal' == $locale ) {
 			$chars[ chr(195).chr(132) ] = 'Ae';
 			$chars[ chr(195).chr(164) ] = 'ae';
 			$chars[ chr(195).chr(150) ] = 'Oe';
@@ -3076,10 +3087,7 @@ function ent2ncr( $text ) {
  * @return string The formatted text after filter is applied.
  */
 function format_for_editor( $text, $default_editor = null ) {
-	// Back-compat: check if any characters need encoding.
-	if ( ! empty( $text ) && ( false !== strpos( $text, '<' ) || false !== strpos( $text, '>' ) ||
-		preg_match( '/&(?!#(?:\d+|x[a-f0-9]+);|[a-z1-4]{1,8};)/i', $text ) ) ) {
-
+	if ( $text ) {
 		$text = htmlspecialchars( $text, ENT_NOQUOTES, get_option( 'blog_charset' ) );
 	}
 
@@ -3159,8 +3167,10 @@ function esc_url( $url, $protocols = null, $_context = 'display' ) {
 	if ( '' == $url )
 		return $url;
 	$url = preg_replace('|[^a-z0-9-~+_.?#=!&;,/:%@$\|*\'()\\x80-\\xff]|i', '', $url);
-	$strip = array('%0d', '%0a', '%0D', '%0A');
-	$url = _deep_replace($strip, $url);
+	if ( 0 !== stripos( $url, 'mailto:' ) ) {
+		$strip = array('%0d', '%0a', '%0D', '%0A');
+		$url = _deep_replace($strip, $url);
+	}
 	$url = str_replace(';//', '://', $url);
 	/* If the URL doesn't appear to contain a scheme, we
 	 * presume it needs http:// appended (unless a relative
@@ -3421,6 +3431,7 @@ function sanitize_option( $option, $value ) {
 		case 'thread_comments_depth':
 		case 'users_can_register':
 		case 'start_of_week':
+		case 'site_icon':
 			$value = absint( $value );
 			break;
 

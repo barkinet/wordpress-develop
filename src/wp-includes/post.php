@@ -3127,11 +3127,25 @@ function wp_insert_post( $postarr, $wp_error = false ) {
 
 	$user_id = get_current_user_id();
 
-	$defaults = array('post_status' => 'draft', 'post_type' => 'post', 'post_author' => $user_id,
-		'ping_status' => get_option('default_ping_status'), 'post_parent' => 0,
-		'menu_order' => 0, 'to_ping' =>  '', 'pinged' => '', 'post_password' => '',
-		'guid' => '', 'post_content_filtered' => '', 'post_excerpt' => '', 'import_id' => 0,
-		'post_content' => '', 'post_title' => '', 'context' => '');
+	$defaults = array(
+		'post_author' => $user_id,
+		'post_content' => '',
+		'post_content_filtered' => '',
+		'post_title' => '',
+		'post_excerpt' => '',
+		'post_status' => 'draft',
+		'post_type' => 'post',
+		'comment_status' => '',
+		'ping_status' => '',
+		'post_password' => '',
+		'to_ping' =>  '',
+		'pinged' => '',
+		'post_parent' => 0,
+		'menu_order' => 0,
+		'guid' => '',
+		'import_id' => 0,
+		'context' => '',
+	);
 
 	$postarr = wp_parse_args($postarr, $defaults);
 
@@ -3302,11 +3316,12 @@ function wp_insert_post( $postarr, $wp_error = false ) {
 		}
 	}
 
+	// Comment status.
 	if ( empty( $postarr['comment_status'] ) ) {
 		if ( $update ) {
 			$comment_status = 'closed';
 		} else {
-			$comment_status = get_option('default_comment_status');
+			$comment_status = get_default_comment_status( $post_type );
 		}
 	} else {
 		$comment_status = $postarr['comment_status'];
@@ -3315,7 +3330,7 @@ function wp_insert_post( $postarr, $wp_error = false ) {
 	// These variables are needed by compact() later.
 	$post_content_filtered = $postarr['post_content_filtered'];
 	$post_author = empty( $postarr['post_author'] ) ? $user_id : $postarr['post_author'];
-	$ping_status = empty( $postarr['ping_status'] ) ? get_option( 'default_ping_status' ) : $postarr['ping_status'];
+	$ping_status = empty( $postarr['ping_status'] ) ? get_default_comment_status( $post_type, 'pingback' ) : $postarr['ping_status'];
 	$to_ping = isset( $postarr['to_ping'] ) ? sanitize_trackback_urls( $postarr['to_ping'] ) : '';
 	$pinged = isset( $postarr['pinged'] ) ? $postarr['pinged'] : '';
 	$import_id = isset( $postarr['import_id'] ) ? $postarr['import_id'] : 0;
@@ -4056,7 +4071,7 @@ function wp_transition_post_status( $new_status, $old_status, $post ) {
 }
 
 //
-// Trackback and ping functions
+// Comment, trackback, and pingback functions.
 //
 
 /**
