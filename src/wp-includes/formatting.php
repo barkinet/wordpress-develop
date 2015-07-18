@@ -322,10 +322,11 @@ function wptexturize( $text, $reset = false ) {
  *
  * @since 4.3.0
  *
- * @param string $haystack The plain text to be searched.
- * @param string $needle The character to search for such as ' or ".
- * @param string $prime The prime char to use for replacement.
- * @param string $open_quote The opening quote char. Opening quote replacement must be accomplished already.
+ * @param string $haystack    The plain text to be searched.
+ * @param string $needle      The character to search for such as ' or ".
+ * @param string $prime       The prime char to use for replacement.
+ * @param string $open_quote  The opening quote char. Opening quote replacement must be
+ *                            accomplished already.
  * @param string $close_quote The closing quote char to use for replacement.
  * @return string The $haystack value after primes and quotes replacements.
  */
@@ -751,24 +752,13 @@ function _wp_specialchars( $string, $quote_style = ENT_NOQUOTES, $charset = fals
 		$quote_style = ENT_NOQUOTES;
 	}
 
-	// Handle double encoding ourselves
-	if ( $double_encode ) {
-		$string = @htmlspecialchars( $string, $quote_style, $charset );
-	} else {
-		// Decode &amp; into &
-		$string = wp_specialchars_decode( $string, $_quote_style );
-
-		// Guarantee every &entity; is valid or re-encode the &
+	if ( ! $double_encode ) {
+		// Guarantee every &entity; is valid, convert &garbage; into &amp;garbage;
+		// This is required for PHP < 5.4.0 because ENT_HTML401 flag is unavailable.
 		$string = wp_kses_normalize_entities( $string );
-
-		// Now re-encode everything except &entity;
-		$string = preg_split( '/(&#?x?[0-9a-z]+;)/i', $string, -1, PREG_SPLIT_DELIM_CAPTURE );
-
-		for ( $i = 0, $c = count( $string ); $i < $c; $i += 2 ) {
-			$string[$i] = @htmlspecialchars( $string[$i], $quote_style, $charset );
-		}
-		$string = implode( '', $string );
 	}
+
+	$string = @htmlspecialchars( $string, $quote_style, $charset, $double_encode );
 
 	// Backwards compatibility
 	if ( 'single' === $_quote_style )
@@ -3078,8 +3068,8 @@ function ent2ncr( $text ) {
  * Generally the browsers treat everything inside a textarea as text, but
  * it is still a good idea to HTML entity encode `<`, `>` and `&` in the content.
  *
- * The filter 'format_for_editor' is applied here. If $text is empty the filter will
- * be applied to an empty string.
+ * The filter {@see 'format_for_editor'} is applied here. If `$text` is empty the
+ * filter will be applied to an empty string.
  *
  * @since 4.3.0
  *

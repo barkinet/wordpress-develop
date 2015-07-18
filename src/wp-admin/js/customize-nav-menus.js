@@ -677,6 +677,18 @@
 			});
 
 			section.refreshAssignedLocations();
+
+			api.bind( 'pane-contents-reflowed', function() {
+				// Skip menus that have been removed.
+				if ( ! section.container.parent().length ) {
+					return;
+				}
+				section.container.find( '.menu-item .menu-item-reorder-nav button' ).prop( 'tabIndex', 0 );
+				section.container.find( '.menu-item.move-up-disabled .menus-move-up' ).prop( 'tabIndex', -1 );
+				section.container.find( '.menu-item.move-down-disabled .menus-move-down' ).prop( 'tabIndex', -1 );
+				section.container.find( '.menu-item.move-left-disabled .menus-move-left' ).prop( 'tabIndex', -1 );
+				section.container.find( '.menu-item.move-right-disabled .menus-move-right' ).prop( 'tabIndex', -1 );
+			} );
 		},
 
 		populateControls: function() {
@@ -1150,21 +1162,21 @@
 
 			$removeBtn.on( 'click', function() {
 				// Find an adjacent element to add focus to when this menu item goes away
-				var $adjacentFocusTarget;
-				if ( control.container.next().is( '.customize-control-nav_menu_item' ) ) {
-					if ( ! $( 'body' ).hasClass( 'adding-menu-items' ) ) {
-						$adjacentFocusTarget = control.container.next().find( '.item-edit:first' );
-					} else {
-						$adjacentFocusTarget = control.container.next().find( '.item-delete:first' );
-					}
-				} else if ( control.container.prev().is( '.customize-control-nav_menu_item' ) ) {
-					if ( ! $( 'body' ).hasClass( 'adding-menu-items' ) ) {
-						$adjacentFocusTarget = control.container.prev().find( '.item-edit:first' );
-					} else {
-						$adjacentFocusTarget = control.container.prev().find( '.item-delete:first' );
-					}
+				var addingItems = true, $adjacentFocusTarget, $next, $prev;
+
+				if ( ! $( 'body' ).hasClass( 'adding-menu-items' ) ) {
+					addingItems = false;
+				}
+
+				$next = control.container.nextAll( '.customize-control-nav_menu_item:visible' ).first();
+				$prev = control.container.prevAll( '.customize-control-nav_menu_item:visible' ).first();
+
+				if ( $next.length ) {
+					$adjacentFocusTarget = $next.find( false === addingItems ? '.item-edit' : '.item-delete' ).first();
+				} else if ( $prev.length ) {
+					$adjacentFocusTarget = $prev.find( false === addingItems ? '.item-edit' : '.item-delete' ).first();
 				} else {
-					$adjacentFocusTarget = control.container.next( '.customize-control-nav_menu' ).find( '.add-new-menu-item' );
+					$adjacentFocusTarget = control.container.nextAll( '.customize-control-nav_menu' ).find( '.add-new-menu-item' ).first();
 				}
 
 				control.container.slideUp( function() {
@@ -2035,7 +2047,6 @@
 		 */
 		reflowMenuItems: function() {
 			var menuControl = this,
-				menuSection = api.section( 'nav_menu[' + String( menuControl.params.menu_id ) + ']' ),
 				menuItemControls = menuControl.getMenuItemControls(),
 				reflowRecursively;
 
@@ -2101,12 +2112,6 @@
 				currentDepth: 0,
 				currentAbsolutePosition: 0
 			} );
-
-			menuSection.container.find( '.menu-item .menu-item-reorder-nav button' ).prop( 'tabIndex', 0 );
-			menuSection.container.find( '.menu-item.move-up-disabled .menus-move-up' ).prop( 'tabIndex', -1 );
-			menuSection.container.find( '.menu-item.move-down-disabled .menus-move-down' ).prop( 'tabIndex', -1 );
-			menuSection.container.find( '.menu-item.move-left-disabled .menus-move-left' ).prop( 'tabIndex', -1 );
-			menuSection.container.find( '.menu-item.move-right-disabled .menus-move-right' ).prop( 'tabIndex', -1 );
 
 			menuControl.container.find( '.reorder-toggle' ).toggle( menuItemControls.length > 1 );
 		},
