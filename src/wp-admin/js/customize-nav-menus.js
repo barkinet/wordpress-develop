@@ -317,8 +317,11 @@
 				items = data.items;
 				if ( 0 === items.length ) {
 					if ( 0 === self.pages[type] ) {
-						$( '#available-menu-items-' + type ).addClass( 'cannot-expand' )
-						                                    .removeClass( 'loading' );
+						$( '#available-menu-items-' + type )
+							.addClass( 'cannot-expand' )
+							.removeClass( 'loading' )
+							.find( '.accordion-section-title > button' )
+							.prop( 'tabIndex', -1 );
 					}
 					self.pages[ type ] = -1;
 					return;
