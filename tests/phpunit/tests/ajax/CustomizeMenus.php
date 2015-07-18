@@ -202,17 +202,6 @@ class Tests_Ajax_CustomizeMenus extends WP_Ajax_UnitTestCase {
 					'data'     => 'nav_menus_missing_obj_type_or_type_parameter',
 				),
 			),
-			// Testing incorrect obj_type option.
-			array(
-				array(
-					'obj_type' => 'invalid',
-					'type'     => 'post',
-				),
-				array(
-					'success'  => false,
-					'data'     => 'nav_menus_invalid_obj_type',
-				),
-			),
 			// Testing incorrect type option.
 			array(
 				array(
