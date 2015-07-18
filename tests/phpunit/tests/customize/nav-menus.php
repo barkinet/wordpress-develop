@@ -59,10 +59,12 @@ class Test_WP_Customize_Nav_Menus extends WP_UnitTestCase {
 		// Invalid post type $obj_name.
 		$items = $menus->load_available_items_query( 'post_type', 'invalid' );
 		$this->assertInstanceOf( 'WP_Error', $items );
+		$this->assertEquals( 'nav_menus_invalid_post_type', $items->get_error_code() );
 
 		// Invalid taxonomy $obj_name.
 		$items = $menus->load_available_items_query( 'taxonomy', 'invalid' );
 		$this->assertInstanceOf( 'WP_Error', $items );
+		$this->assertEquals( 'invalid_taxonomy', $items->get_error_code() );
 	}
 
 	/**
