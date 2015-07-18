@@ -39,7 +39,8 @@ class Tests_Ajax_CustomizeMenus extends WP_Ajax_UnitTestCase {
 
 	/**
 	 * Helper to keep it DRY
-	 * @param $action
+	 *
+	 * @param string $action Action.
 	 */
 	protected function make_ajax_call( $action ) {
 		// Make the request.
@@ -55,8 +56,8 @@ class Tests_Ajax_CustomizeMenus extends WP_Ajax_UnitTestCase {
 	 *
 	 * @dataProvider data_ajax_load_available_items_cap_check
 	 *
-	 * @param string $role The role we're checking caps against
-	 * @param array $expected_results
+	 * @param string $role              The role we're checking caps against.
+	 * @param array  $expected_results  Expected results.
 	 */
 	function test_ajax_load_available_items_cap_check( $role, $expected_results ) {
 
@@ -85,8 +86,7 @@ class Tests_Ajax_CustomizeMenus extends WP_Ajax_UnitTestCase {
 	}
 
 	/**
-	 *
-	 * Data provider.
+	 * Data provider for test_ajax_load_available_items_cap_check().
 	 *
 	 * Provides various post_args to induce error messages in the that can be
 	 * compared to the expected_results.
@@ -99,7 +99,6 @@ class Tests_Ajax_CustomizeMenus extends WP_Ajax_UnitTestCase {
 	 *         @array  array  $expected_results The expected results from the ajax call.
 	 *     }
 	 * }
-	 *
 	 */
 	function data_ajax_load_available_items_cap_check() {
 		return array(
@@ -134,6 +133,8 @@ class Tests_Ajax_CustomizeMenus extends WP_Ajax_UnitTestCase {
 	 *
 	 * @dataProvider data_ajax_load_available_items_error_messages
 	 *
+	 * @param array $post_args POST args.
+	 * @param mixed $expected_results Expected results.
 	 */
 	function test_ajax_load_available_items_error_messages( $post_args, $expected_results ) {
 
@@ -152,8 +153,7 @@ class Tests_Ajax_CustomizeMenus extends WP_Ajax_UnitTestCase {
 	}
 
 	/**
-	 *
-	 * Data provider.
+	 * Data provider for test_ajax_load_available_items_error_message().
 	 *
 	 * Provides various post_args to induce error messages in the that can be
 	 * compared to the expected_results.
@@ -166,7 +166,6 @@ class Tests_Ajax_CustomizeMenus extends WP_Ajax_UnitTestCase {
 	 *         @array array $expected_results The expected results from the ajax call.
 	 *     }
 	 * }
-	 *
 	 */
 	function data_ajax_load_available_items_error_messages() {
 		return array(
@@ -229,11 +228,14 @@ class Tests_Ajax_CustomizeMenus extends WP_Ajax_UnitTestCase {
 	}
 
 	/**
-	 * Testing the success status
+	 * Testing the success status.
 	 *
-	 * @dataProvider data_ajax_load_available_items_sucess_status
+	 * @dataProvider data_ajax_load_available_items_success_status
+	 *
+	 * @param array $post_args       POST args.
+	 * @param array $success_status  Success status.
 	 */
-	function test_ajax_load_available_items_sucess_status( $post_args, $success_status ) {
+	function test_ajax_load_available_items_success_status( $post_args, $success_status ) {
 
 		$_POST = array_merge( array(
 			'action'                => 'load-available-menu-items-customizer',
@@ -250,8 +252,7 @@ class Tests_Ajax_CustomizeMenus extends WP_Ajax_UnitTestCase {
 	}
 
 	/**
-	 *
-	 * Data provider.
+	 * Data provider for test_ajax_load_available_items_success_status().
 	 *
 	 * Provides various post_args to retrieve results and compare against
 	 * the success status.
@@ -264,9 +265,8 @@ class Tests_Ajax_CustomizeMenus extends WP_Ajax_UnitTestCase {
 	 *         @type bool  $success_status The expected success status.
 	 *     }
 	 * }
-	 *
 	 */
-	function data_ajax_load_available_items_sucess_status() {
+	function data_ajax_load_available_items_success_status() {
 		return array(
 			array(
 				array(
@@ -304,6 +304,7 @@ class Tests_Ajax_CustomizeMenus extends WP_Ajax_UnitTestCase {
 	 *
 	 * @dataProvider data_ajax_load_available_items_structure
 	 *
+	 * @param array $post_args POST args.
 	 */
 	function test2_ajax_load_available_items_structure( $post_args ) {
 
@@ -346,7 +347,7 @@ class Tests_Ajax_CustomizeMenus extends WP_Ajax_UnitTestCase {
 		if ( 'page' === $test_item['object'] ) {
 			$home = $response['data']['items'][0];
 			foreach ( $expected_keys as $key ) {
-				if ( 'object_id' !== $key ){
+				if ( 'object_id' !== $key ) {
 					$this->assertArrayHasKey( $key, $home );
 					if ( 'object' !== $key ) {
 						$this->assertNotEmpty( $home[ $key ] );
@@ -357,8 +358,7 @@ class Tests_Ajax_CustomizeMenus extends WP_Ajax_UnitTestCase {
 	}
 
 	/**
-	 *
-	 * Data provider.
+	 * Data provider for test_ajax_load_available_items_structure().
 	 *
 	 * Provides various post_args to return a list of items to test the array structure of.
 	 *
@@ -369,7 +369,6 @@ class Tests_Ajax_CustomizeMenus extends WP_Ajax_UnitTestCase {
 	 *         @type array $post_args The arguments that will merged with the $_POST array.
 	 *     }
 	 * }
-	 *
 	 */
 	function data_ajax_load_available_items_structure() {
 		return array(
@@ -398,6 +397,9 @@ class Tests_Ajax_CustomizeMenus extends WP_Ajax_UnitTestCase {
 	 * Testing the error messages for ajax_search_available_items
 	 *
 	 * @dataProvider data_ajax_search_available_items_caps_check
+	 *
+	 * @param string $role             Role.
+	 * @param array  $expected_results Expected results.
 	 */
 	function test_ajax_search_available_items_caps_check( $role, $expected_results ) {
 
@@ -441,7 +443,6 @@ class Tests_Ajax_CustomizeMenus extends WP_Ajax_UnitTestCase {
 	 *         @array  array  $expected_results The expected results from the ajax call.
 	 *     }
 	 * }
-	 *
 	 */
 	function data_ajax_search_available_items_caps_check() {
 		return array(
@@ -475,6 +476,9 @@ class Tests_Ajax_CustomizeMenus extends WP_Ajax_UnitTestCase {
 	 * Testing the results of various searches
 	 *
 	 * @dataProvider data_ajax_search_available_items_results
+	 *
+	 * @param array $post_args        POST args.
+	 * @param array $expected_results Expected results.
 	 */
 	function test_ajax_search_available_items_results( $post_args, $expected_results ) {
 
@@ -499,7 +503,6 @@ class Tests_Ajax_CustomizeMenus extends WP_Ajax_UnitTestCase {
 	}
 
 	/**
-	 *
 	 * Data provider.
 	 *
 	 * Provides various post_args to test the results.
@@ -512,7 +515,6 @@ class Tests_Ajax_CustomizeMenus extends WP_Ajax_UnitTestCase {
 	 *         @array  array  $expected_results The expected results from the ajax call.
 	 *     }
 	 * }
-	 *
 	 */
 	function data_ajax_search_available_items_results() {
 		return array(
