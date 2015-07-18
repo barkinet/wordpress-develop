@@ -56,10 +56,6 @@ class Test_WP_Customize_Nav_Menus extends WP_UnitTestCase {
 	function test_load_available_items_query_returns_wp_error() {
 		$menus = new WP_Customize_Nav_Menus( $this->wp_customize );
 
-		// Invalid $obj_type.
-		$items = $menus->load_available_items_query( 'invalid' );
-		$this->assertInstanceOf( 'WP_Error', $items );
-
 		// Invalid post type $obj_name.
 		$items = $menus->load_available_items_query( 'post_type', 'invalid' );
 		$this->assertInstanceOf( 'WP_Error', $items );

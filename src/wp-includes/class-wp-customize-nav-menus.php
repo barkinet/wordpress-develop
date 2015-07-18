@@ -97,17 +97,14 @@ final class WP_Customize_Nav_Menus {
 	 * @since 4.3.0
 	 * @access public
 	 *
-	 * @param string $obj_type Optional. Accepts 'post_type' or 'taxonomy'. Default is 'post_type'.
+	 * @param string $obj_type Optional. Accepts any custom object type and has built-in support for
+	 *                         'post_type' and 'taxonomy'. Default is 'post_type'.
 	 * @param string $obj_name Optional. Accepts any registered taxonomy or post type name. Default is 'page'.
 	 * @param int    $page     Optional. The page number used to generate the query offset. Default is '0'.
 	 * @return WP_Error|array Returns either a WP_Error object or an array of menu items.
 	 */
 	public function load_available_items_query( $obj_type = 'post_type', $obj_name = 'page', $page = 0 ) {
 		$items = array();
-
-		if ( ! in_array( $obj_type, array( 'post_type', 'taxonomy' ) ) ) {
-			return new WP_Error( 'nav_menus_invalid_obj_type' );
-		}
 
 		if ( 'post_type' === $obj_type ) {
 			if ( ! get_post_type_object( $obj_name ) ) {
