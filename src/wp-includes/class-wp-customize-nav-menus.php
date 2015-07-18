@@ -85,10 +85,10 @@ final class WP_Customize_Nav_Menus {
 		$items = $this->load_available_items_query( $obj_type, $obj_name, $page );
 
 		if ( is_wp_error( $items ) ) {
-			wp_send_json_error( array( 'message' => wp_strip_all_tags( $items->get_error_message(), true ) ) );
+			wp_send_json_error( $items->get_error_code() );
+		} else {
+			wp_send_json_success( array( 'items' => $items ) );
 		}
-
-		wp_send_json_success( array( 'items' => $items ) );
 	}
 
 	/**
@@ -106,12 +106,12 @@ final class WP_Customize_Nav_Menus {
 		$items = array();
 
 		if ( ! in_array( $obj_type, array( 'post_type', 'taxonomy' ) ) ) {
-			return new WP_Error( 'invalid_obj_type', __( 'Invalid obj_type param: ' . $obj_type ) );
+			return new WP_Error( 'nav_menus_invalid_obj_type' );
 		}
 
 		if ( 'post_type' === $obj_type ) {
 			if ( ! get_post_type_object( $obj_name ) ) {
-				return new WP_Error( 'nav_menus_invalid_post_type', __( 'Unknown post type.' ) );
+				return new WP_Error( 'nav_menus_invalid_post_type' );
 			}
 
 			if ( 0 === $page && 'page' === $obj_name ) {
