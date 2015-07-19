@@ -191,9 +191,11 @@ wp.customize.menusPreview = ( function( $, api ) {
 		data[ self.renderQueryVar ] = '1';
 		customized = {};
 		api.each( function( setting, id ) {
+			var value = setting.get();
 			// @todo Core should propagate the dirty state into the Preview as well so we can use that here.
-			if ( id === 'nav_menu[' + String( menuId ) + ']' || ( /^nav_menu_item\[/.test( id ) && setting() && menuId === setting().nav_menu_term_id ) ) {
-				customized[ id ] = setting.get();
+			// Send the setting for this menu, as well as all deleted menu items and any menu items associated with this menu.
+			if ( id === 'nav_menu[' + String( menuId ) + ']' || ( /^nav_menu_item\[/.test( id ) && ( false === value || menuId === value.nav_menu_term_id ) ) ) {
+				customized[ id ] = value;
 			}
 		} );
 		data.customized = JSON.stringify( customized );
