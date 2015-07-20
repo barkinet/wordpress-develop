@@ -28,7 +28,7 @@ wp.customize.menusPreview = ( function( $, api ) {
 	 * Bootstrap functionality.
 	 */
 	self.init = function() {
-		var self = this, boundSettings = {};
+		var self = this, initializedSettings = {};
 
 		if ( 'undefined' !== typeof _wpCustomizePreviewNavMenusExports ) {
 			$.extend( self, _wpCustomizePreviewNavMenusExports );
@@ -36,6 +36,7 @@ wp.customize.menusPreview = ( function( $, api ) {
 
 		api.each( function( setting, id ) {
 			setting.id = id;
+			initializedSettings[ setting.id ] = true;
 			self.bindListener( setting );
 		} );
 
@@ -51,11 +52,12 @@ wp.customize.menusPreview = ( function( $, api ) {
 				setting = api.create( id, value ); // @todo This should be in core
 			}
 			if ( ! setting.id ) {
+				// Currently customize-preview.js doesn't set the id property for each setting, like customize-controls.js does.
 				setting.id = id;
 			}
 
-			if ( ! boundSettings[ setting.id ] ) {
-				boundSettings[ setting.id ] = true;
+			if ( ! initializedSettings[ setting.id ] ) {
+				initializedSettings[ setting.id ] = true;
 				if ( self.bindListener( setting ) ) {
 					setting.callbacks.fireWith( setting, [ setting(), null ] );
 				}
