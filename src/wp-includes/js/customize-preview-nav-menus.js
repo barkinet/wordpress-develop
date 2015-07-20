@@ -204,12 +204,23 @@ wp.customize.menusPreview = ( function( $, api ) {
 			data.theme = self.theme.stylesheet;
 		}
 		data[ self.renderQueryVar ] = '1';
+
+		// Gather settings to send in partial refresh request.
 		customized = {};
 		api.each( function( setting, id ) {
-			var value = setting.get();
+			var value = setting.get(), shouldSend = false;
 			// @todo Core should propagate the dirty state into the Preview as well so we can use that here.
-			// Send the setting for this menu, as well as all deleted menu items and any menu items associated with this menu.
-			if ( /^nav_menu_locations\[/.test( id ) || id === 'nav_menu[' + String( menuId ) + ']' || ( /^nav_menu_item\[/.test( id ) && ( false === value || menuId === value.nav_menu_term_id ) ) ) {
+
+			// Send setting if it is a nav_menu_locations[] setting.
+			shouldSend = shouldSend || /^nav_menu_locations\[/.test( id );
+
+			// Send setting if it is the setting for this menu.
+			shouldSend = shouldSend || id === 'nav_menu[' + String( menuId ) + ']';
+
+			// Send setting if it is one that is associated with this menu, or it is deleted.
+			shouldSend = shouldSend || ( /^nav_menu_item\[/.test( id ) && ( false === value || menuId === value.nav_menu_term_id ) );
+
+			if ( shouldSend ) {
 				customized[ id ] = value;
 			}
 		} );
