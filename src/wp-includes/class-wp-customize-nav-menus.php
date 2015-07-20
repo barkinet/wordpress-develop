@@ -546,13 +546,14 @@ final class WP_Customize_Nav_Menus {
 		) );
 
 		$this->manager->add_control( 'new_menu_name', array(
-			'label'       => '',
+			'label'       => __( 'New menu name' ),
 			'section'     => 'add_menu',
 			'type'        => 'text',
 			'input_attrs' => array(
 				'class'       => 'menu-name-field',
 				'placeholder' => __( 'New menu name' ),
 			),
+			'label_text_class' => 'screen-reader-text',
 		) );
 
 		$this->manager->add_setting( 'create_new_menu', array(
