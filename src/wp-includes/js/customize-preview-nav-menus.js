@@ -28,7 +28,7 @@ wp.customize.menusPreview = ( function( $, api ) {
 	 * Bootstrap functionality.
 	 */
 	self.init = function() {
-		var self = this;
+		var self = this, boundSettings = {};
 
 		if ( 'undefined' !== typeof _wpCustomizePreviewNavMenusExports ) {
 			$.extend( self, _wpCustomizePreviewNavMenusExports );
@@ -44,10 +44,18 @@ wp.customize.menusPreview = ( function( $, api ) {
 			args = args.slice();
 			id = args.shift();
 			value = args.shift();
-			if ( ! api.has( id ) ) {
-				// Currently customize-preview.js is not creating settings for dynamically-created settings in the pane; so we have to do it
+
+			setting = api( id );
+			if ( ! setting ) {
+				// Currently customize-preview.js is not creating settings for dynamically-created settings in the pane, so we have to do it.
 				setting = api.create( id, value ); // @todo This should be in core
+			}
+			if ( ! setting.id ) {
 				setting.id = id;
+			}
+
+			if ( ! boundSettings[ setting.id ] ) {
+				boundSettings[ setting.id ] = true;
 				if ( self.bindListener( setting ) ) {
 					setting.callbacks.fireWith( setting, [ setting(), null ] );
 				}
