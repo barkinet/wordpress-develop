@@ -140,6 +140,11 @@ wp.customize.menusPreview = ( function( $, api ) {
 		} );
 	};
 
+	/**
+	 * Refresh the menu(s) associated with a given nav menu location.
+	 *
+	 * @param {string} location
+	 */
 	self.refreshMenuLocation = function( location ) {
 		var foundInstance = false;
 		_.each( self.navMenuInstanceArgs, function( navMenuArgs, instanceNumber ) {
@@ -194,7 +199,7 @@ wp.customize.menusPreview = ( function( $, api ) {
 			var value = setting.get();
 			// @todo Core should propagate the dirty state into the Preview as well so we can use that here.
 			// Send the setting for this menu, as well as all deleted menu items and any menu items associated with this menu.
-			if ( id === 'nav_menu[' + String( menuId ) + ']' || ( /^nav_menu_item\[/.test( id ) && ( false === value || menuId === value.nav_menu_term_id ) ) ) {
+			if ( /^nav_menu_locations\[/.test( id ) || id === 'nav_menu[' + String( menuId ) + ']' || ( /^nav_menu_item\[/.test( id ) && ( false === value || menuId === value.nav_menu_term_id ) ) ) {
 				customized[ id ] = value;
 			}
 		} );
