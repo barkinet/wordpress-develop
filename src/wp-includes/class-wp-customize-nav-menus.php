@@ -315,6 +315,7 @@ final class WP_Customize_Nav_Menus {
 				'custom_label'      => __( 'Custom Link' ),
 				/* translators: %s: Current menu location */
 				'menuLocation'      => __( '(Currently set to: %s)' ),
+				'menuNameLabel'     => __( 'Menu Name' ),
 				'itemAdded'         => __( 'Menu item added' ),
 				'itemDeleted'       => __( 'Menu item deleted' ),
 				'menuAdded'         => __( 'Menu created' ),
@@ -546,14 +547,13 @@ final class WP_Customize_Nav_Menus {
 		) );
 
 		$this->manager->add_control( 'new_menu_name', array(
-			'label'       => __( 'New menu name' ),
+			'label'       => '',
 			'section'     => 'add_menu',
 			'type'        => 'text',
 			'input_attrs' => array(
 				'class'       => 'menu-name-field',
 				'placeholder' => __( 'New menu name' ),
 			),
-			'label_text_class' => 'screen-reader-text',
 		) );
 
 		$this->manager->add_setting( 'create_new_menu', array(

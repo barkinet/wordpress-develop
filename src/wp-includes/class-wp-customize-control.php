@@ -103,12 +103,6 @@ class WP_Customize_Control {
 	public $input_attrs = array();
 
 	/**
-	 * @access public
-	 * @var string
-	 */
-	public $label_text_class = '';
-
-	/**
 	 * @deprecated It is better to just call the json() method
 	 * @access public
 	 * @var array
@@ -451,7 +445,7 @@ class WP_Customize_Control {
 				?>
 				<label>
 					<?php if ( ! empty( $this->label ) ) : ?>
-						<span class="customize-control-title <?php echo $this->label_text_class; ?>"><?php echo esc_html( $this->label ); ?></span>
+						<span class="customize-control-title"><?php echo esc_html( $this->label ); ?></span>
 					<?php endif;
 					if ( ! empty( $this->description ) ) : ?>
 						<span class="description customize-control-description"><?php echo $this->description; ?></span>
@@ -470,7 +464,7 @@ class WP_Customize_Control {
 				?>
 				<label>
 					<?php if ( ! empty( $this->label ) ) : ?>
-						<span class="customize-control-title <?php echo $this->label_text_class; ?>"><?php echo esc_html( $this->label ); ?></span>
+						<span class="customize-control-title"><?php echo esc_html( $this->label ); ?></span>
 					<?php endif;
 					if ( ! empty( $this->description ) ) : ?>
 						<span class="description customize-control-description"><?php echo $this->description; ?></span>
@@ -503,7 +497,7 @@ class WP_Customize_Control {
 				?>
 				<label>
 					<?php if ( ! empty( $this->label ) ) : ?>
-						<span class="customize-control-title <?php echo $this->label_text_class; ?>"><?php echo esc_html( $this->label ); ?></span>
+						<span class="customize-control-title"><?php echo esc_html( $this->label ); ?></span>
 					<?php endif;
 					if ( ! empty( $this->description ) ) : ?>
 						<span class="description customize-control-description"><?php echo $this->description; ?></span>
@@ -1886,7 +1880,9 @@ class WP_Customize_Nav_Menu_Name_Control extends WP_Customize_Control {
 	protected function content_template() {
 		?>
 		<label>
-			<span class="screen-reader-text"><?php _e( 'Menu name' ); ?></span>
+			<# if ( data.label ) { #>
+				<span class="customize-control-title screen-reader-text">{{ data.label }}</span>
+			<# } #>
 			<input type="text" class="menu-name-field live-update-section-title" />
 		</label>
 		<?php
