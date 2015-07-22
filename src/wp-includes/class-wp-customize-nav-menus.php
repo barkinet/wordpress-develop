@@ -600,6 +600,8 @@ final class WP_Customize_Nav_Menus {
 	 *
 	 * @since 4.3.0
 	 * @access public
+	 *
+	 * @return array The available menu item types.
 	 */
 	public function available_item_types() {
 		$items = array(
@@ -747,12 +749,12 @@ final class WP_Customize_Nav_Menus {
 			</div>
 			<?php
 			// Containers for per-post-type item browsing; items added with JS.
-			foreach ( (array) self::available_item_types() as $item_type ) {
+			foreach ( $this->available_item_types() as $item_type ) {
 				if ( empty( $item_type ) ) {
 					continue;
 				}
 
-				foreach( $item_type as $item ) {
+				foreach ( $item_type as $item ) {
 					?>
 					<div id="available-menu-items-<?php echo esc_attr( $item['type'] ); ?>" class="accordion-section">
 						<h4 class="accordion-section-title"><?php echo esc_html( $item['title'] ); ?> <span class="no-items"><?php _e( 'No items' ); ?></span><span class="spinner"></span> <button type="button" class="not-a-button"><span class="screen-reader-text"><?php _e( 'Toggle' ); ?></span></button></h4>
