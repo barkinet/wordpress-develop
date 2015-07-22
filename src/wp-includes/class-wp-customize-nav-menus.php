@@ -179,6 +179,8 @@ final class WP_Customize_Nav_Menus {
 		/**
 		 * Filter the available menu items.
 		 *
+		 * @since 4.3.0
+		 *
 		 * @param array  $items    The array of menu items.
 		 * @param string $obj_type The object type.
 		 * @param string $obj_name The object name.
@@ -632,6 +634,8 @@ final class WP_Customize_Nav_Menus {
 
 		/**
 		 * Filter the available menu item types.
+		 *
+		 * @since 4.3.0
 		 *
 		 * @param array $items Custom menu item types.
 		 */
