@@ -38,6 +38,36 @@ class Test_WP_Customize_Nav_Menus extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Filter to add custom menu item types. 
+	 */
+	function filter_item_types( $items ) {
+		$items['custom_object']['custom_type'] = array(
+			'title'  => 'Custom',
+			'object' => 'custom_object',
+			'type'   => 'custom_type',
+		);
+
+		return $items;
+	}
+
+	/**
+	 * Filter to add custom menu items. 
+	 */
+	function filter_items( $items, $obj_type, $obj_name, $page ) {
+		$items[] = array(
+			'id'         => 'custom-1',
+			'title'      => 'Cool beans',
+			'type'       => $obj_name,
+			'type_label' => 'Custom Label',
+			'object'     => $obj_type,
+			'url'        => home_url( '/cool-beans/' ),
+			'classes'    => 'custom-menu-item cool-beans',
+		);
+
+		return $items;
+	}
+
+	/**
 	 * Test constructor.
 	 *
 	 * @see WP_Customize_Nav_Menus::__construct()
@@ -207,6 +237,31 @@ class Test_WP_Customize_Nav_Menus extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Test the load_available_items_query method returns custom item.
+	 *
+	 * @see WP_Customize_Nav_Menus::load_available_items_query()
+	 */
+	function test_load_available_items_query_returns_custom_item() {
+		add_filter( 'customize_nav_menu_available_item_types', array( $this, 'filter_item_types' ) );
+		add_filter( 'customize_nav_menu_available_items', array( $this, 'filter_items' ), 10, 4 );
+		$menus = new WP_Customize_Nav_Menus( $this->wp_customize );
+
+		// Expected menu item array.
+		$expected = array(
+			'id'         => 'custom-1',
+			'title'      => 'Cool beans',
+			'type'       => 'custom_type',
+			'type_label' => 'Custom Label',
+			'object'     => 'custom_object',
+			'url'        => home_url( '/cool-beans/' ),
+			'classes'    => 'custom-menu-item cool-beans',
+		);
+
+		$items = $menus->load_available_items_query( 'custom_object', 'custom_type', 0 );
+		$this->assertContains( $expected, $items );
+	}
+
+	/**
 	 * Test the search_available_items_query method.
 	 *
 	 * @see WP_Customize_Nav_Menus::search_available_items_query()
@@ -361,39 +416,34 @@ class Test_WP_Customize_Nav_Menus extends WP_UnitTestCase {
 	function test_available_item_types() {
 
 		$menus = new WP_Customize_Nav_Menus( $this->wp_customize );
+
 		$expected = array(
 			'postTypes' => array(
-				'post' => array( 'label' => 'Post' ),
-				'page' => array( 'label' => 'Page' ),
+				'post' => array( 'title' => 'Post', 'object' => 'post_type', 'type' => 'post' ),
+				'page' => array( 'title' => 'Page', 'object' => 'post_type', 'type' => 'page' ),
 			),
 			'taxonomies' => array(
-				'category' => array( 'label' => 'Category' ),
-				'post_tag' => array( 'label' => 'Tag' ),
+				'category'    => array( 'title' => 'Category', 'object' => 'taxonomy', 'type' => 'category' ),
+				'post_tag'    => array( 'title' => 'Tag', 'object' => 'taxonomy', 'type' => 'post_tag' ),
 			),
 		);
+
 		if ( current_theme_supports( 'post-formats' ) ) {
-			$expected['taxonomies']['post_format'] = array( 'label' => 'Format' );
+			$expected['taxonomies']['post_format'] = array( 'title' => 'Format', 'object' => 'taxonomy', 'type' => 'post_format' );
 		}
+
 		$this->assertEquals( $expected, $menus->available_item_types() );
 
 		register_taxonomy( 'wptests_tax', array( 'post' ), array( 'labels' => array( 'name' => 'Foo' ) ) );
-		$expected = array(
-			'postTypes' => array(
-				'post' => array( 'label' => 'Post' ),
-				'page' => array( 'label' => 'Page' ),
-			),
-			'taxonomies' => array(
-				'category'    => array( 'label' => 'Category' ),
-				'post_tag'    => array( 'label' => 'Tag' ),
-				'wptests_tax' => array( 'label' => 'Foo' ),
-			),
-		);
-		if ( current_theme_supports( 'post-formats' ) ) {
-			$wptests_tax = array_pop( $expected['taxonomies'] );
-			$expected['taxonomies']['post_format'] = array( 'label' => 'Format' );
-			$expected['taxonomies']['wptests_tax'] = $wptests_tax;
-		}
+		$expected['taxonomies']['wptests_tax'] = array( 'title' => 'Foo', 'object' => 'taxonomy', 'type' => 'wptests_tax' );
+
 		$this->assertEquals( $expected, $menus->available_item_types() );
+		
+		$expected['custom_object']['custom_type'] = array( 'title' => 'Custom', 'object' => 'custom_object', 'type' => 'custom_type' );
+		
+		add_filter( 'customize_nav_menu_available_item_types', array( $this, 'filter_item_types' ) );
+		$this->assertEquals( $expected, $menus->available_item_types() );
+		remove_filter( 'customize_nav_menu_available_item_types', array( $this, 'filter_item_types' ) );
 
 	}
 
@@ -427,6 +477,7 @@ class Test_WP_Customize_Nav_Menus extends WP_UnitTestCase {
 	 * @see WP_Customize_Nav_Menus::available_items_template()
 	 */
 	function test_available_items_template() {
+		add_filter( 'customize_nav_menu_available_item_types', array( $this, 'filter_item_types' ) );
 		do_action( 'customize_register', $this->wp_customize );
 		$menus = new WP_Customize_Nav_Menus( $this->wp_customize );
 
@@ -442,7 +493,7 @@ class Test_WP_Customize_Nav_Menus extends WP_UnitTestCase {
 		if ( $post_types ) {
 			foreach ( $post_types as $type ) {
 				$this->assertContains( 'available-menu-items-' . esc_attr( $type->name ), $template );
-				$this->assertContains( '<h4 class="accordion-section-title">' . esc_html( $type->label ), $template );
+				$this->assertContains( '<h4 class="accordion-section-title">' . esc_html( $type->labels->singular_name ), $template );
 				$this->assertContains( 'data-type="' . esc_attr( $type->name ) . '" data-obj_type="post_type"', $template );
 			}
 		}
@@ -451,10 +502,14 @@ class Test_WP_Customize_Nav_Menus extends WP_UnitTestCase {
 		if ( $taxonomies ) {
 			foreach ( $taxonomies as $tax ) {
 				$this->assertContains( 'available-menu-items-' . esc_attr( $tax->name ), $template );
-				$this->assertContains( '<h4 class="accordion-section-title">' . esc_html( $tax->label ), $template );
+				$this->assertContains( '<h4 class="accordion-section-title">' . esc_html( $tax->labels->singular_name ), $template );
 				$this->assertContains( 'data-type="' . esc_attr( $tax->name ) . '" data-obj_type="taxonomy"', $template );
 			}
 		}
+
+		$this->assertContains( 'available-menu-items-custom_type', $template );
+		$this->assertContains( '<h4 class="accordion-section-title">Custom', $template );
+		$this->assertContains( 'data-type="custom_type" data-obj_type="custom_object"', $template );
 	}
 
 	/**

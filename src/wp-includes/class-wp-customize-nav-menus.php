@@ -176,6 +176,16 @@ final class WP_Customize_Nav_Menus {
 			}
 		}
 
+		/**
+		 * Filter the available menu items.
+		 *
+		 * @param array  $items    The array of menu items.
+		 * @param string $obj_type The object type.
+		 * @param string $obj_name The object name.
+		 * @param int    $page     The current page number.
+		 */
+		$items = apply_filters( 'customize_nav_menu_available_items', $items, $obj_type, $obj_name, $page );
+
 		return $items;
 	}
 
@@ -596,21 +606,37 @@ final class WP_Customize_Nav_Menus {
 		);
 
 		$post_types = get_post_types( array( 'show_in_nav_menus' => true ), 'objects' );
-		foreach ( $post_types as $slug => $post_type ) {
-			$items['postTypes'][ $slug ] = array(
-				'label' => $post_type->labels->singular_name,
-			);
+		if ( $post_types ) {
+			foreach ( $post_types as $slug => $post_type ) {
+				$items['postTypes'][ $slug ] = array(
+					'title'  => $post_type->labels->singular_name,
+					'object' => 'post_type',
+					'type'   => $post_type->name,
+				);
+			}
 		}
 
 		$taxonomies = get_taxonomies( array( 'show_in_nav_menus' => true ), 'objects' );
-		foreach ( $taxonomies as $slug => $taxonomy ) {
-			if ( 'post_format' === $taxonomy && ! current_theme_supports( 'post-formats' ) ) {
-				continue;
+		if ( $taxonomies ) {
+			foreach ( $taxonomies as $slug => $taxonomy ) {
+				if ( 'post_format' === $taxonomy && ! current_theme_supports( 'post-formats' ) ) {
+					continue;
+				}
+				$items['taxonomies'][ $slug ] = array(
+					'title'  => $taxonomy->labels->singular_name,
+					'object' => 'taxonomy',
+					'type'   => $taxonomy->name,
+				);
 			}
-			$items['taxonomies'][ $slug ] = array(
-				'label' => $taxonomy->labels->singular_name,
-			);
 		}
+
+		/**
+		 * Filter the available menu item types.
+		 *
+		 * @param array $items Custom menu item types.
+		 */
+		$items = apply_filters( 'customize_nav_menu_available_item_types', $items );
+
 		return $items;
 	}
 
@@ -716,32 +742,21 @@ final class WP_Customize_Nav_Menus {
 				</div>
 			</div>
 			<?php
-
-			// @todo: consider using add_meta_box/do_accordion_section and making screen-optional?
 			// Containers for per-post-type item browsing; items added with JS.
-			$post_types = get_post_types( array( 'show_in_nav_menus' => true ), 'object' );
-			if ( $post_types ) :
-				foreach ( $post_types as $type ) :
-					?>
-					<div id="available-menu-items-<?php echo esc_attr( $type->name ); ?>" class="accordion-section">
-						<h4 class="accordion-section-title"><?php echo esc_html( $type->label ); ?> <span class="spinner"></span> <span class="no-items"><?php _e( 'No items' ); ?></span> <button type="button" class="not-a-button"><span class="screen-reader-text"><?php _e( 'Toggle' ); ?></span></button></h4>
-						<ul class="accordion-section-content" data-type="<?php echo esc_attr( $type->name ); ?>" data-obj_type="post_type"></ul>
-					</div>
-				<?php
-				endforeach;
-			endif;
+			foreach ( (array) self::available_item_types() as $item_type ) {
+				if ( empty( $item_type ) ) {
+					continue;
+				}
 
-			$taxonomies = get_taxonomies( array( 'show_in_nav_menus' => true ), 'object' );
-			if ( $taxonomies ) :
-				foreach ( $taxonomies as $tax ) :
+				foreach( $item_type as $item ) {
 					?>
-					<div id="available-menu-items-<?php echo esc_attr( $tax->name ); ?>" class="accordion-section">
-						<h4 class="accordion-section-title"><?php echo esc_html( $tax->label ); ?> <span class="spinner"></span> <span class="no-items"><?php _e( 'No items' ); ?></span> <button type="button" class="not-a-button"><span class="screen-reader-text"><?php _e( 'Toggle' ); ?></span></button></h4>
-						<ul class="accordion-section-content" data-type="<?php echo esc_attr( $tax->name ); ?>" data-obj_type="taxonomy"></ul>
+					<div id="available-menu-items-<?php echo esc_attr( $item['type'] ); ?>" class="accordion-section">
+						<h4 class="accordion-section-title"><?php echo esc_html( $item['title'] ); ?> <span class="no-items"><?php _e( 'No items' ); ?></span><span class="spinner"></span> <button type="button" class="not-a-button"><span class="screen-reader-text"><?php _e( 'Toggle' ); ?></span></button></h4>
+						<ul class="accordion-section-content" data-type="<?php echo esc_attr( $item['type'] ); ?>" data-obj_type="<?php echo esc_attr( $item['object'] ); ?>"></ul>
 					</div>
-				<?php
-				endforeach;
-			endif;
+					<?php
+				}
+			}
 			?>
 		</div><!-- #available-menu-items -->
 	<?php
