@@ -122,7 +122,7 @@ class Tests_Ajax_CustomizeMenus extends WP_Ajax_UnitTestCase {
 				'administrator',
 				array(
 					'success' => false,
-					'data'    => 'nav_menus_missing_obj_type_or_type_parameter',
+					'data'    => 'nav_menus_missing_type_or_object_parameter',
 				),
 			),
 		);
@@ -177,7 +177,7 @@ class Tests_Ajax_CustomizeMenus extends WP_Ajax_UnitTestCase {
 				),
 				array(
 					'success'  => false,
-					'data'     => 'nav_menus_missing_obj_type_or_type_parameter',
+					'data'     => 'nav_menus_missing_type_or_object_parameter',
 				),
 			),
 			// Testing empty obj_type.
@@ -188,7 +188,7 @@ class Tests_Ajax_CustomizeMenus extends WP_Ajax_UnitTestCase {
 				),
 				array(
 					'success'  => false,
-					'data'     => 'nav_menus_missing_obj_type_or_type_parameter',
+					'data'     => 'nav_menus_missing_type_or_object_parameter',
 				),
 			),
 			// Testing empty type.
@@ -199,7 +199,7 @@ class Tests_Ajax_CustomizeMenus extends WP_Ajax_UnitTestCase {
 				),
 				array(
 					'success'  => false,
-					'data'     => 'nav_menus_missing_obj_type_or_type_parameter',
+					'data'     => 'nav_menus_missing_type_or_object_parameter',
 				),
 			),
 			// Testing incorrect type option.

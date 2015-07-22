@@ -230,9 +230,9 @@ class Test_WP_Customize_Nav_Menu_Item_Setting extends WP_UnitTestCase {
 
 		$menu_id = wp_create_nav_menu( 'Menu' );
 		$item_id = wp_update_nav_menu_item( $menu_id, 0, array(
-			'menu-item-type' => 'custom_type',
+			'menu-item-type'   => 'custom_type',
 			'menu-item-object' => 'custom_object',
-			'menu-item-title' => 'Cool beans',
+			'menu-item-title'  => 'Cool beans',
 			'menu-item-status' => 'publish',
 		) );
 
