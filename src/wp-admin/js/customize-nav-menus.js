@@ -176,18 +176,22 @@
 
 		// Search input change handler.
 		search: function( event ) {
+			var $searchSection = $( '#available-menu-items-search' ),
+				$openSections = $( '#available-menu-items .accordion-section.open' );
+
 			if ( ! event ) {
 				return;
 			}
 			// Manual accordion-opening behavior.
-			if ( this.searchTerm && ! $( '#available-menu-items-search' ).hasClass( 'open' ) ) {
-				$( '#available-menu-items .accordion-section-content' ).slideUp( 'fast' );
-				$( '#available-menu-items-search .accordion-section-content' ).slideDown( 'fast' );
-				$( '#available-menu-items .accordion-section.open' ).removeClass( 'open' );
-				$( '#available-menu-items-search' ).addClass( 'open' );
+			if ( this.searchTerm && ! $searchSection.hasClass( 'open' ) ) {
+				$openSections.find( '.accordion-section-content' ).slideUp( 'fast' );
+				$searchSection.find( '.accordion-section-content' ).slideDown( 'fast' );
+				$openSections.find( '[aria-expanded]' ).eq( 0 ).attr( 'aria-expanded', 'false' );
+				$openSections.removeClass( 'open' );
+				$searchSection.addClass( 'open' );
 			}
 			if ( '' === event.target.value ) {
-				$( '#available-menu-items-search' ).removeClass( 'open' );
+				$searchSection.removeClass( 'open' );
 			}
 			if ( this.searchTerm === event.target.value ) {
 				return;
