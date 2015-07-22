@@ -1647,11 +1647,22 @@
 						return;
 					}
 					var select = widgetControl.container.find( 'select' );
-					if ( select.find( 'option[value=' + String( menuId ) + ']' ).length === 0 ) {
+					if ( 0 === select.find( 'option[value=' + String( menuId ) + ']' ).length ) {
 						select.append( new Option( name, menuId ) );
 					}
 				} );
-				$( '#available-widgets-list .widget-inside:has(input.id_base[value=nav_menu]) select:first' ).append( new Option( name, menuId ) );
+				// Add to any already present widgets.
+				//$( '#available-widgets-list .widget-inside:has(input.id_base[value=nav_menu]) select:first' ).append( new Option( name, menuId ) );
+
+				// Add the menu to the widget template.
+				// @todo Not this only works of the widget area already has a
+				// select element, add coverage for no menus case.
+				var template = $( '#available-widgets-list .widget-inside:has( input.id_base[ value=nav_menu ] ) select:first' );
+
+				// Avoid duplicate insertion.
+				if ( 0 === template.find( 'option[value=' + String( menuId ) + ']' ).length ) {
+						template.append( new Option( name, menuId ) );
+				}
 			}
 		},
 
@@ -1695,7 +1706,6 @@
 						var select = widgetControl.container.find( 'select' );
 						select.find( 'option[value=' + String( menuId ) + ']' ).text( name );
 					});
-					$( '#available-widgets-list .widget-inside:has(input.id_base[value=nav_menu]) select:first option[value=' + String( menuId ) + ']' ).text( name );
 				}
 			} );
 
@@ -1767,8 +1777,8 @@
 						menuItemControl.setting.set( setting );
 					});
 				});
-			});
 
+			});
 			control.isReordering = false;
 
 			/**
@@ -1835,7 +1845,7 @@
 				}
 				select.find( 'option[value=' + String( menuId ) + ']' ).remove();
 			});
-			$( '#available-widgets-list .widget-inside:has(input.id_base[value=nav_menu]) select:first option[value=' + String( menuId ) + ']' ).remove();
+
 		},
 
 		// Setup theme location checkboxes.
@@ -2232,6 +2242,9 @@
 
 			// Focus on the new menu section.
 			api.section( customizeId ).focus(); // @todo should we focus on the new menu's control and open the add-items panel? Thinking user flow...
+
+			// Fix an issue with extra space at top immediately after creating new menu.
+			$( '#menu-to-edit' ).css( 'margin-top', 0 );
 		}
 	});
 
@@ -2368,6 +2381,34 @@
 						api.state( 'saved' ).set( wasSaved );
 						setting.preview();
 					}
+				} );
+
+				/**
+				 * Update the saved menu in any custom menu widgets.
+				 * If the previous_term_id item is selected, reselect the
+				 * item with the updated term_id.
+				 */
+				api.control.each( function( setting ) {
+					// Only act on nav_menu widgets.
+					if ( ! setting.extended( api.controlConstructor.widget_form ) ||
+						'nav_menu' !== setting.params.widget_id_base ) {
+						return;
+					}
+					var select, oldMenuOption, oldMenuSelected, newMenuOption;
+					select          = setting.container.find( 'select' );
+					oldMenuOption   = select.find( 'option[value=' + String( update.previous_term_id ) + ']' );
+					oldMenuSelected = select.find( 'option[value=' + String( update.previous_term_id ) + ']:selected' );
+					newMenuOption   = select.find( 'option[value=' + String( update.term_id ) + ']' );
+
+					// Adjust menu options matching the old ID, setting them to the new ID.
+					if ( oldMenuSelected.length !== 0 && newMenuOption !== 0 ) {
+						// Remove the old option.
+						oldMenuOption.remove();
+						// Select the new option.
+						newMenuOption.attr( 'selected', true ).trigger( 'change' );
+					}
+
+
 				} );
 
 				if ( oldSection.expanded.get() ) {

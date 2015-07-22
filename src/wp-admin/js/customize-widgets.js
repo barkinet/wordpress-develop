@@ -1041,6 +1041,7 @@
 			params.wp_customize = 'on';
 			params.nonce = api.Widgets.data.nonce;
 			params.theme = api.settings.theme.stylesheet;
+			params.customized = wp.customize.previewer.query().customized;
 
 			data = $.param( params );
 			$inputs = this._getInputs( $widgetContent );
