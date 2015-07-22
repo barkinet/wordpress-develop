@@ -442,6 +442,10 @@ function wp_network_dashboard_right_now() {
 function wp_dashboard_quick_press( $error_msg = false ) {
 	global $post_ID;
 
+	if ( ! current_user_can( 'edit_posts' ) ) {
+		return;
+	}
+
 	/* Check if a new auto-draft (= no new post_ID) is needed or if the old can be used */
 	$last_post_id = (int) get_user_option( 'dashboard_quick_press_last_post_id' ); // Get the last post_ID
 	if ( $last_post_id ) {
@@ -876,7 +880,8 @@ function wp_dashboard_cached_rss_widget( $widget_id, $callback, $check_urls = ar
 		$check_urls = array( $widgets[$widget_id]['url'] );
 	}
 
-	$cache_key = 'dash_' . md5( $widget_id );
+	$locale = get_locale();
+	$cache_key = 'dash_' . md5( $widget_id . '_' . $locale );
 	if ( false !== ( $output = get_transient( $cache_key ) ) ) {
 		echo $output;
 		return true;

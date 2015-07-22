@@ -340,14 +340,14 @@
 	border: none;
 	content: "\f111";
 	display: block;
-	font: 20px/1 "dashicons";
+	font: 16px/1 "dashicons";
 	padding: 5px;
 	text-align: center;
 	text-decoration: none !important;
 	text-indent: 0;
-	left: 5px;
+	left: 7px;
 	position: absolute;
-	top: 5px;
+	top: 7px;
 }
 
 .wp-customizer #screen-options-wrap {
@@ -408,7 +408,6 @@
 .menu-item-depth-11 > .menu-item-bar { margin-right: 220px; }
 
 /* Submenu left margin. */
-/* @todo menu-item-transport seems entirely unused. */
 .menu-item-depth-0  .menu-item-transport { margin-left: 0;      }
 .menu-item-depth-1  .menu-item-transport { margin-left: -20px;  }
 .menu-item-depth-3  .menu-item-transport { margin-left: -60px;  }
@@ -573,6 +572,11 @@
 	color: #f00;
 }
 
+.menu-item-bar .item-delete:focus {
+	-webkit-box-shadow: 0 0 0 1px #5b9dd9, 0 0 2px 1px rgba(30, 140, 190, .8);
+	box-shadow: 0 0 0 1px #5b9dd9, 0 0 2px 1px rgba(30, 140, 190, .8);
+}
+
 .adding-menu-items .menu-item-bar .item-edit {
 	display: none;
 }
@@ -649,6 +653,19 @@ button.not-a-button {
 #available-menu-items .accordion-section-title button:focus {
 	-webkit-box-shadow: 0 0 0 1px #5b9dd9, 0 0 2px 1px rgba(30, 140, 190, .8);
 	box-shadow: 0 0 0 1px #5b9dd9, 0 0 2px 1px rgba(30, 140, 190, .8);
+}
+
+#available-menu-items .accordion-section-title .no-items,
+#available-menu-items .cannot-expand .accordion-section-title .spinner {
+	display: none;
+}
+
+#available-menu-items .cannot-expand .accordion-section-title .no-items {
+	display: block;
+	color: #777;
+	font-weight: normal;
+	float: right;
+	margin-left: 5px;
 }
 
 #available-menu-items .accordion-section-content {

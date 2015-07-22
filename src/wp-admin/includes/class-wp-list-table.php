@@ -850,7 +850,7 @@ class WP_List_Table {
 	}
 
 	/**
-	 * Get the name of the default primary column.
+	 * Gets the name of the default primary column.
 	 *
 	 * @since 4.3.0
 	 * @access protected
@@ -876,7 +876,7 @@ class WP_List_Table {
 	}
 
 	/**
-	 * Get the name of the primary column.
+	 * Gets the name of the primary column.
 	 *
 	 * @since 4.3.0
 	 * @access protected
@@ -887,9 +887,14 @@ class WP_List_Table {
 		$columns = $this->get_columns();
 		$default = $this->get_default_primary_column_name();
 
+		// If the primary column doesn't exist fall back to the
+		// first non-checkbox column.
+		if ( ! isset( $columns[ $default ] ) ) {
+			$default = WP_List_Table::get_default_primary_column_name();
+		}
+
 		/**
-		 * Filter the name of the primary column for the current list table, with context
-		 * as argument (eg: 'plugins').
+		 * Filter the name of the primary column for the current list table.
 		 *
 		 * @since 4.3.0
 		 *
@@ -1219,14 +1224,20 @@ class WP_List_Table {
 				echo '<th scope="row" class="check-column">';
 				echo $this->column_cb( $item );
 				echo '</th>';
-			}
-			elseif ( method_exists( $this, 'column_' . $column_name ) ) {
+			} elseif ( method_exists( $this, '_column_' . $column_name ) ) {
+				echo call_user_func(
+					array( $this, '_column_' . $column_name ),
+					$item,
+					$classes,
+					$data,
+					$primary
+				);
+			} elseif ( method_exists( $this, 'column_' . $column_name ) ) {
 				echo "<td $attributes>";
 				echo call_user_func( array( $this, 'column_' . $column_name ), $item );
 				echo $this->handle_row_actions( $item, $column_name, $primary );
 				echo "</td>";
-			}
-			else {
+			} else {
 				echo "<td $attributes>";
 				echo $this->column_default( $item, $column_name );
 				echo $this->handle_row_actions( $item, $column_name, $primary );
@@ -1236,7 +1247,7 @@ class WP_List_Table {
 	}
 
 	/**
-	 * Generate and display row actions links
+	 * Generates and display row actions links for the list table.
 	 *
 	 * @since 4.3.0
 	 * @access protected
