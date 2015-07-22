@@ -56,18 +56,18 @@ class Test_WP_Customize_Nav_Menus extends WP_UnitTestCase {
 	/**
 	 * Filter to add custom menu items.
 	 *
-	 * @param array  $items     The menu items.
-	 * @param string $obj_type  The object type (e.g. taxonomy).
-	 * @param string $obj_name  The object name (e.g. category).
+	 * @param array  $items  The menu items.
+	 * @param string $type   The object type (e.g. taxonomy).
+	 * @param string $object The object name (e.g. category).
 	 * @return array Menu items.
 	 */
-	function filter_items( $items, $obj_type, $obj_name ) {
+	function filter_items( $items, $type, $object ) {
 		$items[] = array(
 			'id'         => 'custom-1',
 			'title'      => 'Cool beans',
-			'type'       => $obj_name,
+			'type'       => $type,
 			'type_label' => 'Custom Label',
-			'object'     => $obj_type,
+			'object'     => $object,
 			'url'        => home_url( '/cool-beans/' ),
 			'classes'    => 'custom-menu-item cool-beans',
 		);
@@ -265,7 +265,7 @@ class Test_WP_Customize_Nav_Menus extends WP_UnitTestCase {
 			'classes'    => 'custom-menu-item cool-beans',
 		);
 
-		$items = $menus->load_available_items_query( 'custom_object', 'custom_type', 0 );
+		$items = $menus->load_available_items_query( 'custom_type', 'custom_object', 0 );
 		$this->assertContains( $expected, $items );
 	}
 

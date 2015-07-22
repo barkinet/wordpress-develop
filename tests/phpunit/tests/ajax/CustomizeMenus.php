@@ -172,8 +172,8 @@ class Tests_Ajax_CustomizeMenus extends WP_Ajax_UnitTestCase {
 			// Testing empty obj_type and type.
 			array(
 				array(
-					'obj_type' => '',
 					'type'     => '',
+					'object'   => '',
 				),
 				array(
 					'success'  => false,
@@ -183,8 +183,8 @@ class Tests_Ajax_CustomizeMenus extends WP_Ajax_UnitTestCase {
 			// Testing empty obj_type.
 			array(
 				array(
-					'obj_type' => '',
-					'type'     => 'post',
+					'type'     => '',
+					'object'   => 'post',
 				),
 				array(
 					'success'  => false,
@@ -194,8 +194,8 @@ class Tests_Ajax_CustomizeMenus extends WP_Ajax_UnitTestCase {
 			// Testing empty type.
 			array(
 				array(
-					'obj_type' => '',
-					'type'     => 'post',
+					'type'     => '',
+					'object'   => 'post',
 				),
 				array(
 					'success'  => false,
@@ -205,8 +205,8 @@ class Tests_Ajax_CustomizeMenus extends WP_Ajax_UnitTestCase {
 			// Testing incorrect type option.
 			array(
 				array(
-					'obj_type' => 'post_type',
-					'type'     => 'invalid',
+					'type'     => 'post_type',
+					'object'   => 'invalid',
 				),
 				array(
 					'success'  => false,
@@ -259,29 +259,29 @@ class Tests_Ajax_CustomizeMenus extends WP_Ajax_UnitTestCase {
 		return array(
 			array(
 				array(
-					'obj_type' => 'post_type',
-					'type'     => 'post',
+					'type'     => 'post_type',
+					'object'   => 'post',
 				),
 				true,
 			),
 			array(
 				array(
-					'obj_type' => 'post_type',
-					'type'     => 'page',
+					'type'     => 'post_type',
+					'object'   => 'page',
 				),
 				true,
 			),
 			array(
 				array(
-					'obj_type' => 'post_type',
-					'type'     => 'custom',
+					'type'     => 'post_type',
+					'object'   => 'custom',
 				),
 				false,
 			),
 			array(
 				array(
-					'obj_type' => 'taxonomy',
-					'type'     => 'post_tag',
+					'type'     => 'taxonomy',
+					'object'   => 'post_tag',
 				),
 				true,
 			),
@@ -363,20 +363,20 @@ class Tests_Ajax_CustomizeMenus extends WP_Ajax_UnitTestCase {
 		return array(
 			array(
 				array(
-					'obj_type' => 'post_type',
-					'type'     => 'post',
+					'type'     => 'post_type',
+					'object'   => 'post',
 				),
 			),
 			array(
 				array(
-					'obj_type' => 'post_type',
-					'type'     => 'page',
+					'type'     => 'post_type',
+					'object'   => 'page',
 				),
 			),
 			array(
 				array(
-					'obj_type' => 'taxonomy',
-					'type'     => 'post_tag',
+					'type'     => 'taxonomy',
+					'object'   => 'post_tag',
 				),
 			),
 		);
