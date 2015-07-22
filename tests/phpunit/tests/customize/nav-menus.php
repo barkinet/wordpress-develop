@@ -438,9 +438,9 @@ class Test_WP_Customize_Nav_Menus extends WP_UnitTestCase {
 		$expected['taxonomies']['wptests_tax'] = array( 'title' => 'Foo', 'object' => 'taxonomy', 'type' => 'wptests_tax' );
 
 		$this->assertEquals( $expected, $menus->available_item_types() );
-		
+
 		$expected['custom_object']['custom_type'] = array( 'title' => 'Custom', 'object' => 'custom_object', 'type' => 'custom_type' );
-		
+
 		add_filter( 'customize_nav_menu_available_item_types', array( $this, 'filter_item_types' ) );
 		$this->assertEquals( $expected, $menus->available_item_types() );
 		remove_filter( 'customize_nav_menu_available_item_types', array( $this, 'filter_item_types' ) );
