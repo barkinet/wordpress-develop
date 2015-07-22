@@ -38,7 +38,10 @@ class Test_WP_Customize_Nav_Menus extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Filter to add custom menu item types. 
+	 * Filter to add custom menu item types.
+	 *
+	 * @param array $items Menu item types.
+	 * @return array Menu item types.
 	 */
 	function filter_item_types( $items ) {
 		$items['custom_object']['custom_type'] = array(
@@ -51,9 +54,14 @@ class Test_WP_Customize_Nav_Menus extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Filter to add custom menu items. 
+	 * Filter to add custom menu items.
+	 *
+	 * @param array  $items     The menu items.
+	 * @param string $obj_type  The object type (e.g. taxonomy).
+	 * @param string $obj_name  The object name (e.g. category).
+	 * @return array Menu items.
 	 */
-	function filter_items( $items, $obj_type, $obj_name, $page ) {
+	function filter_items( $items, $obj_type, $obj_name ) {
 		$items[] = array(
 			'id'         => 'custom-1',
 			'title'      => 'Cool beans',
