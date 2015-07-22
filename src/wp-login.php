@@ -655,8 +655,8 @@ case 'rp' :
 	<p class="user-pass1-wrap">
 		<label for="pass1"><?php _e('New password') ?></label><br />
 		<div class="wp-pwd">
-			<input type="password" data-reveal="1" data-pw="<?php echo esc_attr( wp_generate_password( 24 ) ); ?>" name="pass1" id="pass1" class="input" size="20" value="" autocomplete="off" />
-			<div id="pass-strength-result" class="hide-if-no-js"><?php _e( 'Strength indicator' ); ?></div>
+			<input type="password" data-reveal="1" data-pw="<?php echo esc_attr( wp_generate_password( 24 ) ); ?>" name="pass1" id="pass1" class="input" size="20" value="" autocomplete="off" aria-describedby="pass-strength-result" />
+			<div id="pass-strength-result" class="hide-if-no-js" aria-live="polite"><?php _e( 'Strength indicator' ); ?></div>
 		</div>
 	</p>
 	<p class="user-pass2-wrap">
@@ -757,7 +757,7 @@ case 'register' :
 	 */
 	do_action( 'register_form' );
 	?>
-	<p id="reg_passmail"><?php _e('A password will be e-mailed to you.') ?></p>
+	<p id="reg_passmail"><?php _e( 'Registration confirmation will be e-mailed to you.' ); ?></p>
 	<br class="clear" />
 	<input type="hidden" name="redirect_to" value="<?php echo esc_attr( $redirect_to ); ?>" />
 	<p class="submit"><input type="submit" name="wp-submit" id="wp-submit" class="button button-primary button-large" value="<?php esc_attr_e('Register'); ?>" /></p>

@@ -1,4 +1,4 @@
-/* globals _wpCustomizeHeader, _wpCustomizeBackground, _wpMediaViewsL10n, MediaElementPlayer */
+/* global _wpCustomizeHeader, _wpCustomizeBackground, _wpMediaViewsL10n, MediaElementPlayer */
 (function( exports, $ ){
 	var Container, focus, api = wp.customize;
 
@@ -1934,7 +1934,7 @@
 				ratio = xInit / yInit,
 				xImg  = realWidth,
 				yImg  = realHeight,
-				imgSelectOptions;
+				x1, y1, imgSelectOptions;
 
 			controller.set( 'canSkipCrop', ! control.mustBeCropped( flexWidth, flexHeight, xInit, yInit, realWidth, realHeight ) );
 
@@ -1946,6 +1946,9 @@
 				yInit = xInit / ratio;
 			}
 
+			x1 = ( xImg - xInit ) / 2;
+			y1 = ( yImg - yInit ) / 2;
+
 			imgSelectOptions = {
 				handles: true,
 				keys: true,
@@ -1953,10 +1956,10 @@
 				persistent: true,
 				imageWidth: realWidth,
 				imageHeight: realHeight,
-				x1: 0,
-				y1: 0,
-				x2: xInit,
-				y2: yInit
+				x1: x1,
+				y1: y1,
+				x2: xInit + x1,
+				y2: yInit + y1
 			};
 
 			if ( flexHeight === false && flexWidth === false ) {
@@ -2038,6 +2041,72 @@
 	 * @augments wp.customize.Class
 	 */
 	api.SiteIconControl = api.CroppedImageControl.extend({
+
+		/**
+		 * Create a media modal select frame, and store it so the instance can be reused when needed.
+		 */
+		initFrame: function() {
+			var l10n = _wpMediaViewsL10n;
+
+			this.frame = wp.media({
+				button: {
+					text: l10n.select,
+					close: false
+				},
+				states: [
+					new wp.media.controller.Library({
+						title: this.params.button_labels.frame_title,
+						library: wp.media.query({ type: 'image' }),
+						multiple: false,
+						date: false,
+						priority: 20,
+						suggestedWidth: this.params.width,
+						suggestedHeight: this.params.height
+					}),
+					new wp.media.controller.SiteIconCropper({
+						imgSelectOptions: this.calculateImageSelectOptions,
+						control: this
+					})
+				]
+			});
+
+			this.frame.on( 'select', this.onSelect, this );
+			this.frame.on( 'cropped', this.onCropped, this );
+			this.frame.on( 'skippedcrop', this.onSkippedCrop, this );
+		},
+
+		/**
+		 * After an image is selected in the media modal, switch to the cropper
+		 * state if the image isn't the right size.
+		 */
+		onSelect: function() {
+			var attachment = this.frame.state().get( 'selection' ).first().toJSON(),
+				controller = this;
+
+			if ( this.params.width === attachment.width && this.params.height === attachment.height && ! this.params.flex_width && ! this.params.flex_height ) {
+				wp.ajax.post( 'crop-image', {
+					nonce: attachment.nonces.edit,
+					id: attachment.id,
+					context: 'site-icon',
+					cropDetails: {
+						x1: 0,
+						y1: 0,
+						width: this.params.width,
+						height: this.params.height,
+						dst_width: this.params.width,
+						dst_height: this.params.height
+					}
+				} ).done( function( croppedImage ) {
+					controller.setImageFromAttachment( croppedImage );
+					controller.frame.close();
+				} ).fail( function() {
+					controller.trigger('content:error:crop');
+				} );
+			} else {
+				this.frame.setState( 'cropper' );
+			}
+		},
+
 		/**
 		 * Updates the setting and re-renders the control UI.
 		 *
@@ -2053,7 +2122,7 @@
 
 
 			// Update the icon in-browser.
-			$( 'link[rel="icon"]' ).attr( 'href', icon.url );
+			$( 'link[sizes="32x32"]' ).attr( 'href', icon.url );
 		},
 
 		/**
@@ -3234,6 +3303,7 @@
 			if ( wasReflowed && activeElement ) {
 				activeElement.focus();
 			}
+			api.trigger( 'pane-contents-reflowed' );
 		}, api );
 		api.bind( 'ready', api.reflowPaneContents );
 		api.reflowPaneContents = _.debounce( api.reflowPaneContents, 100 );

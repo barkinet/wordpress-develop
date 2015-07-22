@@ -887,6 +887,12 @@ class WP_List_Table {
 		$columns = $this->get_columns();
 		$default = $this->get_default_primary_column_name();
 
+		// If the primary column doesn't exist fall back to the
+		// first non-checkbox column.
+		if ( ! isset( $columns[ $default ] ) ) {
+			$default = WP_List_Table::get_default_primary_column_name();
+		}
+
 		/**
 		 * Filter the name of the primary column for the current list table.
 		 *
@@ -1218,14 +1224,20 @@ class WP_List_Table {
 				echo '<th scope="row" class="check-column">';
 				echo $this->column_cb( $item );
 				echo '</th>';
-			}
-			elseif ( method_exists( $this, 'column_' . $column_name ) ) {
+			} elseif ( method_exists( $this, '_column_' . $column_name ) ) {
+				echo call_user_func(
+					array( $this, '_column_' . $column_name ),
+					$item,
+					$classes,
+					$data,
+					$primary
+				);
+			} elseif ( method_exists( $this, 'column_' . $column_name ) ) {
 				echo "<td $attributes>";
 				echo call_user_func( array( $this, 'column_' . $column_name ), $item );
 				echo $this->handle_row_actions( $item, $column_name, $primary );
 				echo "</td>";
-			}
-			else {
+			} else {
 				echo "<td $attributes>";
 				echo $this->column_default( $item, $column_name );
 				echo $this->handle_row_actions( $item, $column_name, $primary );
