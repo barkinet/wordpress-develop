@@ -38,7 +38,10 @@ class Test_WP_Customize_Nav_Menu_Item_Setting extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Filter to add a custom menu item type label. 
+	 * Filter to add a custom menu item type label.
+	 *
+	 * @param object $menu_item Menu item.
+	 * @return object
 	 */
 	function filter_type_label( $menu_item ) {
 		if ( 'custom_type' === $menu_item->type ) {
