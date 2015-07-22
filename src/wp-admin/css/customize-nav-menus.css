@@ -678,7 +678,8 @@ button.not-a-button {
 }
 
 #available-menu-items .accordion-section-title .no-items,
-#available-menu-items .cannot-expand .accordion-section-title .spinner {
+#available-menu-items .cannot-expand .accordion-section-title .spinner,
+#available-menu-items .cannot-expand .accordion-section-title > button {
 	display: none;
 }
 
