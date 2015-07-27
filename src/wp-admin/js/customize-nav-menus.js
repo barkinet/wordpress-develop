@@ -1685,7 +1685,9 @@
 			var control = this,
 				menuId = control.params.menu_id,
 				menu = control.setting(),
-				name;
+				name,
+				widgetTemplate,
+				select;
 
 			if ( 'undefined' === typeof this.params.menu_id ) {
 				throw new Error( 'params.menu_id was not defined' );
@@ -1719,26 +1721,27 @@
 			if ( menu ) {
 				name = displayNavMenuName( menu.name );
 
+				// Add the menu to the existing controls.
 				api.control.each( function( widgetControl ) {
 					if ( ! widgetControl.extended( api.controlConstructor.widget_form ) || 'nav_menu' !== widgetControl.params.widget_id_base ) {
 						return;
 					}
-					var select = widgetControl.container.find( 'select' );
+					widgetControl.container.find( '.nav-menu-widget-form-controls:first' ).show();
+					widgetControl.container.find( '.nav-menu-widget-no-menus-message:first' ).hide();
+
+					select = widgetControl.container.find( 'select' );
 					if ( 0 === select.find( 'option[value=' + String( menuId ) + ']' ).length ) {
 						select.append( new Option( name, menuId ) );
 					}
 				} );
-				// Add to any already present widgets.
-				//$( '#available-widgets-list .widget-inside:has(input.id_base[value=nav_menu]) select:first' ).append( new Option( name, menuId ) );
 
 				// Add the menu to the widget template.
-				// @todo Not this only works of the widget area already has a
-				// select element, add coverage for no menus case.
-				var template = $( '#available-widgets-list .widget-inside:has( input.id_base[ value=nav_menu ] ) select:first' );
-
-				// Avoid duplicate insertion.
-				if ( 0 === template.find( 'option[value=' + String( menuId ) + ']' ).length ) {
-						template.append( new Option( name, menuId ) );
+				widgetTemplate = $( '#available-widgets-list .widget-tpl:has( input.id_base[ value=nav_menu ] )' );
+				widgetTemplate.find( '.nav-menu-widget-form-controls:first' ).show();
+				widgetTemplate.find( '.nav-menu-widget-no-menus-message:first' ).hide();
+				select = widgetTemplate.find( '.widget-inside select:first' );
+				if ( 0 === select.find( 'option[value=' + String( menuId ) + ']' ).length ) {
+					select.append( new Option( name, menuId ) );
 				}
 			}
 		},
@@ -1873,7 +1876,9 @@
 			var control = this,
 				section,
 				menuId = control.params.menu_id,
-				removeSection;
+				removeSection,
+				widgetTemplate,
+				navMenuCount = 0;
 			section = api.section( control.section() );
 			removeSection = function() {
 				section.container.remove();
@@ -1892,6 +1897,12 @@
 				removeSection();
 			}
 
+			api.each(function( setting ) {
+				if ( /^nav_menu\[/.test( setting.id ) && false !== setting() ) {
+					navMenuCount += 1;
+				}
+			});
+
 			// Remove the menu from any Custom Menu widgets.
 			api.control.each(function( widgetControl ) {
 				if ( ! widgetControl.extended( api.controlConstructor.widget_form ) || 'nav_menu' !== widgetControl.params.widget_id_base ) {
@@ -1901,9 +1912,17 @@
 				if ( select.val() === String( menuId ) ) {
 					select.prop( 'selectedIndex', 0 ).trigger( 'change' );
 				}
-				select.find( 'option[value=' + String( menuId ) + ']' ).remove();
+
+				widgetControl.container.find( '.nav-menu-widget-form-controls:first' ).toggle( 0 !== navMenuCount );
+				widgetControl.container.find( '.nav-menu-widget-no-menus-message:first' ).toggle( 0 === navMenuCount );
+				widgetControl.container.find( 'option[value=' + String( menuId ) + ']' ).remove();
 			});
 
+			// Remove the menu to the nav menu widget template.
+			widgetTemplate = $( '#available-widgets-list .widget-tpl:has( input.id_base[ value=nav_menu ] )' );
+			widgetTemplate.find( '.nav-menu-widget-form-controls:first' ).toggle( 0 !== navMenuCount );
+			widgetTemplate.find( '.nav-menu-widget-no-menus-message:first' ).toggle( 0 === navMenuCount );
+			widgetTemplate.find( 'option[value=' + String( menuId ) + ']' ).remove();
 		},
 
 		// Setup theme location checkboxes.
