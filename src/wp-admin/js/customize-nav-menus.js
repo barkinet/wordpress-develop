@@ -951,7 +951,13 @@
 			var control = this;
 			api.Control.prototype.initialize.call( control, id, options );
 			control.active.validate = function() {
-				return api.section( control.section() ).active();
+				var value, section = api.section( control.section() );
+				if ( section ) {
+					value = section.active();
+				} else {
+					value = false;
+				}
+				return value;
 			};
 		},
 
@@ -1596,7 +1602,13 @@
 			 * being deactivated.
 			 */
 			control.active.validate = function() {
-				return api.section( control.section() ).active();
+				var value, section = api.section( control.section() );
+				if ( section ) {
+					value = section.active();
+				} else {
+					value = false;
+				}
+				return value;
 			};
 
 			control.nameElement = new api.Element( control.container.find( '.menu-name-field' ) );
@@ -1642,7 +1654,13 @@
 			 * being deactivated.
 			 */
 			control.active.validate = function() {
-				return api.section( control.section() ).active();
+				var value, section = api.section( control.section() );
+				if ( section ) {
+					value = section.active();
+				} else {
+					value = false;
+				}
+				return value;
 			};
 
 			control.autoAddElement = new api.Element( control.container.find( 'input[type=checkbox].auto_add' ) );
@@ -1699,7 +1717,13 @@
 			 * being deactivated.
 			 */
 			control.active.validate = function() {
-				return api.section( control.section() ).active();
+				var value, section = api.section( control.section() );
+				if ( section ) {
+					value = section.active();
+				} else {
+					value = false;
+				}
+				return value;
 			};
 
 			control.$controlSection = control.container.closest( '.control-section' );
