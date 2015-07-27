@@ -141,13 +141,15 @@ function display_setup_form( $error = null ) {
 					<?php $initial_password = wp_generate_password( 24 ); ?>
 					<input type="password" name="admin_password" id="pass1" class="regular-text" autocomplete="off" data-reveal="1" data-pw="<?php echo esc_attr( $initial_password ); ?>" aria-describedby="pass-strength-result" />
 					<button type="button" class="button button-secondary wp-hide-pw hide-if-no-js" data-toggle="0" aria-label="<?php esc_attr_e( 'Hide password' ); ?>">
-						<span class="dashicons dashicons-visibility"></span>
+						<span class="dashicons dashicons-hidden"></span>
 						<span class="text"><?php _e( 'Hide' ); ?></span>
 					</button>
 					<div id="pass-strength-result" aria-live="polite"></div>
 				</div>
 				<p><span class="description important hide-if-no-js">
-				<strong><?php _e( 'Important:' )?></strong> <?php _e( 'You will need this password to log&nbsp;in. Please store it in a secure location.' ); ?></span></p>
+				<strong><?php _e( 'Important:' ); ?></strong>
+				<?php /* translators: The non-breaking space prevents 1Password from thinking the text "log in" should trigger a password save prompt. */ ?>
+				<?php _e( 'You will need this password to log&nbsp;in. Please store it in a secure location.' ); ?></span></p>
 			</td>
 		</tr>
 		<tr class="form-field form-required user-pass2-wrap hide-if-js">
@@ -164,7 +166,7 @@ function display_setup_form( $error = null ) {
 			<th scope="row"><?php _e( 'Confirm Password' ); ?></th>
 			<td>
 				<label>
-					<input type="checkbox" name="pw_weak" class="pw-checkbox" id="pw-weak" />
+					<input type="checkbox" name="pw_weak" class="pw-checkbox" />
 					<?php _e( 'Confirm use of weak password' ); ?>
 				</label>
 			</td>
