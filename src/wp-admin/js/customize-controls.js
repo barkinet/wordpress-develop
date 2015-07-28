@@ -600,7 +600,7 @@
 						position = content.offset().top;
 						scroll = container.scrollTop();
 						content.css( 'margin-top', ( 45 - position - scroll ) );
-						content.css( 'height', ( window.innerHeight - 90 ) );
+						content.css( 'height', ( window.innerHeight - 40 ) );
 						sectionTitle.attr( 'tabindex', '-1' );
 						backBtn.attr( 'tabindex', '0' );
 						backBtn.focus();
