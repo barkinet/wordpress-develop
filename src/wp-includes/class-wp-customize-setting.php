@@ -1842,6 +1842,17 @@ class WP_Customize_Nav_Menu_Setting extends WP_Customize_Setting {
 	}
 
 	/**
+	 * Storage for data to be sent back to client in customize_save_response filter.
+	 *
+	 * @access protected
+	 * @since 4.3.0
+	 * @var array
+	 *
+	 * @see WP_Customize_Nav_Menu_Setting::amend_customize_save_response()
+	 */
+	protected $_widget_nav_menu_updates = array();
+
+	/**
 	 * Create/update the nav_menu term for this setting.
 	 *
 	 * Any created menus will have their assigned term IDs exported to the client
@@ -1934,8 +1945,8 @@ class WP_Customize_Nav_Menu_Setting extends WP_Customize_Setting {
 			update_option( 'nav_menu_options', $nav_menu_options );
 		}
 
-		// Make sure that new menus assigned to nav menu locations use their new IDs.
 		if ( 'inserted' === $this->update_status ) {
+			// Make sure that new menus assigned to nav menu locations use their new IDs.
 			foreach ( $this->manager->settings() as $setting ) {
 				if ( ! preg_match( '/^nav_menu_locations\[/', $setting->id ) ) {
 					continue;
@@ -1946,6 +1957,26 @@ class WP_Customize_Nav_Menu_Setting extends WP_Customize_Setting {
 					$this->manager->set_post_value( $setting->id, $this->term_id );
 					$setting->save();
 				}
+			}
+
+			// Make sure that any nav_menu widgets referencing the placeholder nav menu get updated and sent back to client.
+			foreach ( array_keys( $this->manager->unsanitized_post_values() ) as $setting_id ) {
+				$nav_menu_widget_setting = $this->manager->get_setting( $setting_id );
+				if ( ! $nav_menu_widget_setting || ! preg_match( '/^widget_nav_menu\[/', $nav_menu_widget_setting->id ) ) {
+					continue;
+				}
+
+				$widget_instance = $nav_menu_widget_setting->post_value(); // Note that this calls WP_Customize_Widgets::sanitize_widget_instance().
+				if ( empty( $widget_instance['nav_menu'] ) || intval( $widget_instance['nav_menu'] ) !== $this->previous_term_id ) {
+					continue;
+				}
+
+				$widget_instance['nav_menu'] = $this->term_id;
+				$updated_widget_instance = $this->manager->widgets->sanitize_widget_js_instance( $widget_instance );
+				$this->manager->set_post_value( $nav_menu_widget_setting->id, $updated_widget_instance );
+				$nav_menu_widget_setting->save();
+
+				$this->_widget_nav_menu_updates[ $nav_menu_widget_setting->id ] = $updated_widget_instance;
 			}
 		}
 	}
@@ -1995,6 +2026,9 @@ class WP_Customize_Nav_Menu_Setting extends WP_Customize_Setting {
 		if ( ! isset( $data['nav_menu_updates'] ) ) {
 			$data['nav_menu_updates'] = array();
 		}
+		if ( ! isset( $data['widget_nav_menu_updates'] ) ) {
+			$data['widget_nav_menu_updates'] = array();
+		}
 
 		$data['nav_menu_updates'][] = array(
 			'term_id'          => $this->term_id,
@@ -2003,6 +2037,12 @@ class WP_Customize_Nav_Menu_Setting extends WP_Customize_Setting {
 			'status'           => $this->update_status,
 			'saved_value'      => 'deleted' === $this->update_status ? null : $this->value(),
 		);
+
+		$data['widget_nav_menu_updates'] = array_merge(
+			$data['widget_nav_menu_updates'],
+			$this->_widget_nav_menu_updates
+		);
+		$this->_widget_nav_menu_updates = array();
 
 		return $data;
 	}
