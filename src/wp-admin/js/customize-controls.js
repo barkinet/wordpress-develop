@@ -596,7 +596,7 @@
 					container.scrollTop( 0 );
 					expand = function () {
 						var matchMedia, offset;
-						matchMedia = window.matchMedia || window.msMatchMedia,
+						matchMedia = window.matchMedia || window.msMatchMedia;
 						offset = 90; // 45px for customize header actions + 45px for footer actions.
 
 						// No footer on small screens.
