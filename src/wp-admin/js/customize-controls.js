@@ -595,13 +595,12 @@
 				} else {
 					container.scrollTop( 0 );
 					expand = function () {
-						var matchMedia = window.matchMedia || window.msMatchMedia,
-
-							// 45px for customize header actions, 45px for footer actions.
-							offset = 90;
+						var matchMedia, offset;
+						matchMedia = window.matchMedia || window.msMatchMedia,
+						offset = 90; // 45px for customize header actions + 45px for footer actions.
 
 						// No footer on small screens.
-						if ( matchMedia( '(max-width: 640px)' ).matches ) {
+						if ( matchMedia && matchMedia( '(max-width: 640px)' ).matches ) {
 							offset = 45;
 						}
 
