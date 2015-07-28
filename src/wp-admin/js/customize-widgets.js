@@ -786,12 +786,11 @@
 
 			// Handle widgets that support live previews
 			$widgetContent.on( 'change input propertychange', ':input', function( e ) {
-				if ( self.liveUpdateMode ) {
-					if ( e.type === 'change' ) {
-						self.updateWidget();
-					} else if ( this.checkValidity && this.checkValidity() ) {
-						updateWidgetDebounced();
-					}
+				if ( ! self.liveUpdateMode ) {
+					return;
+				}
+				if ( e.type === 'change' || ( this.checkValidity && this.checkValidity() ) ) {
+					updateWidgetDebounced();
 				}
 			} );
 
