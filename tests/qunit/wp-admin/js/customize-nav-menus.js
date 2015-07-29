@@ -1,4 +1,28 @@
 /* global wp */
+
+jQuery( function( $ ) {
+
+
+	module( 'Customize Base: Class', {
+		setup: function() {
+			// Init the menus? 
+
+
+		},
+		teardown: function() {
+			// Maybe restore things?
+		}
+
+	});
+
+	test( 'jQuery is not WordPress', function() {
+		notEqual( $, wp );
+	});
+
+
+
+});
+/* global wp */
 jQuery( function( ) {
 
 	var api = wp.customize,
