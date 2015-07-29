@@ -29,11 +29,13 @@
 		} );
 	}
 	initMainNavigation( $( '.main-navigation' ) );
+
+	// Re-initialize the main navigation when it is updated, persisting any existing submenu expanded states.
 	$( document ).on( 'customize-preview-menu-refreshed', function( e, params ) {
 		if ( 'primary' === params.wpNavMenuArgs.theme_location ) {
 			initMainNavigation( params.newContainer );
 
-			// Re-sync expanded states from oldContainer
+			// Re-sync expanded states from oldContainer.
 			params.oldContainer.find( '.dropdown-toggle.toggle-on' ).each(function() {
 				var containerId = $( this ).parent().prop( 'id' );
 				$( params.newContainer ).find( '#' + containerId + ' > .dropdown-toggle' ).triggerHandler( 'click' );
