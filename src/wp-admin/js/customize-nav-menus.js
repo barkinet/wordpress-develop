@@ -1370,6 +1370,7 @@
 					self.container.trigger( 'expanded' );
 				};
 
+				$menuitem.find( '.item-edit' ).attr( 'aria-expanded', 'true' );
 				$inside.slideDown( 'fast', complete );
 
 				self.container.trigger( 'expand' );
@@ -1383,6 +1384,7 @@
 
 				self.container.trigger( 'collapse' );
 
+				$menuitem.find( '.item-edit' ).attr( 'aria-expanded', 'false' );
 				$inside.slideUp( 'fast', complete );
 			}
 		},
