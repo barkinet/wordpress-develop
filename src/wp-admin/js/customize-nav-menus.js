@@ -1,7 +1,7 @@
 /* global _wpCustomizeNavMenusSettings, wpNavMenu, console */
 ( function( api, wp, $ ) {
 	'use strict';
-
+console.log( JSON.stringify( api ) );
 	/**
 	 * Set up wpNavMenu for drag and drop.
 	 */
