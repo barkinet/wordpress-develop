@@ -1,4 +1,44 @@
 /* global wp */
+
+jQuery( function( $ ) {
+
+	var api = wp.customize;
+	module( 'Customize Nav Menus', {
+		setup: function() {
+			// Init the menus?
+
+		},
+		teardown: function() {
+			// Maybe restore things?
+		}
+
+	});
+
+	test( 'jQuery is not WordPress', function() {
+		notEqual( $, wp );
+	});
+	$.extend( api.Menus.data, window._wpCustomizeMenusSettings );
+
+	/**
+	 * Generate 10 ids and verify they are all unique.
+	 */
+	test( 'generatePlaceholderAutoIncrementId generates unique IDs', function() {
+		var testIterations = 10;
+
+		while( testIterations-- > 0 ) {
+
+			var placeholderID = api.Menus.generatePlaceholderAutoIncrementId(),
+				placeholderID2 = api.Menus.generatePlaceholderAutoIncrementId();
+
+			notEqual ( placeholderID, placeholderID2, 'generatePlaceholderAutoIncrementId IDs unique.' );
+		}
+
+	});
+
+
+
+});
+/* global wp */
 jQuery( function( ) {
 
 	var api = wp.customize,
