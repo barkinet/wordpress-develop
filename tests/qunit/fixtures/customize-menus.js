@@ -1,4 +1,4 @@
-window._wpCustomizeMenusSettings = {
+window._wpCustomizeNavMenusSettings = {
 	'nonce': 'yo',
 	'phpIntMax': '2147483647',
 	'menuItemTransport': 'postMessage',
@@ -120,6 +120,7 @@ window.wpNavMenu = {
 	"isRTL": false,
 	"negateIfRTL": 1
 }
+
 window._wpCustomizeNavMenusSettings = {
 	'nonce': 'yo',
 	'phpIntMax': '2147483647',

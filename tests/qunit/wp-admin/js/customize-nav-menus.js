@@ -1,12 +1,12 @@
 /* global wp */
-
 jQuery( function( $ ) {
 
 	var api = wp.customize;
 	module( 'Customize Nav Menus', {
 		setup: function() {
 			// Init the menus?
-
+			//wp.customize.HeaderTool.currentHeader = new wp.customize.HeaderTool.ImageModel();
+			//console.log( api.Menus.availableMenuItems );
 		},
 		teardown: function() {
 			// Maybe restore things?
@@ -14,27 +14,28 @@ jQuery( function( $ ) {
 
 	});
 
-	test( 'jQuery is not WordPress', function() {
-		notEqual( $, wp );
-	});
-	$.extend( api.Menus.data, window._wpCustomizeMenusSettings );
+	//$.extend( api.Menus.data, window._wpCustomizeMenusSettings );
 
 	/**
-	 * Generate 10 ids and verify they are all unique.
+	 * Generate 20 ids and verify they are all unique.
 	 */
 	test( 'generatePlaceholderAutoIncrementId generates unique IDs', function() {
-		var testIterations = 10;
+		var testIterations = 20,
+			ids = [ api.Menus.generatePlaceholderAutoIncrementId() ];
 
 		while( testIterations-- > 0 ) {
 
-			var placeholderID = api.Menus.generatePlaceholderAutoIncrementId(),
-				placeholderID2 = api.Menus.generatePlaceholderAutoIncrementId();
+			var placeholderID = api.Menus.generatePlaceholderAutoIncrementId();
 
-			notEqual ( placeholderID, placeholderID2, 'generatePlaceholderAutoIncrementId IDs unique.' );
+			ok( -1 === ids.indexOf( placeholderID ) );
+			ids.push( placeholderID );
 		}
 
-	});
+	} );
 
+	test( 'it should parse _wpCustomizeMenusSettings.defaults into itself', function() {
+		deepEqual( _wpCustomizeNavMenusSettings, api.Menus.data );
+	});
 
 
 });
