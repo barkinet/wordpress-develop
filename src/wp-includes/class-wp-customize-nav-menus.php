@@ -880,14 +880,40 @@ final class WP_Customize_Nav_Menus {
 	 */
 	public function filter_wp_nav_menu( $nav_menu_content, $args ) {
 		if ( ! empty( $args->can_partial_refresh ) && ! empty( $args->instance_number ) ) {
-			$nav_menu_content = preg_replace(
-				'/(?<=class=")/',
-				sprintf( 'partial-refreshable-nav-menu partial-refreshable-nav-menu-%1$d ', $args->instance_number ),
+			$this->_insertion_menu_class_name = sprintf( 'partial-refreshable-nav-menu partial-refreshable-nav-menu-%1$d', $args->instance_number );
+			$nav_menu_content = preg_replace_callback(
+				'/<[^>]+>/',
+				array( $this, '_replace_nav_menu_element_class_name' ),
 				$nav_menu_content,
 				1 // Only update the class on the first element found, the menu container.
 			);
 		}
 		return $nav_menu_content;
+	}
+
+	/**
+	 * This is used in a preg_replace_callback() call since we cannot use closures yet.
+	 *
+	 * @var string
+	 */
+	protected $_insertion_menu_class_name;
+
+	/**
+	 * Method for preg_replace_callback() in WP_Customize_Nav_Menus::filter_wp_nav_menu().
+	 *
+	 * @param array $matches
+	 * @return string
+	 *
+	 * @see WP_Customize_Nav_Menus::filter_wp_nav_menu()
+	 */
+	protected function _replace_nav_menu_element_class_name( $matches ) {
+		$start_tag = rtrim( $matches[0], '>' );
+		$count = 0;
+		$start_tag = preg_replace( '/(?<= class=["\'])/', esc_attr( " $this->_insertion_menu_class_name " ), $start_tag, 1, $count );
+		if ( 0 === $count ) {
+			$start_tag .= sprintf( ' class="%s" ', esc_attr( $this->_insertion_menu_class_name ) );
+		}
+		return $start_tag . '>';
 	}
 
 	/**
