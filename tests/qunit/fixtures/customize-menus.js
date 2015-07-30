@@ -109,58 +109,58 @@ window._wpCustomizeSettings.panels.nav_menus = {
 	'instanceNumber': 2
 };
 
-window._wpCustomizeSettings.sections = {
-  'menu_locations': {
-    'id': 'menu_locations',
-    'description': '<p>Your theme contains 1 menu location. Select which menu you would like to use.<\/p><p>You can also place menus in widget areas with the Custom Menu widget.<\/p>',
-    'priority': 5,
-    'panel': 'nav_menus',
-    'type': 'default',
-    'title': 'Menu Locations',
-    'content': '',
-    'active': true,
-    'instanceNumber': 13,
-    'customizeAction': 'Customizing &#9656; Menus'
-  },
-  'nav_menu[3]': {
-    'id': 'nav_menu[3]',
-    'description': '',
-    'priority': 10,
-    'panel': 'nav_menus',
-    'type': 'nav_menu',
-    'title': 'Cool Menu',
-    'content': '',
-    'active': true,
-    'instanceNumber': 15,
-    'customizeAction': 'Customizing &#9656; Menus',
-    'menu_id': 3
-  },
-  'nav_menu[2]': {
-    'id': 'nav_menu[2]',
-    'description': '',
-    'priority': 10,
-    'panel': 'nav_menus',
-    'type': 'nav_menu',
-    'title': 'Awesome menu',
-    'content': '',
-    'active': true,
-    'instanceNumber': 14,
-    'customizeAction': 'Customizing &#9656; Menus',
-    'menu_id': 2
-  },
-  'add_menu': {
-    'id': 'add_menu',
-    'description': '',
-    'priority': 999,
-    'panel': 'nav_menus',
-    'type': 'new_menu',
-    'title': 'Add a Menu',
-    'content': '<li id="accordion-section-add_menu" class="accordion-section-new-menu">\n\t\t\t<button type="button" class="button-secondary add-new-menu-item add-menu-toggle" aria-expanded="false">\n\t\t\t\tAdd a Menu\t\t\t<\/button>\n\t\t\t<ul class="new-menu-section-content"><\/ul>\n\t\t<\/li>',
-    'active': true,
-    'instanceNumber': 16,
-    'customizeAction': 'Customizing &#9656; Menus'
-  }
-};
+jQuery.extend( window._wpCustomizeSettings.sections, {
+	'menu_locations': {
+		'id': 'menu_locations',
+		'description': '<p>Your theme contains 1 menu location. Select which menu you would like to use.<\/p><p>You can also place menus in widget areas with the Custom Menu widget.<\/p>',
+		'priority': 5,
+		'panel': 'nav_menus',
+		'type': 'default',
+		'title': 'Menu Locations',
+		'content': '',
+		'active': true,
+		'instanceNumber': 13,
+		'customizeAction': 'Customizing &#9656; Menus'
+	},
+	'nav_menu[3]': {
+		'id': 'nav_menu[3]',
+		'description': '',
+		'priority': 10,
+		'panel': 'nav_menus',
+		'type': 'nav_menu',
+		'title': 'Cool Menu',
+		'content': '',
+		'active': true,
+		'instanceNumber': 15,
+		'customizeAction': 'Customizing &#9656; Menus',
+		'menu_id': 3
+	},
+	'nav_menu[2]': {
+		'id': 'nav_menu[2]',
+		'description': '',
+		'priority': 10,
+		'panel': 'nav_menus',
+		'type': 'nav_menu',
+		'title': 'Awesome menu',
+		'content': '',
+		'active': true,
+		'instanceNumber': 14,
+		'customizeAction': 'Customizing &#9656; Menus',
+		'menu_id': 2
+	},
+	'add_menu': {
+		'id': 'add_menu',
+		'description': '',
+		'priority': 999,
+		'panel': 'nav_menus',
+		'type': 'new_menu',
+		'title': 'Add a Menu',
+		'content': '<li id="accordion-section-add_menu" class="accordion-section-new-menu">\n\t\t\t<button type="button" class="button-secondary add-new-menu-item add-menu-toggle" aria-expanded="false">\n\t\t\t\tAdd a Menu\t\t\t<\/button>\n\t\t\t<ul class="new-menu-section-content"><\/ul>\n\t\t<\/li>',
+		'active': true,
+		'instanceNumber': 16,
+		'customizeAction': 'Customizing &#9656; Menus'
+	}
+} );
 
 window.wpNavMenu = {
 	'options': {
