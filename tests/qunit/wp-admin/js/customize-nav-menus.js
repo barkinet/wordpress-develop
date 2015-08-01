@@ -1,7 +1,9 @@
 /* global wp */
 jQuery( function( $ ) {
 
-	var api = wp.customize;
+	var api = wp.customize,
+		primaryMenuId = 3,
+		socialMenuId = 2;
 
 	module( 'Customize Nav Menus' );
 
@@ -27,7 +29,11 @@ jQuery( function( $ ) {
 	} );
 
 	test( 'empty menus should have no Menu Item Controls', function() {
-		equal( $.isEmptyObject( wp.customize.Menus.getMenuControl( '2' ).getMenuItemControls() ), true, 'empty menus' );
+		ok( 0 === wp.customize.Menus.getMenuControl( socialMenuId ).getMenuItemControls().length, 'empty menus' );
+	} );
+
+	test( 'populated menus should have no Menu Item Controls', function() {
+		ok( 0 !== wp.customize.Menus.getMenuControl( primaryMenuId ).getMenuItemControls().length, 'non-empty menus' );
 	} );
 
 } );
