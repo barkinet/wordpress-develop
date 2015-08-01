@@ -136,7 +136,7 @@ window._wpCustomizeControlsL10n = {};
 
 jQuery.ajaxSetup( {
 	beforeSend: function( e, data ) {
-		if ( data.data.indexOf( 'wp_customize' ) !== -1 ) {
+		if ( data.url.indexOf( '//example.org' ) !== -1 ) {
 			return false;
 		}
 	}
