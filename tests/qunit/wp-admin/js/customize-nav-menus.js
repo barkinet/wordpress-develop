@@ -36,4 +36,20 @@ jQuery( function( $ ) {
 		ok( 0 !== wp.customize.Menus.getMenuControl( primaryMenuId ).getMenuItemControls().length, 'non-empty menus' );
 	} );
 
+	// @todo Add tests for api.Menus.AvailableMenuItemsPanelView (and api.Menus.AvailableItemCollection, api.Menus.AvailableItemCollection, api.Menus.AvailableItemModel)
+
+	// @todo Add tests for api.Menus.MenusPanel
+	// @todo Add tests for api.Menus.MenuSection
+	// @todo Add tests for api.Menus.NewMenuSection
+	// @todo Add tests for api.Menus.MenuLocationControl
+	// @todo Add tests for api.Menus.MenuItemControl
+	// @todo Add tests for api.Menus.MenuNameControl
+	// @todo Add tests for api.Menus.MenuAutoAddControl
+	// @todo Add tests for api.Menus.MenuControl
+	// @todo Add tests for api.Menus.NewMenuControl
+	// @todo Add tests for api.Menus.applySavedData
+	// @todo Add tests for api.Menus.focusMenuItemControl
+	// @todo Add tests for api.Menus.getMenuControl
+	// @todo Add tests for api.Menus.getMenuItemControl
+
 } );
