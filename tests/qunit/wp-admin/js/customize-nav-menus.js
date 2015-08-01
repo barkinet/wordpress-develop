@@ -1,23 +1,9 @@
 /* global wp */
 jQuery( function( $ ) {
 
-	var api = wp.customize,
-		settings = window._wpCustomizeNavMenusSettings,
-		navMenu = window.wpNavMenu,
-		customizeSettings = window._wpCustomizeSettings;
+	var api = wp.customize;
 
-	module( 'Customize Nav Menus', {
-		setup: function() {
-			window._wpCustomizeNavMenusSettings = settings;
-			window.wpNavMenu = navMenu;
-			wp.customize.trigger( 'ready' );
-		},
-		teardown: function() {
-			window._wpCustomizeNavMenusSettings = {};
-			window.wpNavMenu = {};
-			window._wpCustomizeSettings = customizeSettings;
-		}
-	} );
+	module( 'Customize Nav Menus' );
 
 	/**
 	 * Generate 20 ids and verify they are all unique.
