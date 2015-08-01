@@ -276,7 +276,7 @@ window._wpCustomizeSettings.settings['nav_menu_item[2001]'] = {
 		],
 		'description': '',
 		'menu_item_parent': 0,
-		'nav_menu_term_id': 59,
+		'nav_menu_term_id': 3,
 		'object': 'custom',
 		'object_id': 2001,
 		'original_title': '',
@@ -290,7 +290,6 @@ window._wpCustomizeSettings.settings['nav_menu_item[2001]'] = {
 		'xfn': ''
 	}
 };
-
 window._wpCustomizeSettings.controls['nav_menu_item[2001]'] = {
 	'active': true,
 	'attr_title': '',
