@@ -214,26 +214,6 @@ window._wpCustomizeSettings.settings['nav_menu[2]'] = {
 	'dirty': false
 };
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 // Menu items
 window._wpCustomizeSettings.settings['nav_menu_item[2000]'] = {
 	'dirty': false,
@@ -285,8 +265,6 @@ window._wpCustomizeSettings.controls['nav_menu_item[2000]'] = {
 	'url': 'http://src.wordpress-develop.dev/sample-page/',
 	'xfn': ''
 };
-
-
 
 window._wpCustomizeSettings.settings['nav_menu_item[2001]'] = {
 	'dirty': false,
@@ -340,7 +318,6 @@ window._wpCustomizeSettings.controls['nav_menu_item[2001]'] = {
 	'xfn': ''
 };
 
-
 window._wpCustomizeSettings.settings['nav_menu_item[2002]'] = {
 	'dirty': false,
 	'transport': 'postMessage',
@@ -390,33 +367,6 @@ window._wpCustomizeSettings.controls['nav_menu_item[2002]'] = {
 	'xfn': ''
 };
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 // Meta controls
 window._wpCustomizeSettings.sections.add_menu = {
 	'id': 'add_menu',
@@ -459,4 +409,3 @@ window.wpNavMenu = {
 	'isRTL': false,
 	'negateIfRTL': 1
 };
-
