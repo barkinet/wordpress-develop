@@ -49,7 +49,17 @@ jQuery( function( $ ) {
 	// @todo Add tests for api.Menus.NewMenuControl
 	// @todo Add tests for api.Menus.applySavedData
 	// @todo Add tests for api.Menus.focusMenuItemControl
-	// @todo Add tests for api.Menus.getMenuControl
-	// @todo Add tests for api.Menus.getMenuItemControl
+
+	test( 'api.Menus.getMenuControl() should return the expected control', function() {
+		var control = api.Menus.getMenuControl( primaryMenuId );
+		ok( !! control, 'control is returned' );
+		ok( control.extended( api.Menus.MenuControl ), 'control is a MenuControl' );
+	} );
+
+	test( 'api.Menus.getMenuItemControl() should return the expected control', function() {
+		var control = api.Menus.getMenuItemControl( 2000 );
+		ok( !! control, 'control is returned' );
+		ok( control.extended( api.Menus.MenuItemControl ), 'control is a MenuItemControl' );
+	} );
 
 } );
