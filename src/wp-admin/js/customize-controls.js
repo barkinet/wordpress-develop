@@ -61,7 +61,6 @@
 	 *
 	 * @param {Object}   [params]
 	 * @param {Callback} [params.completeCallback]
-	 * @param {noScroll} [params.noScroll]
 	 */
 	focus = function ( params ) {
 		var construct, completeCallback, focus;
@@ -74,10 +73,9 @@
 			} else {
 				focusContainer = construct.container;
 			}
-			focusContainer.find( ':focusable:first' ).focus();
-			if ( ! params.noScroll ) {
-				focusContainer[0].scrollIntoView( true );
-			}
+
+			// Note that we can't use :focusable due to a jQuery UI issue. See: https://github.com/jquery/jquery-ui/pull/1583
+			focusContainer.find( 'input, select, textarea, button, object, a[href], [tabindex]' ).filter( ':visible' ).first().focus();
 		};
 		if ( params.completeCallback ) {
 			completeCallback = params.completeCallback;
@@ -3246,9 +3244,7 @@
 				instance.deferred.embedded.done( function () {
 					// Wait until the preview has activated and so active panels, sections, controls have been set
 					api.previewer.deferred.active.done( function () {
-						instance.focus({
-							noScroll: true
-						});
+						instance.focus();
 					});
 				});
 			}
