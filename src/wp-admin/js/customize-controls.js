@@ -61,6 +61,7 @@
 	 *
 	 * @param {Object}   [params]
 	 * @param {Callback} [params.completeCallback]
+	 * @param {noScroll} [params.noScroll]
 	 */
 	focus = function ( params ) {
 		var construct, completeCallback, focus;
@@ -74,7 +75,9 @@
 				focusContainer = construct.container;
 			}
 			focusContainer.find( ':focusable:first' ).focus();
-			focusContainer[0].scrollIntoView( true );
+			if ( ! params.noScroll ) {
+				focusContainer[0].scrollIntoView( true );
+			}
 		};
 		if ( params.completeCallback ) {
 			completeCallback = params.completeCallback;
@@ -586,7 +589,7 @@
 				overlay = section.container.closest( '.wp-full-overlay' ),
 				backBtn = section.container.find( '.customize-section-back' ),
 				sectionTitle = section.container.find( '.accordion-section-title' ).first(),
-				expand;
+				expand, sizing;
 
 			if ( expanded && ! section.container.hasClass( 'open' ) ) {
 
@@ -594,7 +597,7 @@
 					expand = args.completeCallback;
 				} else {
 					container.scrollTop( 0 );
-					expand = function () {
+					sizing = function() {
 						var matchMedia, offset;
 						matchMedia = window.matchMedia || window.msMatchMedia;
 						offset = 90; // 45px for customize header actions + 45px for footer actions.
@@ -603,19 +606,22 @@
 						if ( matchMedia && matchMedia( '(max-width: 640px)' ).matches ) {
 							offset = 45;
 						}
-
+						content.css( 'height', ( window.innerHeight - offset ) );
+					};
+					expand = function () {
 						section.container.addClass( 'open' );
 						overlay.addClass( 'section-open' );
+						sectionTitle.attr( 'tabindex', '-1' );
+						backBtn.attr( 'tabindex', '0' );
+						sizing();
 						position = content.offset().top;
 						scroll = container.scrollTop();
 						content.css( 'margin-top', ( 45 - position - scroll ) );
-						content.css( 'height', ( window.innerHeight - offset ) );
-						sectionTitle.attr( 'tabindex', '-1' );
-						backBtn.attr( 'tabindex', '0' );
 						backBtn.focus();
 						if ( args.completeCallback ) {
 							args.completeCallback();
 						}
+						$( window ).on( 'resize.customizer-section', _.debounce( sizing, 100 ) );
 					};
 				}
 
@@ -639,7 +645,7 @@
 			} else if ( ! expanded && section.container.hasClass( 'open' ) ) {
 				section.container.removeClass( 'open' );
 				overlay.removeClass( 'section-open' );
-				content.css( 'margin-top', 'inherit' );
+				content.css( 'margin-top', '' );
 				container.scrollTop( 0 );
 				backBtn.attr( 'tabindex', '-1' );
 				sectionTitle.attr( 'tabindex', '0' );
@@ -647,6 +653,7 @@
 				if ( args.completeCallback ) {
 					args.completeCallback();
 				}
+				$( window ).off( 'resize.customizer-section' );
 			} else {
 				if ( args.completeCallback ) {
 					args.completeCallback();
@@ -3239,7 +3246,9 @@
 				instance.deferred.embedded.done( function () {
 					// Wait until the preview has activated and so active panels, sections, controls have been set
 					api.previewer.deferred.active.done( function () {
-						instance.focus();
+						instance.focus({
+							noScroll: true
+						});
 					});
 				});
 			}
