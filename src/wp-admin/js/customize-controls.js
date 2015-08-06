@@ -68,8 +68,8 @@
 		params = params || {};
 		focus = function () {
 			var focusContainer;
-			if ( construct.extended( api.Panel ) && construct.expanded() ) {
-				focusContainer = construct.container.find( '.control-panel-content:first' );
+			if ( construct.expanded && construct.expanded() ) {
+				focusContainer = construct.container.find( 'ul:first' );
 			} else {
 				focusContainer = construct.container;
 			}
