@@ -2607,7 +2607,11 @@
 				_( constructs ).each( function ( activeConstructs, type ) {
 					api[ type ].each( function ( construct, id ) {
 						var active = !! ( activeConstructs && activeConstructs[ id ] );
-						construct.active( active );
+						if ( active ) {
+							construct.activate();
+						} else {
+							construct.deactivate();
+						}
 					} );
 				} );
 			} );
