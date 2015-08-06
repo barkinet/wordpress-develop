@@ -1270,9 +1270,7 @@
 
 			if ( expanded ) {
 
-				if ( 'undefined' != typeof api.section( self.section ) && ! api.section( self.section ).expanded() ) {
-					self.expandControlSection();
-				}
+				self.expandControlSection();
 
 				// Close all other widget controls before expanding this one
 				api.control.each( function( otherControl ) {
