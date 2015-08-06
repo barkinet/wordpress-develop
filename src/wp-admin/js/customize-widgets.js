@@ -1270,7 +1270,9 @@
 
 			if ( expanded ) {
 
-				self.expandControlSection();
+				if ( self.section() && api.section( self.section() ) ) {
+					self.expandControlSection();
+				}
 
 				// Close all other widget controls before expanding this one
 				api.control.each( function( otherControl ) {
