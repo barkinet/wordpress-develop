@@ -620,6 +620,7 @@
 							args.completeCallback();
 						}
 						$( window ).on( 'resize.customizer-section', _.debounce( sizing, 100 ) );
+						api.bind( 'pane-contents-reflowed', sizing );
 					};
 				}
 
