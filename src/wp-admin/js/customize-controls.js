@@ -581,13 +581,14 @@
 		 * @param {Object}  args
 		 */
 		onChangeExpanded: function ( expanded, args ) {
-			var position, scroll, section = this,
+			var section = this,
 				container = section.container.closest( '.wp-full-overlay-sidebar-content' ),
 				content = section.container.find( '.accordion-section-content' ),
 				overlay = section.container.closest( '.wp-full-overlay' ),
 				backBtn = section.container.find( '.customize-section-back' ),
 				sectionTitle = section.container.find( '.accordion-section-title' ).first(),
-				expand, sizing;
+				actions = $( '#customize-header-actions' ).height(),
+				sizing, expand, position, scroll;
 
 			if ( expanded && ! section.container.hasClass( 'open' ) ) {
 
@@ -606,21 +607,30 @@
 						}
 						content.css( 'height', ( window.innerHeight - offset ) );
 					};
-					expand = function () {
+					expand = function() {
 						section.container.addClass( 'open' );
 						overlay.addClass( 'section-open' );
-						sectionTitle.attr( 'tabindex', '-1' );
-						backBtn.attr( 'tabindex', '0' );
 						position = content.offset().top;
 						scroll = container.scrollTop();
-						content.css( 'margin-top', ( $( '#customize-header-actions' ).height() - position - scroll ) );
+						content.css( 'margin-top', ( actions - position - scroll ) );
 						sizing();
+						sectionTitle.attr( 'tabindex', '-1' );
+						backBtn.attr( 'tabindex', '0' );
 						backBtn.focus();
 						if ( args.completeCallback ) {
 							args.completeCallback();
 						}
+
+						// Fix the height after browser resize.
 						$( window ).on( 'resize.customizer-section', _.debounce( sizing, 100 ) );
-						api.bind( 'pane-contents-reflowed', sizing );
+
+						// Fix the top margin after reflow.
+						api.bind( 'pane-contents-reflowed', _.debounce( function() {
+							var offset = ( content.offset().top - actions );
+							if ( 0 < offset ) {
+								content.css( 'margin-top', ( parseInt( content.css( 'margin-top' ), 10 ) - offset ) );
+							}
+						}, 100 ) );
 					};
 				}
 
@@ -1240,7 +1250,8 @@
 				topPanel = overlay.find( '#customize-theme-controls > ul > .accordion-section > .accordion-section-title' ),
 				backBtn = section.find( '.customize-panel-back' ),
 				panelTitle = section.find( '.accordion-section-title' ).first(),
-				content = section.find( '.control-panel-content' );
+				content = section.find( '.control-panel-content' ),
+				actions = $( '#customize-header-actions' ).height();
 
 			if ( expanded ) {
 
@@ -1260,7 +1271,7 @@
 					content.parent().show();
 					position = content.offset().top;
 					scroll = container.scrollTop();
-					content.css( 'margin-top', ( $( '#customize-header-actions' ).height() - position - scroll ) );
+					content.css( 'margin-top', ( actions - position - scroll ) );
 					section.addClass( 'current-panel' );
 					overlay.addClass( 'in-sub-panel' );
 					container.scrollTop( 0 );
@@ -1271,6 +1282,11 @@
 				topPanel.attr( 'tabindex', '-1' );
 				backBtn.attr( 'tabindex', '0' );
 				backBtn.focus();
+
+				// Fix the top margin after reflow.
+				api.bind( 'pane-contents-reflowed', _.debounce( function() {
+					content.css( 'margin-top', ( parseInt( content.css( 'margin-top' ), 10 ) - ( content.offset().top - actions ) ) );
+				}, 100 ) );
 			} else {
 				siblings.removeClass( 'open' );
 				section.removeClass( 'current-panel' );
