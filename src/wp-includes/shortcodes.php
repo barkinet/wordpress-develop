@@ -359,6 +359,11 @@ function do_shortcodes_in_html_tags( $content, $ignore_html ) {
 
 		$attributes = wp_kses_attr_parse( $element );
 		if ( false === $attributes ) {
+			// Some plugins are doing things like [name] <[email]>.
+			if ( 1 === preg_match( '%^<\s*\[\[?[^\[\]]+\]%', $element ) ) {
+				$element = preg_replace_callback( "/$pattern/s", 'do_shortcode_tag', $element );
+			}
+
 			// Looks like we found some crazy unfiltered HTML.  Skipping it for sanity.
 			$element = strtr( $element, $trans );
 			continue;
@@ -394,7 +399,7 @@ function do_shortcodes_in_html_tags( $content, $ignore_html ) {
 				if ( $count > 0 ) {
 					// Sanitize the shortcode output using KSES.
 					$new_attr = wp_kses_one_attr( $new_attr, $elname );
-					if ( '' !== $new_attr ) {
+					if ( '' !== trim( $new_attr ) ) {
 						// The shortcode is safe to use now.
 						$attr = $new_attr;
 					}
