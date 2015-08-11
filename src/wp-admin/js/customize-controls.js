@@ -587,8 +587,8 @@
 				overlay = section.container.closest( '.wp-full-overlay' ),
 				backBtn = section.container.find( '.customize-section-back' ),
 				sectionTitle = section.container.find( '.accordion-section-title' ).first(),
-				actions = $( '#customize-header-actions' ).height(),
-				sizing, expand, position, scroll;
+				headerActionsHeight = $( '#customize-header-actions' ).height(),
+				resizeContentHeight, expand, position, scroll;
 
 			if ( expanded && ! section.container.hasClass( 'open' ) ) {
 
@@ -596,7 +596,7 @@
 					expand = args.completeCallback;
 				} else {
 					container.scrollTop( 0 );
-					sizing = function() {
+					resizeContentHeight = function() {
 						var matchMedia, offset;
 						matchMedia = window.matchMedia || window.msMatchMedia;
 						offset = 90; // 45px for customize header actions + 45px for footer actions.
@@ -612,8 +612,8 @@
 						overlay.addClass( 'section-open' );
 						position = content.offset().top;
 						scroll = container.scrollTop();
-						content.css( 'margin-top', ( actions - position - scroll ) );
-						sizing();
+						content.css( 'margin-top', ( headerActionsHeight - position - scroll ) );
+						resizeContentHeight();
 						sectionTitle.attr( 'tabindex', '-1' );
 						backBtn.attr( 'tabindex', '0' );
 						backBtn.focus();
@@ -622,11 +622,11 @@
 						}
 
 						// Fix the height after browser resize.
-						$( window ).on( 'resize.customizer-section', _.debounce( sizing, 100 ) );
+						$( window ).on( 'resize.customizer-section', _.debounce( resizeContentHeight, 100 ) );
 
 						// Fix the top margin after reflow.
 						api.bind( 'pane-contents-reflowed', _.debounce( function() {
-							var offset = ( content.offset().top - actions );
+							var offset = ( content.offset().top - headerActionsHeight );
 							if ( 0 < offset ) {
 								content.css( 'margin-top', ( parseInt( content.css( 'margin-top' ), 10 ) - offset ) );
 							}
@@ -1251,7 +1251,7 @@
 				backBtn = section.find( '.customize-panel-back' ),
 				panelTitle = section.find( '.accordion-section-title' ).first(),
 				content = section.find( '.control-panel-content' ),
-				actions = $( '#customize-header-actions' ).height();
+				headerActionsHeight = $( '#customize-header-actions' ).height();
 
 			if ( expanded ) {
 
@@ -1271,7 +1271,7 @@
 					content.parent().show();
 					position = content.offset().top;
 					scroll = container.scrollTop();
-					content.css( 'margin-top', ( actions - position - scroll ) );
+					content.css( 'margin-top', ( headerActionsHeight - position - scroll ) );
 					section.addClass( 'current-panel' );
 					overlay.addClass( 'in-sub-panel' );
 					container.scrollTop( 0 );
@@ -1285,7 +1285,7 @@
 
 				// Fix the top margin after reflow.
 				api.bind( 'pane-contents-reflowed', _.debounce( function() {
-					content.css( 'margin-top', ( parseInt( content.css( 'margin-top' ), 10 ) - ( content.offset().top - actions ) ) );
+					content.css( 'margin-top', ( parseInt( content.css( 'margin-top' ), 10 ) - ( content.offset().top - headerActionsHeight ) ) );
 				}, 100 ) );
 			} else {
 				siblings.removeClass( 'open' );
