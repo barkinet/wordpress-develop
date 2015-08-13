@@ -697,83 +697,69 @@ final class WP_Customize_Nav_Menus {
 	 */
 	public function available_items_template() {
 		?>
-		<div id="available-menu-items" class="accordion-container">
-			<div class="customize-section-title">
-				<button type="button" class="customize-section-back" tabindex="-1">
-					<span class="screen-reader-text"><?php _e( 'Back' ); ?></span>
-				</button>
-				<h3>
-					<span class="customize-action">
-						<?php
-							/* translators: &#9656; is the unicode right-pointing triangle, and %s is the section title in the Customizer */
-							printf( __( 'Customizing &#9656; %s' ), esc_html( $this->manager->get_panel( 'nav_menus' )->title ) );
-						?>
-					</span>
-					<?php _e( 'Add Menu Items' ); ?>
-				</h3>
-			</div>
+		<div id="available-menu-items">
 			<div id="available-menu-items-search" class="accordion-section cannot-expand">
-				<div class="was-accordion-section-title">
-					<label class="screen-reader-text" for="menu-items-search"><?php _e( 'Search Menu Items' ); ?></label>
-					<input type="text" id="menu-items-search" placeholder="<?php esc_attr_e( 'Search menu items&hellip;' ) ?>" aria-describedby="menu-items-search-desc" />
-					<p class="screen-reader-text" id="menu-items-search-desc"><?php _e( 'The search results will be updated as you type.' ); ?></p>
-					<span class="spinner"></span>
-					<button type="button" class="clear-results not-a-button"><span class="screen-reader-text"><?php _e( 'Clear Results' ); ?></span></button>
-				</div>
+				<label class="screen-reader-text" for="menu-items-search"><?php _e( 'Search Menu Items' ); ?></label>
+				<input type="text" id="menu-items-search" placeholder="<?php esc_attr_e( 'Search menu items&hellip;' ) ?>" aria-describedby="menu-items-search-desc" />
+				<p class="screen-reader-text" id="menu-items-search-desc"><?php _e( 'The search results will be updated as you type.' ); ?></p>
+				<span class="spinner"></span>
+				<button type="button" class="clear-results not-a-button"><span class="screen-reader-text"><?php _e( 'Clear Results' ); ?></span></button>
 				<ul class="accordion-section-content" data-type="search"></ul>
 			</div>
-			<div id="new-custom-menu-item" class="accordion-section">
-				<h4 class="accordion-section-title" role="presentation">
-					<?php _e( 'Custom Links' ); ?>
-					<button type="button" class="not-a-button" aria-expanded="false">
-						<span class="screen-reader-text"><?php _e( 'Toggle section: Custom Links' ); ?></span>
-						<span class="toggle-indicator" aria-hidden="true"></span>
-					</button>
-				</h4>
-				<div class="accordion-section-content">
-					<input type="hidden" value="custom" id="custom-menu-item-type" name="menu-item[-1][menu-item-type]" />
-					<p id="menu-item-url-wrap">
-						<label class="howto" for="custom-menu-item-url">
-							<span><?php _e( 'URL' ); ?></span>
-							<input id="custom-menu-item-url" name="menu-item[-1][menu-item-url]" type="text" class="code menu-item-textbox" value="http://">
-						</label>
-					</p>
-					<p id="menu-item-name-wrap">
-						<label class="howto" for="custom-menu-item-name">
-							<span><?php _e( 'Link Text' ); ?></span>
-							<input id="custom-menu-item-name" name="menu-item[-1][menu-item-title]" type="text" class="regular-text menu-item-textbox">
-						</label>
-					</p>
-					<p class="button-controls">
-						<span class="add-to-menu">
-							<input type="submit" class="button-secondary submit-add-to-menu right" value="<?php esc_attr_e( 'Add to Menu' ); ?>" name="add-custom-menu-item" id="custom-menu-item-submit">
-							<span class="spinner"></span>
-						</span>
-					</p>
-				</div>
-			</div>
-			<?php
-			// Containers for per-post-type item browsing; items added with JS.
-			foreach ( $this->available_item_types() as $available_item_type ) {
-				$id = sprintf( 'available-menu-items-%s-%s', $available_item_type['type'], $available_item_type['object'] );
-				?>
-				<div id="<?php echo esc_attr( $id ); ?>" class="accordion-section">
+			<div class="accordion-container">
+				<div id="new-custom-menu-item" class="accordion-section">
 					<h4 class="accordion-section-title" role="presentation">
-						<?php echo esc_html( $available_item_type['title'] ); ?>
-						<span class="spinner"></span>
-						<span class="no-items"><?php _e( 'No items' ); ?></span>
+						<?php _e( 'Custom Links' ); ?>
 						<button type="button" class="not-a-button" aria-expanded="false">
-							<span class="screen-reader-text"><?php
-							/* translators: %s: Title of a section with menu items */
-							printf( __( 'Toggle section: %s' ), esc_html( $available_item_type['title'] ) ); ?></span>
+							<span class="screen-reader-text"><?php _e( 'Toggle section: Custom Links' ); ?></span>
 							<span class="toggle-indicator" aria-hidden="true"></span>
 						</button>
 					</h4>
-					<ul class="accordion-section-content" data-type="<?php echo esc_attr( $available_item_type['type'] ); ?>" data-object="<?php echo esc_attr( $available_item_type['object'] ); ?>"></ul>
+					<div class="accordion-section-content">
+						<input type="hidden" value="custom" id="custom-menu-item-type" name="menu-item[-1][menu-item-type]" />
+						<p id="menu-item-url-wrap">
+							<label class="howto" for="custom-menu-item-url">
+								<span><?php _e( 'URL' ); ?></span>
+								<input id="custom-menu-item-url" name="menu-item[-1][menu-item-url]" type="text" class="code menu-item-textbox" value="http://">
+							</label>
+						</p>
+						<p id="menu-item-name-wrap">
+							<label class="howto" for="custom-menu-item-name">
+								<span><?php _e( 'Link Text' ); ?></span>
+								<input id="custom-menu-item-name" name="menu-item[-1][menu-item-title]" type="text" class="regular-text menu-item-textbox">
+							</label>
+						</p>
+						<p class="button-controls">
+							<span class="add-to-menu">
+								<input type="submit" class="button-secondary submit-add-to-menu right" value="<?php esc_attr_e( 'Add to Menu' ); ?>" name="add-custom-menu-item" id="custom-menu-item-submit">
+								<span class="spinner"></span>
+							</span>
+						</p>
+					</div>
 				</div>
 				<?php
-			}
-			?>
+				// Containers for per-post-type item browsing; items added with JS.
+				foreach ( $this->available_item_types() as $available_item_type ) {
+					$id = sprintf( 'available-menu-items-%s-%s', $available_item_type['type'], $available_item_type['object'] );
+					?>
+					<div id="<?php echo esc_attr( $id ); ?>" class="accordion-section">
+						<h4 class="accordion-section-title" role="presentation">
+							<?php echo esc_html( $available_item_type['title'] ); ?>
+							<span class="spinner"></span>
+							<span class="no-items"><?php _e( 'No items' ); ?></span>
+							<button type="button" class="not-a-button" aria-expanded="false">
+								<span class="screen-reader-text"><?php
+								/* translators: %s: Title of a section with menu items */
+								printf( __( 'Toggle section: %s' ), esc_html( $available_item_type['title'] ) ); ?></span>
+								<span class="toggle-indicator" aria-hidden="true"></span>
+							</button>
+						</h4>
+						<ul class="accordion-section-content" data-type="<?php echo esc_attr( $available_item_type['type'] ); ?>" data-object="<?php echo esc_attr( $available_item_type['object'] ); ?>"></ul>
+					</div>
+					<?php
+				}
+				?>
+			</div><!-- .accordion-container -->
 		</div><!-- #available-menu-items -->
 	<?php
 	}

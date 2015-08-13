@@ -366,7 +366,7 @@ class WP_Customize_Panel {
 	protected function content_template() {
 		?>
 		<li class="panel-meta customize-info accordion-section <# if ( ! data.description ) { #> cannot-expand<# } #>">
-			<button type="button" class="customize-panel-back" tabindex="-1"><span class="screen-reader-text"><?php _e( 'Back' ); ?></span></button>
+			<button class="customize-panel-back" tabindex="-1"><span class="screen-reader-text"><?php _e( 'Back' ); ?></span></button>
 			<div class="accordion-section-title">
 				<span class="preview-notice"><?php
 					/* translators: %s is the site/panel title in the Customizer */
@@ -458,7 +458,7 @@ class WP_Customize_Nav_Menus_Panel extends WP_Customize_Panel {
 			<button type="button" class="customize-panel-back" tabindex="-1">
 				<span class="screen-reader-text"><?php _e( 'Back' ); ?></span>
 			</button>
-			<div class="was-accordion-section-title">
+			<div class="accordion-section-title">
 				<span class="preview-notice">
 					<?php
 					/* Translators: %s is the site/panel title in the Customizer. */

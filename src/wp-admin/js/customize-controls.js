@@ -528,7 +528,7 @@
 			var section = this;
 
 			// Expand/Collapse accordion sections on click.
-			section.container.find( '.accordion-section-title[tabindex="0"], .customize-section-back' ).on( 'click keydown', function( event ) {
+			section.container.find( '.accordion-section-title, .customize-section-back' ).on( 'click keydown', function( event ) {
 				if ( api.utils.isKeydownButNotEnterEvent( event ) ) {
 					return;
 				}
@@ -1140,7 +1140,7 @@
 			var meta, panel = this;
 
 			// Expand/Collapse accordion sections on click.
-			panel.container.find( '.accordion-section-title[tabindex="0"]' ).on( 'click keydown', function( event ) {
+			panel.container.find( '.accordion-section-title' ).not( '.customize-info .accordion-section-title' ).on( 'click keydown', function( event ) {
 				if ( api.utils.isKeydownButNotEnterEvent( event ) ) {
 					return;
 				}
@@ -1243,8 +1243,8 @@
 				overlay = section.closest( '.wp-full-overlay' ),
 				container = section.closest( '.wp-full-overlay-sidebar-content' ),
 				siblings = container.find( '.open' ),
-				// Get the accordion sections but not the Active Theme section.
-				topPanel = overlay.find( '#customize-theme-controls > ul > .accordion-section:not(.control-section-themes)	 > .accordion-section-title' ),
+				// Get the accordion sections but not the Active Theme section, we don't need to set tabindex there.
+				topPanel = overlay.find( '#customize-theme-controls > ul > .accordion-section:not(.control-section-themes) > .accordion-section-title' ),
 				backBtn = section.find( '.customize-panel-back' ),
 				panelTitle = section.find( '.accordion-section-title' ).first(),
 				content = section.find( '.control-panel-content' ),

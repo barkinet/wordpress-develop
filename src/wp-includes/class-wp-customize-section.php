@@ -352,7 +352,7 @@ class WP_Customize_Section {
 			<ul class="accordion-section-content">
 				<li class="customize-section-description-container">
 					<div class="customize-section-title">
-						<button type="button" class="customize-section-back" tabindex="-1">
+						<button class="customize-section-back" tabindex="-1">
 							<span class="screen-reader-text"><?php _e( 'Back' ); ?></span>
 						</button>
 						<h3>
@@ -413,7 +413,7 @@ class WP_Customize_Themes_Section extends WP_Customize_Section {
 				}
 				?>
 
-				<button type="button" class="button change-theme"><?php _ex( 'Change', 'theme' ); ?></button>
+				<button type="button" class="button change-theme" tabindex="0"><?php _ex( 'Change', 'theme' ); ?></button>
 			</h3>
 			<div class="customize-themes-panel control-panel-content themes-php">
 				<h3 class="accordion-section-title customize-section-title">
