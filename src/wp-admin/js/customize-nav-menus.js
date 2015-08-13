@@ -351,11 +351,13 @@
 
 		// Adjust the height of each section of items to fit the screen.
 		itemSectionHeight: function() {
-			var sections, totalHeight, accordionHeight, diff;
+			var sections, totalHeight, accordionHeight, searchHeight, diff;
 			totalHeight = window.innerHeight;
-			sections = this.$el.find( '.accordion-section-content' );
+			searchHeight = this.$el.find( '#available-menu-items-search' ).outerHeight();
+			// Get only the actual accordions, exclude the search div.
+			sections = this.$el.find( '.accordion-container .accordion-section-content' );
 			accordionHeight =  46 * ( 1 + sections.length ) - 16; // Magic numbers.
-			diff = totalHeight - accordionHeight;
+			diff = totalHeight - accordionHeight - searchHeight;
 			if ( 120 < diff && 290 > diff ) {
 				sections.css( 'max-height', diff );
 			}
