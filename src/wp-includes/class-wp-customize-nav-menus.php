@@ -698,6 +698,20 @@ final class WP_Customize_Nav_Menus {
 	public function available_items_template() {
 		?>
 		<div id="available-menu-items">
+			<div class="customize-section-title">
+				<button type="button" class="customize-section-back" tabindex="-1">
+					<span class="screen-reader-text"><?php _e( 'Back' ); ?></span>
+				</button>
+				<h3>
+					<span class="customize-action">
+						<?php
+							/* translators: &#9656; is the unicode right-pointing triangle, and %s is the section title in the Customizer */
+							printf( __( 'Customizing &#9656; %s' ), esc_html( $this->manager->get_panel( 'nav_menus' )->title ) );
+						?>
+					</span>
+					<?php _e( 'Add Menu Items' ); ?>
+				</h3>
+			</div>
 			<div id="available-menu-items-search" class="accordion-section cannot-expand">
 				<label class="screen-reader-text" for="menu-items-search"><?php _e( 'Search Menu Items' ); ?></label>
 				<input type="text" id="menu-items-search" placeholder="<?php esc_attr_e( 'Search menu items&hellip;' ) ?>" aria-describedby="menu-items-search-desc" />
