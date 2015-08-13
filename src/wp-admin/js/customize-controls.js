@@ -1165,7 +1165,7 @@
 
 			meta = panel.container.find( '.panel-meta:first' );
 
-			meta.find( '.customize-help-toggle' ).on( 'click', function( event ) {
+			meta.find( '.customize-help-toggle' ).on( 'click', function() {
 
 				meta = panel.container.find( '.panel-meta' );
 				if ( meta.hasClass( 'cannot-expand' ) ) {
@@ -3081,7 +3081,7 @@
 		});
 
 		// Expand/Collapse the main customizer customize info.
-		$( '.customize-info' ).find( '.customize-help-toggle' ).on( 'click', function( event ) {
+		$( '.customize-info' ).find( '.customize-help-toggle' ).on( 'click', function() {
 
 			var section = $( this ).closest( '.accordion-section' ),
 				content = section.find( '.customize-panel-description:first' );
