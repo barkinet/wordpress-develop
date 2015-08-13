@@ -1140,7 +1140,7 @@
 			var meta, panel = this;
 
 			// Expand/Collapse accordion sections on click.
-			panel.container.find( '.accordion-section-title' ).not( '.customize-info .accordion-section-title' ).on( 'click keydown', function( event ) {
+			panel.container.find( '.accordion-section-title' ).on( 'click keydown', function( event ) {
 				if ( api.utils.isKeydownButNotEnterEvent( event ) ) {
 					return;
 				}
@@ -1165,7 +1165,11 @@
 
 			meta = panel.container.find( '.panel-meta:first' );
 
-			meta.find( '.customize-help-toggle' ).on( 'click', function() {
+			meta.find( '> .accordion-section-title .customize-help-toggle' ).on( 'click keydown', function( event ) {
+				if ( api.utils.isKeydownButNotEnterEvent( event ) ) {
+					return;
+				}
+				event.preventDefault(); // Keep this AFTER the key filter above
 
 				meta = panel.container.find( '.panel-meta' );
 				if ( meta.hasClass( 'cannot-expand' ) ) {
@@ -1243,8 +1247,7 @@
 				overlay = section.closest( '.wp-full-overlay' ),
 				container = section.closest( '.wp-full-overlay-sidebar-content' ),
 				siblings = container.find( '.open' ),
-				// Get the accordion sections but not the Active Theme section, we don't need to set tabindex there.
-				topPanel = overlay.find( '#customize-theme-controls > ul > .accordion-section:not(.control-section-themes) > .accordion-section-title' ),
+				topPanel = overlay.find( '#customize-theme-controls > ul > .accordion-section > .accordion-section-title' ),
 				backBtn = section.find( '.customize-panel-back' ),
 				panelTitle = section.find( '.accordion-section-title' ).first(),
 				content = section.find( '.control-panel-content' ),
@@ -3082,7 +3085,11 @@
 		});
 
 		// Expand/Collapse the main customizer customize info.
-		$( '.customize-info' ).find( '.customize-help-toggle' ).on( 'click', function() {
+		$( '.customize-info' ).find( '> .accordion-section-title .customize-help-toggle' ).on( 'click keydown', function( event ) {
+			if ( api.utils.isKeydownButNotEnterEvent( event ) ) {
+				return;
+			}
+			event.preventDefault(); // Keep this AFTER the key filter above
 
 			var section = $( this ).closest( '.accordion-section' ),
 				content = section.find( '.customize-panel-description:first' );

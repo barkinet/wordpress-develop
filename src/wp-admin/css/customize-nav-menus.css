@@ -1,4 +1,4 @@
-	#accordion-section-menu_locations {
+#accordion-section-menu_locations {
 	position: relative;
 	margin-bottom: 15px;
 }
@@ -600,14 +600,7 @@
 	overflow-y: hidden; /* avoid scrollbar jitter with animating heights */
 }
 
-#available-menu-items-search {
-	position: relative;
-	border-bottom: 1px solid #dfdfdf;
-	padding: 0 15px;
-	background: #eee;
-}
-
-#available-menu-items-search.open {
+#available-menu-items #available-menu-items-search.open {
 	height: 100%;
 	border-bottom: none;
 }
@@ -618,7 +611,8 @@
 	background: #fff;
 }
 
-#available-menu-items .open .accordion-section-title {
+#available-menu-items .open .accordion-section-title,
+#available-menu-items #available-menu-items-search .accordion-section-title {
 	background: #eee;
 }
 
@@ -691,6 +685,10 @@ button.not-a-button {
 	display: none;
 }
 
+#available-menu-items-search.cannot-expand .accordion-section-title .spinner {
+	display: block;
+}
+
 #available-menu-items .cannot-expand .accordion-section-title .no-items {
 	display: block;
 	color: #777;
@@ -703,35 +701,16 @@ button.not-a-button {
 	padding: 1px 15px 15px 15px;
 	margin: 0;
 	min-height: 120px;
-	max-height: 300px;
+	max-height: 290px;
 }
 
-/* IE8 rounding: looks like the accordion container is 1px taller */
-.ie8 #available-menu-items .accordion-container {
-	line-height: 1.3846;
-}
-
-/* IE 8 doesn't recognize border-box on elements with min/max-width or min/max-height */
-.ie8 #available-menu-items .accordion-section-content {
-	padding: 0 15px;
-}
-
-/* needed for JS calculation just on the actual accordions */
-#available-menu-items .accordion-container .accordion-section-content {
-	-webkit-box-sizing: border-box;
-	-moz-box-sizing: border-box;
-	box-sizing: border-box;
-}
-
-#available-menu-items-search .accordion-section-content {
+#available-menu-items #available-menu-items-search .accordion-section-content {
 	position: absolute;
-	left: 0;
+	left: 1px;
 	top: 60px; /* below title div / search input */
 	bottom: 0px; /* 100% height that still triggers lazy load */
-	width: 100%;
 	max-height: none;
-	min-height: 120px;
-	margin: 0;
+	width: 100%;
 	padding: 1px 15px 15px;
 	-webkit-box-sizing: border-box;
 	-moz-box-sizing: border-box;
@@ -833,7 +812,7 @@ button.not-a-button {
 }
 
 #available-menu-items .accordion-section-title.loading .spinner,
-#available-menu-items-search.loading .spinner {
+#available-menu-items-search.loading .accordion-section-title .spinner {
 	visibility: visible;
 	margin: 0 20px;
 }
@@ -883,9 +862,19 @@ button.not-a-button {
 }
 
 #available-menu-items-search input {
-	width: 100%;
-	margin: 13px 0;
 	padding: 6px 10px;
+	width: 100%;
+}
+
+#available-menu-items-search .accordion-section-title {
+	padding: 12px 15px;
+	-webkit-box-sizing: border-box;
+	-moz-box-sizing: border-box;
+	box-sizing: border-box;
+}
+
+#available-menu-items-search .accordion-section-title:after {
+	display: none;
 }
 
 #available-menu-items-search .accordion-section-content:empty {
@@ -893,11 +882,11 @@ button.not-a-button {
 	padding: 0;
 }
 
-#available-menu-items-search.loading .accordion-section-content {
-	opacity: .25;
+#available-menu-items-search.loading .accordion-section-content div {
+	opacity: .5;
 }
 
-#available-menu-items-search.loading.loading-more .accordion-section-content {
+#available-menu-items-search.loading.loading-more .accordion-section-content div {
 	opacity: 1;
 }
 
@@ -1051,12 +1040,22 @@ li.assigned-to-menu-location .add-new-menu-item {
 	display: none;
 }
 
+@media screen and ( max-width: 782px ) {
+	#available-menu-items #available-menu-items-search .accordion-section-content {
+		top: 63px;
+	}
+}
+
 @media screen and ( max-width: 640px ) {
 	body.adding-menu-items div#available-menu-items {
 		top: 46px;
 		left: 0;
 		z-index: 10;
 		width: 100%;
+	}
+
+	#available-menu-items #available-menu-items-search .accordion-section-content {
+		top: 133px;
 	}
 
 	#available-menu-items .customize-section-title {
@@ -1088,10 +1087,5 @@ li.assigned-to-menu-location .add-new-menu-item {
 		overflow: hidden;
 		white-space: nowrap;
 		text-overflow: ellipsis;
-	}
-
-	#available-menu-items-search .spinner,
-	#available-menu-items-search .clear-results {
-		top: 21px;
 	}
 }
