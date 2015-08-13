@@ -1,4 +1,4 @@
-#accordion-section-menu_locations {
+	#accordion-section-menu_locations {
 	position: relative;
 	margin-bottom: 15px;
 }
@@ -702,7 +702,24 @@ button.not-a-button {
 	padding: 1px 15px 15px 15px;
 	margin: 0;
 	min-height: 120px;
-	max-height: 290px;
+	max-height: 300px;
+}
+
+/* IE8 rounding: looks like the accordion container is 1px taller */
+.ie8 #available-menu-items .accordion-container {
+	line-height: 1.3846;
+}
+
+/* IE 8 doesn't recognize border-box on elements with min/max-width or min/max-height */
+.ie8 #available-menu-items .accordion-section-content {
+	padding: 0 15px;
+}
+
+/* needed for JS calculation just on the actual accordions */
+#available-menu-items .accordion-container .accordion-section-content {
+	-webkit-box-sizing: border-box;
+	-moz-box-sizing: border-box;
+	box-sizing: border-box;
 }
 
 #available-menu-items-search .accordion-section-content {

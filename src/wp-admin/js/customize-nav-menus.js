@@ -200,6 +200,8 @@
 				$searchSection.removeClass( 'open' );
 				$otherSections.show();
 				$searchSection.find( '.clear-results' ).removeClass( 'is-visible' );
+				// Adjust other sections height after the search closes.
+				this.itemSectionHeight();
 			}
 
 			this.searchTerm = event.target.value;
@@ -349,17 +351,36 @@
 			});
 		},
 
-		// Adjust the height of each section of items to fit the screen.
+		/*
+		Adjust the height of each accordion section to don't exceed the screen height.
+		The accordion sections content have a max-height of 300px set with CSS, this calculation will set a
+		smaller max-height value when there's not enough vertical space.
+		Accordion sections must have `box-sizing: border-box` set with CSS for a correct calculation.
+		@todo Consider to run this also when the window gets resized.
+		*/
 		itemSectionHeight: function() {
-			var sections, totalHeight, accordionHeight, searchHeight, diff;
-			totalHeight = window.innerHeight;
-			searchHeight = this.$el.find( '#available-menu-items-search' ).outerHeight();
-			// Get only the actual accordions, exclude the search div.
-			sections = this.$el.find( '.accordion-container .accordion-section-content' );
-			accordionHeight =  46 * ( 1 + sections.length ) - 16; // Magic numbers.
+			var totalHeight = window.innerHeight || document.documentElement.clientHeight,
+				accordion = this.$el.find( '.accordion-container' ),
+				sections = accordion.find( '.accordion-section-content' ),
+				visibleSection = sections.filter( ':visible' ),
+				searchHeight = this.$el.find( '#available-menu-items-search' ).outerHeight(),
+				accordionHeight,
+				diff;
+
+			/*
+			Get the accordion sections total height when closed.
+			If there is an open accordion section, subtract its content height from the accordion height.
+			*/
+			accordionHeight = visibleSection.length ? accordion.outerHeight() - visibleSection.outerHeight() : accordion.outerHeight();
+			// Get the available vertical space.
 			diff = totalHeight - accordionHeight - searchHeight;
-			if ( 120 < diff && 290 > diff ) {
+
+			// Don't set a max-height if the available vertical space is under 120px or over 300px.
+			if ( 120 < diff && 300 >= diff ) {
+				// Since the accordion sections content have vertical padding we're using `box-sizing: border-box` in the CSS.
 				sections.css( 'max-height', diff );
+			} else {
+				sections.css( 'max-height', '' );
 			}
 		},
 
