@@ -367,12 +367,12 @@ class WP_Customize_Panel {
 		?>
 		<li class="panel-meta customize-info accordion-section <# if ( ! data.description ) { #> cannot-expand<# } #>">
 			<button type="button" class="customize-panel-back" tabindex="-1"><span class="screen-reader-text"><?php _e( 'Back' ); ?></span></button>
-			<div class="was-accordion-section-title">
+			<div class="accordion-section-title">
 				<span class="preview-notice"><?php
 					/* translators: %s is the site/panel title in the Customizer */
 					echo sprintf( __( 'You are customizing %s' ), '<strong class="panel-title">{{ data.title }}</strong>' );
 				?></span>
-				<button type="button" class="customize-help-toggle dashicons dashicons-editor-help" tabindex="0" aria-expanded="false"><span class="screen-reader-text"><?php _e( 'Help' ); ?></span></button>
+				<button type="button" class="customize-help-toggle dashicons dashicons-editor-help" aria-expanded="false"><span class="screen-reader-text"><?php _e( 'Help' ); ?></span></button>
 			</div>
 			<# if ( data.description ) { #>
 				<div class="description customize-panel-description">
