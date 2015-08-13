@@ -713,12 +713,12 @@ final class WP_Customize_Nav_Menus {
 				</h3>
 			</div>
 			<div id="available-menu-items-search" class="accordion-section cannot-expand">
-				<div class="accordion-section-title">
+				<div class="was-accordion-section-title">
 					<label class="screen-reader-text" for="menu-items-search"><?php _e( 'Search Menu Items' ); ?></label>
 					<input type="text" id="menu-items-search" placeholder="<?php esc_attr_e( 'Search menu items&hellip;' ) ?>" aria-describedby="menu-items-search-desc" />
 					<p class="screen-reader-text" id="menu-items-search-desc"><?php _e( 'The search results will be updated as you type.' ); ?></p>
 					<span class="spinner"></span>
-					<span class="clear-results"><span class="screen-reader-text"><?php _e( 'Clear Results' ); ?></span></span>
+					<button type="button" class="clear-results not-a-button"><span class="screen-reader-text"><?php _e( 'Clear Results' ); ?></span></button>
 				</div>
 				<ul class="accordion-section-content" data-type="search"></ul>
 			</div>

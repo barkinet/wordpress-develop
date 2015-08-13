@@ -712,6 +712,7 @@ img.emoji {
 .postbox .hndle,
 .stuffbox .hndle,
 .control-section .accordion-section-title,
+.control-section .was-accordion-section-title,
 .sidebar-name,
 #nav-menu-header,
 #nav-menu-footer,
@@ -2959,7 +2960,8 @@ img {
 	background: #fff;
 }
 
-.accordion-section-title {
+.accordion-section-title,
+.was-accordion-section-title {
 	margin: 0;
 	padding: 12px 15px 15px;
 	position: relative;
@@ -2999,7 +3001,8 @@ img {
 	display: none;
 }
 
-.control-section .accordion-section-title {
+.control-section .accordion-section-title,
+.control-section .was-accordion-section-title {
 	border-left: none;
 	border-right: none;
 	padding: 10px 10px 11px 14px;

@@ -138,15 +138,8 @@
 			} );
 
 			// Clear the search results.
-			$( '.clear-results' ).on( 'click keydown', function( event ) {
-				if ( event.type === 'keydown' && ( 13 !== event.which && 32 !== event.which ) ) { // "return" or "space" keys only
-					return;
-				}
-
-				event.preventDefault();
-
+			$( '.clear-results' ).on( 'click', function( event ) {
 				$( '#menu-items-search' ).val( '' ).focus();
-				event.target.value = '';
 				self.search( event );
 			} );
 
@@ -202,17 +195,13 @@
 				$otherSections.fadeOut( 100 );
 				$searchSection.find( '.accordion-section-content' ).slideDown( 'fast' );
 				$searchSection.addClass( 'open' );
-				$searchSection.find( '.clear-results' )
-					.prop( 'tabIndex', 0 )
-					.addClass( 'is-visible' );
+				$searchSection.find( '.clear-results' ).addClass( 'is-visible' );
 			} else if ( '' === event.target.value ) {
 				$searchSection.removeClass( 'open' );
 				$otherSections.show();
-				$searchSection.find( '.clear-results' )
-					.prop( 'tabIndex', -1 )
-					.removeClass( 'is-visible' );
+				$searchSection.find( '.clear-results' ).removeClass( 'is-visible' );
 			}
-			
+
 			this.searchTerm = event.target.value;
 			this.pages.search = 1;
 			this.doSearch( 1 );

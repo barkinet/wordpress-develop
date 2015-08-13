@@ -1165,11 +1165,7 @@
 
 			meta = panel.container.find( '.panel-meta:first' );
 
-			meta.find( '> .accordion-section-title .customize-help-toggle' ).on( 'click keydown', function( event ) {
-				if ( api.utils.isKeydownButNotEnterEvent( event ) ) {
-					return;
-				}
-				event.preventDefault(); // Keep this AFTER the key filter above
+			meta.find( '.customize-help-toggle' ).on( 'click', function( event ) {
 
 				meta = panel.container.find( '.panel-meta' );
 				if ( meta.hasClass( 'cannot-expand' ) ) {
@@ -3085,11 +3081,7 @@
 		});
 
 		// Expand/Collapse the main customizer customize info.
-		$( '.customize-info' ).find( '> .accordion-section-title .customize-help-toggle' ).on( 'click keydown', function( event ) {
-			if ( api.utils.isKeydownButNotEnterEvent( event ) ) {
-				return;
-			}
-			event.preventDefault(); // Keep this AFTER the key filter above
+		$( '.customize-info' ).find( '.customize-help-toggle' ).on( 'click', function( event ) {
 
 			var section = $( this ).closest( '.accordion-section' ),
 				content = section.find( '.customize-panel-description:first' );

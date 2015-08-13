@@ -681,11 +681,11 @@ button.not-a-button {
 
 #available-menu-items .accordion-section-title .no-items,
 #available-menu-items .cannot-expand .accordion-section-title .spinner,
-#available-menu-items .cannot-expand .accordion-section-title > button {
+#available-menu-items .cannot-expand .accordion-section-title button {
 	display: none;
 }
 
-#available-menu-items-search.cannot-expand .accordion-section-title .spinner {
+#available-menu-items-search.cannot-expand .was-accordion-section-title .spinner {
 	display: block;
 }
 
@@ -808,12 +808,12 @@ button.not-a-button {
 }
 
 #available-menu-items .accordion-section-title.loading .spinner,
-#available-menu-items-search.loading .accordion-section-title .spinner {
+#available-menu-items-search.loading .was-accordion-section-title .spinner {
 	visibility: visible;
 	margin: 0 20px;
 }
 
-#available-menu-items-search .clear-results {
+#available-menu-items-search .was-accordion-section-title .clear-results {
 	position: absolute;
 	top: 20px;
 	right: 20px;

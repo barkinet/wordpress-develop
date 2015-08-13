@@ -53,7 +53,8 @@ body {
 	margin-bottom: 15px;
 }
 
-#customize-controls .customize-info .accordion-section-title {
+#customize-controls .customize-info .accordion-section-title,
+#customize-controls .customize-info .was-accordion-section-title {
 	background: #fff;
 	color: #555;
 	border-left: none;
@@ -349,7 +350,8 @@ h3.customize-section-title {
 	display: block;
 }
 
-.panel-meta.customize-info .accordion-section-title {
+.panel-meta.customize-info .accordion-section-title,
+.panel-meta.customize-info .was-accordion-section-title {
 	margin-left: 48px;
 }
 

@@ -352,7 +352,7 @@ class WP_Customize_Section {
 			<ul class="accordion-section-content">
 				<li class="customize-section-description-container">
 					<div class="customize-section-title">
-						<button class="customize-section-back" tabindex="-1">
+						<button type="button" class="customize-section-back" tabindex="-1">
 							<span class="screen-reader-text"><?php _e( 'Back' ); ?></span>
 						</button>
 						<h3>
