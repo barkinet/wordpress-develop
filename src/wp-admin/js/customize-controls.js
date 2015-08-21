@@ -285,9 +285,7 @@
 		 */
 		onChangeActive: function( active, args ) {
 			var duration, construct = this;
-			if ( active && ! construct.isContextuallyActive() ) {
-				active = false;
-			}
+			active = ( active && construct.isContextuallyActive() );
 			duration = ( 'resolved' === api.previewer.deferred.active.state() ? args.duration : 0 );
 			if ( ! $.contains( document, construct.container[0] ) ) {
 				// jQuery.fn.slideUp is not hiding an element if it is not in the DOM
