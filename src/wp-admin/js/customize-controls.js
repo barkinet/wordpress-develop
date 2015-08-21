@@ -210,7 +210,6 @@
 			container.active.bind( function ( active ) {
 				var args = container.activeArgumentsQueue.shift();
 				args = $.extend( {}, container.defaultActiveArguments, args );
-				active = ( active && container.isContextuallyActive() );
 				container.onChangeActive( active, args );
 			});
 			container.expanded.bind( function ( expanded ) {
@@ -284,8 +283,11 @@
 		 * @param {Object}  args.duration
 		 * @param {Object}  args.completeCallback
 		 */
-		onChangeActive: function ( active, args ) {
+		onChangeActive: function( active, args ) {
 			var duration, construct = this;
+			if ( active && ! construct.isContextuallyActive() ) {
+				active = false;
+			}
 			duration = ( 'resolved' === api.previewer.deferred.active.state() ? args.duration : 0 );
 			if ( ! $.contains( document, construct.container[0] ) ) {
 				// jQuery.fn.slideUp is not hiding an element if it is not in the DOM
