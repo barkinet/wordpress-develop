@@ -648,6 +648,9 @@
 						completeCallback: expand
 					});
 				} else {
+					api.panel.each( function( panel ) {
+						panel.collapse();
+					});
 					expand();
 				}
 
