@@ -1260,7 +1260,7 @@
 
 				// Collapse any sibling sections/panels
 				api.section.each( function ( section ) {
-					if ( ! section.panel() ) {
+					if ( panel.id !== section.panel() ) {
 						section.collapse( { duration: 0 } );
 					}
 				});
