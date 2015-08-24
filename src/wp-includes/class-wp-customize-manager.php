@@ -110,11 +110,28 @@ final class WP_Customize_Manager {
 		require_once( ABSPATH . WPINC . '/class-wp-customize-panel.php' );
 		require_once( ABSPATH . WPINC . '/class-wp-customize-section.php' );
 		require_once( ABSPATH . WPINC . '/class-wp-customize-control.php' );
-		require_once( ABSPATH . WPINC . '/class-wp-customize-widgets.php' );
-		require_once( ABSPATH . WPINC . '/class-wp-customize-nav-menus.php' );
 
-		$this->widgets = new WP_Customize_Widgets( $this );
-		$this->nav_menus = new WP_Customize_Nav_Menus( $this );
+		/**
+		 * Fires at the beginning of WP_Customize_Manager's constructor.
+		 *
+		 * Allows plugins to add/override Customizer features.
+		 *
+		 * @see WP_Customize_Manager::__construct().
+		 * @since 4.4.0
+		 *
+		 * @param WP_Customize_Manager $this WP_Customize_Manager instance.
+		 */
+		do_action( 'customize_manager_construct', $this );
+
+		if ( ! isset( $this->widgets ) ) {
+			require_once( ABSPATH . WPINC . '/class-wp-customize-widgets.php' );
+			$this->widgets = new WP_Customize_Widgets( $this );
+		}
+
+		if ( ! isset( $this->nav_menus ) ) {
+			require_once( ABSPATH . WPINC . '/class-wp-customize-nav-menus.php' );
+			$this->nav_menus = new WP_Customize_Nav_Menus( $this );
+		}
 
 		add_filter( 'wp_die_handler', array( $this, 'wp_die_handler' ) );
 
