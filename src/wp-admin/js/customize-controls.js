@@ -284,8 +284,15 @@
 		 * @param {Object}  args.duration
 		 * @param {Object}  args.completeCallback
 		 */
-		onChangeActive: function ( active, args ) {
+		onChangeActive: function( active, args ) {
 			var duration, construct = this;
+			if ( args.unchanged ) {
+				if ( args.completeCallback ) {
+					args.completeCallback();
+				}
+				return;
+			}
+
 			duration = ( 'resolved' === api.previewer.deferred.active.state() ? args.duration : 0 );
 			if ( ! $.contains( document, construct.container[0] ) ) {
 				// jQuery.fn.slideUp is not hiding an element if it is not in the DOM
