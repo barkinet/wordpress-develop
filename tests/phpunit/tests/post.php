@@ -412,6 +412,47 @@ class Tests_Post extends WP_UnitTestCase {
 	}
 
 	/**
+	 * @ticket 5305
+	 */
+	public function test_wp_insert_post_should_not_allow_a_bare_numeric_slug_that_might_conflict_with_a_date_archive_when_generating_from_an_empty_post_title() {
+		global $wp_rewrite;
+		$wp_rewrite->init();
+		$wp_rewrite->set_permalink_structure( '/%postname%/' );
+		$wp_rewrite->flush_rules();
+
+		$p = wp_insert_post( array(
+			'post_title' => '',
+			'post_content' => 'test',
+			'post_status' => 'publish',
+			'post_type' => 'post',
+		) );
+
+		$post = get_post( $p );
+
+		$wp_rewrite->set_permalink_structure( '' );
+
+		$this->assertEquals( "$p-2", $post->post_name );
+	}
+
+	/**
+	 * @ticket 5305
+	 * @ticket 33392
+	 */
+	public function test_wp_insert_post_should_invalidate_post_cache_before_generating_guid_when_post_name_is_empty_and_is_generated_from_the_post_ID(){
+		register_post_type( 'wptests_pt' );
+
+		$p = wp_insert_post( array(
+			'post_title' => '',
+			'post_type' => 'wptests_pt',
+			'post_status' => 'publish',
+		) );
+
+		$post = get_post( $p );
+
+		$this->assertContains( 'wptests_pt=' . $p, $post->guid );
+	}
+
+	/**
 	 * @ticket 5364
 	 */
 	function test_delete_future_post_cron() {
@@ -467,37 +508,6 @@ class Tests_Post extends WP_UnitTestCase {
 		$this->assertEquals(get_option('siteurl').'/2007/10/31/'.$id.'/', $plink);
 
 		$wp_rewrite->set_permalink_structure('');
-	}
-
-	/**
-	 * @ticket 21013
-	 */
-	function test_wp_unique_post_slug_with_non_latin_slugs() {
-		$inputs = array(
-			'Αρνάκι άσπρο και παχύ της μάνας του καμάρι, και άλλα τραγούδια',
-			'Предлагаем супер металлообрабатывающее оборудование',
-		);
-
-		$outputs = array(
-			'αρνάκι-άσπρο-και-παχύ-της-μάνας-του-κα-2',
-			'предлагаем-супер-металлообрабатыва-2',
-		);
-
-		foreach ( $inputs as $k => $post_title ) {
-			for ( $i = 0; $i < 2; $i++ ) {
-				$post = array(
-					'post_author' => $this->author_id,
-					'post_status' => 'publish',
-					'post_content' => rand_str(),
-					'post_title' => $post_title,
-				);
-
-				$id = $this->post_ids[] = wp_insert_post( $post );
-			}
-
-			$post = get_post( $id );
-			$this->assertEquals( $outputs[$k], urldecode( $post->post_name ) );
-		}
 	}
 
 	/**
@@ -946,93 +956,6 @@ class Tests_Post extends WP_UnitTestCase {
 	}
 
 	/**
-	 * @ticket 18962
-	 */
-	function test_wp_unique_post_slug_with_multiple_hierarchies() {
-		register_post_type( 'post-type-1', array( 'hierarchical' => true ) );
-		register_post_type( 'post-type-2', array( 'hierarchical' => true ) );
-
-		$args = array(
-			'post_type' => 'post-type-1',
-			'post_name' => 'some-slug',
-			'post_status' => 'publish',
-		);
-		$one = $this->factory->post->create( $args );
-		$args['post_type'] = 'post-type-2';
-		$two = $this->factory->post->create( $args );
-
-		$this->assertEquals( 'some-slug', get_post( $one )->post_name );
-		$this->assertEquals( 'some-slug', get_post( $two )->post_name );
-
-		$this->assertEquals( 'some-other-slug', wp_unique_post_slug( 'some-other-slug', $one, 'publish', 'post-type-1', 0 ) );
-		$this->assertEquals( 'some-other-slug', wp_unique_post_slug( 'some-other-slug', $one, 'publish', 'post-type-2', 0 ) );
-
-		_unregister_post_type( 'post-type-1' );
-		_unregister_post_type( 'post-type-2' );
-	}
-
-	/**
-	 * @ticket 30339
-	 */
-	function test_wp_unique_post_slug_with_hierarchy() {
-		register_post_type( 'post-type-1', array( 'hierarchical' => true ) );
-
-		$args = array(
-			'post_type' => 'post-type-1',
-			'post_name' => 'some-slug',
-			'post_status' => 'publish',
-		);
-		$one = $this->factory->post->create( $args );
-		$args['post_name'] = 'some-slug-2';
-		$two = $this->factory->post->create( $args );
-
-		$this->assertEquals( 'some-slug', get_post( $one )->post_name );
-		$this->assertEquals( 'some-slug-2', get_post( $two )->post_name );
-
-		$this->assertEquals( 'some-slug-3', wp_unique_post_slug( 'some-slug', 0, 'publish', 'post-type-1', 0 ) );
-
-		_unregister_post_type( 'post-type-1' );
-	}
-
-	/**
-	 * @ticket 18962
-	 */
-	function test_wp_unique_post_slug_with_hierarchy_and_attachments() {
-		register_post_type( 'post-type-1', array( 'hierarchical' => true ) );
-
-		$args = array(
-			'post_type' => 'post-type-1',
-			'post_name' => 'some-slug',
-			'post_status' => 'publish',
-		);
-		$one = $this->factory->post->create( $args );
-
-		$args = array(
-			'post_mime_type' => 'image/jpeg',
-			'post_type' => 'attachment',
-			'post_name' => 'image'
-		);
-		$attachment = $this->factory->attachment->create_object( 'image.jpg', $one, $args );
-
-		$args = array(
-			'post_type' => 'post-type-1',
-			'post_name' => 'image',
-			'post_status' => 'publish',
-			'post_parent' => $one
-		);
-		$two = $this->factory->post->create( $args );
-
-		$this->assertEquals( 'some-slug', get_post( $one )->post_name );
-		$this->assertEquals( 'image', get_post( $attachment )->post_name );
-		$this->assertEquals( 'image-2', get_post( $two )->post_name );
-
-		// 'image' can be a child of image-2
-		$this->assertEquals( 'image', wp_unique_post_slug( 'image', 0, 'publish', 'post-type-1', $two ) );
-
-		_unregister_post_type( 'post-type-1' );
-	}
-
-	/**
 	 * @ticket 21212
 	 */
 	function test_utf8mb3_post_saves_with_emoji() {
@@ -1067,5 +990,177 @@ class Tests_Post extends WP_UnitTestCase {
 		foreach( $expected as $field => $value ) {
 			$this->assertEquals( $value, $post->$field );
 		}
+	}
+
+	/**
+	 * @ticket 31168
+	 */
+	function test_wp_insert_post_default_comment_ping_status_open() {
+		$post_id = $this->factory->post->create( array(
+			'post_author' => $this->author_id,
+			'post_status' => 'public',
+			'post_content' => rand_str(),
+			'post_title' => rand_str(),
+		) );
+		$post = get_post( $post_id );
+
+		$this->assertEquals( 'open', $post->comment_status );
+		$this->assertEquals( 'open', $post->ping_status );
+	}
+
+	/**
+	 * @ticket 31168
+	 */
+	function test_wp_insert_post_page_default_comment_ping_status_closed() {
+		$post_id = $this->factory->post->create( array(
+			'post_author' => $this->author_id,
+			'post_status' => 'public',
+			'post_content' => rand_str(),
+			'post_title' => rand_str(),
+			'post_type' => 'page',
+		) );
+		$post = get_post( $post_id );
+
+		$this->assertEquals( 'closed', $post->comment_status );
+		$this->assertEquals( 'closed', $post->ping_status );
+	}
+
+	/**
+	 * @ticket 31168
+	 */
+	function test_wp_insert_post_cpt_default_comment_ping_status_open() {
+		$post_type = rand_str(20);
+		register_post_type( $post_type, array( 'supports' => array( 'comments', 'trackbacks' ) ) );
+		$post_id = $this->factory->post->create( array(
+			'post_author' => $this->author_id,
+			'post_status' => 'public',
+			'post_content' => rand_str(),
+			'post_title' => rand_str(),
+			'post_type' => $post_type,
+		) );
+		$post = get_post( $post_id );
+
+		$this->assertEquals( 'open', $post->comment_status );
+		$this->assertEquals( 'open', $post->ping_status );
+		_unregister_post_type( $post_type );
+	}
+
+	/**
+	 * @ticket 31168
+	 */
+	function test_wp_insert_post_cpt_default_comment_ping_status_closed() {
+		$post_type = rand_str(20);
+		register_post_type( $post_type );
+		$post_id = $this->factory->post->create( array(
+			'post_author' => $this->author_id,
+			'post_status' => 'public',
+			'post_content' => rand_str(),
+			'post_title' => rand_str(),
+			'post_type' => $post_type,
+		) );
+		$post = get_post( $post_id );
+
+		$this->assertEquals( 'closed', $post->comment_status );
+		$this->assertEquals( 'closed', $post->ping_status );
+		_unregister_post_type( $post_type );
+	}
+
+	/**
+	 * If a post is sticky and is updated by a user that does not have the publish_post capability, it should _stay_
+	 * sticky.
+	 *
+	 * @ticket 24153
+	 */
+	function test_user_without_publish_cannot_affect_sticky() {
+		// Create a role with edit_others_posts.
+		add_role( 'grammarian', 'Grammarian', array(
+			'read'                 => true,
+			'edit_posts'           => true,
+			'edit_others_posts'    => true,
+			'edit_published_posts' => true,
+		) );
+		$editor_user = $this->factory->user->create( array( 'role' => 'grammarian' ) );
+		$old_uid = get_current_user_id();
+		wp_set_current_user( $editor_user );
+
+		// Sanity Check.
+		$this->assertFalse( current_user_can( 'publish_posts' ) );
+		$this->assertTrue( current_user_can( 'edit_others_posts' ) );
+		$this->assertTrue( current_user_can( 'edit_published_posts' ) );
+
+		// Create a sticky post.
+		$post = $this->factory->post->create_and_get( array(
+			'post_title'   => 'Will be changed',
+			'post_content' => 'Will be changed',
+		) );
+		stick_post( $post->ID );
+
+		// Sanity Check.
+		$this->assertTrue( is_sticky( $post->ID ) );
+
+		// Edit the post.
+		$post->post_title = 'Updated';
+		$post->post_content = 'Updated';
+		wp_update_post( $post );
+
+		// Make sure it's still sticky.
+		$saved_post = get_post( $post->ID );
+		$this->assertTrue( is_sticky( $saved_post->ID ) );
+		$this->assertEquals( 'Updated', $saved_post->post_title );
+		$this->assertEquals( 'Updated', $saved_post->post_content );
+
+		// Teardown
+		wp_set_current_user( $old_uid );
+	}
+
+	/**
+	 * If the `edit_post()` method is invoked by a user without publish_posts permission, the sticky status of the post
+	 * should not be changed.
+	 *
+	 * @ticket 24153
+	 */
+	function test_user_without_publish_cannot_affect_sticky_with_edit_post() {
+		// Create a sticky post.
+		$post = $this->factory->post->create_and_get( array(
+			'post_title'   => 'Will be changed',
+			'post_content' => 'Will be changed',
+		) );
+		stick_post( $post->ID );
+
+		// Sanity Check.
+		$this->assertTrue( is_sticky( $post->ID ) );
+
+		// Create a role with edit_others_posts.
+		add_role( 'grammarian', 'Grammarian', array(
+			'read'                 => true,
+			'edit_posts'           => true,
+			'edit_others_posts'    => true,
+			'edit_published_posts' => true,
+		) );
+		$editor_user = $this->factory->user->create( array( 'role' => 'grammarian' ) );
+		$old_uid = get_current_user_id();
+		wp_set_current_user( $editor_user );
+
+		// Sanity Check.
+		$this->assertFalse( current_user_can( 'publish_posts' ) );
+		$this->assertTrue( current_user_can( 'edit_others_posts' ) );
+		$this->assertTrue( current_user_can( 'edit_published_posts' ) );
+
+		// Edit the post - The key 'sticky' is intentionally unset.
+		$data = array(
+			'post_ID'      => $post->ID,
+			'post_title'   => 'Updated',
+			'post_content' => 'Updated',
+		);
+		edit_post( $data );
+
+		// Make sure it's still sticky
+		$saved_post = get_post( $post->ID );
+		$this->assertTrue( is_sticky( $saved_post->ID ) );
+		$this->assertEquals( 'Updated', $saved_post->post_title );
+		$this->assertEquals( 'Updated', $saved_post->post_content );
+
+		// Teardown
+		wp_set_current_user( $old_uid );
 	}
 }

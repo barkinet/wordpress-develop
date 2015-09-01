@@ -24,10 +24,10 @@ get_current_screen()->add_help_tab( array(
 	'title'   => __('Overview'),
 	'content' =>
 		'<p>' . __('The menu is for editing information specific to individual sites, particularly if the admin area of a site is unavailable.') . '</p>' .
-		'<p>' . __('<strong>Info</strong> - The domain and path are rarely edited as this can cause the site to not work properly. The Registered date and Last Updated date are displayed. Network admins can mark a site as archived, spam, deleted and mature, to remove from public listings or disable.') . '</p>' .
-		'<p>' . __('<strong>Users</strong> - This displays the users associated with this site. You can also change their role, reset their password, or remove them from the site. Removing the user from the site does not remove the user from the network.') . '</p>' .
-		'<p>' . sprintf( __('<strong>Themes</strong> - This area shows themes that are not already enabled across the network. Enabling a theme in this menu makes it accessible to this site. It does not activate the theme, but allows it to show in the site&#8217;s Appearance menu. To enable a theme for the entire network, see the <a href="%s">Network Themes</a> screen.' ), network_admin_url( 'themes.php' ) ) . '</p>' .
-		'<p>' . __('<strong>Settings</strong> - This page shows a list of all settings associated with this site. Some are created by WordPress and others are created by plugins you activate. Note that some fields are grayed out and say Serialized Data. You cannot modify these values due to the way the setting is stored in the database.') . '</p>'
+		'<p>' . __('<strong>Info</strong> &mdash; The domain and path are rarely edited as this can cause the site to not work properly. The Registered date and Last Updated date are displayed. Network admins can mark a site as archived, spam, deleted and mature, to remove from public listings or disable.') . '</p>' .
+		'<p>' . __('<strong>Users</strong> &mdash; This displays the users associated with this site. You can also change their role, reset their password, or remove them from the site. Removing the user from the site does not remove the user from the network.') . '</p>' .
+		'<p>' . sprintf( __('<strong>Themes</strong> &mdash; This area shows themes that are not already enabled across the network. Enabling a theme in this menu makes it accessible to this site. It does not activate the theme, but allows it to show in the site&#8217;s Appearance menu. To enable a theme for the entire network, see the <a href="%s">Network Themes</a> screen.' ), network_admin_url( 'themes.php' ) ) . '</p>' .
+		'<p>' . __('<strong>Settings</strong> &mdash; This page shows a list of all settings associated with this site. Some are created by WordPress and others are created by plugins you activate. Note that some fields are grayed out and say Serialized Data. You cannot modify these values due to the way the setting is stored in the database.') . '</p>'
 ) );
 
 get_current_screen()->set_help_sidebar(
@@ -49,6 +49,10 @@ if ( ! $id )
 	wp_die( __('Invalid site ID.') );
 
 $details = get_blog_details( $id );
+if ( ! $details ) {
+	wp_die( __( 'The requested site does not exist.' ) );
+}
+
 if ( ! can_edit_network( $details->site_id ) )
 	wp_die( __( 'You do not have permission to access this page.' ), 403 );
 
@@ -70,10 +74,10 @@ if ( $action ) {
 				$password = wp_generate_password( 12, false);
 				$user_id = wpmu_create_user( esc_html( strtolower( $user['username'] ) ), $password, esc_html( $user['email'] ) );
 
-				if ( false == $user_id ) {
+				if ( false === $user_id ) {
 		 			$update = 'err_new_dup';
 				} else {
-					wp_new_user_notification( $user_id, $password );
+					wp_new_user_notification( $user_id, 'both' );
 					add_user_to_blog( $id, $user_id, $_POST['new_role'] );
 					$update = 'newuser';
 				}
@@ -157,9 +161,7 @@ if ( isset( $_GET['action'] ) && 'update-site' == $_GET['action'] ) {
 
 add_screen_option( 'per_page' );
 
-$site_url_no_http = preg_replace( '#^http(s)?://#', '', get_blogaddress_by_id( $id ) );
-$title_site_url_linked = sprintf( __( 'Edit Site: %s' ), '<a href="' . get_blogaddress_by_id( $id ) . '">' . $site_url_no_http . '</a>' );
-$title = sprintf( __( 'Edit Site: %s' ), $site_url_no_http );
+$title = sprintf( __( 'Edit Site: %s' ), esc_html( $details->blogname ) );
 
 $parent_file = 'sites.php';
 $submenu_file = 'sites.php';
@@ -182,7 +184,8 @@ var current_site_id = <?php echo $id; ?>;
 
 
 <div class="wrap">
-<h2 id="edit-site"><?php echo $title_site_url_linked ?></h2>
+<h1 id="edit-site"><?php echo $title; ?></h1>
+<p class="edit-site-actions"><a href="<?php echo esc_url( get_home_url( $id, '/' ) ); ?>"><?php _e( 'Visit' ); ?></a> | <a href="<?php echo esc_url( get_admin_url( $id ) ); ?>"><?php _e( 'Dashboard' ); ?></a></p>
 <h3 class="nav-tab-wrapper">
 <?php
 $tabs = array(
@@ -305,7 +308,7 @@ if ( current_user_can( 'create_users' ) && apply_filters( 'show_network_site_use
 			</select></td>
 		</tr>
 		<tr class="form-field">
-			<td colspan="2"><?php _e( 'Username and password will be mailed to the above email address.' ) ?></td>
+			<td colspan="2"><?php _e( 'A password reset link will be sent to the user via email.' ) ?></td>
 		</tr>
 	</table>
 	<?php wp_nonce_field( 'add-user', '_wpnonce_add-new-user' ) ?>

@@ -175,7 +175,7 @@ if ( ! is_multisite() ) {
 <?php endif; ?>
 
 <div class="wrap">
-<h2><?php echo esc_html( $title ); ?></h2>
+<h1><?php echo esc_html( $title ); ?></h1>
 
 <form name="form" action="options-permalink.php" method="post">
 <?php wp_nonce_field('update-permalink') ?>
@@ -197,7 +197,7 @@ $structures = array(
 	4 => $prefix . '/%postname%/',
 );
 ?>
-<h3 class="title"><?php _e('Common Settings'); ?></h3>
+<h2 class="title"><?php _e('Common Settings'); ?></h2>
 <table class="form-table permalink-structure">
 	<tr>
 		<th><label><input name="selection" type="radio" value="" <?php checked('', $permalink_structure); ?> /> <?php _e('Default'); ?></label></th>
@@ -232,7 +232,7 @@ $structures = array(
 	</tr>
 </table>
 
-<h3 class="title"><?php _e('Optional'); ?></h3>
+<h2 class="title"><?php _e('Optional'); ?></h2>
 <p><?php
 /* translators: %s is a placeholder that must come at the start of the URL. */
 printf( __('If you like, you may enter custom structures for your category and tag <abbr title="Universal Resource Locator">URL</abbr>s here. For example, using <code>topics</code> as your category base would make your category links like <code>%s/topics/uncategorized/</code>. If you leave these blank the defaults will be used.'), get_option('home') . $blog_prefix . $prefix ); ?></p>

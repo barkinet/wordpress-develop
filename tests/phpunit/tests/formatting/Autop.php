@@ -399,4 +399,92 @@ Paragraph two.';
 
 		$this->assertEquals( $expected, trim( wpautop( $content ) ) );
 	}
+
+	/**
+	 * Do not allow newlines within HTML elements to become mangled.
+	 *
+	 * @ticket 33106
+	 * @dataProvider data_element_sanity
+	 */
+	function test_element_sanity( $input, $output ) {
+		return $this->assertEquals( $output, wpautop( $input ) );
+	}
+
+	function data_element_sanity() {
+		return array(
+			array(
+				"Hello <a\nhref='world'>",
+				"<p>Hello <a\nhref='world'></p>\n",
+			),
+			array(
+				"Hello <!-- a\nhref='world' -->",
+				"<p>Hello <!-- a\nhref='world' --></p>\n",
+			),
+/* Block elements inside comments will fail this test in all versions, it's not a regression.
+			array(
+				"Hello <!-- <hr> a\nhref='world' -->",
+				"<p>Hello <!-- <hr> a\nhref='world' --></p>\n",
+			),
+			array(
+				"Hello <![CDATA[ <hr> a\nhttps://youtu.be/jgz0uSaOZbE\n ]]>",
+				"<p>Hello <![CDATA[ <hr> a\nhttps://youtu.be/jgz0uSaOZbE\n ]]></p>\n",
+			),
+*/
+			array(
+				"Hello <![CDATA[ a\nhttps://youtu.be/jgz0uSaOZbE\n ]]>",
+				"<p>Hello <![CDATA[ a\nhttps://youtu.be/jgz0uSaOZbE\n ]]></p>\n",
+			),
+			array(
+				"Hello <![CDATA[ <!-- a\nhttps://youtu.be/jgz0uSaOZbE\n a\n9 ]]> -->",
+				"<p>Hello <![CDATA[ <!-- a\nhttps://youtu.be/jgz0uSaOZbE\n a\n9 ]]> --></p>\n",
+			),
+			array(
+				"Hello <![CDATA[ <!-- a\nhttps://youtu.be/jgz0uSaOZbE\n a\n9 --> a\n9 ]]>",
+				"<p>Hello <![CDATA[ <!-- a\nhttps://youtu.be/jgz0uSaOZbE\n a\n9 --> a\n9 ]]></p>\n",
+			),
+		);
+	}
+
+	/**
+	 * wpautop() should not convert line breaks after <br /> tags
+	 *
+	 * @ticket 33377
+	 */
+	function test_that_wpautop_skips_line_breaks_after_br() {
+		$content = '
+line 1<br>
+line 2<br/>
+line 3<br />
+line 4
+line 5
+';
+
+		$expected = '<p>line 1<br />
+line 2<br />
+line 3<br />
+line 4<br />
+line 5</p>';
+
+		$this->assertEquals( $expected, trim( wpautop( $content ) ) );
+	}
+
+	/**
+	 * wpautop() should convert multiple line breaks into a paragraph regarless of <br /> format
+	 *
+	 * @ticket 33377
+	 */
+	function test_that_wpautop_adds_a_paragraph_after_multiple_br() {
+		$content = '
+line 1<br>
+<br/>
+line 2<br/>
+<br />
+';
+
+		$expected = '<p>line 1</p>
+<p>line 2</p>';
+
+		$this->assertEquals( $expected, trim( wpautop( $content ) ) );
+	}
+
 }

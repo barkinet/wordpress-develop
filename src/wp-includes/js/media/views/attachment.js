@@ -1,5 +1,3 @@
-/*globals wp, _, jQuery */
-
 /**
  * wp.media.view.Attachment
  *
@@ -33,10 +31,8 @@ Attachment = View.extend({
 		'change [data-setting] input':    'updateSetting',
 		'change [data-setting] select':   'updateSetting',
 		'change [data-setting] textarea': 'updateSetting',
-		'click .close':                   'removeFromLibrary',
+		'click .attachment-close':        'removeFromLibrary',
 		'click .check':                   'checkClickHandler',
-		'click a':                        'preventDefault',
-		'keydown .close':                 'removeFromLibrary',
 		'keydown':                        'toggleSelectionHandler'
 	},
 
@@ -164,8 +160,8 @@ Attachment = View.extend({
 	toggleSelectionHandler: function( event ) {
 		var method;
 
-		// Don't do anything inside inputs.
-		if ( 'INPUT' === event.target.nodeName ) {
+		// Don't do anything inside inputs and on the attachment check and remove buttons.
+		if ( 'INPUT' === event.target.nodeName || 'BUTTON' === event.target.nodeName ) {
 			return;
 		}
 
@@ -349,12 +345,6 @@ Attachment = View.extend({
 
 		details = selection.single();
 		this.$el.toggleClass( 'details', details === this.model );
-	},
-	/**
-	 * @param {Object} event
-	 */
-	preventDefault: function( event ) {
-		event.preventDefault();
 	},
 	/**
 	 * @param {string} size

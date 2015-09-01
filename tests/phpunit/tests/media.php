@@ -57,7 +57,7 @@ CAP;
 			)
 		);
 		$this->assertEquals( 1, preg_match_all( '/wp-caption &amp;myAlignment/', $result, $_r ) );
-		$this->assertEquals( 1, preg_match_all( '/id="&quot;myId"/', $result, $_r ) );
+		$this->assertEquals( 1, preg_match_all( '/id="myId"/', $result, $_r ) );
 		$this->assertEquals( 1, preg_match_all( "/{$this->caption}/", $result, $_r ) );
 	}
 
@@ -120,8 +120,6 @@ CAP;
 	 * @ticket 23149
 	 */
 	function test_youtube_com_secure_embed() {
-		global $wp_embed;
-
 		$out = wp_oembed_get( 'http://www.youtube.com/watch?v=oHg5SJYRHA0' );
 		$this->assertContains( 'https://www.youtube.com/embed/oHg5SJYRHA0?feature=oembed', $out );
 
@@ -130,6 +128,31 @@ CAP;
 
 		$out = wp_oembed_get( 'https://youtu.be/zHjMoNQN7s0' );
 		$this->assertContains( 'https://www.youtube.com/embed/zHjMoNQN7s0?feature=oembed', $out );
+	}
+
+	/**
+	 * Test m.youtube.com embeds
+	 *
+	 * @ticket 32714
+	 */
+	function test_youtube_com_mobile_embed() {
+		$out = wp_oembed_get( 'http://m.youtube.com/watch?v=oHg5SJYRHA0' );
+		$this->assertContains( 'https://www.youtube.com/embed/oHg5SJYRHA0?feature=oembed', $out );
+
+		$out = wp_oembed_get( 'https://m.youtube.com/watch?v=oHg5SJYRHA0' );
+		$this->assertContains( 'https://www.youtube.com/embed/oHg5SJYRHA0?feature=oembed', $out );
+	}
+
+	function test_youtube_embed_url() {
+		global $wp_embed;
+		$out = $wp_embed->autoembed( 'https://www.youtube.com/embed/QcIy9NiNbmo' );
+		$this->assertContains( 'https://youtube.com/watch?v=QcIy9NiNbmo', $out );
+	}
+
+	function test_youtube_v_url() {
+		global $wp_embed;
+		$out = $wp_embed->autoembed( 'https://www.youtube.com/v/QcIy9NiNbmo' );
+		$this->assertContains( 'https://youtube.com/watch?v=QcIy9NiNbmo', $out );
 	}
 
 	/**
@@ -510,6 +533,28 @@ VIDEO;
 
 		$image_url  = 'http://' . WP_TESTS_DOMAIN . '/wp-content/uploads/' . $image_path;
 		$this->assertEquals( $attachment_id, attachment_url_to_postid( $image_url ) );
+	}
+
+	function test_attachment_url_to_postid_schemes() {
+		$image_path = '2014/11/' . $this->img_name;
+		$attachment_id = $this->factory->attachment->create_object( $image_path, 0, array(
+			'post_mime_type' => 'image/jpeg',
+			'post_type'      => 'attachment',
+		) );
+
+		/**
+		 * @ticket 33109 Testing protocols not matching
+		 */
+		$image_url  = 'https://' . WP_TESTS_DOMAIN . '/wp-content/uploads/' . $image_path;
+		$this->assertEquals( $attachment_id, attachment_url_to_postid( $image_url ) );
+	}
+
+	function test_attachment_url_to_postid_filtered() {
+		$image_path = '2014/11/' . $this->img_name;
+		$attachment_id = $this->factory->attachment->create_object( $image_path, 0, array(
+			'post_mime_type' => 'image/jpeg',
+			'post_type'      => 'attachment',
+		) );
 
 		add_filter( 'upload_dir', array( $this, '_upload_dir' ) );
 		$image_url = 'http://192.168.1.20.com/wp-content/uploads/' . $image_path;
@@ -556,7 +601,121 @@ VIDEO;
 
 		$post = get_post( $post_id );
 
+		// Clean up.
+		wp_delete_attachment( $post_id );
+
 		$this->assertEquals( 'This is a comment. / Это комментарий. / Βλέπετε ένα σχόλιο.', $post->post_excerpt );
 	}
 
+	/**
+	 * @ticket 33016
+	 */
+	function test_multiline_cdata() {
+		global $wp_embed;
+
+		$content = <<<EOF
+<script>// <![CDATA[
+_my_function('data');
+// ]]>
+</script>
+EOF;
+
+		$result = $wp_embed->autoembed( $content );
+		$this->assertEquals( $content, $result );
+	}
+
+	/**
+	 * @ticket 33016
+	 */
+	function test_multiline_comment() {
+		global $wp_embed;
+
+		$content = <<<EOF
+<script><!--
+my_function();
+// --> </script>
+EOF;
+
+		$result = $wp_embed->autoembed( $content );
+		$this->assertEquals( $content, $result );
+	}
+
+
+	/**
+	 * @ticket 33016
+	 */
+	function test_multiline_comment_with_embeds() {
+		$content = <<<EOF
+Start.
+[embed]http://www.youtube.com/embed/TEST01YRHA0[/embed]
+<script><!--
+my_function();
+// --> </script>
+http://www.youtube.com/embed/TEST02YRHA0
+[embed]http://www.example.com/embed/TEST03YRHA0[/embed]
+http://www.example.com/embed/TEST04YRHA0
+Stop.
+EOF;
+
+		$expected = <<<EOF
+<p>Start.<br />
+https://youtube.com/watch?v=TEST01YRHA0<br />
+<script><!--
+my_function();
+// --> </script><br />
+https://youtube.com/watch?v=TEST02YRHA0<br />
+<a href="http://www.example.com/embed/TEST03YRHA0">http://www.example.com/embed/TEST03YRHA0</a><br />
+http://www.example.com/embed/TEST04YRHA0<br />
+Stop.</p>
+
+EOF;
+
+		$result = apply_filters( 'the_content', $content );
+		$this->assertEquals( $expected, $result );
+	}
+
+	/**
+	 * @ticket 33016
+	 */
+	function filter_wp_embed_shortcode_custom( $content, $url ) {
+		if ( 'https://www.example.com/?video=1' == $url ) {
+			$content = '@embed URL was replaced@';
+		}
+		return $content;
+	}
+
+	/**
+	 * @ticket 33016
+	 */
+	function test_oembed_explicit_media_link() {
+		global $wp_embed;
+		add_filter( 'embed_maybe_make_link', array( $this, 'filter_wp_embed_shortcode_custom' ), 10, 2 );
+
+		$content = <<<EOF
+https://www.example.com/?video=1
+EOF;
+
+		$expected = <<<EOF
+@embed URL was replaced@
+EOF;
+
+		$result = $wp_embed->autoembed( $content );
+		$this->assertEquals( $expected, $result );
+
+		$content = <<<EOF
+<a href="https://www.example.com/?video=1">https://www.example.com/?video=1</a>
+<script>// <![CDATA[
+_my_function('data');
+myvar = 'Hello world
+https://www.example.com/?video=1
+do not break this';
+// ]]>
+</script>
+EOF;
+
+		$result = $wp_embed->autoembed( $content );
+		$this->assertEquals( $content, $result );
+
+		remove_filter( 'embed_maybe_make_link', array( $this, 'filter_wp_embed_shortcode_custom' ), 10 );
+	}
 }

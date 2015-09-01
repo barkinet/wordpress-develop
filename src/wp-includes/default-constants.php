@@ -17,7 +17,7 @@ function wp_initial_constants() {
 
 	// set memory limits
 	if ( !defined('WP_MEMORY_LIMIT') ) {
-		if( is_multisite() ) {
+		if ( is_multisite() ) {
 			define('WP_MEMORY_LIMIT', '64M');
 		} else {
 			define('WP_MEMORY_LIMIT', '40M');
@@ -71,6 +71,18 @@ function wp_initial_constants() {
 	if ( !defined('WP_CACHE') )
 		define('WP_CACHE', false);
 
+	// Add define('SCRIPT_DEBUG', true); to wp-config.php to enable loading of non-minified,
+	// non-concatenated scripts and stylesheets.
+	if ( ! defined( 'SCRIPT_DEBUG' ) ) {
+		if ( ! empty( $GLOBALS['wp_version'] ) ) {
+			$develop_src = false !== strpos( $GLOBALS['wp_version'], '-src' );
+		} else {
+			$develop_src = false;
+		}
+
+		define( 'SCRIPT_DEBUG', $develop_src );
+	}
+
 	/**
 	 * Private
 	 */
@@ -80,13 +92,26 @@ function wp_initial_constants() {
 	if ( !defined('SHORTINIT') )
 		define('SHORTINIT', false);
 
-	// Constants for expressing human-readable intervals
-	// in their respective number of seconds.
+	// Constants for features added to WP that should short-circuit their plugin implementations
+	define( 'WP_FEATURE_BETTER_PASSWORDS', true );
+
+	/**#@+
+	 * Constants for expressing human-readable intervals
+	 * in their respective number of seconds.
+	 *
+	 * Please note that these values are approximate and are provided for convenience.
+	 * For example, MONTH_IN_SECONDS wrongly assumes every month has 30 days and
+	 * YEAR_IN_SECONDS does not take leap years into account.
+	 *
+	 * If you need more accuracy please consider using the DateTime class (http://php.net/manual/class.datetime.php).
+	 */
 	define( 'MINUTE_IN_SECONDS', 60 );
 	define( 'HOUR_IN_SECONDS',   60 * MINUTE_IN_SECONDS );
 	define( 'DAY_IN_SECONDS',    24 * HOUR_IN_SECONDS   );
 	define( 'WEEK_IN_SECONDS',    7 * DAY_IN_SECONDS    );
+	define( 'MONTH_IN_SECONDS',  30 * DAY_IN_SECONDS    );
 	define( 'YEAR_IN_SECONDS',  365 * DAY_IN_SECONDS    );
+	/**#@-*/
 }
 
 /**

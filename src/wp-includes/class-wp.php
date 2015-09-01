@@ -15,7 +15,7 @@ class WP {
 	 * @access public
 	 * @var array
 	 */
-	public $public_query_vars = array('m', 'p', 'posts', 'w', 'cat', 'withcomments', 'withoutcomments', 's', 'search', 'exact', 'sentence', 'calendar', 'page', 'paged', 'more', 'tb', 'pb', 'author', 'order', 'orderby', 'year', 'monthnum', 'day', 'hour', 'minute', 'second', 'name', 'category_name', 'tag', 'feed', 'author_name', 'static', 'pagename', 'page_id', 'error', 'comments_popup', 'attachment', 'attachment_id', 'subpost', 'subpost_id', 'preview', 'robots', 'taxonomy', 'term', 'cpage', 'post_type');
+	public $public_query_vars = array('m', 'p', 'posts', 'w', 'cat', 'withcomments', 'withoutcomments', 's', 'search', 'exact', 'sentence', 'calendar', 'page', 'paged', 'more', 'tb', 'pb', 'author', 'order', 'orderby', 'year', 'monthnum', 'day', 'hour', 'minute', 'second', 'name', 'category_name', 'tag', 'feed', 'author_name', 'static', 'pagename', 'page_id', 'error', 'comments_popup', 'attachment', 'attachment_id', 'subpost', 'subpost_id', 'preview', 'robots', 'taxonomy', 'term', 'cpage', 'post_type', 'title');
 
 	/**
 	 * Private query variables.
@@ -115,6 +115,8 @@ class WP {
 	 *
 	 * @since 2.0.0
 	 *
+	 * @global WP_Rewrite $wp_rewrite
+	 *
 	 * @param array|string $extra_query_vars Set the extra query variables.
 	 */
 	public function parse_request($extra_query_vars = '') {
@@ -157,6 +159,7 @@ class WP {
 			list( $req_uri ) = explode( '?', $_SERVER['REQUEST_URI'] );
 			$self = $_SERVER['PHP_SELF'];
 			$home_path = trim( parse_url( home_url(), PHP_URL_PATH ), '/' );
+			$home_path_regex = sprintf( '|^%s|i', preg_quote( $home_path, '|' ) );
 
 			// Trim path info from the end and the leading home path from the
 			// front. For path info requests, this leaves us with the requesting
@@ -164,13 +167,13 @@ class WP {
 			// requested permalink.
 			$req_uri = str_replace($pathinfo, '', $req_uri);
 			$req_uri = trim($req_uri, '/');
-			$req_uri = preg_replace("|^$home_path|i", '', $req_uri);
+			$req_uri = preg_replace( $home_path_regex, '', $req_uri );
 			$req_uri = trim($req_uri, '/');
 			$pathinfo = trim($pathinfo, '/');
-			$pathinfo = preg_replace("|^$home_path|i", '', $pathinfo);
+			$pathinfo = preg_replace( $home_path_regex, '', $pathinfo );
 			$pathinfo = trim($pathinfo, '/');
 			$self = trim($self, '/');
-			$self = preg_replace("|^$home_path|i", '', $self);
+			$self = preg_replace( $home_path_regex, '', $self );
 			$self = trim($self, '/');
 
 			// The requested permalink is in $pathinfo for path info requests and
@@ -306,6 +309,9 @@ class WP {
 			}
 		}
 
+		// Resolve conflicts between posts with numeric slugs and date archive queries.
+		$this->query_vars = wp_resolve_numeric_slug_conflicts( $this->query_vars );
+
 		foreach ( (array) $this->private_query_vars as $var) {
 			if ( isset($this->extra_query_vars[$var]) )
 				$this->query_vars[$var] = $this->extra_query_vars[$var];
@@ -360,6 +366,13 @@ class WP {
 		} elseif ( empty( $this->query_vars['feed'] ) ) {
 			$headers['Content-Type'] = get_option('html_type') . '; charset=' . get_option('blog_charset');
 		} else {
+			// Set the correct content type for feeds
+			$type = $this->query_vars['feed'];
+			if ( 'feed' == $this->query_vars['feed'] ) {
+				$type = get_default_feed();
+			}
+			$headers['Content-Type'] = feed_content_type( $type ) . '; charset=' . get_option( 'blog_charset' );
+
 			// We're showing a feed, so WP is indeed the only thing that last changed
 			if ( !empty($this->query_vars['withcomments'])
 				|| false !== strpos( $this->query_vars['feed'], 'comments-' )
@@ -432,7 +445,7 @@ class WP {
 			}
 		}
 
-		foreach( (array) $headers as $name => $field_value )
+		foreach ( (array) $headers as $name => $field_value )
 			@header("{$name}: {$field_value}");
 
 		if ( $exit_required )
@@ -488,13 +501,14 @@ class WP {
 	 * be taken when naming global variables that might interfere with the
 	 * WordPress environment.
 	 *
-	 * @global string $query_string Query string for the loop.
-	 * @global array $posts The found posts.
+	 * @global WP_Query     $wp_query
+	 * @global string       $query_string Query string for the loop.
+	 * @global array        $posts The found posts.
 	 * @global WP_Post|null $post The current post, if available.
-	 * @global string $request The SQL statement for the request.
-	 * @global int $more Only set, if single page or post.
-	 * @global int $single If single page or post. Only set, if single page or post.
-	 * @global WP_User $authordata Only set, if author archive.
+	 * @global string       $request The SQL statement for the request.
+	 * @global int          $more Only set, if single page or post.
+	 * @global int          $single If single page or post. Only set, if single page or post.
+	 * @global WP_User      $authordata Only set, if author archive.
 	 *
 	 * @since 2.0.0
 	 */
@@ -533,6 +547,8 @@ class WP {
 	 * Set up the Loop based on the query variables.
 	 *
 	 * @since 2.0.0
+	 *
+	 * @global WP_Query $wp_the_query
 	 */
 	public function query_posts() {
 		global $wp_the_query;
@@ -550,6 +566,8 @@ class WP {
 	 * Otherwise, issue a 200.
 	 *
 	 * @since 2.0.0
+	 *
+	 * @global WP_Query $wp_query
  	 */
 	public function handle_404() {
 		global $wp_query;
@@ -621,7 +639,6 @@ class WP {
 		 */
 		do_action_ref_array( 'wp', array( &$this ) );
 	}
-
 }
 
 /**
@@ -678,7 +695,9 @@ class WP_MatchesMapRegex {
 	 *
 	 * static helper function to ease use
 	 *
+	 * @static
 	 * @access public
+	 *
 	 * @param string $subject subject
 	 * @param array  $matches data used for substitution
 	 * @return string
@@ -710,5 +729,4 @@ class WP_MatchesMapRegex {
 		$index = intval(substr($matches[0], 9, -1));
 		return ( isset( $this->_matches[$index] ) ? urlencode($this->_matches[$index]) : '' );
 	}
-
 }

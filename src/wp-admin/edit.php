@@ -18,6 +18,10 @@ if ( 'attachment' === $typenow ) {
 	}
 }
 
+/**
+ * @global string $post_type
+ * @global object $post_type_object
+ */
 global $post_type, $post_type_object;
 
 $post_type = $typenow;
@@ -88,7 +92,7 @@ if ( $doaction ) {
 		case 'trash':
 			$trashed = $locked = 0;
 
-			foreach( (array) $post_ids as $post_id ) {
+			foreach ( (array) $post_ids as $post_id ) {
 				if ( !current_user_can( 'delete_post', $post_id) )
 					wp_die( __('You are not allowed to move this item to the Trash.') );
 
@@ -107,7 +111,7 @@ if ( $doaction ) {
 			break;
 		case 'untrash':
 			$untrashed = 0;
-			foreach( (array) $post_ids as $post_id ) {
+			foreach ( (array) $post_ids as $post_id ) {
 				if ( !current_user_can( 'delete_post', $post_id) )
 					wp_die( __('You are not allowed to restore this item from the Trash.') );
 
@@ -120,7 +124,7 @@ if ( $doaction ) {
 			break;
 		case 'delete':
 			$deleted = 0;
-			foreach( (array) $post_ids as $post_id ) {
+			foreach ( (array) $post_ids as $post_id ) {
 				$post_del = get_post($post_id);
 
 				if ( !current_user_can( 'delete_post', $post_id ) )
@@ -279,13 +283,13 @@ $bulk_counts = array_filter( $bulk_counts );
 require_once( ABSPATH . 'wp-admin/admin-header.php' );
 ?>
 <div class="wrap">
-<h2><?php
+<h1><?php
 echo esc_html( $post_type_object->labels->name );
 if ( current_user_can( $post_type_object->cap->create_posts ) )
-	echo ' <a href="' . esc_url( admin_url( $post_new_file ) ) . '" class="add-new-h2">' . esc_html( $post_type_object->labels->add_new ) . '</a>';
+	echo ' <a href="' . esc_url( admin_url( $post_new_file ) ) . '" class="page-title-action">' . esc_html( $post_type_object->labels->add_new ) . '</a>';
 if ( ! empty( $_REQUEST['s'] ) )
 	printf( ' <span class="subtitle">' . __('Search results for &#8220;%s&#8221;') . '</span>', get_search_query() );
-?></h2>
+?></h1>
 
 <?php
 // If we have a bulk message to issue:

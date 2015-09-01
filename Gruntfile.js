@@ -3,6 +3,7 @@ module.exports = function(grunt) {
 	var path = require('path'),
 		SOURCE_DIR = 'src/',
 		BUILD_DIR = 'build/',
+		autoprefixer = require('autoprefixer-core'),
 		mediaConfig = {},
 		mediaBuilds = ['audiovideo', 'grid', 'models', 'views'];
 
@@ -19,10 +20,14 @@ module.exports = function(grunt) {
 
 	// Project configuration.
 	grunt.initConfig({
-		autoprefixer: {
+		postcss: {
 			options: {
-				browsers: ['Android >= 2.1', 'Chrome >= 21', 'Explorer >= 7', 'Firefox >= 17', 'Opera >= 12.1', 'Safari >= 6.0'],
-				cascade: false
+				processors: [
+					autoprefixer({
+						browsers: ['Android >= 2.1', 'Chrome >= 21', 'Explorer >= 7', 'Firefox >= 17', 'Opera >= 12.1', 'Safari >= 6.0'],
+						cascade: false
+					})
+				]
 			},
 			core: {
 				expand: true,
@@ -118,9 +123,10 @@ module.exports = function(grunt) {
 				dest: 'tests/qunit/compiled.html',
 				options: {
 					processContent: function( src ) {
-						src = src.replace( /([^\.])*\.\.\/src/ig , '/../build' );
-						src = src.replace( '/jquery/ui/core.js', '/jquery/ui/core.min.js' );
-						return src;
+						return src.replace( /(\".+?\/)src(\/.+?)(?:.min)?(.js\")/g , function( match, $1, $2, $3 ) {
+							// Don't add `.min` to files that don't have it.
+							return $1 + 'build' + $2 + ( /jquery$/.test( $2 ) ? '' : '.min' ) + $3;
+						} );
 					}
 				}
 			}
@@ -140,7 +146,7 @@ module.exports = function(grunt) {
 		},
 		cssmin: {
 			options: {
-				'wp-admin': ['wp-admin', 'color-picker', 'customize-controls', 'customize-widgets', 'ie', 'install', 'login', 'press-this', 'deprecated-*']
+				'wp-admin': ['wp-admin', 'color-picker', 'customize-controls', 'customize-widgets', 'customize-nav-menus', 'ie', 'install', 'login', 'press-this', 'deprecated-*']
 			},
 			core: {
 				expand: true,
@@ -393,6 +399,9 @@ module.exports = function(grunt) {
 			}
 		},
 		uglify: {
+			options: {
+				ASCIIOnly: true
+			},
 			core: {
 				expand: true,
 				cwd: SOURCE_DIR,
@@ -576,7 +585,7 @@ module.exports = function(grunt) {
 	grunt.registerTask('rtl', ['rtlcss:core', 'rtlcss:colors']);
 
 	// Color schemes task.
-	grunt.registerTask('colors', ['sass:colors', 'autoprefixer:colors']);
+	grunt.registerTask('colors', ['sass:colors', 'postcss:colors']);
 
 	// JSHint task.
 	grunt.registerTask( 'jshint:corejs', [
@@ -605,7 +614,7 @@ module.exports = function(grunt) {
 	} );
 
 	grunt.registerTask( 'precommit', 'Runs front-end dev/test tasks in preparation for a commit.', [
-		'autoprefixer:core',
+		'postcss:core',
 		'imagemin:core',
 		'browserify',
 		'jshint:corejs',

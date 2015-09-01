@@ -241,6 +241,9 @@ function login_footer($input_id = '') {
 	<?php
 }
 
+/**
+ * @since 3.0.0
+ */
 function wp_shake_js() {
 	if ( wp_is_mobile() )
 		return;
@@ -255,6 +258,9 @@ addLoadEvent(function(){ var p=new Array(15,30,15,0,-15,-30,-15,0);p=p.concat(p.
 <?php
 }
 
+/**
+ * @since 3.7.0
+ */
 function wp_login_viewport_meta() {
 	?>
 	<meta name="viewport" content="width=device-width" />
@@ -275,7 +281,7 @@ function retrieve_password() {
 	$errors = new WP_Error();
 
 	if ( empty( $_POST['user_login'] ) ) {
-		$errors->add('empty_username', __('<strong>ERROR</strong>: Enter a username or e-mail address.'));
+		$errors->add('empty_username', __('<strong>ERROR</strong>: Enter a username or email address.'));
 	} elseif ( strpos( $_POST['user_login'], '@' ) ) {
 		$user_data = get_user_by( 'email', trim( $_POST['user_login'] ) );
 		if ( empty( $user_data ) )
@@ -296,7 +302,7 @@ function retrieve_password() {
 		return $errors;
 
 	if ( !$user_data ) {
-		$errors->add('invalidcombo', __('<strong>ERROR</strong>: Invalid username or e-mail.'));
+		$errors->add('invalidcombo', __('<strong>ERROR</strong>: Invalid username or email.'));
 		return $errors;
 	}
 
@@ -357,7 +363,7 @@ function retrieve_password() {
 		require_once ABSPATH . WPINC . '/class-phpass.php';
 		$wp_hasher = new PasswordHash( 8, true );
 	}
-	$hashed = $wp_hasher->HashPassword( $key );
+	$hashed = time() . ':' . $wp_hasher->HashPassword( $key );
 	$wpdb->update( $wpdb->users, array( 'user_activation_key' => $hashed ), array( 'user_login' => $user_login ) );
 
 	$message = __('Someone requested that the password be reset for the following account:') . "\r\n\r\n";
@@ -401,7 +407,7 @@ function retrieve_password() {
 	$message = apply_filters( 'retrieve_password_message', $message, $key, $user_login, $user_data );
 
 	if ( $message && !wp_mail( $user_email, wp_specialchars_decode( $title ), $message ) )
-		wp_die( __('The e-mail could not be sent.') . "<br />\n" . __('Possible reason: your host may have disabled the mail() function.') );
+		wp_die( __('The email could not be sent.') . "<br />\n" . __('Possible reason: your host may have disabled the mail() function.') );
 
 	return true;
 }
@@ -522,10 +528,11 @@ case 'retrievepassword' :
 	}
 
 	if ( isset( $_GET['error'] ) ) {
-		if ( 'invalidkey' == $_GET['error'] )
-			$errors->add( 'invalidkey', __( 'Sorry, that key does not appear to be valid.' ) );
-		elseif ( 'expiredkey' == $_GET['error'] )
-			$errors->add( 'expiredkey', __( 'Sorry, that key has expired. Please try again.' ) );
+		if ( 'invalidkey' == $_GET['error'] ) {
+			$errors->add( 'invalidkey', __( 'Your password reset link appears to be invalid. Please request a new link below.' ) );
+		} elseif ( 'expiredkey' == $_GET['error'] ) {
+			$errors->add( 'expiredkey', __( 'Your password reset link has expired. Please request a new link below.' ) );
+		}
 	}
 
 	$lostpassword_redirect = ! empty( $_REQUEST['redirect_to'] ) ? $_REQUEST['redirect_to'] : '';
@@ -553,7 +560,7 @@ case 'retrievepassword' :
 
 <form name="lostpasswordform" id="lostpasswordform" action="<?php echo esc_url( network_site_url( 'wp-login.php?action=lostpassword', 'login_post' ) ); ?>" method="post">
 	<p>
-		<label for="user_login" ><?php _e('Username or E-mail:') ?><br />
+		<label for="user_login" ><?php _e('Username or Email:') ?><br />
 		<input type="text" name="user_login" id="user_login" class="input" value="<?php echo esc_attr($user_login); ?>" size="20" /></label>
 	</p>
 	<?php
@@ -645,16 +652,20 @@ case 'rp' :
 <form name="resetpassform" id="resetpassform" action="<?php echo esc_url( network_site_url( 'wp-login.php?action=resetpass', 'login_post' ) ); ?>" method="post" autocomplete="off">
 	<input type="hidden" id="user_login" value="<?php echo esc_attr( $rp_login ); ?>" autocomplete="off" />
 
-	<p>
-		<label for="pass1"><?php _e('New password') ?><br />
-		<input type="password" name="pass1" id="pass1" class="input" size="20" value="" autocomplete="off" /></label>
+	<p class="user-pass1-wrap">
+		<label for="pass1"><?php _e('New password') ?></label><br />
+		<div class="wp-pwd">
+			<span class="password-input-wrapper">
+				<input type="password" data-reveal="1" data-pw="<?php echo esc_attr( wp_generate_password( 16 ) ); ?>" name="pass1" id="pass1" class="input" size="20" value="" autocomplete="off" aria-describedby="pass-strength-result" />
+			</span>
+			<div id="pass-strength-result" class="hide-if-no-js" aria-live="polite"><?php _e( 'Strength indicator' ); ?></div>
+		</div>
 	</p>
-	<p>
-		<label for="pass2"><?php _e('Confirm new password') ?><br />
-		<input type="password" name="pass2" id="pass2" class="input" size="20" value="" autocomplete="off" /></label>
+	<p class="user-pass2-wrap">
+		<label for="pass2"><?php _e('Confirm new password') ?></label><br />
+		<input type="password" name="pass2" id="pass2" class="input" size="20" value="" autocomplete="off" />
 	</p>
 
-	<div id="pass-strength-result" class="hide-if-no-js"><?php _e('Strength indicator'); ?></div>
 	<p class="description indicator-hint"><?php echo wp_get_password_hint(); ?></p>
 	<br class="clear" />
 
@@ -737,18 +748,18 @@ case 'register' :
 		<input type="text" name="user_login" id="user_login" class="input" value="<?php echo esc_attr(wp_unslash($user_login)); ?>" size="20" /></label>
 	</p>
 	<p>
-		<label for="user_email"><?php _e('E-mail') ?><br />
+		<label for="user_email"><?php _e('Email') ?><br />
 		<input type="email" name="user_email" id="user_email" class="input" value="<?php echo esc_attr( wp_unslash( $user_email ) ); ?>" size="25" /></label>
 	</p>
 	<?php
 	/**
-	 * Fires following the 'E-mail' field in the user registration form.
+	 * Fires following the 'Email' field in the user registration form.
 	 *
 	 * @since 2.1.0
 	 */
 	do_action( 'register_form' );
 	?>
-	<p id="reg_passmail"><?php _e('A password will be e-mailed to you.') ?></p>
+	<p id="reg_passmail"><?php _e( 'Registration confirmation will be emailed to you.' ); ?></p>
 	<br class="clear" />
 	<input type="hidden" name="redirect_to" value="<?php echo esc_attr( $redirect_to ); ?>" />
 	<p class="submit"><input type="submit" name="wp-submit" id="wp-submit" class="button button-primary button-large" value="<?php esc_attr_e('Register'); ?>" /></p>
@@ -861,11 +872,11 @@ default:
 		elseif	( isset($_GET['registration']) && 'disabled' == $_GET['registration'] )
 			$errors->add('registerdisabled', __('User registration is currently not allowed.'));
 		elseif	( isset($_GET['checkemail']) && 'confirm' == $_GET['checkemail'] )
-			$errors->add('confirm', __('Check your e-mail for the confirmation link.'), 'message');
+			$errors->add('confirm', __('Check your email for the confirmation link.'), 'message');
 		elseif	( isset($_GET['checkemail']) && 'newpass' == $_GET['checkemail'] )
-			$errors->add('newpass', __('Check your e-mail for your new password.'), 'message');
+			$errors->add('newpass', __('Check your email for your new password.'), 'message');
 		elseif	( isset($_GET['checkemail']) && 'registered' == $_GET['checkemail'] )
-			$errors->add('registered', __('Registration complete. Please check your e-mail.'), 'message');
+			$errors->add('registered', __('Registration complete. Please check your email.'), 'message');
 		elseif ( strpos( $redirect_to, 'about.php?updated' ) )
 			$errors->add('updated', __( '<strong>You have successfully updated WordPress!</strong> Please log back in to see what&#8217;s new.' ), 'message' );
 	}

@@ -11,7 +11,7 @@
  *
  * @since 2.0.0
  *
- * @return null|WP_Error|int Null when adding user, WP_Error or User ID integer when no parameters.
+ * @return int|WP_Error WP_Error or User ID.
  */
 function add_user() {
 	return edit_user();
@@ -25,10 +25,10 @@ function add_user() {
  * @since 2.0.0
  *
  * @param int $user_id Optional. User ID.
- * @return int user id of the updated user
+ * @return int|WP_Error user id of the updated user
  */
 function edit_user( $user_id = 0 ) {
-	global $wp_roles;
+	$wp_roles = wp_roles();
 	$user = new stdClass;
 	if ( $user_id ) {
 		$update = true;
@@ -149,9 +149,9 @@ function edit_user( $user_id = 0 ) {
 	if ( !$update && username_exists( $user->user_login ) )
 		$errors->add( 'user_login', __( '<strong>ERROR</strong>: This username is already registered. Please choose another one.' ));
 
-	/* checking e-mail address */
+	/* checking email address */
 	if ( empty( $user->user_email ) ) {
-		$errors->add( 'empty_email', __( '<strong>ERROR</strong>: Please enter an e-mail address.' ), array( 'form-field' => 'email' ) );
+		$errors->add( 'empty_email', __( '<strong>ERROR</strong>: Please enter an email address.' ), array( 'form-field' => 'email' ) );
 	} elseif ( !is_email( $user->user_email ) ) {
 		$errors->add( 'invalid_email', __( '<strong>ERROR</strong>: The email address isn&#8217;t correct.' ), array( 'form-field' => 'email' ) );
 	} elseif ( ( $owner_id = email_exists($user->user_email) ) && ( !$update || ( $owner_id != $user->ID ) ) ) {
@@ -163,9 +163,9 @@ function edit_user( $user_id = 0 ) {
 	 *
 	 * @since 2.8.0
 	 *
-	 * @param array   &$errors An array of user profile update errors, passed by reference.
-	 * @param bool    $update  Whether this is a user update.
-	 * @param WP_User &$user   WP_User object, passed by reference.
+	 * @param WP_Error &$errors WP_Error object, passed by reference.
+	 * @param bool     $update  Whether this is a user update.
+	 * @param WP_User  &$user   WP_User object, passed by reference.
 	 */
 	do_action_ref_array( 'user_profile_update_errors', array( &$errors, $update, &$user ) );
 
@@ -176,7 +176,7 @@ function edit_user( $user_id = 0 ) {
 		$user_id = wp_update_user( $user );
 	} else {
 		$user_id = wp_insert_user( $user );
-		wp_new_user_notification( $user_id, isset( $_POST['send_password'] ) ? wp_unslash( $pass1 ) : '' );
+		wp_new_user_notification( $user_id, 'both' );
 	}
 	return $user_id;
 }
@@ -198,9 +198,7 @@ function edit_user( $user_id = 0 ) {
  * @return array
  */
 function get_editable_roles() {
-	global $wp_roles;
-
-	$all_roles = $wp_roles->roles;
+	$all_roles = wp_roles()->roles;
 
 	/**
 	 * Filter the list of editable roles.
@@ -236,6 +234,8 @@ function get_user_to_edit( $user_id ) {
  *
  * @since 2.0.0
  *
+ * @global wpdb $wpdb
+ *
  * @param int $user_id User ID.
  * @return array
  */
@@ -263,6 +263,8 @@ function get_users_drafts( $user_id ) {
  * The user meta will also be deleted that are for that User ID.
  *
  * @since 2.0.0
+ *
+ * @global wpdb $wpdb
  *
  * @param int $id User ID.
  * @param int $reassign Optional. Reassign posts and links to new User ID.
@@ -384,9 +386,12 @@ function wp_revoke_user($id) {
 	$user->remove_all_caps();
 }
 
-add_action('admin_init', 'default_password_nag_handler');
 /**
  * @since 2.8.0
+ *
+ * @global int $user_ID
+ *
+ * @param false $errors Deprecated.
  */
 function default_password_nag_handler($errors = false) {
 	global $user_ID;
@@ -401,10 +406,11 @@ function default_password_nag_handler($errors = false) {
 	}
 }
 
-add_action('profile_update', 'default_password_nag_edit_user', 10, 2);
-
 /**
  * @since 2.8.0
+ *
+ * @param int    $user_ID
+ * @param object $old_data
  */
 function default_password_nag_edit_user($user_ID, $old_data) {
 	// Short-circuit it.
@@ -420,10 +426,10 @@ function default_password_nag_edit_user($user_ID, $old_data) {
 	}
 }
 
-add_action('admin_notices', 'default_password_nag');
-
 /**
  * @since 2.8.0
+ *
+ * @global string $pagenow
  */
 function default_password_nag() {
 	global $pagenow;
@@ -434,7 +440,7 @@ function default_password_nag() {
 	echo '<div class="error default-password-nag">';
 	echo '<p>';
 	echo '<strong>' . __('Notice:') . '</strong> ';
-	_e('You&rsquo;re using the auto-generated password for your account. Would you like to change it to something easier to remember?');
+	_e('You&rsquo;re using the auto-generated password for your account. Would you like to change it?');
 	echo '</p><p>';
 	printf( '<a href="%s">' . __('Yes, take me to my profile page') . '</a> | ', get_edit_profile_url() . '#password' );
 	printf( '<a href="%s" id="default-password-nag-no">' . __('No thanks, do not remind me again') . '</a>', '?default_password_nag=0' );

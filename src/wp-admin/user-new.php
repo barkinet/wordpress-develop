@@ -17,6 +17,11 @@ if ( is_multisite() ) {
 }
 
 if ( is_multisite() ) {
+	/**
+	 *
+	 * @param string $text
+	 * @return string
+	 */
 	function admin_created_user_email( $text ) {
 		$roles = get_editable_roles();
 		$role = $roles[ $_REQUEST['role'] ];
@@ -74,6 +79,18 @@ if ( isset($_REQUEST['action']) && 'adduser' == $_REQUEST['action'] ) {
 
 			$roles = get_editable_roles();
 			$role = $roles[ $_REQUEST['role'] ];
+
+			/**
+			 * Fires immediately after a user is invited to join a site, but before the notification is sent.
+			 *
+			 * @since 4.4.0
+			 *
+			 * @param int    $user_id     The invited user's ID.
+			 * @param array  $role        The role of invited user.
+			 * @param string $newuser_key The key of the invitation.
+			 */
+			do_action( 'invite_user', $user_id, $role, $newuser_key );
+
 			/* translators: 1: Site name, 2: site URL, 3: role, 4: activation URL */
 			$message = __( 'Hi,
 
@@ -185,7 +202,7 @@ get_current_screen()->set_help_sidebar(
 );
 
 wp_enqueue_script('wp-ajax-response');
-wp_enqueue_script('user-profile');
+wp_enqueue_script( 'user-profile' );
 
 /**
  * Filter whether to enable user auto-complete for non-super admins in Multisite.
@@ -232,13 +249,13 @@ if ( isset($_GET['update']) ) {
 }
 ?>
 <div class="wrap">
-<h2 id="add-new-user"> <?php
+<h1 id="add-new-user"><?php
 if ( current_user_can( 'create_users' ) ) {
 	echo _x( 'Add New User', 'user' );
 } elseif ( current_user_can( 'promote_users' ) ) {
 	echo _x( 'Add Existing User', 'user' );
 } ?>
-</h2>
+</h1>
 
 <?php if ( isset($errors) && is_wp_error( $errors ) ) : ?>
 	<div class="error">
@@ -272,11 +289,11 @@ if ( is_multisite() ) {
 		echo '<h3 id="add-existing-user">' . __('Add Existing User') . '</h3>';
 	if ( !is_super_admin() ) {
 		echo '<p>' . __( 'Enter the email address of an existing user on this network to invite them to this site. That person will be sent an email asking them to confirm the invite.' ) . '</p>';
-		$label = __('E-mail');
+		$label = __('Email');
 		$type  = 'email';
 	} else {
 		echo '<p>' . __( 'Enter the email address or username of an existing user on this network to invite them to this site. That person will be sent an email asking them to confirm the invite.' ) . '</p>';
-		$label = __('E-mail or Username');
+		$label = __('Email or Username');
 		$type  = 'text';
 	}
 ?>
@@ -350,17 +367,17 @@ $new_user_lastname = $creating && isset( $_POST['last_name'] ) ? wp_unslash( $_P
 $new_user_email = $creating && isset( $_POST['email'] ) ? wp_unslash( $_POST['email'] ) : '';
 $new_user_uri = $creating && isset( $_POST['url'] ) ? wp_unslash( $_POST['url'] ) : '';
 $new_user_role = $creating && isset( $_POST['role'] ) ? wp_unslash( $_POST['role'] ) : '';
-$new_user_send_password = $creating && isset( $_POST['send_password'] ) ? wp_unslash( $_POST['send_password'] ) : '';
+$new_user_send_password = $creating && isset( $_POST['send_password'] ) ? wp_unslash( $_POST['send_password'] ) : true;
 $new_user_ignore_pass = $creating && isset( $_POST['noconfirmation'] ) ? wp_unslash( $_POST['noconfirmation'] ) : '';
 
 ?>
 <table class="form-table">
 	<tr class="form-field form-required">
 		<th scope="row"><label for="user_login"><?php _e('Username'); ?> <span class="description"><?php _e('(required)'); ?></span></label></th>
-		<td><input name="user_login" type="text" id="user_login" value="<?php echo esc_attr($new_user_login); ?>" aria-required="true" /></td>
+		<td><input name="user_login" type="text" id="user_login" value="<?php echo esc_attr( $new_user_login ); ?>" aria-required="true" autocapitalize="none" autocorrect="off" /></td>
 	</tr>
 	<tr class="form-field form-required">
-		<th scope="row"><label for="email"><?php _e('E-mail'); ?> <span class="description"><?php _e('(required)'); ?></span></label></th>
+		<th scope="row"><label for="email"><?php _e('Email'); ?> <span class="description"><?php _e('(required)'); ?></span></label></th>
 		<td><input name="email" type="email" id="email" value="<?php echo esc_attr( $new_user_email ); ?>" /></td>
 	</tr>
 <?php if ( !is_multisite() ) { ?>
@@ -385,25 +402,47 @@ $new_user_ignore_pass = $creating && isset( $_POST['noconfirmation'] ) ? wp_unsl
  * @param bool $show Whether to show the password fields. Default true.
  */
 if ( apply_filters( 'show_password_fields', true ) ) : ?>
-	<tr class="form-field form-required">
-		<th scope="row"><label for="pass1"><?php _e('Password'); ?> <span class="description"><?php /* translators: password input field */_e('(required)'); ?></span></label></th>
+	<tr class="form-field form-required user-pass1-wrap">
+		<th scope="row">
+			<label for="pass1">
+				<?php _e( 'Password' ); ?>
+				<span class="description hide-if-js"><?php _e( '(required)' ); ?></span>
+			</label>
+		</th>
 		<td>
 			<input class="hidden" value=" " /><!-- #24364 workaround -->
-			<input name="pass1" type="password" id="pass1" autocomplete="off" />
+			<button type="button" class="button button-secondary wp-generate-pw hide-if-no-js"><?php _e( 'Show password' ); ?></button>
+			<div class="wp-pwd hide-if-js">
+				<?php $initial_password = wp_generate_password( 24 ); ?>
+				<span class="password-input-wrapper">
+					<input type="password" name="pass1" id="pass1" class="regular-text" autocomplete="off" data-reveal="1" data-pw="<?php echo esc_attr( $initial_password ); ?>" aria-describedby="pass-strength-result" />
+				</span>
+				<button type="button" class="button button-secondary wp-hide-pw hide-if-no-js" data-toggle="0" aria-label="<?php esc_attr_e( 'Hide password' ); ?>">
+					<span class="dashicons dashicons-hidden"></span>
+					<span class="text"><?php _e( 'Hide' ); ?></span>
+				</button>
+				<button type="button" class="button button-secondary wp-cancel-pw hide-if-no-js" data-toggle="0" aria-label="<?php esc_attr_e( 'Cancel password change' ); ?>">
+					<span class="text"><?php _e( 'Cancel' ); ?></span>
+				</button>
+				<div style="display:none" id="pass-strength-result" aria-live="polite"></div>
+			</div>
+			<p><span class="description"><?php _e( 'A password reset link will be sent to the user via email.' ); ?></span></p>
 		</td>
 	</tr>
-	<tr class="form-field form-required">
-		<th scope="row"><label for="pass2"><?php _e('Repeat Password'); ?> <span class="description"><?php /* translators: password input field */_e('(required)'); ?></span></label></th>
+	<tr class="form-field form-required user-pass2-wrap hide-if-js">
+		<th scope="row"><label for="pass2"><?php _e( 'Repeat Password' ); ?> <span class="description"><?php _e( '(required)' ); ?></span></label></th>
 		<td>
 		<input name="pass2" type="password" id="pass2" autocomplete="off" />
-		<br />
-		<div id="pass-strength-result"><?php _e('Strength indicator'); ?></div>
-		<p class="description indicator-hint"><?php echo wp_get_password_hint(); ?></p>
 		</td>
 	</tr>
-	<tr>
-		<th scope="row"><?php _e('Send Password?') ?></th>
-		<td><label for="send_password"><input type="checkbox" name="send_password" id="send_password" value="1" <?php checked( $new_user_send_password ); ?> /> <?php _e('Send this password to the new user by email.'); ?></label></td>
+	<tr class="pw-weak">
+		<th><?php _e( 'Confirm Password' ); ?></th>
+		<td>
+			<label>
+				<input type="checkbox" name="pw_weak" class="pw-checkbox" />
+				<?php _e( 'Confirm use of weak password' ); ?>
+			</label>
+		</td>
 	</tr>
 <?php endif; ?>
 <?php } // !is_multisite ?>

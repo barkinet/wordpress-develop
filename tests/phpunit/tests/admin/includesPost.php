@@ -313,4 +313,210 @@ class Tests_Admin_includesPost extends WP_UnitTestCase {
 		$wp_rewrite->set_permalink_structure( $old_permalink_structure );
 		flush_rewrite_rules();
 	}
+
+	/**
+	 * @ticket 32954
+	 */
+	public function test_get_sample_permalink_html_should_use_correct_permalink_for_view_post_button_when_changing_slug() {
+		global $wp_rewrite;
+		$old_permalink_structure = get_option( 'permalink_structure' );
+		$permalink_structure = '%postname%';
+		$wp_rewrite->set_permalink_structure( "/$permalink_structure/" );
+		flush_rewrite_rules();
+
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
+
+		// Published posts should use published permalink
+		$p = $this->factory->post->create( array( 'post_status' => 'publish', 'post_name' => 'foo' ) );
+
+		$found = get_sample_permalink_html( $p, null, 'new_slug' );
+		$post = get_post( $p );
+		$this->assertContains( "span id='view-post-btn'><a href='" . get_option( 'home' ) . "/" . $post->post_name . "/'", $found );
+
+		// Scheduled posts should use published permalink
+		$future_date = date( 'Y-m-d H:i:s', time() + 100 );
+		$p = $this->factory->post->create( array( 'post_status' => 'future', 'post_name' => 'bar', 'post_date' => $future_date ) );
+
+		$found = get_sample_permalink_html( $p, null, 'new_slug' );
+		$post = get_post( $p );
+		$this->assertContains( "span id='view-post-btn'><a href='" . get_option( 'home' ) . "/" . $post->post_name . "/'", $found );
+
+		// Draft posts should use preview link
+		$p = $this->factory->post->create( array( 'post_status' => 'draft', 'post_name' => 'baz' ) );
+
+		$found = get_sample_permalink_html( $p, null, 'new_slug' );
+		$post = get_post( $p );
+
+		$preview_link = get_permalink( $post->ID );
+		$preview_link = add_query_arg( 'preview', 'true', $preview_link );
+
+		$this->assertContains( "span id='view-post-btn'><a href='" . esc_url( $preview_link ) . "'", $found );
+
+		$wp_rewrite->set_permalink_structure( $old_permalink_structure );
+		flush_rewrite_rules();
+	}
+
+	/**
+	 * @ticket 5305
+	 */
+	public function test_get_sample_permalink_should_avoid_slugs_that_would_create_clashes_with_year_archives() {
+		global $wp_rewrite;
+		$wp_rewrite->init();
+		$wp_rewrite->set_permalink_structure( '/%postname%/' );
+		$wp_rewrite->flush_rules();
+
+		$p = $this->factory->post->create( array(
+			'post_name' => '2015',
+		) );
+
+		$found = get_sample_permalink( $p );
+		$this->assertEquals( '2015-2', $found[1] );
+
+		$wp_rewrite->set_permalink_structure( '' );
+		flush_rewrite_rules();
+	}
+
+	/**
+	 * @ticket 5305
+	 */
+	public function test_get_sample_permalink_should_allow_yearlike_slugs_if_permastruct_does_not_cause_an_archive_conflict() {
+		global $wp_rewrite;
+		$wp_rewrite->init();
+		$wp_rewrite->set_permalink_structure( '/%year%/%postname%/' );
+		$wp_rewrite->flush_rules();
+
+		$p = $this->factory->post->create( array(
+			'post_name' => '2015',
+		) );
+
+		$found = get_sample_permalink( $p );
+		$this->assertEquals( '2015', $found[1] );
+
+		$wp_rewrite->set_permalink_structure( '' );
+		flush_rewrite_rules();
+	}
+
+	/**
+	 * @ticket 5305
+	 */
+	public function test_get_sample_permalink_should_avoid_slugs_that_would_create_clashes_with_month_archives() {
+		global $wp_rewrite;
+		$wp_rewrite->init();
+		$wp_rewrite->set_permalink_structure( '/%year%/%postname%/' );
+		$wp_rewrite->flush_rules();
+
+		$p = $this->factory->post->create( array(
+			'post_name' => '11',
+		) );
+
+		$found = get_sample_permalink( $p );
+		$this->assertEquals( '11-2', $found[1] );
+
+		$wp_rewrite->set_permalink_structure( '' );
+		flush_rewrite_rules();
+	}
+
+	/**
+	 * @ticket 5305
+	 */
+	public function test_get_sample_permalink_should_ignore_potential_month_conflicts_for_invalid_monthnum() {
+		global $wp_rewrite;
+		$wp_rewrite->init();
+		$wp_rewrite->set_permalink_structure( '/%year%/%postname%/' );
+		$wp_rewrite->flush_rules();
+
+		$p = $this->factory->post->create( array(
+			'post_name' => '13',
+		) );
+
+		$found = get_sample_permalink( $p );
+		$this->assertEquals( '13', $found[1] );
+
+		$wp_rewrite->set_permalink_structure( '' );
+		flush_rewrite_rules();
+	}
+
+	/**
+	 * @ticket 5305
+	 */
+	public function test_get_sample_permalink_should_avoid_slugs_that_would_create_clashes_with_day_archives() {
+		global $wp_rewrite;
+		$wp_rewrite->init();
+		$wp_rewrite->set_permalink_structure( '/%year%/%monthnum%/%postname%/' );
+		$wp_rewrite->flush_rules();
+
+		$p = $this->factory->post->create( array(
+			'post_name' => '30',
+		) );
+
+		$found = get_sample_permalink( $p );
+		$this->assertEquals( '30-2', $found[1] );
+
+		$wp_rewrite->set_permalink_structure( '' );
+		flush_rewrite_rules();
+	}
+
+	/**
+	 * @ticket 5305
+	 */
+	public function test_get_sample_permalink_should_iterate_slug_suffix_when_a_date_conflict_is_found() {
+		global $wp_rewrite;
+		$wp_rewrite->init();
+		$wp_rewrite->set_permalink_structure( '/%year%/%monthnum%/%postname%/' );
+		$wp_rewrite->flush_rules();
+
+		$this->factory->post->create( array(
+			'post_name' => '30-2',
+		) );
+
+		$p = $this->factory->post->create( array(
+			'post_name' => '30',
+		) );
+
+		$found = get_sample_permalink( $p );
+		$this->assertEquals( '30-3', $found[1] );
+
+		$wp_rewrite->set_permalink_structure( '' );
+		flush_rewrite_rules();
+	}
+
+	/**
+	 * @ticket 5305
+	 */
+	public function test_get_sample_permalink_should_ignore_potential_day_conflicts_for_invalid_day() {
+		global $wp_rewrite;
+		$wp_rewrite->init();
+		$wp_rewrite->set_permalink_structure( '/%year%/%monthnum%/%postname%/' );
+		$wp_rewrite->flush_rules();
+
+		$p = $this->factory->post->create( array(
+			'post_name' => '32',
+		) );
+
+		$found = get_sample_permalink( $p );
+		$this->assertEquals( '32', $found[1] );
+
+		$wp_rewrite->set_permalink_structure( '' );
+		flush_rewrite_rules();
+	}
+
+	/**
+	 * @ticket 5305
+	 */
+	public function test_get_sample_permalink_should_allow_daylike_slugs_if_permastruct_does_not_cause_an_archive_conflict() {
+		global $wp_rewrite;
+		$wp_rewrite->init();
+		$wp_rewrite->set_permalink_structure( '/%year%/%month%/%day%/%postname%/' );
+		$wp_rewrite->flush_rules();
+
+		$p = $this->factory->post->create( array(
+			'post_name' => '30',
+		) );
+
+		$found = get_sample_permalink( $p );
+		$this->assertEquals( '30', $found[1] );
+
+		$wp_rewrite->set_permalink_structure( '' );
+		flush_rewrite_rules();
+	}
 }

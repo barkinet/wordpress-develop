@@ -6,6 +6,23 @@
  */
 class Tests_User extends WP_UnitTestCase {
 
+	protected $user_data;
+
+	function setUp() {
+		parent::setUp();
+
+		$this->user_data = array(
+			'user_login' => 'user1',
+			'user_nicename' => 'userone',
+			'user_pass'  => 'password',
+			'first_name' => 'John',
+			'last_name'  => 'Doe',
+			'display_name' => 'John Doe',
+			'user_email' => 'blackburn@battlefield3.com',
+			'user_url' => 'http://tacos.com'
+		);
+	}
+
 	function test_get_users_of_blog() {
 		// add one of each user role
 		$nusers = array();
@@ -308,7 +325,7 @@ class Tests_User extends WP_UnitTestCase {
 		// Test update of fields in _get_additional_user_keys()
 		$user_data = array( 'ID' => $user_id, 'use_ssl' => 1, 'show_admin_bar_front' => 1,
 						   'rich_editing' => 1, 'first_name' => 'first', 'last_name' => 'last',
-						   'nickname' => 'nick', 'comment_shortcuts' => 1, 'admin_color' => 'classic',
+						   'nickname' => 'nick', 'comment_shortcuts' => 'true', 'admin_color' => 'classic',
 						   'description' => 'describe' );
 		wp_update_user( $user_data );
 
@@ -348,6 +365,11 @@ class Tests_User extends WP_UnitTestCase {
 	 */
 	function test_is_user_member_of_blog() {
 		$old_current = get_current_user_id();
+
+		$this->assertSame( 0, $old_current );
+
+		// test for "get current user" when not logged in
+		$this->assertFalse( is_user_member_of_blog() );
 
 		$user_id = $this->factory->user->create( array( 'role' => 'subscriber' ) );
 		wp_set_current_user( $user_id );
@@ -636,7 +658,7 @@ class Tests_User extends WP_UnitTestCase {
 		) );
 		$this->assertEquals( $id2, email_exists( 'miller@battlefield3.com' ) );
 
-		if( ! is_wp_error( $id2 ) ){	
+		if( ! is_wp_error( $id2 ) ){
 			$return = wp_update_user( array(
 				'ID'         => $id2,
 				'user_email' => 'david@battlefield3.com',
@@ -649,7 +671,7 @@ class Tests_User extends WP_UnitTestCase {
 			) );
 			if ( ! defined( 'WP_IMPORTING' ) ) {
 				$this->assertWPError( $return );
-			}			
+			}
 		}
 	}
 
@@ -699,4 +721,88 @@ class Tests_User extends WP_UnitTestCase {
 		$user = get_userdata( $user->ID );
 		$this->assertEmpty( $user->user_activation_key );
 	}
+
+	public function test_search_users_login() {
+		$id = $this->factory->user->create( $this->user_data );
+
+		$users = get_users( array( 'search' => 'user1', 'fields' => 'ID' ) );
+
+		$this->assertTrue( in_array( $id, $users ) );
+	}
+
+	public function test_search_users_url() {
+		$id = $this->factory->user->create( $this->user_data );
+
+		$users = get_users( array( 'search' => '*tacos*', 'fields' => 'ID' ) );
+
+		$this->assertTrue( in_array( $id, $users ) );
+	}
+
+	public function test_search_users_email() {
+		$id = $this->factory->user->create( $this->user_data );
+
+		$users = get_users( array( 'search' => '*battle*', 'fields' => 'ID' ) );
+
+		$this->assertTrue( in_array( $id, $users ) );
+	}
+
+	public function test_search_users_nicename() {
+		$id = $this->factory->user->create( $this->user_data );
+
+		$users = get_users( array( 'search' => '*one*', 'fields' => 'ID' ) );
+
+		$this->assertTrue( in_array( $id, $users ) );
+	}
+
+	public function test_search_users_display_name() {
+		$id = $this->factory->user->create( $this->user_data );
+
+		$users = get_users( array( 'search' => '*Doe*', 'fields' => 'ID' ) );
+
+		$this->assertTrue( in_array( $id, $users ) );
+	}
+
+	/**
+	 * @ticket 32158
+	 */
+	function test_email_case() {
+		// Create a test user with a lower-case email address.
+		$user_id = $this->factory->user->create( array(
+			'user_email' => 'test@test.com',
+		) );
+
+		// Alter the case of the email address (which stays the same).
+		$userdata = array(
+			'ID' => $user_id,
+			'user_email' => 'test@TEST.com',
+		);
+		$update = wp_update_user( $userdata );
+
+		$this->assertEquals( $user_id, $update );
+	}
+
+	/**
+	 * @ticket 32158
+	 */
+	function test_email_change() {
+		// Create a test user.
+		$user_id = $this->factory->user->create( array(
+			'user_email' => 'test@test.com',
+		) );
+
+		// Change the email address.
+		$userdata = array(
+			'ID' => $user_id,
+			'user_email' => 'test2@test.com',
+		);
+		$update = wp_update_user( $userdata );
+
+		// Was this successful?
+		$this->assertEquals( $user_id, $update );
+
+		// Verify that the email address has been updated.
+		$user = get_userdata( $user_id );
+		$this->assertEquals( $user->user_email, 'test2@test.com' );
+	}
+
 }

@@ -26,7 +26,7 @@ if ( isset($HTTP_RAW_POST_DATA) )
 	$HTTP_RAW_POST_DATA = trim($HTTP_RAW_POST_DATA);
 
 /** Include the bootstrap for setting up WordPress environment */
-include('./wp-load.php');
+include( dirname( __FILE__ ) . '/wp-load.php' );
 
 if ( isset( $_GET['rsd'] ) ) { // http://cyber.law.harvard.edu/blogs/gems/tech/rsd.html
 header('Content-Type: text/xml; charset=' . get_option('blog_charset'), true);
@@ -88,8 +88,8 @@ exit;
 /**
  * logIO() - Writes logging info to a file.
  *
- * @deprecated 3.4.0
- * @deprecated Use error_log()
+ * @deprecated 3.4.0 Use error_log()
+ * @see error_log()
  *
  * @param string $io Whether input or output
  * @param string $msg Information describing logging reason.

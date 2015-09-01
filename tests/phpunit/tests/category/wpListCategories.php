@@ -46,6 +46,23 @@ class Tests_Category_WpListCategories extends WP_UnitTestCase {
 	}
 
 	/**
+	 * @ticket 33565
+	 */
+	public function test_current_category_should_accept_an_array_of_ids() {
+		$cats = $this->factory->category->create_many( 3 );
+
+		$found = wp_list_categories( array(
+			'echo' => false,
+			'hide_empty' => false,
+			'current_category' => array( $cats[0], $cats[2] ),
+		) );
+
+		$this->assertRegExp( '/class="[^"]*cat-item-' . $cats[0] . '[^"]*current-cat[^"]*"/', $found );
+		$this->assertNotRegExp( '/class="[^"]*cat-item-' . $cats[1] . '[^"]*current[^"]*"/', $found );
+		$this->assertRegExp( '/class="[^"]*cat-item-' . $cats[2] . '[^"]*current-cat[^"]*"/', $found );
+	}
+
+	/**
 	 * @ticket 16792
 	 */
 	public function test_should_not_create_element_when_cat_name_is_filtered_to_empty_string() {
@@ -196,5 +213,55 @@ class Tests_Category_WpListCategories extends WP_UnitTestCase {
 		}
 
 		return $cat;
+	}
+
+	/**
+	 * @ticket 33460
+	 */
+	public function test_title_li_should_be_shown_by_default_for_empty_lists() {
+		$found = wp_list_categories( array(
+			'echo' => false,
+		) );
+
+		$this->assertContains( '<li class="categories">Categories', $found );
+	}
+
+	/**
+	 * @ticket 33460
+	 */
+	public function test_hide_title_if_empty_should_be_respected_for_empty_lists_when_true() {
+		$found = wp_list_categories( array(
+			'echo' => false,
+			'hide_title_if_empty' => true,
+		) );
+
+		$this->assertNotContains( '<li class="categories">Categories', $found );
+	}
+
+	/**
+	 * @ticket 33460
+	 */
+	public function test_hide_title_if_empty_should_be_respected_for_empty_lists_when_false() {
+		$found = wp_list_categories( array(
+			'echo' => false,
+			'hide_title_if_empty' => false,
+		) );
+
+		$this->assertContains( '<li class="categories">Categories', $found );
+	}
+
+	/**
+	 * @ticket 33460
+	 */
+	public function test_hide_title_if_empty_should_be_ignored_when_category_list_is_not_empty() {
+		$cat = $this->factory->category->create();
+
+		$found = wp_list_categories( array(
+			'echo' => false,
+			'hide_empty' => false,
+			'hide_title_if_empty' => true,
+		) );
+
+		$this->assertContains( '<li class="categories">Categories', $found );
 	}
 }

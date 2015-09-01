@@ -43,7 +43,6 @@ $_old_files = array(
 'wp-admin/link-categories.php',
 'wp-admin/list-manipulation.js',
 'wp-admin/list-manipulation.php',
-'wp-includes/comment-functions.php',
 'wp-includes/feed-functions.php',
 'wp-includes/functions-compat.php',
 'wp-includes/functions-formatting.php',
@@ -694,7 +693,12 @@ $_old_files = array(
 'wp-includes/js/jquery/ui/jquery.ui.tabs.min.js',
 'wp-includes/js/jquery/ui/jquery.ui.tooltip.min.js',
 'wp-includes/js/jquery/ui/jquery.ui.widget.min.js',
-'wp-includes/js/tinymce/skins/wordpress/images/dashicon-no-alt.png'
+'wp-includes/js/tinymce/skins/wordpress/images/dashicon-no-alt.png',
+// 4.3
+'wp-admin/js/wp-fullscreen.js',
+'wp-admin/js/wp-fullscreen.min.js',
+'wp-includes/js/tinymce/wp-mce-help.php',
+'wp-includes/js/tinymce/plugins/wpfullscreen',
 );
 
 /**
@@ -768,8 +772,16 @@ $_new_bundled_files = array(
  *
  * @since 2.7.0
  *
+ * @global WP_Filesystem_Base $wp_filesystem
+ * @global array              $_old_files
+ * @global array              $_new_bundled_files
+ * @global wpdb               $wpdb
+ * @global string             $wp_version
+ * @global string             $required_php_version
+ * @global string             $required_mysql_version
+ *
  * @param string $from New release unzipped path.
- * @param string $to Path to old WordPress installation.
+ * @param string $to   Path to old WordPress installation.
  * @return WP_Error|null WP_Error on failure, null on success.
  */
 function update_core($from, $to) {
@@ -810,8 +822,15 @@ function update_core($from, $to) {
 		return new WP_Error( 'insane_distro', __('The update could not be unpacked') );
 	}
 
-	// Import $wp_version, $required_php_version, and $required_mysql_version from the new version
-	// $wp_filesystem->wp_content_dir() returned unslashed pre-2.8
+
+	/**
+	 * Import $wp_version, $required_php_version, and $required_mysql_version from the new version
+	 * $wp_filesystem->wp_content_dir() returned unslashed pre-2.8
+	 *
+	 * @global string $wp_version
+	 * @global string $required_php_version
+	 * @global string $required_mysql_version
+	 */
 	global $wp_version, $required_php_version, $required_mysql_version;
 
 	$versions_file = trailingslashit( $wp_filesystem->wp_content_dir() ) . 'upgrade/version-current.php';
@@ -861,7 +880,7 @@ function update_core($from, $to) {
 		if ( is_array( $checksums ) && isset( $checksums[ $wp_version ] ) )
 			$checksums = $checksums[ $wp_version ]; // Compat code for 3.7-beta2
 		if ( is_array( $checksums ) ) {
-			foreach( $checksums as $file => $checksum ) {
+			foreach ( $checksums as $file => $checksum ) {
 				if ( 'wp-content' == substr( $file, 0, 10 ) )
 					continue;
 				if ( ! file_exists( ABSPATH . $file ) )
@@ -1101,8 +1120,10 @@ function update_core($from, $to) {
  * @since 3.7.0 Updated not to use a regular expression for the skip list
  * @see copy_dir()
  *
- * @param string $from source directory
- * @param string $to destination directory
+ * @global WP_Filesystem_Base $wp_filesystem
+ *
+ * @param string $from     source directory
+ * @param string $to       destination directory
  * @param array $skip_list a list of files/folders to skip copying
  * @return mixed WP_Error on failure, True on success.
  */
@@ -1156,6 +1177,11 @@ function _copy_dir($from, $to, $skip_list = array() ) {
  *
  * @since 3.3.0
  *
+ * @global string $wp_version
+ * @global string $pagenow
+ * @global string $action
+ *
+ * @param string $new_version
  */
 function _redirect_to_about_wordpress( $new_version ) {
 	global $wp_version, $pagenow, $action;
@@ -1190,12 +1216,14 @@ window.location = 'about.php?updated';
 	include(ABSPATH . 'wp-admin/admin-footer.php');
 	exit();
 }
-add_action( '_core_updated_successfully', '_redirect_to_about_wordpress' );
 
 /**
  * Cleans up Genericons example files.
  *
  * @since 4.2.2
+ *
+ * @global array              $wp_theme_directories
+ * @global WP_Filesystem_Base $wp_filesystem
  */
 function _upgrade_422_remove_genericons() {
 	global $wp_theme_directories, $wp_filesystem;
@@ -1249,8 +1277,11 @@ function _upgrade_422_find_genericons_files_in_folder( $directory ) {
 		$files[] = "{$directory}example.html";
 	}
 
-	foreach ( glob( $directory . '*', GLOB_ONLYDIR ) as $dir ) {
-		$files = array_merge( $files, _upgrade_422_find_genericons_files_in_folder( $dir ) );
+	$dirs = glob( $directory . '*', GLOB_ONLYDIR );
+	if ( $dirs ) {
+		foreach ( $dirs as $dir ) {
+			$files = array_merge( $files, _upgrade_422_find_genericons_files_in_folder( $dir ) );
+		}
 	}
 
 	return $files;

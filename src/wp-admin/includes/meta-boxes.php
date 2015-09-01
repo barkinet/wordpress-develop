@@ -7,6 +7,8 @@
  *
  * @since 2.7.0
  *
+ * @global string $action
+ *
  * @param object $post
  */
 function post_submit_meta_box($post, $args = array() ) {
@@ -29,12 +31,13 @@ function post_submit_meta_box($post, $args = array() ) {
 <div id="save-action">
 <?php if ( 'publish' != $post->post_status && 'future' != $post->post_status && 'pending' != $post->post_status ) { ?>
 <input <?php if ( 'private' == $post->post_status ) { ?>style="display:none"<?php } ?> type="submit" name="save" id="save-post" value="<?php esc_attr_e('Save Draft'); ?>" class="button" />
+<span class="spinner"></span>
 <?php } elseif ( 'pending' == $post->post_status && $can_publish ) { ?>
 <input type="submit" name="save" id="save-post" value="<?php esc_attr_e('Save as Pending'); ?>" class="button" />
-<?php } ?>
 <span class="spinner"></span>
+<?php } ?>
 </div>
-<?php if ( $post_type_object->public ) : ?>
+<?php if ( is_post_type_viewable( $post_type_object ) ) : ?>
 <div id="preview-action">
 <?php
 if ( 'publish' == $post->post_status ) {
@@ -204,7 +207,10 @@ if ( $can_publish ) : // Contributors don't get to choose the date of publish ?>
 	<span id="timestamp">
 	<?php printf($stamp, $date); ?></span>
 	<a href="#edit_timestamp" class="edit-timestamp hide-if-no-js"><span aria-hidden="true"><?php _e( 'Edit' ); ?></span> <span class="screen-reader-text"><?php _e( 'Edit date and time' ); ?></span></a>
-	<div id="timestampdiv" class="hide-if-js"><?php touch_time(($action == 'edit'), 1); ?></div>
+	<fieldset id="timestampdiv" class="hide-if-js">
+	<legend class="screen-reader-text"><?php _e( 'Date and time' ); ?></legend>
+	<?php touch_time( ( $action === 'edit' ), 1 ); ?>
+	</fieldset>
 </div><?php // /misc-pub-section ?>
 <?php endif; ?>
 
@@ -368,10 +374,13 @@ function post_format_meta_box( $post, $box ) {
 			$post_formats[0][] = $post_format;
 	?>
 	<div id="post-formats-select">
-		<input type="radio" name="post_format" class="post-format" id="post-format-0" value="0" <?php checked( $post_format, '0' ); ?> /> <label for="post-format-0" class="post-format-icon post-format-standard"><?php echo get_post_format_string( 'standard' ); ?></label>
-		<?php foreach ( $post_formats[0] as $format ) : ?>
-		<br /><input type="radio" name="post_format" class="post-format" id="post-format-<?php echo esc_attr( $format ); ?>" value="<?php echo esc_attr( $format ); ?>" <?php checked( $post_format, $format ); ?> /> <label for="post-format-<?php echo esc_attr( $format ); ?>" class="post-format-icon post-format-<?php echo esc_attr( $format ); ?>"><?php echo esc_html( get_post_format_string( $format ) ); ?></label>
-		<?php endforeach; ?><br />
+		<fieldset>
+			<legend class="screen-reader-text"><?php _e( 'Post Formats' ); ?></legend>
+			<input type="radio" name="post_format" class="post-format" id="post-format-0" value="0" <?php checked( $post_format, '0' ); ?> /> <label for="post-format-0" class="post-format-icon post-format-standard"><?php echo get_post_format_string( 'standard' ); ?></label>
+			<?php foreach ( $post_formats[0] as $format ) : ?>
+			<br /><input type="radio" name="post_format" class="post-format" id="post-format-<?php echo esc_attr( $format ); ?>" value="<?php echo esc_attr( $format ); ?>" <?php checked( $post_format, $format ); ?> /> <label for="post-format-<?php echo esc_attr( $format ); ?>" class="post-format-icon post-format-<?php echo esc_attr( $format ); ?>"><?php echo esc_html( get_post_format_string( $format ) ); ?></label>
+			<?php endforeach; ?>
+		</fieldset>
 	</div>
 	<?php endif; endif;
 }
@@ -501,7 +510,44 @@ function post_categories_meta_box( $post, $box ) {
 					<label class="screen-reader-text" for="new<?php echo $tax_name; ?>_parent">
 						<?php echo $taxonomy->labels->parent_item_colon; ?>
 					</label>
-					<?php wp_dropdown_categories( array( 'taxonomy' => $tax_name, 'hide_empty' => 0, 'name' => 'new' . $tax_name . '_parent', 'orderby' => 'name', 'hierarchical' => 1, 'show_option_none' => '&mdash; ' . $taxonomy->labels->parent_item . ' &mdash;' ) ); ?>
+					<?php
+					$parent_dropdown_args = array(
+						'taxonomy'         => $tax_name,
+						'hide_empty'       => 0,
+						'name'             => 'new' . $tax_name . '_parent',
+						'orderby'          => 'name',
+						'hierarchical'     => 1,
+						'show_option_none' => '&mdash; ' . $taxonomy->labels->parent_item . ' &mdash;',
+					);
+
+					/**
+					 * Filter the arguments for the taxonomy parent dropdown on the Post Edit page.
+					 *
+					 * @since 4.4.0
+					 *
+					 * @param array $parent_dropdown_args {
+					 *     Optional. Array of arguments to generate parent dropdown.
+					 *
+					 *     @type string   $taxonomy         Name of the taxonomy to retrieve.
+					 *     @type bool     $hide_if_empty    True to skip generating markup if no
+					 *                                      categories are found. Default 0.
+					 *     @type string   $name             Value for the 'name' attribute
+					 *                                      of the select element.
+					 *                                      Default "new{$tax_name}_parent".
+					 *     @type string   $orderby          Which column to use for ordering
+					 *                                      terms. Default 'name'.
+					 *     @type bool|int $hierarchical     Whether to traverse the taxonomy
+					 *                                      hierarchy. Default 1.
+					 *     @type string   $show_option_none Text to display for the "none" option.
+					 *                                      Default "&mdash; {$parent} &mdash;",
+					 *                                      where `$parent` is 'parent_item'
+					 *                                      taxonomy label.
+					 * }
+					 */
+					$parent_dropdown_args = apply_filters( 'post_edit_category_parent_dropdown_args', $parent_dropdown_args );
+
+					wp_dropdown_categories( $parent_dropdown_args );
+					?>
 					<input type="button" id="<?php echo $tax_name; ?>-add-submit" data-wp-lists="add:<?php echo $tax_name; ?>checklist:<?php echo $tax_name; ?>-add" class="button category-add-submit" value="<?php echo esc_attr( $taxonomy->labels->add_new_item ); ?>" />
 					<?php wp_nonce_field( 'add-' . $tax_name, '_ajax_nonce-add-' . $tax_name, false ); ?>
 					<span id="<?php echo $tax_name; ?>-ajax-response"></span>
@@ -670,6 +716,8 @@ function post_slug_meta_box($post) {
  *
  * @since 2.6.0
  *
+ * @global int $user_ID
+ *
  * @param object $post
  */
 function post_author_meta_box($post) {
@@ -813,7 +861,7 @@ do_action( 'post_submitbox_start' );
 <div id="delete-action">
 <?php
 if ( !empty($_GET['action']) && 'edit' == $_GET['action'] && current_user_can('manage_links') ) { ?>
-	<a class="submitdelete deletion" href="<?php echo wp_nonce_url("link.php?action=delete&amp;link_id=$link->link_id", 'delete-bookmark_' . $link->link_id); ?>" onclick="if ( confirm('<?php echo esc_js(sprintf(__("You are about to delete this link '%s'\n 'Cancel' to stop, 'OK' to delete."), $link->link_name )); ?>') ) {return true;}return false;"><?php _e('Delete'); ?></a>
+	<a class="submitdelete deletion" href="<?php echo wp_nonce_url("link.php?action=delete&amp;link_id=$link->link_id", 'delete-bookmark_' . $link->link_id); ?>" onclick="if ( confirm('<?php echo esc_js(sprintf(__("You are about to delete this link '%s'\n  'Cancel' to stop, 'OK' to delete."), $link->link_name )); ?>') ) {return true;}return false;"><?php _e('Delete'); ?></a>
 <?php } ?>
 </div>
 
@@ -912,6 +960,8 @@ function link_target_meta_box($link) { ?>
  * Display checked checkboxes attribute for xfn microformat options.
  *
  * @since 1.0.1
+ *
+ * @global object $link
  *
  * @param string $class
  * @param string $value

@@ -6,13 +6,21 @@
 class Tests_Mail extends WP_UnitTestCase {
 	function setUp() {
 		parent::setUp();
-		$_SERVER['SERVER_NAME'] = 'example.com';
 		unset( $GLOBALS['phpmailer']->mock_sent );
 	}
 
-	function tearDown() {
-		unset( $_SERVER['SERVER_NAME'] );
-		parent::tearDown();
+	/**
+	 * Send a mail with a 1000 char long line.
+	 *
+	 * `PHPMailer::createBody()` will set `$this->Encoding = 'quoted-printable'` (away from it's default of 8bit)
+	 * when it encounters a line longer than 999 characters. But PHPMailer doesn't clean up after itself / presets
+	 * all variables, which means that following tests would fail. To solve this issue we set `$this->Encoding`
+	 * back to 8bit in `MockPHPMailer::preSend`.
+	 *
+	 */
+	function test_wp_mail_break_it() {
+		$content = str_repeat( 'A', 1000 );
+		wp_mail( "admin@example.org", 'Looong line testing', $content);
 	}
 
 	function test_wp_mail_custom_boundaries() {

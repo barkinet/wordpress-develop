@@ -63,9 +63,13 @@ $step = isset( $_GET['step'] ) ? (int) $_GET['step'] : -1;
  *
  * @ignore
  * @since 2.3.0
+ *
+ * @global string    $wp_local_package
+ * @global WP_Locale $wp_locale
+ *
+ * @param string|array $body_classes
  */
 function setup_config_display_header( $body_classes = array() ) {
-	global $wp_version;
 	$body_classes = (array) $body_classes;
 	$body_classes[] = 'wp-core-ui';
 	if ( is_rtl() ) {
@@ -305,7 +309,7 @@ switch($step) {
 <p><?php _e( "Sorry, but I can&#8217;t write the <code>wp-config.php</code> file." ); ?></p>
 <p><?php _e( 'You can create the <code>wp-config.php</code> manually and paste the following text into it.' ); ?></p>
 <textarea id="wp-config" cols="98" rows="15" class="code" readonly="readonly"><?php
-		foreach( $config_file as $line ) {
+		foreach ( $config_file as $line ) {
 			echo htmlentities($line, ENT_COMPAT, 'UTF-8');
 		}
 ?></textarea>
@@ -332,7 +336,7 @@ if ( ! /iPad|iPod|iPhone/.test( navigator.userAgent ) ) {
 			$path_to_wp_config = dirname( ABSPATH ) . '/wp-config.php';
 
 		$handle = fopen( $path_to_wp_config, 'w' );
-		foreach( $config_file as $line ) {
+		foreach ( $config_file as $line ) {
 			fwrite( $handle, $line );
 		}
 		fclose( $handle );

@@ -96,7 +96,7 @@ class WP_Dependencies {
 		$handles = false === $handles ? $this->queue : (array) $handles;
 		$this->all_deps( $handles );
 
-		foreach( $this->to_do as $key => $handle ) {
+		foreach ( $this->to_do as $key => $handle ) {
 			if ( !in_array($handle, $this->done, true) && isset($this->registered[$handle]) ) {
 
 				/*
@@ -331,7 +331,7 @@ class WP_Dependencies {
 	 *
 	 * @param array  $queue  An array of queued _WP_Dependency handle objects.
 	 * @param string $handle Name of the item. Should be unique.
-	 * @return boolean Whether the handle is found after recursively searching the dependency tree.
+	 * @return bool Whether the handle is found after recursively searching the dependency tree.
 	 */
 	protected function recurse_deps( $queue, $handle ) {
 		foreach ( $queue as $queued ) {

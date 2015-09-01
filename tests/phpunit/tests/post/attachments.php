@@ -68,12 +68,12 @@ class Tests_Post_Attachments extends WP_UnitTestCase {
 
 		// medium and full size will both point to the original
 		$downsize = image_downsize($id, 'medium');
-		$this->assertEquals( 'test-image.jpg', basename($downsize[0]) );
+		$this->assertEquals( basename( $upload['file'] ), basename($downsize[0]) );
 		$this->assertEquals( 50, $downsize[1] );
 		$this->assertEquals( 50, $downsize[2] );
 
 		$downsize = image_downsize($id, 'full');
-		$this->assertEquals( 'test-image.jpg', basename($downsize[0]) );
+		$this->assertEquals( basename( $upload['file'] ), basename($downsize[0]) );
 		$this->assertEquals( 50, $downsize[1] );
 		$this->assertEquals( 50, $downsize[2] );
 
@@ -500,8 +500,30 @@ class Tests_Post_Attachments extends WP_UnitTestCase {
 		}
 	}
 
+	public function test_upload_mimes_filter_is_applied() {
+		$filename = DIR_TESTDATA . '/images/test-image.jpg';
+		$contents = file_get_contents( $filename );
+
+		$upload = wp_upload_bits( basename( $filename ), null, $contents );
+
+		$this->assertFalse( $upload['error'] );
+
+		add_filter( 'upload_mimes', array( $this, 'blacklist_jpg_mime_type' ) );
+
+		$upload = wp_upload_bits( basename( $filename ), null, $contents );
+
+		$this->assertNotEmpty( $upload['error'] );
+
+		remove_filter( 'upload_mimes', array( $this, 'blacklist_jpg_mime_type' ) );
+	}
+
 	public function whitelist_psd_mime_type( $mimes ) {
 		$mimes['psd'] = 'application/octet-stream';
+		return $mimes;
+	}
+
+	public function blacklist_jpg_mime_type( $mimes ) {
+		unset( $mimes['jpg|jpeg|jpe'] );
 		return $mimes;
 	}
 }

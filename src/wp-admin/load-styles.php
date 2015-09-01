@@ -81,6 +81,11 @@ function admin_url() {}
  */
 function wp_guess_url() {}
 
+/**
+ *
+ * @param string $path
+ * @return string
+ */
 function get_file($path) {
 
 	if ( function_exists('realpath') )
@@ -110,7 +115,7 @@ $out = '';
 $wp_styles = new WP_Styles();
 wp_default_styles($wp_styles);
 
-foreach( $load as $handle ) {
+foreach ( $load as $handle ) {
 	if ( !array_key_exists($handle, $wp_styles->registered) )
 		continue;
 

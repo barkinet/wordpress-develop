@@ -84,7 +84,7 @@ themes.view.Appearance = wp.Backbone.View.extend({
 	},
 
 	// Defines search element container
-	searchContainer: $( '#wpbody h2:first' ),
+	searchContainer: $( '#wpbody h1:first' ),
 
 	// Search input and view
 	// for current theme collection
@@ -454,6 +454,8 @@ themes.view.Theme = wp.Backbone.View.extend({
 		var self = this,
 			current, preview;
 
+		event = event || window.event;
+
 		// Bail if the user scrolled on a touch device
 		if ( this.touchDrag === true ) {
 			return this.touchDrag = false;
@@ -793,7 +795,13 @@ themes.view.Preview = themes.view.Details.extend({
 		return false;
 	},
 
-	collapse: function() {
+	collapse: function( event ) {
+		var $button = $( event.currentTarget );
+		if ( 'true' === $button.attr( 'aria-expanded' ) ) {
+			$button.attr({ 'aria-expanded': 'false', 'aria-label': l10n.expandSidebar });
+		} else {
+			$button.attr({ 'aria-expanded': 'true', 'aria-label': l10n.collapseSidebar });
+		}
 
 		this.$el.toggleClass( 'collapsed' ).toggleClass( 'expanded' );
 		return false;
@@ -975,7 +983,7 @@ themes.view.Themes = wp.Backbone.View.extend({
 
 		// 'Add new theme' element shown at the end of the grid
 		if ( themes.data.settings.canInstall ) {
-			this.$el.append( '<div class="theme add-new-theme"><a href="' + themes.data.settings.installURI + '"><div class="theme-screenshot"><span></span></div><h3 class="theme-name">' + l10n.addNew + '</h3></a></div>' );
+			this.$el.append( '<div class="theme add-new-theme"><a href="' + themes.data.settings.installURI + '"><div class="theme-screenshot"><span></span></div><h2 class="theme-name">' + l10n.addNew + '</h2></a></div>' );
 		}
 
 		this.parent.page++;
@@ -1652,6 +1660,9 @@ themes.RunInstaller = {
 		themes.router.on( 'route:preview', function( slug ) {
 			request.theme = slug;
 			self.view.collection.query( request );
+			self.view.collection.once( 'update', function() {
+				self.view.view.theme.preview();
+			});
 		});
 
 		// Handles sorting / browsing routes
