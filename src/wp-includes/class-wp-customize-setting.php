@@ -768,6 +768,14 @@ class WP_Customize_Nav_Menu_Item_Setting extends WP_Customize_Setting {
 	protected $is_updated = false;
 
 	/**
+	 * Whether or not menu item is invalid.
+	 *
+	 * @access protected
+	 * @var bool
+	 */
+	protected $is_invalid = false;
+
+	/**
 	 * Status for calling the update method, used in customize_save_response filter.
 	 *
 	 * When status is inserted, the placeholder post ID is stored in $previous_post_id.
