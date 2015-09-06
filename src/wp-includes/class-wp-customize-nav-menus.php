@@ -537,6 +537,11 @@ final class WP_Customize_Nav_Menus {
 
 				$value = (array) $item;
 				$value['nav_menu_term_id'] = $menu_id;
+
+				if ( ! isset( $value['_invalid'] ) ) {
+					$value['_invalid'] = false;
+				}
+
 				$this->manager->add_setting( new WP_Customize_Nav_Menu_Item_Setting( $this->manager, $menu_item_setting_id, array(
 					'value' => $value,
 				) ) );

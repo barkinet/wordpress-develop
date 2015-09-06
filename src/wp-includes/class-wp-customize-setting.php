@@ -690,7 +690,7 @@ class WP_Customize_Nav_Menu_Item_Setting extends WP_Customize_Setting {
 		'status'           => 'publish',
 		'original_title'   => '',
 		'nav_menu_term_id' => 0, // This will be supplied as the $menu_id arg for wp_update_nav_menu_item().
-		// @todo also expose invalid?
+		'_invalid'         => false,
 	);
 
 	/**
@@ -766,14 +766,6 @@ class WP_Customize_Nav_Menu_Item_Setting extends WP_Customize_Setting {
 	 * @var bool
 	 */
 	protected $is_updated = false;
-
-	/**
-	 * Whether or not menu item is invalid.
-	 *
-	 * @access protected
-	 * @var bool
-	 */
-	protected $is_invalid = false;
 
 	/**
 	 * Status for calling the update method, used in customize_save_response filter.
@@ -1047,7 +1039,7 @@ class WP_Customize_Nav_Menu_Item_Setting extends WP_Customize_Setting {
 		$should_remove = (
 			false === $this_item
 			||
-			true === $this->is_invalid
+			true === $this_item['_invalid']
 			||
 			(
 				$this->original_nav_menu_term_id === $menu->term_id
@@ -1220,6 +1212,7 @@ class WP_Customize_Nav_Menu_Item_Setting extends WP_Customize_Setting {
 			'status'           => 'publish',
 			'original_title'   => '',
 			'nav_menu_term_id' => 0,
+			'_invalid'         => false,
 		);
 		$menu_item_value = array_merge( $default, $menu_item_value );
 		$menu_item_value = wp_array_slice_assoc( $menu_item_value, array_keys( $default ) );
