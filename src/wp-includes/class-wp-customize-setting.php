@@ -951,14 +951,6 @@ class WP_Customize_Nav_Menu_Item_Setting extends WP_Customize_Setting {
 			}
 		}
 
-		if ( isset( $this->value['_invalid'] ) ) {
-			$this->is_invalid = $this->value['_invalid'];
-
-			if ( $this->is_invalid ) {
-				$this->value['title'] = sprintf( __( '%s (Invalid)' ), $this->value['title'] );
-			}
-		}
-
 		foreach ( array( 'object_id', 'menu_item_parent', 'nav_menu_term_id' ) as $key ) {
 			if ( ! is_int( $this->value[ $key ] ) ) {
 				$this->value[ $key ] = intval( $this->value[ $key ] );
