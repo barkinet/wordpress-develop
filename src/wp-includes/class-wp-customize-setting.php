@@ -1055,6 +1055,8 @@ class WP_Customize_Nav_Menu_Item_Setting extends WP_Customize_Setting {
 		$should_remove = (
 			false === $this_item
 			||
+			true === $this->is_invalid
+			||
 			(
 				$this->original_nav_menu_term_id === $menu->term_id
 				&&
