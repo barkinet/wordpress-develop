@@ -92,6 +92,7 @@ class Test_WP_Customize_Nav_Menu_Item_Setting extends WP_UnitTestCase {
 			'status' => 'publish',
 			'original_title' => '',
 			'nav_menu_term_id' => 0,
+			'_invalid' => false,
 		);
 		$this->assertEquals( $default, $setting->default );
 
@@ -458,6 +459,7 @@ class Test_WP_Customize_Nav_Menu_Item_Setting extends WP_UnitTestCase {
 			'status' => 'forbidden',
 			'original_title' => 'Hi<script>alert(1)</script>',
 			'nav_menu_term_id' => 'heilo',
+			'_invalid' => false,
 		);
 
 		$sanitized = $setting->sanitize( $unsanitized );
