@@ -51,25 +51,8 @@ Post = Select.extend({
 
 		this.states.add([
 			// Main states.
-			new Library({
-				id:         'insert',
-				title:      l10n.insertMediaTitle,
-				priority:   20,
-				toolbar:    'main-insert',
-				filterable: 'all',
-				library:    wp.media.query( options.library ),
-				multiple:   options.multiple ? 'reset' : false,
-				editable:   true,
-
-				// If the user isn't allowed to edit fields,
-				// can they still edit it locally?
-				allowLocalEdits: true,
-
-				// Show the attachment display settings.
-				displaySettings: true,
-				// Update user settings when users adjust the
-				// attachment display settings.
-				displayUserSettings: true
+			new wp.media.controller.Insert({
+				library: wp.media.query( options.library ),
 			}),
 
 			new Library({
@@ -195,7 +178,6 @@ Post = Select.extend({
 		this.on( 'toolbar:create:main-playlist', this.createToolbar, this );
 		this.on( 'toolbar:create:main-video-playlist', this.createToolbar, this );
 		this.on( 'toolbar:create:featured-image', this.featuredImageToolbar, this );
-		this.on( 'toolbar:create:main-embed', this.mainEmbedToolbar, this );
 
 		handlers = {
 			menu: {
@@ -352,7 +334,7 @@ Post = Select.extend({
 	embedContent: function() {
 		var view = new wp.media.view.Embed({
 			controller: this,
-			model:      this.state()
+			model:      this.state('embed')
 		}).render();
 
 		this.content.set( view );
@@ -552,12 +534,6 @@ Post = Select.extend({
 		this.createSelectToolbar( toolbar, {
 			text:  l10n.setFeaturedImage,
 			state: this.options.state
-		});
-	},
-
-	mainEmbedToolbar: function( toolbar ) {
-		toolbar.view = new wp.media.view.Toolbar.Embed({
-			controller: this
 		});
 	},
 

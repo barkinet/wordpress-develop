@@ -77,6 +77,7 @@ media.controller.State = require( './controllers/state.js' );
 
 media.selectionSync = require( './utils/selection-sync.js' );
 media.controller.Library = require( './controllers/library.js' );
+media.controller.Insert = require( './controllers/insert.js' );
 media.controller.ImageDetails = require( './controllers/image-details.js' );
 media.controller.GalleryEdit = require( './controllers/gallery-edit.js' );
 media.controller.GalleryAdd = require( './controllers/gallery-add.js' );

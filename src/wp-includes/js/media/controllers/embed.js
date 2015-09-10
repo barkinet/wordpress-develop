@@ -11,7 +11,7 @@
  * @param {string} [attributes.id=embed]              Unique identifier.
  * @param {string} [attributes.title=Insert From URL] Title for the state. Displays in the media menu and the frame's title region.
  * @param {string} [attributes.content=embed]         Initial mode for the content region.
- * @param {string} [attributes.menu=default]          Initial mode for the menu region.
+ * @param {string} [attributes.menu=false]            Initial mode for the menu region.
  * @param {string} [attributes.toolbar=main-embed]    Initial mode for the toolbar region.
  * @param {string} [attributes.menu=false]            Initial mode for the menu region.
  * @param {int}    [attributes.priority=120]          The priority for the state link in the media menu.
@@ -28,7 +28,7 @@ Embed = wp.media.controller.State.extend({
 		id:       'embed',
 		title:    l10n.insertFromUrlTitle,
 		content:  'embed',
-		menu:     'default',
+		menu:     false,
 		toolbar:  'main-embed',
 		priority: 120,
 		type:     'link',
@@ -46,6 +46,10 @@ Embed = wp.media.controller.State.extend({
 		this.props.on( 'change:url', this.debouncedScan, this );
 		this.props.on( 'change:url', this.refresh, this );
 		this.on( 'scan', this.scanImage, this );
+	},
+
+	activate: function() {
+		this.listenTo( this.frame, 'toolbar:render:main-embed', this.toolbar );
 	},
 
 	/**
@@ -100,7 +104,7 @@ Embed = wp.media.controller.State.extend({
 		image.onload = function() {
 			deferred.resolve();
 
-			if ( state !== frame.state() || url !== state.props.get('url') ) {
+			if ( url !== state.props.get('url') ) {
 				return;
 			}
 
@@ -128,6 +132,14 @@ Embed = wp.media.controller.State.extend({
 		if ( this.active ) {
 			this.refresh();
 		}
+	},
+
+	toolbar: function() {
+		var frame = this.frame;
+
+		frame.toolbar.set( new wp.media.view.Toolbar.Embed({
+			controller: frame
+		}) );
 	}
 });
 
