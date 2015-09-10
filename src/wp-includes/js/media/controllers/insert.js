@@ -57,7 +57,7 @@ Insert = Library.extend({
 
 	fromUrlRouterItem: function( routerView ) {
 		routerView.set( 'embed', {
-			text: l10n.insertFromUrlTitle,
+			text: l10n.fromUrlTitle,
 			priority: 60
 		});
 	}

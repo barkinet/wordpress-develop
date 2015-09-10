@@ -26,7 +26,7 @@ var l10n = wp.media.view.l10n,
 Embed = wp.media.controller.State.extend({
 	defaults: {
 		id:       'embed',
-		title:    l10n.insertFromUrlTitle,
+		title:    l10n.fromUrlTitle,
 		content:  'embed',
 		menu:     false,
 		toolbar:  'main-embed',

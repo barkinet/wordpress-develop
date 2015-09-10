@@ -3091,7 +3091,7 @@ function wp_enqueue_media( $args = array() ) {
 		'attachmentDetails'  => __( 'Attachment Details' ),
 
 		// From URL
-		'insertFromUrlTitle' => __( 'Insert from URL' ),
+		'fromUrlTitle'       => __( 'From URL' ),
 
 		// Featured Images
 		'setFeaturedImageTitle' => $post_type_object->labels->featured_image,
