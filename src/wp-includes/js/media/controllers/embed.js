@@ -13,7 +13,7 @@
  * @param {string} [attributes.content=embed]         Initial mode for the content region.
  * @param {string} [attributes.menu=false]            Initial mode for the menu region.
  * @param {string} [attributes.toolbar=main-embed]    Initial mode for the toolbar region.
- * @param {string} [attributes.menu=false]            Initial mode for the menu region.
+ * @param {string} [attributes.menu=default]            Initial mode for the menu region.
  * @param {int}    [attributes.priority=120]          The priority for the state link in the media menu.
  * @param {string} [attributes.type=link]             The type of embed. Currently only link is supported.
  * @param {string} [attributes.url]                   The embed URL.
@@ -28,7 +28,7 @@ Embed = wp.media.controller.State.extend({
 		id:       'embed',
 		title:    l10n.fromUrlTitle,
 		content:  'embed',
-		menu:     false,
+		menu:     'default',
 		toolbar:  'main-embed',
 		priority: 120,
 		type:     'link',
@@ -46,10 +46,7 @@ Embed = wp.media.controller.State.extend({
 		this.props.on( 'change:url', this.debouncedScan, this );
 		this.props.on( 'change:url', this.refresh, this );
 		this.on( 'scan', this.scanImage, this );
-	},
-
-	activate: function() {
-		this.listenTo( this.frame, 'toolbar:render:main-embed', this.toolbar );
+		this.off( 'ready', this._ready, this );
 	},
 
 	/**
@@ -132,14 +129,6 @@ Embed = wp.media.controller.State.extend({
 		if ( this.active ) {
 			this.refresh();
 		}
-	},
-
-	toolbar: function() {
-		var frame = this.frame;
-
-		frame.toolbar.set( new wp.media.view.Toolbar.Embed({
-			controller: frame
-		}) );
 	}
 });
 

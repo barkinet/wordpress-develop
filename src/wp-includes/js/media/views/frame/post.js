@@ -178,6 +178,7 @@ Post = Select.extend({
 		this.on( 'toolbar:create:main-playlist', this.createToolbar, this );
 		this.on( 'toolbar:create:main-video-playlist', this.createToolbar, this );
 		this.on( 'toolbar:create:featured-image', this.featuredImageToolbar, this );
+		this.on( 'toolbar:create:main-embed', this.mainEmbedToolbar, this );
 
 		handlers = {
 			menu: {
@@ -332,9 +333,13 @@ Post = Select.extend({
 
 	// Content
 	embedContent: function() {
-		var view = new wp.media.view.Embed({
+		var view;
+
+		this.setState('embed');
+
+		view = new wp.media.view.Embed({
 			controller: this,
-			model:      this.state('embed')
+			model:      this.state()
 		}).render();
 
 		this.content.set( view );
@@ -534,6 +539,12 @@ Post = Select.extend({
 		this.createSelectToolbar( toolbar, {
 			text:  l10n.setFeaturedImage,
 			state: this.options.state
+		});
+	},
+
+	mainEmbedToolbar: function( toolbar ) {
+		toolbar.view = new wp.media.view.Toolbar.Embed({
+			controller: this
 		});
 	},
 
