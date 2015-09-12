@@ -51,8 +51,25 @@ Post = Select.extend({
 
 		this.states.add([
 			// Main states.
-			new wp.media.controller.Insert({
-				library: wp.media.query( options.library ),
+			new Library({
+				id:         'insert',
+				title:      l10n.insertMediaTitle,
+				priority:   20,
+				toolbar:    'main-insert',
+				filterable: 'all',
+				library:    wp.media.query( options.library ),
+				multiple:   options.multiple ? 'reset' : false,
+				editable:   true,
+
+				// If the user isn't allowed to edit fields,
+				// can they still edit it locally?
+				allowLocalEdits: true,
+
+				// Show the attachment display settings.
+				displaySettings: true,
+				// Update user settings when users adjust the
+				// attachment display settings.
+				displayUserSettings: true
 			}),
 
 			new Library({
