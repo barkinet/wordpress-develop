@@ -43,23 +43,6 @@ Insert = Library.extend({
 		}
 
 		Library.prototype.initialize.apply( this, arguments );
-	},
-
-	activate: function() {
-		Library.prototype.activate.apply( this, arguments );
-		this.frame.on( 'router:render:browse', this.fromUrlRouterItem, this );
-	},
-
-	deactivate: function() {
-		Library.prototype.deactivate.apply( this, arguments );
-		this.frame.off( 'router:render:browse', this.addRouter, this );
-	},
-
-	fromUrlRouterItem: function( routerView ) {
-		routerView.set( 'embed', {
-			text: l10n.fromUrlTitle,
-			priority: 60
-		});
 	}
 });
 

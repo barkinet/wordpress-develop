@@ -29,6 +29,7 @@ Embed = wp.media.controller.State.extend({
 		title:    l10n.fromUrlTitle,
 		content:  'embed',
 		menu:     'default',
+		router:   'browse',
 		toolbar:  'main-embed',
 		priority: 120,
 		type:     'link',
@@ -47,6 +48,39 @@ Embed = wp.media.controller.State.extend({
 		this.props.on( 'change:url', this.refresh, this );
 		this.on( 'scan', this.scanImage, this );
 		this.off( 'ready', this._ready, this );
+	},
+
+	ready: function() {
+		var insert = this.frame.state( 'insert' );
+
+		this.on( 'activate', this.addRemoveRouterItem, this );
+		this.on( 'deactivate', this.addRemoveRouterItem, this );
+		this.listenTo( insert, 'activate', this.addRemoveRouterItem );
+		this.listenTo( insert, 'deactivate', this.addRemoveRouterItem );
+	},
+
+	addRemoveRouterItem: function() {
+		var routerItem,
+		    frame = this.frame,
+		    state = frame.state(),
+		    browseRouter = frame.router.get();
+
+		if ( ! browseRouter ) {
+			return;
+		}
+
+	    routerItem = browseRouter.get( this.id );
+
+		if ( this.id === state.id || 'insert' === state.id ) {
+			if ( ! routerItem ) {
+				browseRouter.set( this.id, new wp.media.view.RouterItem({
+					text: l10n.fromUrlTitle,
+					priority: 60
+				}) );
+			}
+		} else {
+			browseRouter.hide( this.id );
+		}
 	},
 
 	/**
