@@ -13,7 +13,6 @@
  * @param {string} [attributes.content=embed]         Initial mode for the content region.
  * @param {string} [attributes.menu=default]          Initial mode for the menu region.
  * @param {string} [attributes.toolbar=main-embed]    Initial mode for the toolbar region.
- * @param {string} [attributes.menu=default]            Initial mode for the menu region.
  * @param {int}    [attributes.priority=120]          The priority for the state link in the media menu.
  * @param {string} [attributes.type=link]             The type of embed. Currently only link is supported.
  * @param {string} [attributes.url]                   The embed URL.
