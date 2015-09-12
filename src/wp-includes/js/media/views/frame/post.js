@@ -196,6 +196,7 @@ Post = Select.extend({
 		this.on( 'toolbar:create:main-video-playlist', this.createToolbar, this );
 		this.on( 'toolbar:create:featured-image', this.featuredImageToolbar, this );
 		this.on( 'toolbar:create:main-embed', this.mainEmbedToolbar, this );
+		this.on( 'router:render:browse', this.embedRouterItem, this );
 
 		handlers = {
 			menu: {
@@ -346,6 +347,24 @@ Post = Select.extend({
 				priority: 40
 			})
 		});
+	},
+
+	embedRouterItem: function( routerView ) {
+		var state = this.state(),
+		    routerItem = routerView.get( 'embed' );
+
+		if ( 'embed' === state.id || 'insert' === state.id ) {
+			if ( ! routerItem ) {
+				routerView.set( 'embed', {
+					text: l10n.fromUrlTitle,
+					priority: 60
+				});
+			} else {
+				routerView.show( 'embed' );
+			}
+		} else {
+			routerView.hide( 'embed' );
+		}
 	},
 
 	// Content

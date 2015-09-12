@@ -11,7 +11,7 @@
  * @param {string} [attributes.id=embed]              Unique identifier.
  * @param {string} [attributes.title=Insert From URL] Title for the state. Displays in the media menu and the frame's title region.
  * @param {string} [attributes.content=embed]         Initial mode for the content region.
- * @param {string} [attributes.menu=false]            Initial mode for the menu region.
+ * @param {string} [attributes.menu=default]          Initial mode for the menu region.
  * @param {string} [attributes.toolbar=main-embed]    Initial mode for the toolbar region.
  * @param {string} [attributes.menu=default]            Initial mode for the menu region.
  * @param {int}    [attributes.priority=120]          The priority for the state link in the media menu.
@@ -48,39 +48,6 @@ Embed = wp.media.controller.State.extend({
 		this.props.on( 'change:url', this.refresh, this );
 		this.on( 'scan', this.scanImage, this );
 		this.off( 'ready', this._ready, this );
-	},
-
-	ready: function() {
-		var insert = this.frame.state( 'insert' );
-
-		this.on( 'activate', this.addRemoveRouterItem, this );
-		this.on( 'deactivate', this.addRemoveRouterItem, this );
-		this.listenTo( insert, 'activate', this.addRemoveRouterItem );
-		this.listenTo( insert, 'deactivate', this.addRemoveRouterItem );
-	},
-
-	addRemoveRouterItem: function() {
-		var routerItem,
-		    frame = this.frame,
-		    state = frame.state(),
-		    browseRouter = frame.router.get();
-
-		if ( ! browseRouter ) {
-			return;
-		}
-
-	    routerItem = browseRouter.get( this.id );
-
-		if ( this.id === state.id || 'insert' === state.id ) {
-			if ( ! routerItem ) {
-				browseRouter.set( this.id, new wp.media.view.RouterItem({
-					text: l10n.fromUrlTitle,
-					priority: 60
-				}) );
-			}
-		} else {
-			browseRouter.hide( this.id );
-		}
 	},
 
 	/**
