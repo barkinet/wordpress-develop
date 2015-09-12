@@ -174,6 +174,10 @@ Post = Select.extend({
 	bindHandlers: function() {
 		var handlers, checkCounts;
 
+		this.on( 'content:create:browse', this._fixState, this );
+		this.on( 'content:render:upload', this._fixState, this );
+		this.on( 'content:render:embed', this._fixState, this );
+
 		Select.prototype.bindHandlers.apply( this, arguments );
 
 		this.on( 'activate', this.activate, this );
@@ -368,12 +372,20 @@ Post = Select.extend({
 	},
 
 	// Content
+	_fixState: function() {
+		var mode = this.content.mode(),
+		    state = this.state().id;
+
+		if ( 'embed' === mode ) {
+			this.setState( 'embed' );
+		} else if ( 'embed' === state ) {
+			this.setState( 'insert' );
+			this.content.mode( mode );
+		}
+	},
+
 	embedContent: function() {
-		var view;
-
-		this.setState('embed');
-
-		view = new wp.media.view.Embed({
+		var view = new wp.media.view.Embed({
 			controller: this,
 			model:      this.state()
 		}).render();
