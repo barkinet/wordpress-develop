@@ -621,7 +621,6 @@ final class WP_Customize_Manager {
 	 */
 	public function customize_preview_settings() {
 		$settings = array(
-			'values'  => array(),
 			'channel' => wp_unslash( $_POST['customize_messenger_channel'] ),
 			'activePanels' => array(),
 			'activeSections' => array(),
@@ -638,11 +637,6 @@ final class WP_Customize_Manager {
 			);
 		}
 
-		foreach ( $this->settings as $id => $setting ) {
-			if ( $setting->check_capabilities() ) {
-				$settings['values'][ $id ] = $setting->js_value();
-			}
-		}
 		foreach ( $this->panels as $panel_id => $panel ) {
 			if ( $panel->check_capabilities() ) {
 				$settings['activePanels'][ $panel_id ] = $panel->active();
@@ -667,6 +661,25 @@ final class WP_Customize_Manager {
 		?>
 		<script type="text/javascript">
 			var _wpCustomizeSettings = <?php echo wp_json_encode( $settings ); ?>;
+			_wpCustomizeSettings.values = {};
+			(function( v ) {
+				<?php
+				/*
+				 * Serialize settings separately from the initial _wpCustomizeSettings
+				 * serialization in order to avoid a peak memory usage spike.
+				 * @todo We may not even need to export the values at all since the pane syncs them anyway.
+				 */
+				foreach ( $this->settings as $id => $setting ) {
+					if ( $setting->check_capabilities() ) {
+						printf(
+							"v[%s] = %s;\n",
+							wp_json_encode( $id ),
+							wp_json_encode( $setting->js_value() )
+						);
+					}
+				}
+				?>
+			})( _wpCustomizeSettings.values );
 		</script>
 		<?php
 	}
