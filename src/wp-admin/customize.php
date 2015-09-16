@@ -235,8 +235,6 @@ do_action( 'customize_controls_print_scripts' );
 			'mobile' => wp_is_mobile(),
 			'ios'    => $is_ios,
 		),
-		'settings' => array(),
-		'controls' => array(),
 		'panels'   => array(),
 		'sections' => array(),
 		'nonce'    => array(
@@ -246,24 +244,6 @@ do_action( 'customize_controls_print_scripts' );
 		'autofocus' => array(),
 		'documentTitleTmpl' => $document_title_tmpl,
 	);
-
-	// Prepare Customize Setting objects to pass to JavaScript.
-	foreach ( $wp_customize->settings() as $id => $setting ) {
-		if ( $setting->check_capabilities() ) {
-			$settings['settings'][ $id ] = array(
-				'value'     => $setting->js_value(),
-				'transport' => $setting->transport,
-				'dirty'     => $setting->dirty,
-			);
-		}
-	}
-
-	// Prepare Customize Control objects to pass to JavaScript.
-	foreach ( $wp_customize->controls() as $id => $control ) {
-		if ( $control->check_capabilities() ) {
-			$settings['controls'][ $id ] = $control->json();
-		}
-	}
 
 	// Prepare Customize Section objects to pass to JavaScript.
 	foreach ( $wp_customize->sections() as $id => $section ) {
@@ -289,7 +269,14 @@ do_action( 'customize_controls_print_scripts' );
 		$autofocus = wp_unslash( $_GET['autofocus'] );
 		if ( is_array( $autofocus ) ) {
 			foreach ( $autofocus as $type => $id ) {
-				if ( isset( $settings[ $type . 's' ][ $id ] ) ) {
+				$can_autofocus = (
+					( 'control' === $type && $wp_customize->get_control( $id ) && $wp_customize->get_control( $id )->check_capabilities() )
+					||
+					( 'section' === $type && $wp_customize->get_section( $id ) && $wp_customize->get_section( $id )->check_capabilities() )
+					||
+					( 'panel' === $type && $wp_customize->get_panel( $id ) && $wp_customize->get_panel( $id )->check_capabilities() )
+				);
+				if ( $can_autofocus ) {
 					$settings['autofocus'][ $type ] = $id;
 				}
 			}
@@ -299,6 +286,40 @@ do_action( 'customize_controls_print_scripts' );
 	?>
 	<script type="text/javascript">
 		var _wpCustomizeSettings = <?php echo wp_json_encode( $settings ); ?>;
+		_wpCustomizeSettings.controls = {};
+		_wpCustomizeSettings.settings = {};
+		<?php
+
+		// Serialize settings one by one to improve memory usage.
+		echo "(function ( s ){\n";
+		foreach ( $wp_customize->settings() as $setting ) {
+			if ( $setting->check_capabilities() ) {
+				printf(
+					"s[%s] = %s;\n",
+					wp_json_encode( $setting->id ),
+					wp_json_encode( array(
+						'value'     => $setting->js_value(),
+						'transport' => $setting->transport,
+						'dirty'     => $setting->dirty,
+					) )
+				);
+			}
+		}
+		echo "})( _wpCustomizeSettings.settings );\n";
+
+		// Serialize controls one by one to improve memory usage.
+		echo "(function ( c ){\n";
+		foreach ( $wp_customize->controls() as $control ) {
+			if ( $control->check_capabilities() ) {
+				printf(
+					"c[%s] = %s;\n",
+					wp_json_encode( $control->id ),
+					wp_json_encode( $control->json() )
+				);
+			}
+		}
+		echo "})( _wpCustomizeSettings.controls );\n";
+		?>
 	</script>
 </div>
 </body>
