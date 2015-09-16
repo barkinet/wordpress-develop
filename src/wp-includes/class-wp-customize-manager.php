@@ -94,6 +94,35 @@ final class WP_Customize_Manager {
 	protected $registered_control_types = array();
 
 	/**
+	 * Initial URL being previewed.
+	 *
+	 * @since 4.4.0
+	 * @access protected
+	 * @var string
+	 */
+	protected $preview_url;
+
+	/**
+	 * URL to link the user to when closing the Customizer.
+	 *
+	 * @since 4.4.0
+	 * @access protected
+	 *
+	 * @var string
+	 */
+	protected $return_url;
+
+	/**
+	 * Mapping of 'panel', 'section', 'control' to the ID which should be autofocused.
+	 *
+	 * @since 4.4.0
+	 * @access public
+	 *
+	 * @var array
+	 */
+	protected $autofocus = array();
+
+	/**
 	 * Unsanitized values for Customize Settings parsed from $_POST['customized'].
 	 *
 	 * @var array
@@ -1316,15 +1345,6 @@ final class WP_Customize_Manager {
 	}
 
 	/**
-	 * Initial URL being previewed.
-	 *
-	 * @since 4.4.0
-	 * @access protected
-	 * @var string
-	 */
-	protected $preview_url;
-
-	/**
 	 * Set the initial URL to be previewed.
 	 *
 	 * URL is validated.
@@ -1354,16 +1374,6 @@ final class WP_Customize_Manager {
 		}
 		return $preview_url;
 	}
-
-	/**
-	 * URL to link the user to when closing the Customizer.
-	 *
-	 * @since 4.4.0
-	 * @access protected
-	 *
-	 * @var string
-	 */
-	protected $return_url;
 
 	/**
 	 * Set URL to link the user to when closing the Customizer.
@@ -1401,16 +1411,6 @@ final class WP_Customize_Manager {
 		}
 		return $return_url;
 	}
-
-	/**
-	 * Mapping of 'panel', 'section', 'control' to the ID which should be autofocused.
-	 *
-	 * @since 4.4.0
-	 * @access public
-	 *
-	 * @var array
-	 */
-	protected $autofocus = array();
 
 	/**
 	 * Set the autofocused constructs.
