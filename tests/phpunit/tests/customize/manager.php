@@ -301,6 +301,30 @@ class Tests_WP_Customize_Manager extends WP_UnitTestCase {
 	 * @see WP_Customize_Manager::customize_pane_settings()
 	 */
 	function test_customize_pane_settings() {
-		$this->markTestIncomplete();
+		wp_set_current_user( $this->factory->user->create( array( 'role' => 'administrator' ) ) );
+		$this->manager->register_controls();
+		$this->manager->prepare_controls();
+		$autofocus = array( 'control' => 'blogname' );
+		$this->manager->set_autofocus( $autofocus );
+
+		ob_start();
+		$this->manager->customize_pane_settings();
+		$content = ob_get_clean();
+
+		$this->assertContains( 'var _wpCustomizeSettings =', $content );
+		$this->assertContains( '"blogname"', $content );
+		$this->assertContains( '_wpCustomizeSettings.controls', $content );
+		$this->assertContains( '_wpCustomizeSettings.settings', $content );
+		$this->assertContains( '</script>', $content );
+
+		$this->assertNotEmpty( preg_match( '#var _wpCustomizeSettings\s*=\s*({.*?});\s*\n#', $content, $matches ) );
+		$json = $matches[1];
+		$data = json_decode( $json, true );
+		$this->assertNotEmpty( $data );
+
+		$this->assertEqualSets( array( 'theme', 'url', 'browser', 'panels', 'sections', 'nonce', 'autofocus', 'documentTitleTmpl' ), array_keys( $data ) );
+		$this->assertEquals( $autofocus, $data['autofocus'] );
+		$this->assertArrayHasKey( 'save', $data['nonce'] );
+		$this->assertArrayHasKey( 'preview', $data['nonce'] );
 	}
 }
