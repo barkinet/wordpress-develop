@@ -663,7 +663,7 @@ final class WP_Customize_Manager {
 			'activeSections' => array(),
 			'activeControls' => array(),
 			'l10n' => array(
-				'loading'  => __( 'Loading...' ),
+				'loading'  => __( 'Loading...' ), // no ellipsis
 			),
 		);
 

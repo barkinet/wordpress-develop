@@ -680,6 +680,10 @@ function _http_build_query( $data, $prefix = null, $sep = null, $key = '', $urle
  * value. Additional values provided are expected to be encoded appropriately
  * with urlencode() or rawurlencode().
  *
+ * Important: The return value of add_query_arg() is not escaped by default.
+ * Output should be late-escaped with esc_url() or similar to help prevent
+ * vulnerability to cross-site scripting (XSS) attacks.
+ *
  * @since 1.5.0
  *
  * @param string|array $param1 Either newkey or an associative_array.
@@ -1993,7 +1997,8 @@ function wp_upload_bits( $name, $deprecated, $bits, $time = null ) {
 	// Compute the URL
 	$url = $upload['url'] . "/$filename";
 
-	return array( 'file' => $new_file, 'url' => $url, 'error' => false );
+	/** This filter is documented in wp-admin/includes/file.php */
+	return apply_filters( 'wp_handle_upload', array( 'file' => $new_file, 'url' => $url, 'type' => $wp_filetype['type'], 'error' => false ), 'sideload' );
 }
 
 /**
@@ -4984,27 +4989,4 @@ function wp_post_preview_js() {
 	}());
 	</script>
 	<?php
-}
-
-/**
- * Retrieve and, optionally, validate, an `action` query var
- *
- * @since 4.4.0
- *
- * @param string $action Optional. Action to validate.
- * @return string Empty string if there is no action in the request or it doesn't
- *                match the passed `$action`. Returns the [passed `$action` or
- *                request action on succcess.
- */
-function wp_validate_action( $action = '' ) {
-	$r = $_REQUEST;
-	if ( ! isset( $r['action'] ) ) {
-		return '';
-	}
-
-	if ( ! empty( $action ) ) {
-		return $action === $r['action'] ? $action : '';
-	}
-
-	return $r['action'];
 }

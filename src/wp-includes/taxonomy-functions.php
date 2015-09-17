@@ -278,7 +278,7 @@ function is_taxonomy_hierarchical($taxonomy) {
  *     * By default tag labels are used for non-hierarchical types and category labels for hierarchical ones.
  *     * You can see accepted values in {@link get_taxonomy_labels()}.
  * - description - A short descriptive summary of what the taxonomy is for. Defaults to blank.
- * - public - If the taxonomy should be publicly queryable; //@TODO not implemented.
+ * - public - If the taxonomy should be publicly queryable.
  *     * Defaults to true.
  * - hierarchical - Whether the taxonomy is hierarchical (e.g. category). Defaults to false.
  * - show_ui - Whether to generate a default UI for managing this taxonomy in the admin.
@@ -803,8 +803,9 @@ function get_term_by($field, $value, $taxonomy, $output = OBJECT, $filter = 'raw
 		$field = 'tt.term_taxonomy_id';
 	} else {
 		$term = get_term( (int) $value, $taxonomy, $output, $filter );
-		if ( is_wp_error( $term ) )
+		if ( is_wp_error( $term ) || is_null( $term ) ) {
 			$term = false;
+		}
 		return $term;
 	}
 

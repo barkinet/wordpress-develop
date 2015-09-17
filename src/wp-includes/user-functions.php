@@ -1451,9 +1451,10 @@ function wp_insert_user( $userdata ) {
 	 *     @type bool     $show_admin_bar_front Whether to show the admin bar on the front end for the user.
 	 *                                          Default true.
  	 * }
- 	 * @param WP_User $user User object.
+	 * @param WP_User $user   User object.
+	 * @param bool    $update Whether the user is being updated rather than created.
  	 */
-	$meta = apply_filters( 'insert_user_meta', $meta, $user );
+	$meta = apply_filters( 'insert_user_meta', $meta, $user, $update );
 
 	// Update user meta.
 	foreach ( $meta as $key => $value ) {
@@ -2023,9 +2024,29 @@ function register_new_user( $user_login, $user_email ) {
 
 	update_user_option( $user_id, 'default_password_nag', true, true ); //Set up the Password change nag.
 
-	wp_new_user_notification( $user_id, null, 'both' );
+	/**
+	 * Fires after a new user registration has been recorded.
+	 *
+	 * @since 4.4.0
+	 *
+	 * @param int $user_id ID of the newly registered user.
+	 */
+	do_action( 'register_new_user', $user_id );
 
 	return $user_id;
+}
+
+/**
+ * Initiate email notifications related to the creation of new users.
+ *
+ * Notifications are sent both to the site admin and to the newly created user.
+ *
+ * @since 4.4.0
+ *
+ * @param int $user_id ID of the newly created user.
+ */
+function wp_send_new_user_notifications( $user_id ) {
+	wp_new_user_notification( $user_id, null, 'both' );
 }
 
 /**

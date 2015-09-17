@@ -33,7 +33,7 @@ get_current_screen()->set_help_sidebar(
 	'<p>' . __('<a href="https://wordpress.org/support/forum/multisite/" target="_blank">Support Forums</a>') . '</p>'
 );
 
-if ( wp_validate_action( 'add-site' ) ) {
+if ( isset($_REQUEST['action']) && 'add-site' == $_REQUEST['action'] ) {
 	check_admin_referer( 'add-blog', '_wpnonce_add-blog' );
 
 	if ( ! is_array( $_POST['blog'] ) )
@@ -91,10 +91,18 @@ if ( wp_validate_action( 'add-site' ) ) {
 	if ( !$user_id ) { // Create a new user with a random password
 		$password = wp_generate_password( 12, false );
 		$user_id = wpmu_create_user( $domain, $password, $email );
-		if ( false === $user_id )
+		if ( false === $user_id ) {
 			wp_die( __( 'There was an error creating the user.' ) );
-		else
-			wp_new_user_notification( $user_id, null, 'both' );
+		}
+
+		/**
+		  * Fires after a new user has been created via the network site-new.php page.
+		  *
+		  * @since 4.4.0
+		  *
+		  * @param int $user_id ID of the newly created user.
+		  */
+		do_action( 'network_site_new_created_user', $user_id );
 	}
 
 	$wpdb->hide_errors();
