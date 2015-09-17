@@ -1424,7 +1424,7 @@ final class WP_Customize_Manager {
 	 * }
 	 */
 	public function set_autofocus( $autofocus ) {
-		$this->autofocus = array_map( 'strval', wp_array_slice_assoc( $autofocus, array( 'panel', 'section', 'control' ) ) );
+		$this->autofocus = array_filter( wp_array_slice_assoc( $autofocus, array( 'panel', 'section', 'control' ) ), 'is_string' );
 	}
 
 	/**

@@ -272,8 +272,27 @@ class Tests_WP_Customize_Manager extends WP_UnitTestCase {
 	 * @see WP_Customize_Manager::get_autofocus()
 	 * @see WP_Customize_Manager::set_autofocus()
 	 */
-	function test_set_autofocus() {
-		$this->markTestIncomplete();
+	function test_autofocus() {
+		$this->assertEmpty( $this->manager->get_autofocus() );
+
+		$this->manager->set_autofocus( array( 'unrecognized' => 'food' ) );
+		$this->assertEmpty( $this->manager->get_autofocus() );
+
+		$autofocus = array( 'control' => 'blogname' );
+		$this->manager->set_autofocus( $autofocus );
+		$this->assertEquals( $autofocus, $this->manager->get_autofocus() );
+
+		$autofocus = array( 'section' => 'colors' );
+		$this->manager->set_autofocus( $autofocus );
+		$this->assertEquals( $autofocus, $this->manager->get_autofocus() );
+
+		$autofocus = array( 'panel' => 'widgets' );
+		$this->manager->set_autofocus( $autofocus );
+		$this->assertEquals( $autofocus, $this->manager->get_autofocus() );
+
+		$autofocus = array( 'control' => array( 'blogname', 'blogdescription' ) );
+		$this->manager->set_autofocus( $autofocus );
+		$this->assertEmpty( $this->manager->get_autofocus() );
 	}
 
 	/**
