@@ -1404,7 +1404,7 @@ final class WP_Customize_Manager {
 			$return_url = $this->return_url;
 		} else if ( $this->preview_url ) {
 			$return_url = $this->preview_url;
-		} elseif ( current_user_can( 'edit_theme_options' ) || current_user_can( 'switch_themes' ) ) {
+		} else if ( current_user_can( 'edit_theme_options' ) || current_user_can( 'switch_themes' ) ) {
 			$return_url = admin_url( 'themes.php' );
 		} else {
 			$return_url = admin_url();
