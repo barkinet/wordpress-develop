@@ -107,7 +107,6 @@ final class WP_Customize_Manager {
 	 *
 	 * @since 4.4.0
 	 * @access protected
-	 *
 	 * @var string
 	 */
 	protected $return_url;
@@ -116,8 +115,7 @@ final class WP_Customize_Manager {
 	 * Mapping of 'panel', 'section', 'control' to the ID which should be autofocused.
 	 *
 	 * @since 4.4.0
-	 * @access public
-	 *
+	 * @access protected
 	 * @var array
 	 */
 	protected $autofocus = array();
