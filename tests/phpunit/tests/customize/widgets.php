@@ -242,4 +242,27 @@ class Tests_WP_Customize_Widgets extends WP_UnitTestCase {
 		$this->assertNotContains( '<input class="widefat"', $widget_control_parts['control'] );
 		$this->assertContains( '<input class="widefat"', $widget_control_parts['content'] );
 	}
+
+	/**
+	 * @see WP_Widget_Form_Customize_Control::json()
+	 */
+	function test_wp_widget_form_customize_control_json() {
+		$this->do_customize_boot_actions();
+		$control = $this->manager->get_control( 'widget_search[2]' );
+		$params = $control->json();
+
+		$this->assertEquals( 'widget_form', $params['type'] );
+		$this->assertRegExp( '#^<li[^>]+>\s+</li>$#', $params['content'] );
+		$this->assertRegExp( '#^<div[^>]*class=\'widget\'[^>]*#s', $params['widget_control'] );
+		$this->assertContains( '<div class="widget-content"></div>', $params['widget_control'] );
+		$this->assertNotContains( '<input class="widefat"', $params['widget_control'] );
+		$this->assertContains( '<input class="widefat"', $params['widget_content'] );
+		$this->assertEquals( 'search-2', $params['widget_id'] );
+		$this->assertEquals( 'search', $params['widget_id_base'] );
+		$this->assertArrayHasKey( 'sidebar_id', $params );
+		$this->assertArrayHasKey( 'width', $params );
+		$this->assertArrayHasKey( 'height', $params );
+		$this->assertInternalType( 'bool', $params['is_wide'] );
+
+	}
 }
