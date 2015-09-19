@@ -195,4 +195,51 @@ class Tests_WP_Customize_Widgets extends WP_UnitTestCase {
 		$unsanitized_from_js = $this->manager->widgets->sanitize_widget_instance( $sanitized_for_js );
 		$this->assertEquals( $unsanitized_from_js, $new_categories_instance );
 	}
+
+	/**
+	 * Get the widget control args for tests.
+	 *
+	 * @return array
+	 */
+	function get_test_widget_control_args() {
+		global $wp_registered_widgets;
+		require_once ABSPATH . '/wp-admin/includes/widgets.php';
+		$widget_id = 'search-2';
+		$widget = $wp_registered_widgets[ $widget_id ];
+		$args = array(
+			'widget_id' => $widget['id'],
+			'widget_name' => $widget['name'],
+		);
+		$args = wp_list_widget_controls_dynamic_sidebar( array( 0 => $args, 1 => $widget['params'][0] ) );
+		return $args;
+	}
+
+	/**
+	 * @see WP_Customize_Widgets::get_widget_control()
+	 */
+	function test_get_widget_control() {
+		$this->do_customize_boot_actions();
+		$widget_control = $this->manager->widgets->get_widget_control( $this->get_test_widget_control_args() );
+
+		$this->assertContains( '<div class="form">', $widget_control );
+		$this->assertContains( '<div class="widget-content">', $widget_control );
+		$this->assertContains( '<input type="hidden" name="id_base" class="id_base" value="search"', $widget_control );
+		$this->assertContains( '<input class="widefat"', $widget_control );
+	}
+
+	/**
+	 * @see WP_Customize_Widgets::get_widget_control_parts()
+	 */
+	function test_get_widget_control_parts() {
+		$this->do_customize_boot_actions();
+		$widget_control_parts = $this->manager->widgets->get_widget_control_parts( $this->get_test_widget_control_args() );
+		$this->assertArrayHasKey( 'content', $widget_control_parts );
+		$this->assertArrayHasKey( 'control', $widget_control_parts );
+
+		$this->assertContains( '<div class="form">', $widget_control_parts['control'] );
+		$this->assertContains( '<div class="widget-content">', $widget_control_parts['control'] );
+		$this->assertContains( '<input type="hidden" name="id_base" class="id_base" value="search"', $widget_control_parts['control'] );
+		$this->assertNotContains( '<input class="widefat"', $widget_control_parts['control'] );
+		$this->assertContains( '<input class="widefat"', $widget_control_parts['content'] );
+	}
 }
