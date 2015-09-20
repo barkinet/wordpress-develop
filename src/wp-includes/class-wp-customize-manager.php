@@ -899,7 +899,15 @@ final class WP_Customize_Manager {
 		do_action( 'customize_save', $this );
 
 		foreach ( $this->settings as $setting ) {
+			/*
+			 * Note that aggregated multidimensional settings will only be
+			 * prepared for saving with this call. They will actually be saved
+			 * in the finalize_multidimensional_update() call below.
+			 */
 			$setting->save();
+		}
+		foreach ( $this->settings as $setting ) {
+			$setting->finalize_multidimensional_update();
 		}
 
 		/**
