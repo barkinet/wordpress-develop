@@ -548,6 +548,13 @@
 			};
 			section.panel.bind( inject );
 			inject( section.panel.get() ); // Since a section may never get a panel, assume that it won't ever get one
+
+			section.deferred.embedded.done(function() {
+				// Fix the top margin after reflow.
+				api.bind( 'pane-contents-reflowed', _.debounce( function() {
+					section._recalculateTopMargin();
+				}, 100 ) );
+			});
 		},
 
 		/**
@@ -655,13 +662,7 @@
 						// Fix the height after browser resize.
 						$( window ).on( 'resize.customizer-section', _.debounce( resizeContentHeight, 100 ) );
 
-						// Fix the top margin after reflow.
-						api.bind( 'pane-contents-reflowed', _.debounce( function() {
-							var offset = ( content.offset().top - headerActionsHeight );
-							if ( 0 < offset ) {
-								content.css( 'margin-top', ( parseInt( content.css( 'margin-top' ), 10 ) - offset ) );
-							}
-						}, 100 ) );
+						section._recalculateTopMargin();
 					};
 				}
 
@@ -701,6 +702,25 @@
 				if ( args.completeCallback ) {
 					args.completeCallback();
 				}
+			}
+		},
+
+		/**
+		 * Recalculate the top margin.
+		 *
+		 * @since 4.4.0
+		 * @private
+		 */
+		_recalculateTopMargin: function() {
+			var section = this, content, offset, headerActionsHeight;
+			content = section.container.find( '.accordion-section-content' );
+			if ( 0 === content.length ) {
+				return;
+			}
+			headerActionsHeight = $( '#customize-header-actions' ).height();
+			offset = ( content.offset().top - headerActionsHeight );
+			if ( 0 < offset ) {
+				content.css( 'margin-top', ( parseInt( content.css( 'margin-top' ), 10 ) - offset ) );
 			}
 		}
 	});
@@ -1164,6 +1184,11 @@
 				parentContainer.append( panel.container );
 				panel.renderContent();
 			}
+
+			api.bind( 'pane-contents-reflowed', _.debounce( function() {
+				panel._recalculateTopMargin();
+			}, 100 ) );
+
 			panel.deferred.embedded.resolve();
 		},
 
@@ -1262,7 +1287,7 @@
 		 * @param {Boolean}  expanded
 		 * @param {Object}   args
 		 * @param {Boolean}  args.unchanged
-		 * @param {Callback} args.completeCallback
+		 * @param {Function} args.completeCallback
 		 */
 		onChangeExpanded: function ( expanded, args ) {
 
@@ -1277,14 +1302,14 @@
 			// Note: there is a second argument 'args' passed
 			var position, scroll,
 				panel = this,
-				section = panel.container.closest( '.accordion-section' ), // This is actually the panel.
-				overlay = section.closest( '.wp-full-overlay' ),
-				container = section.closest( '.wp-full-overlay-sidebar-content' ),
+				accordionSection = panel.container.closest( '.accordion-section' ),
+				overlay = accordionSection.closest( '.wp-full-overlay' ),
+				container = accordionSection.closest( '.wp-full-overlay-sidebar-content' ),
 				siblings = container.find( '.open' ),
 				topPanel = overlay.find( '#customize-theme-controls > ul > .accordion-section > .accordion-section-title' ),
-				backBtn = section.find( '.customize-panel-back' ),
-				panelTitle = section.find( '.accordion-section-title' ).first(),
-				content = section.find( '.control-panel-content' ),
+				backBtn = accordionSection.find( '.customize-panel-back' ),
+				panelTitle = accordionSection.find( '.accordion-section-title' ).first(),
+				content = accordionSection.find( '.control-panel-content' ),
 				headerActionsHeight = $( '#customize-header-actions' ).height();
 
 			if ( expanded ) {
@@ -1306,7 +1331,7 @@
 					position = content.offset().top;
 					scroll = container.scrollTop();
 					content.css( 'margin-top', ( headerActionsHeight - position - scroll ) );
-					section.addClass( 'current-panel' );
+					accordionSection.addClass( 'current-panel' );
 					overlay.addClass( 'in-sub-panel' );
 					container.scrollTop( 0 );
 					if ( args.completeCallback ) {
@@ -1316,14 +1341,10 @@
 				topPanel.attr( 'tabindex', '-1' );
 				backBtn.attr( 'tabindex', '0' );
 				backBtn.focus();
-
-				// Fix the top margin after reflow.
-				api.bind( 'pane-contents-reflowed', _.debounce( function() {
-					content.css( 'margin-top', ( parseInt( content.css( 'margin-top' ), 10 ) - ( content.offset().top - headerActionsHeight ) ) );
-				}, 100 ) );
+				panel._recalculateTopMargin();
 			} else {
 				siblings.removeClass( 'open' );
-				section.removeClass( 'current-panel' );
+				accordionSection.removeClass( 'current-panel' );
 				overlay.removeClass( 'in-sub-panel' );
 				content.delay( 180 ).hide( 0, function() {
 					content.css( 'margin-top', 'inherit' ); // Reset
@@ -1336,6 +1357,20 @@
 				panelTitle.focus();
 				container.scrollTop( 0 );
 			}
+		},
+
+		/**
+		 * Recalculate the top margin.
+		 *
+		 * @since 4.4.0
+		 * @private
+		 */
+		_recalculateTopMargin: function() {
+			var panel = this, headerActionsHeight, content, accordionSection;
+			headerActionsHeight = $( '#customize-header-actions' ).height();
+			accordionSection = panel.container.closest( '.accordion-section' )
+			content = accordionSection.find( '.control-panel-content' );
+			content.css( 'margin-top', ( parseInt( content.css( 'margin-top' ), 10 ) - ( content.offset().top - headerActionsHeight ) ) );
 		},
 
 		/**
