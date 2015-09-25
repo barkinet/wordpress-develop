@@ -378,39 +378,48 @@
 		},
 
 		/**
-		 * @param {Boolean} expanded
-		 * @param {Object} [params]
-		 * @returns {Boolean} false if state already applied
+		 * Handle the toggle logic for expand/collapse.
+		 *
+		 * @param {Boolean}  expanded - The new state to apply.
+		 * @param {Object}   [params] - Object containing options for expand/collapse.
+		 * @param {Function} [params.completeCallback] - Function to call when expansion/collapse is complete.
+		 * @returns {Boolean} false if state already applied or active state is false
 		 */
-		_toggleExpanded: function ( expanded, params ) {
-			var self = this;
+		_toggleExpanded: function( expanded, params ) {
+			var instance = this, previousCompleteCallback;
 			params = params || {};
-			var section = this, previousCompleteCallback = params.completeCallback;
-			params.completeCallback = function () {
+			previousCompleteCallback = params.completeCallback;
+
+			// Short-circuit expand() if the instance is not active.
+			if ( expanded && ! instance.active() ) {
+				return false;
+			}
+
+			params.completeCallback = function() {
 				if ( previousCompleteCallback ) {
-					previousCompleteCallback.apply( section, arguments );
+					previousCompleteCallback.apply( instance, arguments );
 				}
 				if ( expanded ) {
-					section.container.trigger( 'expanded' );
+					instance.container.trigger( 'expanded' );
 				} else {
-					section.container.trigger( 'collapsed' );
+					instance.container.trigger( 'collapsed' );
 				}
 			};
-			if ( ( expanded && this.expanded.get() ) || ( ! expanded && ! this.expanded.get() ) ) {
+			if ( ( expanded && instance.expanded.get() ) || ( ! expanded && ! instance.expanded.get() ) ) {
 				params.unchanged = true;
-				self.onChangeExpanded( self.expanded.get(), params );
+				instance.onChangeExpanded( instance.expanded.get(), params );
 				return false;
 			} else {
 				params.unchanged = false;
-				this.expandedArgumentsQueue.push( params );
-				this.expanded.set( expanded );
+				instance.expandedArgumentsQueue.push( params );
+				instance.expanded.set( expanded );
 				return true;
 			}
 		},
 
 		/**
 		 * @param {Object} [params]
-		 * @returns {Boolean} false if already expanded
+		 * @returns {Boolean} false if already expanded or if inactive.
 		 */
 		expand: function ( params ) {
 			return this._toggleExpanded( true, params );
@@ -418,7 +427,7 @@
 
 		/**
 		 * @param {Object} [params]
-		 * @returns {Boolean} false if already collapsed
+		 * @returns {Boolean} false if already collapsed.
 		 */
 		collapse: function ( params ) {
 			return this._toggleExpanded( false, params );
