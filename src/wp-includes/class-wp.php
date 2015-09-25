@@ -365,7 +365,7 @@ class WP {
 	 * @since 2.0.0
 	 */
 	public function send_headers() {
-		$headers = array('X-Pingback' => get_bloginfo('pingback_url'));
+		$headers = array();
 		$status = null;
 		$exit_required = false;
 
@@ -595,8 +595,27 @@ class WP {
 
 		// Never 404 for the admin, robots, or if we found posts.
 		if ( is_admin() || is_robots() || $wp_query->posts ) {
-			status_header( 200 );
-			return;
+
+			$success = true;
+			if ( is_singular() ) {
+				$p = clone $wp_query->post;
+				// Only set X-Pingback for single posts that allow pings.
+				if ( $p && pings_open( $p ) ) {
+					@header( 'X-Pingback: ' . get_bloginfo( 'pingback_url' ) );
+				}
+
+				// check for paged content that exceeds the max number of pages
+				$next = '<!--nextpage-->';
+				if ( $p && false !== strpos( $p->post_content, $next ) && ! empty( $this->query_vars['page'] ) ) {
+					$page = trim( $this->query_vars['page'], '/' );
+					$success = (int) $page <= ( substr_count( $p->post_content, $next ) + 1 );
+				}
+			}
+
+			if ( $success ) {
+				status_header( 200 );
+				return;
+			}
 		}
 
 		// We will 404 for paged queries, as no posts were found.

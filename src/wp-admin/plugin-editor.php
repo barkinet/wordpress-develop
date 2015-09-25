@@ -71,8 +71,11 @@ case 'update':
 			if ( is_plugin_active($file) )
 				deactivate_plugins($file, true);
 
-			if ( ! is_network_admin() )
+			if ( ! is_network_admin() ) {
 				update_option( 'recently_activated', array( $file => time() ) + (array) get_option( 'recently_activated' ) );
+			} else {
+				update_site_option( 'recently_activated', array( $file => time() ) + (array) get_site_option( 'recently_activated' ) );
+			}
 
 			wp_redirect(add_query_arg('_wpnonce', wp_create_nonce('edit-plugin-test_' . $file), "plugin-editor.php?file=$file&liveupdate=1&scrollto=$scrollto&networkwide=" . $network_wide));
 			exit;
@@ -179,16 +182,22 @@ default:
 <div class="fileedit-sub">
 <div class="alignleft">
 <big><?php
-	if ( is_plugin_active($plugin) ) {
-		if ( is_writeable($real_file) )
-			echo sprintf(__('Editing <strong>%s</strong> (active)'), $file);
-		else
-			echo sprintf(__('Browsing <strong>%s</strong> (active)'), $file);
+	if ( is_plugin_active( $plugin ) ) {
+		if ( is_writeable( $real_file ) ) {
+			/* translators: %s: plugin file name */
+			echo sprintf( __( 'Editing %s (active)' ), '<strong>' . $file . '</strong>' );
+		} else {
+			/* translators: %s: plugin file name */
+			echo sprintf( __( 'Browsing %s (active)' ), '<strong>' . $file . '</strong>' );
+		}
 	} else {
-		if ( is_writeable($real_file) )
-			echo sprintf(__('Editing <strong>%s</strong> (inactive)'), $file);
-		else
-			echo sprintf(__('Browsing <strong>%s</strong> (inactive)'), $file);
+		if ( is_writeable( $real_file ) ) {
+			/* translators: %s: plugin file name */
+			echo sprintf( __( 'Editing %s (inactive)' ), '<strong>' . $file . '</strong>' );
+		} else {
+			/* translators: %s: plugin file name */
+			echo sprintf( __( 'Browsing %s (inactive)' ), '<strong>' . $file . '</strong>' );
+		}
 	}
 	?></big>
 </div>

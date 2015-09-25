@@ -61,10 +61,13 @@ class Tests_User_Capabilities extends WP_UnitTestCase {
 			'edit_users'             => array( 'administrator' ),
 			'install_plugins'        => array( 'administrator' ),
 			'install_themes'         => array( 'administrator' ),
+			'upload_plugins'         => array( 'administrator' ),
+			'upload_themes'          => array( 'administrator' ),
 			'update_core'            => array( 'administrator' ),
 			'update_plugins'         => array( 'administrator' ),
 			'update_themes'          => array( 'administrator' ),
 			'edit_theme_options'     => array( 'administrator' ),
+			'customize'              => array( 'administrator' ),
 			'export'                 => array( 'administrator' ),
 			'import'                 => array( 'administrator' ),
 			'list_users'             => array( 'administrator' ),
@@ -82,7 +85,7 @@ class Tests_User_Capabilities extends WP_UnitTestCase {
 			'edit_published_pages'   => array( 'administrator', 'editor' ),
 			'publish_pages'          => array( 'administrator', 'editor' ),
 			'delete_pages'           => array( 'administrator', 'editor' ),
-			'delete_others_posts'    => array( 'administrator', 'editor' ),
+			'delete_others_pages'    => array( 'administrator', 'editor' ),
 			'delete_published_pages' => array( 'administrator', 'editor' ),
 			'delete_others_posts'    => array( 'administrator', 'editor' ),
 			'delete_private_posts'   => array( 'administrator', 'editor' ),
@@ -140,11 +143,14 @@ class Tests_User_Capabilities extends WP_UnitTestCase {
 			'edit_users'             => array(),
 			'install_plugins'        => array(),
 			'install_themes'         => array(),
+			'upload_plugins'         => array(),
+			'upload_themes'          => array(),
 			'update_core'            => array(),
 			'update_plugins'         => array(),
 			'update_themes'          => array(),
 
 			'edit_theme_options'     => array( 'administrator' ),
+			'customize'              => array( 'administrator' ),
 			'export'                 => array( 'administrator' ),
 			'import'                 => array( 'administrator' ),
 			'list_users'             => array( 'administrator' ),
@@ -162,7 +168,7 @@ class Tests_User_Capabilities extends WP_UnitTestCase {
 			'edit_published_pages'   => array( 'administrator', 'editor' ),
 			'publish_pages'          => array( 'administrator', 'editor' ),
 			'delete_pages'           => array( 'administrator', 'editor' ),
-			'delete_others_posts'    => array( 'administrator', 'editor' ),
+			'delete_others_pages'    => array( 'administrator', 'editor' ),
 			'delete_published_pages' => array( 'administrator', 'editor' ),
 			'delete_others_posts'    => array( 'administrator', 'editor' ),
 			'delete_private_posts'   => array( 'administrator', 'editor' ),
@@ -243,6 +249,10 @@ class Tests_User_Capabilities extends WP_UnitTestCase {
 			}
 
 		}
+
+		$this->assertFalse( $user->has_cap( 'do_not_allow' ), "User with the {$role} role should not have the do_not_allow capability" );
+		$this->assertFalse( user_can( $user, 'do_not_allow' ), "User with the {$role} role should not have the do_not_allow capability" );
+
 	}
 
 	// special case for the link manager
@@ -304,6 +314,9 @@ class Tests_User_Capabilities extends WP_UnitTestCase {
 			$this->assertTrue( $user->has_cap( $cap ), "Super Admins should have the {$cap} capability" );
 			$this->assertTrue( user_can( $user, $cap ), "Super Admins should have the {$cap} capability" );
 		}
+
+		$this->assertFalse( $user->has_cap( 'do_not_allow' ), 'Super Admins should not have the do_not_allow capability' );
+		$this->assertFalse( user_can( $user, 'do_not_allow' ), 'Super Admins should not have the do_not_allow capability' );
 	}
 
 	// a role that doesn't exist
@@ -1017,4 +1030,51 @@ class Tests_User_Capabilities extends WP_UnitTestCase {
 			$this->assertTrue( current_user_can( $cap, $post_id ) );
 		}
 	}
+
+	/**
+	 * @ticket 17253
+	 */
+	function test_cpt_with_page_capability_type() {
+
+		register_post_type( 'page_capability', array(
+			'capability_type' => 'page',
+		) );
+
+		$cpt = get_post_type_object( 'page_capability' );
+
+		$admin       = $this->factory->user->create_and_get( array( 'role' => 'administrator' ) );
+		$editor      = $this->factory->user->create_and_get( array( 'role' => 'editor' ) );
+		$author      = $this->factory->user->create_and_get( array( 'role' => 'author' ) );
+		$contributor = $this->factory->user->create_and_get( array( 'role' => 'contributor' ) );
+
+		$this->assertEquals( 'edit_pages', $cpt->cap->edit_posts );
+		$this->assertTrue( user_can( $admin->ID, $cpt->cap->edit_posts ) );
+		$this->assertTrue( user_can( $editor->ID, $cpt->cap->edit_posts ) );
+		$this->assertFalse( user_can( $author->ID, $cpt->cap->edit_posts ) );
+		$this->assertFalse( user_can( $contributor->ID, $cpt->cap->edit_posts ) );
+
+		$admin_post = $this->factory->post->create_and_get( array(
+			'post_author' => $admin->ID,
+			'post_type'   => 'page_capability',
+		) );
+
+		$this->assertTrue( user_can( $admin->ID, 'edit_post', $admin_post->ID ) );
+		$this->assertTrue( user_can( $editor->ID, 'edit_post', $admin_post->ID ) );
+		$this->assertFalse( user_can( $author->ID, 'edit_post', $admin_post->ID ) );
+		$this->assertFalse( user_can( $contributor->ID, 'edit_post', $admin_post->ID ) );
+
+		$author_post = $this->factory->post->create_and_get( array(
+			'post_author' => $author->ID,
+			'post_type'   => 'page_capability',
+		) );
+
+		$this->assertTrue( user_can( $admin->ID, 'edit_post', $author_post->ID ) );
+		$this->assertTrue( user_can( $editor->ID, 'edit_post', $author_post->ID ) );
+		$this->assertFalse( user_can( $author->ID, 'edit_post', $author_post->ID ) );
+		$this->assertFalse( user_can( $contributor->ID, 'edit_post', $author_post->ID ) );
+
+		_unregister_post_type( 'page_capability' );
+
+	}
+
 }

@@ -1,6 +1,6 @@
 <?php
 /**
- * Template WordPress Administration API.
+ * Administration API: Top-level admin template functionality
  *
  * A Big Mess. Also some neat functions that are nicely written.
  *
@@ -1892,7 +1892,7 @@ function _wp_admin_html_begin() {
 <![endif]-->
 <!--[if !(IE 8) ]><!-->
 <html xmlns="http://www.w3.org/1999/xhtml" class="<?php echo $admin_html_class; ?>" <?php
-	/** This action is documented in wp-admin/includes/template.php */
+	/** This action is documented in wp-admin/includes/template-functions.php */
 	do_action( 'admin_xml_ns' );
 ?> <?php language_attributes(); ?>>
 <!--<![endif]-->
@@ -1910,7 +1910,7 @@ function _wp_admin_html_begin() {
  * @return WP_Screen Screen object.
  */
 function convert_to_screen( $hook_name ) {
-	if ( ! class_exists( 'WP_Screen' ) ) {
+	if ( ! class_exists( 'WP_Screen', false ) ) {
 		_doing_it_wrong( 'convert_to_screen(), add_meta_box()', __( "Likely direct inclusion of wp-admin/includes/template.php in order to use add_meta_box(). This is very wrong. Hook the add_meta_box() call into the add_meta_boxes action instead." ), '3.3' );
 		return (object) array( 'id' => '_invalid', 'base' => '_are_belong_to_us' );
 	}

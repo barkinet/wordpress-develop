@@ -294,6 +294,23 @@ class Tests_Widgets extends WP_UnitTestCase {
 	}
 
 	/**
+	 * @ticket 23423
+	 */
+	function test_dynamic_sidebar_id_special_characters() {
+		wp_widgets_init();
+		register_sidebar( array(
+			'name' => 'Sidebar 2',
+			'id' => 'sidebar-2',
+		) );
+
+		ob_start();
+		$result = dynamic_sidebar( 'Sidebar 1' );
+		ob_end_clean();
+
+		$this->assertFalse( $result );
+	}
+
+	/**
 	 * @see wp_widget_control()
 	 */
 	function test_wp_widget_control() {
@@ -348,5 +365,4 @@ class Tests_Widgets extends WP_UnitTestCase {
 			$this->assertContains( $contained, $control );
 		}
 	}
-
 }

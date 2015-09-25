@@ -47,8 +47,8 @@ class WP_oEmbed {
 			'#https?://flic\.kr/.*#i'                             => array( 'https://www.flickr.com/services/oembed/',            true  ),
 			'#https?://(.+\.)?smugmug\.com/.*#i'                  => array( 'http://api.smugmug.com/services/oembed/',            true  ),
 			'#https?://(www\.)?hulu\.com/watch/.*#i'              => array( 'http://www.hulu.com/api/oembed.{format}',            true  ),
-			'http://i*.photobucket.com/albums/*'                  => array( 'http://photobucket.com/oembed',                      false ),
-			'http://gi*.photobucket.com/groups/*'                 => array( 'http://photobucket.com/oembed',                      false ),
+			'http://i*.photobucket.com/albums/*'                  => array( 'http://api.photobucket.com/oembed',                  false ),
+			'http://gi*.photobucket.com/groups/*'                 => array( 'http://api.photobucket.com/oembed',                  false ),
 			'#https?://(www\.)?scribd\.com/doc/.*#i'              => array( 'http://www.scribd.com/services/oembed',              true  ),
 			'#https?://wordpress.tv/.*#i'                         => array( 'http://wordpress.tv/oembed/',                        true  ),
 			'#https?://(.+\.)?polldaddy\.com/.*#i'                => array( 'https://polldaddy.com/oembed/',                      true  ),
@@ -146,6 +146,7 @@ class WP_oEmbed {
 		 * | Kickstarter  | kickstarter.com      |  Yes  | 4.2.0     |
 		 * | Kickstarter  | kck.st               |  Yes  | 4.2.0     |
 		 * | ------------ | -------------------- | ----- | --------- |
+		 * | Cloudup      | cloudup.com          |  Yes  | 4.4.0     |
 		 * | ReverbNation | reverbnation.com     |  Yes  | 4.4.0     |
 		 *
 		 * No longer supported providers:
@@ -489,7 +490,7 @@ class WP_oEmbed {
 	 * @return object|false
 	 */
 	private function _parse_xml_body( $response_body ) {
-		if ( ! function_exists( 'simplexml_import_dom' ) || ! class_exists( 'DOMDocument' ) )
+		if ( ! function_exists( 'simplexml_import_dom' ) || ! class_exists( 'DOMDocument', false ) )
 			return false;
 
 		$dom = new DOMDocument;

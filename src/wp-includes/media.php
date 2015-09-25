@@ -148,7 +148,8 @@ function image_hwstring( $width, $height ) {
  * @param int          $id   Attachment ID for image.
  * @param array|string $size Optional. Image size to scale to. Accepts a registered image size
  *                           or flat array of height and width values. Default 'medium'.
- * @return false|array False on failure, array on success.
+ * @return false|array Array containing the image URL, width, height, and boolean for whether
+ *                     the image is an intermediate size. False on failure.
  */
 function image_downsize( $id, $size = 'medium' ) {
 
@@ -691,13 +692,18 @@ function get_intermediate_image_sizes() {
  *
  * A mime icon for files, thumbnail or intermediate size for images.
  *
+ * The returned array contains four values: the URL of the attachment image src,
+ * the width of the image file, the height of the image file, and a boolean
+ * representing whether the returned array describes an intermediate (generated)
+ * image size or the original, full-sized upload.
+ *
  * @since 2.5.0
  *
  * @param int          $attachment_id Image attachment ID.
  * @param string|array $size          Optional. Registered image size to retrieve the source for or a flat
  *                                    array of height and width dimensions. Default 'thumbnail'.
  * @param bool         $icon          Optional. Whether the image should be treated as an icon. Default false.
- * @return false|array Returns an array (url, width, height), or false, if no image is available.
+ * @return false|array Returns an array (url, width, height, is_intermediate), or false, if no image is available.
  */
 function wp_get_attachment_image_src( $attachment_id, $size = 'thumbnail', $icon = false ) {
 	// get a thumbnail or intermediate image if there is one
@@ -790,6 +796,22 @@ function wp_get_attachment_image($attachment_id, $size = 'thumbnail', $icon = fa
 	}
 
 	return $html;
+}
+
+/**
+ * Get the URL of an image attachment.
+ *
+ * @since 4.4.0
+ *
+ * @param int          $attachment_id Image attachment ID.
+ * @param string|array $size          Optional. Registered image size to retrieve the source for or a flat
+ *                                    array of height and width dimensions. Default 'thumbnail'.
+ * @param bool         $icon          Optional. Whether the image should be treated as an icon. Default false.
+ * @return string|false Attachment URL or false if no image is available.
+ */
+function wp_get_attachment_image_url( $attachment_id, $size = 'thumbnail', $icon = false ) {
+	$image = wp_get_attachment_image_src( $attachment_id, $size, $icon );
+	return isset( $image['0'] ) ? $image['0'] : false;
 }
 
 /**
@@ -3044,8 +3066,6 @@ function wp_enqueue_media( $args = array() ) {
 		}
 	}
 
-	$hier = $post && is_post_type_hierarchical( $post->post_type );
-
 	if ( $post ) {
 		$post_type_object = get_post_type_object( $post->post_type );
 	} else {
@@ -3084,10 +3104,10 @@ function wp_enqueue_media( $args = array() ) {
 		'allMediaItems'          => __( 'All media items' ),
 		'allDates'               => __( 'All dates' ),
 		'noItemsFound'           => __( 'No items found.' ),
-		'insertIntoPost'         => $hier ? __( 'Insert into page' ) : __( 'Insert into post' ),
+		'insertIntoPost'         => $post_type_object->labels->insert_into_item,
 		'unattached'             => __( 'Unattached' ),
 		'trash'                  => _x( 'Trash', 'noun' ),
-		'uploadedToThisPost'     => $hier ? __( 'Uploaded to this page' ) : __( 'Uploaded to this post' ),
+		'uploadedToThisPost'     => $post_type_object->labels->uploaded_to_this_item,
 		'warnDelete'             => __( "You are about to permanently delete this item.\n  'Cancel' to stop, 'OK' to delete." ),
 		'warnBulkDelete'         => __( "You are about to permanently delete these items.\n  'Cancel' to stop, 'OK' to delete." ),
 		'warnBulkTrash'          => __( "You are about to trash these items.\n  'Cancel' to stop, 'OK' to delete." ),

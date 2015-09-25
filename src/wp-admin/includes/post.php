@@ -1329,7 +1329,7 @@ function get_sample_permalink_html( $id, $new_title = null, $new_slug = null ) {
 	}
 
 	if ( isset( $view_post ) ) {
-		if ( 'draft' == $post->post_status ) {
+		if ( 'draft' == $post->post_status || 'pending' == $post->post_status ) {
 			$draft_link = set_url_scheme( get_permalink( $post->ID ) );
 			$preview_link = get_preview_post_link( $post, array(), $draft_link );
 			$return .= "<span id='view-post-btn'><a href='" . esc_url( $preview_link ) . "' class='button button-small' target='wp-preview-{$post->ID}'>$view_post</a></span>\n";
@@ -1350,13 +1350,15 @@ function get_sample_permalink_html( $id, $new_title = null, $new_slug = null ) {
 	 * Filter the sample permalink HTML markup.
 	 *
 	 * @since 2.9.0
+	 * @since 4.4.0 Added `$post` parameter.
 	 *
-	 * @param string      $return    Sample permalink HTML markup.
-	 * @param int|WP_Post $id        Post object or ID.
-	 * @param string      $new_title New sample permalink title.
-	 * @param string      $new_slug  New sample permalink slug.
+	 * @param string  $return    Sample permalink HTML markup.
+	 * @param int     $post_id   Post ID.
+	 * @param string  $new_title New sample permalink title.
+	 * @param string  $new_slug  New sample permalink slug.
+	 * @param WP_Post $post      Post object.
 	 */
-	$return = apply_filters( 'get_sample_permalink_html', $return, $id, $new_title, $new_slug );
+	$return = apply_filters( 'get_sample_permalink_html', $return, $post->ID, $new_title, $new_slug, $post );
 
 	return $return;
 }

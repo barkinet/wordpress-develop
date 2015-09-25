@@ -1,6 +1,6 @@
 <?php
 /**
- * Users API: WP_User_Query class
+ * User API: WP_User_Query class
  *
  * @package WordPress
  * @subpackage Users
@@ -79,9 +79,11 @@ class WP_User_Query {
 	 * Prepare the query variables.
 	 *
 	 * @since 3.1.0
+	 * @since 4.1.0 Added the ability to order by the `include` value.
 	 * @since 4.2.0 Added 'meta_value_num' support for `$orderby` parameter. Added multi-dimensional array syntax
 	 *              for `$orderby` parameter.
 	 * @since 4.3.0 Added 'has_published_posts' parameter.
+	 * @since 4.4.0 Added 'paged' parameter.
 	 * @access public
 	 *
 	 * @global wpdb $wpdb
@@ -108,11 +110,11 @@ class WP_User_Query {
 	 *     @type string|array $orderby             Field(s) to sort the retrieved users by. May be a single value,
 	 *                                             an array of values, or a multi-dimensional array with fields as
 	 *                                             keys and orders ('ASC' or 'DESC') as values. Accepted values are
-	 *                                             'ID', 'display_name' (or 'name'), 'user_login' (or 'login'),
-	 *                                             'user_nicename' (or 'nicename'), 'user_email' (or 'email'),
-	 *                                             'user_url' (or 'url'), 'user_registered' (or 'registered'),
-	 *                                             'post_count', 'meta_value', 'meta_value_num', the value of
-	 *                                             `$meta_key`, or an array key of `$meta_query`. To use
+	 *                                             'ID', 'display_name' (or 'name'), 'include', 'user_login'
+	 *                                             (or 'login'), 'user_nicename' (or 'nicename'), 'user_email'
+	 *                                             (or 'email'), 'user_url' (or 'url'), 'user_registered'
+	 *                                             or 'registered'), 'post_count', 'meta_value', 'meta_value_num',
+	 *                                             the value of `$meta_key`, or an array key of `$meta_query`. To use
 	 *                                             'meta_value' or 'meta_value_num', `$meta_key` must be also be
 	 *                                             defined. Default 'user_login'.
 	 *     @type string       $order               Designates ascending or descending order of users. Order values
@@ -123,6 +125,8 @@ class WP_User_Query {
 	 *     @type int          $number              Number of users to limit the query for. Can be used in
 	 *                                             conjunction with pagination. Value -1 (all) is not supported.
 	 *                                             Default empty (all users).
+	 *     @type int          $paged               When used with number, defines the page of results to return.
+	 *                                             Default 1.
 	 *     @type bool         $count_total         Whether to count the total number of users found. If pagination
 	 *                                             is not needed, setting this to false can improve performance.
 	 *                                             Default true.
@@ -156,6 +160,7 @@ class WP_User_Query {
 				'order' => 'ASC',
 				'offset' => '',
 				'number' => '',
+				'paged' => 1,
 				'count_total' => true,
 				'fields' => 'all',
 				'who' => '',
@@ -322,10 +327,11 @@ class WP_User_Query {
 
 		// limit
 		if ( isset( $qv['number'] ) && $qv['number'] ) {
-			if ( $qv['offset'] )
+			if ( $qv['offset'] ) {
 				$this->query_limit = $wpdb->prepare("LIMIT %d, %d", $qv['offset'], $qv['number']);
-			else
-				$this->query_limit = $wpdb->prepare("LIMIT %d", $qv['number']);
+			} else {
+				$this->query_limit = $wpdb->prepare( "LIMIT %d, %d", $qv['number'] * ( $qv['paged'] - 1 ), $qv['number'] );
+			}
 		}
 
 		$search = '';

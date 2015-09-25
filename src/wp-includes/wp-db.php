@@ -266,7 +266,7 @@ class wpdb {
 	 * @var array
 	 */
 	var $tables = array( 'posts', 'comments', 'links', 'options', 'postmeta',
-		'terms', 'term_taxonomy', 'term_relationships', 'commentmeta' );
+		'terms', 'term_taxonomy', 'term_relationships', 'termmeta', 'commentmeta' );
 
 	/**
 	 * List of deprecated WordPress tables
@@ -381,6 +381,15 @@ class wpdb {
 	 * @var string
 	 */
 	public $term_taxonomy;
+
+	/**
+	 * WordPress Term Meta table.
+	 *
+	 * @since 4.4.0
+	 * @access public
+	 * @var string
+	 */
+	public $termmeta;
 
 	/*
 	 * Global and Multisite tables
@@ -1474,7 +1483,7 @@ class wpdb {
 
 				if ( $attempt_fallback ) {
 					$this->use_mysqli = false;
-					$this->db_connect();
+					return $this->db_connect( $allow_bail );
 				}
 			}
 		} else {
@@ -2993,10 +3002,11 @@ class wpdb {
 	 */
 	public function bail( $message, $error_code = '500' ) {
 		if ( !$this->show_errors ) {
-			if ( class_exists( 'WP_Error' ) )
+			if ( class_exists( 'WP_Error', false ) ) {
 				$this->error = new WP_Error($error_code, $message);
-			else
+			} else {
 				$this->error = $message;
+			}
 			return false;
 		}
 		wp_die($message);
