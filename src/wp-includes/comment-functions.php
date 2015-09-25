@@ -237,6 +237,8 @@ function get_comment_statuses() {
 		'approve'	=> _x('Approved', 'adjective'),
 		/* translators: comment status */
 		'spam'		=> _x('Spam', 'adjective'),
+		/* translators: comment status */
+		'trash'		=> _x('Trash', 'adjective'),
 	);
 
 	return $status;
@@ -588,7 +590,22 @@ function wp_allow_comment( $commentdata ) {
 		") AND comment_content = %s LIMIT 1",
 		wp_unslash( $commentdata['comment_content'] )
 	);
-	if ( $wpdb->get_var( $dupe ) ) {
+
+	$dupe_id = $wpdb->get_var( $dupe );
+
+	/**
+	 * Filters the ID, if any, of the duplicate comment found when creating a new comment.
+	 *
+	 * Return an empty value from this filter to allow what WP considers a duplicate comment.
+	 *
+	 * @since 4.4.0
+	 *
+	 * @param int   $dupe_id     ID of the comment identified as a duplicate.
+	 * @param array $commentdata Data for the comment being created.
+	 */
+	$dupe_id = apply_filters( 'duplicate_comment_id', $dupe_id, $commentdata );
+
+	if ( $dupe_id ) {
 		/**
 		 * Fires immediately after a duplicate comment is detected.
 		 *
@@ -688,10 +705,28 @@ function wp_allow_comment( $commentdata ) {
  */
 function check_comment_flood_db( $ip, $email, $date ) {
 	global $wpdb;
-	if ( current_user_can( 'manage_options' ) )
-		return; // don't throttle admins
+	// don't throttle admins or moderators
+	if ( current_user_can( 'manage_options' ) || current_user_can( 'moderate_comments' ) ) {
+		return;
+	}
 	$hour_ago = gmdate( 'Y-m-d H:i:s', time() - HOUR_IN_SECONDS );
-	if ( $lasttime = $wpdb->get_var( $wpdb->prepare( "SELECT `comment_date_gmt` FROM `$wpdb->comments` WHERE `comment_date_gmt` >= %s AND ( `comment_author_IP` = %s OR `comment_author_email` = %s ) ORDER BY `comment_date_gmt` DESC LIMIT 1", $hour_ago, $ip, $email ) ) ) {
+
+	if ( is_user_logged_in() ) {
+		$user = get_current_user_id();
+		$check_column = '`user_id`';
+	} else {
+		$user = $ip;
+		$check_column = '`comment_author_IP`';
+	}
+
+	$sql = $wpdb->prepare(
+		"SELECT `comment_date_gmt` FROM `$wpdb->comments` WHERE `comment_date_gmt` >= %s AND ( $check_column = %s OR `comment_author_email` = %s ) ORDER BY `comment_date_gmt` DESC LIMIT 1",
+		$hour_ago,
+		$user,
+		$email
+	);
+	$lasttime = $wpdb->get_var( $sql );
+	if ( $lasttime ) {
 		$time_lastcomment = mysql2date('U', $lasttime, false);
 		$time_newcomment  = mysql2date('U', $date, false);
 		/**
@@ -772,9 +807,6 @@ function get_comment_pages_count( $comments = null, $per_page = null, $threaded 
 	if ( empty($comments) )
 		return 0;
 
-	if ( ! get_option( 'page_comments' ) )
-		return 1;
-
 	if ( !isset($per_page) )
 		$per_page = (int) get_query_var('comments_per_page');
 	if ( 0 === $per_page )
@@ -801,9 +833,17 @@ function get_comment_pages_count( $comments = null, $per_page = null, $threaded 
  * @since 2.7.0
  *
  * @global wpdb $wpdb
- *
- * @param int $comment_ID Comment ID.
- * @param array $args Optional args.
+ * @param int   $comment_ID Comment ID.
+ * @param array $args {
+ *      Array of optional arguments.
+ *      @type string     $type      Limit paginated comments to those matching a given type. Accepts 'comment',
+ *                                  'trackback', 'pingback', 'pings' (trackbacks and pingbacks), or 'all'.
+ *                                  Default is 'all'.
+ *      @type int        $per_page  Per-page count to use when calculating pagination. Defaults to the value of the
+ *                                  'comments_per_page' option.
+ *      @type int|string $max_depth If greater than 1, comment page will be determined for the top-level parent of
+ *                                  `$comment_ID`. Defaults to the value of the 'thread_comments_depth' option.
+ * } *
  * @return int|null Comment page number or null on error.
  */
 function get_page_of_comment( $comment_ID, $args = array() ) {
@@ -815,7 +855,7 @@ function get_page_of_comment( $comment_ID, $args = array() ) {
 	$defaults = array( 'type' => 'all', 'page' => '', 'per_page' => '', 'max_depth' => '' );
 	$args = wp_parse_args( $args, $defaults );
 
-	if ( '' === $args['per_page'] && get_option('page_comments') )
+	if ( '' === $args['per_page'] )
 		$args['per_page'] = get_query_var('comments_per_page');
 	if ( empty($args['per_page']) ) {
 		$args['per_page'] = 0;
@@ -835,23 +875,28 @@ function get_page_of_comment( $comment_ID, $args = array() ) {
 	if ( $args['max_depth'] > 1 && 0 != $comment->comment_parent )
 		return get_page_of_comment( $comment->comment_parent, $args );
 
-	$allowedtypes = array(
-		'comment' => '',
-		'pingback' => 'pingback',
-		'trackback' => 'trackback',
+	$comment_args = array(
+		'type'       => $args['type'],
+		'post_ID'    => $comment->comment_post_ID,
+		'fields'     => 'ids',
+		'status'     => 'approve',
+		'date_query' => array(
+			array(
+				'column' => "$wpdb->comments.comment_date_gmt",
+				'before' => $comment->comment_date_gmt,
+			)
+		),
 	);
 
-	$comtypewhere = ( 'all' != $args['type'] && isset($allowedtypes[$args['type']]) ) ? " AND comment_type = '" . $allowedtypes[$args['type']] . "'" : '';
-
-	// Count comments older than this one
-	$oldercoms = $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(comment_ID) FROM $wpdb->comments WHERE comment_post_ID = %d AND comment_parent = 0 AND comment_approved = '1' AND comment_date_gmt < '%s'" . $comtypewhere, $comment->comment_post_ID, $comment->comment_date_gmt ) );
+	$older_comment_ids = get_comments( $comment_args );
+	$older_comment_count = count( $older_comment_ids );
 
 	// No older comments? Then it's page #1.
-	if ( 0 == $oldercoms )
+	if ( 0 == $older_comment_count )
 		return 1;
 
 	// Divide comments older than this one by comments per page to get this comment's page number
-	return ceil( ( $oldercoms + 1 ) / $args['per_page'] );
+	return ceil( ( $older_comment_count + 1 ) / $args['per_page'] );
 }
 
 /**
@@ -1357,6 +1402,7 @@ function wp_get_current_commenter() {
  * Inserts a comment into the database.
  *
  * @since 2.0.0
+ * @since 4.4.0 Introduced `$comment_meta` argument.
  *
  * @global wpdb $wpdb WordPress database abstraction object.
  *
@@ -1381,6 +1427,8 @@ function wp_get_current_commenter() {
  *     @type int        $comment_post_ID      ID of the post that relates to the comment, if any.
  *                                            Default empty.
  *     @type string     $comment_type         Comment type. Default empty.
+ *     @type array      $comment_meta         Optional. Array of key/value pairs to be stored in commentmeta for the
+ *                                            new comment.
  *     @type int        $user_id              ID of the user who submitted the comment. Default 0.
  * }
  * @return int|false The new comment's ID on success, false on failure.
@@ -1418,6 +1466,13 @@ function wp_insert_comment( $commentdata ) {
 		wp_update_comment_count( $comment_post_ID );
 	}
 	$comment = get_comment( $id );
+
+	// If metadata is provided, store it.
+	if ( isset( $commentdata['comment_meta'] ) && is_array( $commentdata['comment_meta'] ) ) {
+		foreach ( $commentdata['comment_meta'] as $meta_key => $meta_value ) {
+			add_comment_meta( $comment->comment_ID, $meta_key, $meta_value, true );
+		}
+	}
 
 	/**
 	 * Fires immediately after a comment is inserted into the database.
@@ -1679,7 +1734,7 @@ function wp_new_comment_notify_postauthor( $comment_ID ) {
 	}
 
 	// Only send notifications for approved comments.
-	if ( 'spam' === $comment->comment_approved || ! $comment->comment_approved ) {
+	if ( ! isset( $comment->comment_approved ) || 'spam' === $comment->comment_approved || ! $comment->comment_approved ) {
 		return false;
 	}
 
@@ -1712,9 +1767,7 @@ function wp_set_comment_status($comment_id, $comment_status, $wp_error = false) 
 		case 'approve':
 		case '1':
 			$status = '1';
-			if ( get_option('comments_notify') ) {
-				wp_notify_postauthor( $comment_id );
-			}
+			add_action( 'wp_set_comment_status', 'wp_new_comment_notify_postauthor' );
 			break;
 		case 'spam':
 			$status = 'spam';

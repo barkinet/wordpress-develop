@@ -71,8 +71,11 @@ case 'update':
 			if ( is_plugin_active($file) )
 				deactivate_plugins($file, true);
 
-			if ( ! is_network_admin() )
+			if ( ! is_network_admin() ) {
 				update_option( 'recently_activated', array( $file => time() ) + (array) get_option( 'recently_activated' ) );
+			} else {
+				update_site_option( 'recently_activated', array( $file => time() ) + (array) get_site_option( 'recently_activated' ) );
+			}
 
 			wp_redirect(add_query_arg('_wpnonce', wp_create_nonce('edit-plugin-test_' . $file), "plugin-editor.php?file=$file&liveupdate=1&scrollto=$scrollto&networkwide=" . $network_wide));
 			exit;
@@ -181,19 +184,19 @@ default:
 <big><?php
 	if ( is_plugin_active( $plugin ) ) {
 		if ( is_writeable( $real_file ) ) {
-			/* translators: %s: File name */
-			echo sprintf( _x( 'Editing %s',  'plugin' ), '<strong>' . $file . '</strong>' ) . ' ' . _x( '(active)', 'plugin' );
+			/* translators: %s: plugin file name */
+			echo sprintf( __( 'Editing %s (active)' ), '<strong>' . $file . '</strong>' );
 		} else {
-			/* translators: %s: File name */
-			echo sprintf( _x( 'Browsing %s', 'plugin' ), '<strong>' . $file . '</strong>' ) . ' ' . _x( '(active)', 'plugin' );
+			/* translators: %s: plugin file name */
+			echo sprintf( __( 'Browsing %s (active)' ), '<strong>' . $file . '</strong>' );
 		}
 	} else {
 		if ( is_writeable( $real_file ) ) {
-			/* translators: %s: File name */
-			echo sprintf( _x( 'Editing %s',  'plugin' ), '<strong>' . $file . '</strong>' ) . ' ' . _x( '(inactive)', 'plugin' );
+			/* translators: %s: plugin file name */
+			echo sprintf( __( 'Editing %s (inactive)' ), '<strong>' . $file . '</strong>' );
 		} else {
-			/* translators: %s: File name */
-			echo sprintf( _x( 'Browsing %s', 'plugin' ), '<strong>' . $file . '</strong>' ) . ' ' . _x( '(inactive)', 'plugin' );
+			/* translators: %s: plugin file name */
+			echo sprintf( __( 'Browsing %s (inactive)' ), '<strong>' . $file . '</strong>' );
 		}
 	}
 	?></big>

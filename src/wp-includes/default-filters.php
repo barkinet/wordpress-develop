@@ -201,6 +201,7 @@ add_filter( 'pingback_ping_source_uri', 'pingback_ping_source_uri'            );
 add_filter( 'xmlrpc_pingback_error',    'xmlrpc_pingback_error'               );
 add_filter( 'title_save_pre',           'trim'                                );
 add_filter( 'get_comment_metadata',     'wp_lazyload_comment_meta',     10, 2 );
+add_filter( 'get_term_metadata',        'wp_lazyload_term_meta',        10, 2 );
 
 add_filter( 'http_request_host_is_external', 'allowed_http_request_hosts', 10, 2 );
 
@@ -314,6 +315,9 @@ add_filter( 'default_option_link_manager_enabled', '__return_true' );
 
 // This option no longer exists; tell plugins we always support auto-embedding.
 add_filter( 'default_option_embed_autourls', '__return_true' );
+
+// This option no longer exists; tell plugins we want comment pagination.
+add_filter( 'pre_option_page_comments', '__return_true' );
 
 // Default settings for heartbeat
 add_filter( 'heartbeat_settings', 'wp_heartbeat_settings' );

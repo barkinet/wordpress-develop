@@ -1630,6 +1630,18 @@ function get_adjacent_post( $in_same_term = false, $excluded_terms = '', $previo
 	$order = $previous ? 'DESC' : 'ASC';
 
 	/**
+	 * Filter the excluded term ids
+	 *
+	 * The dynamic portion of the hook name, `$adjacent`, refers to the type
+	 * of adjacency, 'next' or 'previous'.
+	 *
+	 * @since 4.4.0
+	 *
+	 * @param string $excluded_terms Array of excluded term IDs.
+	 */
+	$excluded_terms = apply_filters( "get_{$adjacent}_post_excluded_terms", $excluded_terms );
+
+	/**
 	 * Filter the JOIN clause in the SQL for an adjacent post query.
 	 *
 	 * The dynamic portion of the hook name, `$adjacent`, refers to the type
@@ -2578,7 +2590,7 @@ function get_comments_pagenum_link( $pagenum = 1, $max_page = 0 ) {
 function get_next_comments_link( $label = '', $max_page = 0 ) {
 	global $wp_query;
 
-	if ( !is_singular() || !get_option('page_comments') )
+	if ( ! is_singular() )
 		return;
 
 	$page = get_query_var('cpage');
@@ -2632,7 +2644,7 @@ function next_comments_link( $label = '', $max_page = 0 ) {
  * @return string|void HTML-formatted link for the previous page of comments.
  */
 function get_previous_comments_link( $label = '' ) {
-	if ( !is_singular() || !get_option('page_comments') )
+	if ( ! is_singular() )
 		return;
 
 	$page = get_query_var('cpage');
@@ -2680,7 +2692,7 @@ function previous_comments_link( $label = '' ) {
 function paginate_comments_links($args = array()) {
 	global $wp_rewrite;
 
-	if ( !is_singular() || !get_option('page_comments') )
+	if ( ! is_singular() )
 		return;
 
 	$page = get_query_var('cpage');
@@ -2725,7 +2737,7 @@ function get_the_comments_navigation( $args = array() ) {
 	$navigation = '';
 
 	// Are there comments to navigate through?
-	if ( get_comment_pages_count() > 1 && get_option( 'page_comments' ) ) {
+	if ( get_comment_pages_count() > 1 ) {
 		$args = wp_parse_args( $args, array(
 			'prev_text'          => __( 'Older comments' ),
 			'next_text'          => __( 'Newer comments' ),
