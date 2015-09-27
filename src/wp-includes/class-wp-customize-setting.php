@@ -153,19 +153,40 @@ class WP_Customize_Setting {
 	protected $_original_value;
 
 	/**
-	 * Set up filters for the setting so that the preview request
-	 * will render the drafted changes.
+	 * Add filters to supply the setting's value when accessed.
+	 *
+	 * If the setting already has a pre-existing value and there is no incoming
+	 * post value for the setting, then this method will short-circuit since
+	 * there is no change to preview.
 	 *
 	 * @since 3.4.0
+	 * @since 4.4.0 Added boolean return value.
+	 * @access public
+	 *
+	 * @return bool False when preview short-circuits due no change needing to be previewed.
 	 */
 	public function preview() {
-		if ( ! isset( $this->_original_value ) ) {
-			$this->_original_value = $this->value();
-		}
 		if ( ! isset( $this->_previewed_blog_id ) ) {
 			$this->_previewed_blog_id = get_current_blog_id();
 		}
 
+		/*
+		 * Check if the setting has a pre-existing value (an isset check),
+		 * and if doesn't have any incoming post value. If both checks are true,
+		 * then the preview short-circuits because there is nothing that needs
+		 * to be previewed.
+		 */
+		$undefined = new stdClass();
+		$default = $this->default;
+		$this->default = $undefined; // Temporarily set default to undefined so we can detect if existing value is set.
+		$value = $this->value();
+		$this->default = $default;
+		$isset = ( $undefined !== $value );
+		if ( $isset && $undefined === $this->post_value( $undefined ) ) {
+			return false;
+		}
+
+		$this->_original_value = ( $isset ? $value : $default );
 		switch( $this->type ) {
 			case 'theme_mod' :
 				add_filter( 'theme_mod_' . $this->id_data[ 'base' ], array( $this, '_preview_filter' ) );
@@ -204,6 +225,7 @@ class WP_Customize_Setting {
 				 */
 				do_action( "customize_preview_{$this->type}", $this );
 		}
+		return true;
 	}
 
 	/**
@@ -224,15 +246,13 @@ class WP_Customize_Setting {
 			return $original;
 		}
 
-		$undefined = new stdClass(); // symbol hack
-		$post_value = $this->post_value( $undefined );
-		if ( $undefined === $post_value ) {
-			$value = $this->_original_value;
-		} else {
-			$value = $post_value;
-		}
+		$value = $this->post_value( $this->default );
 
-		return $this->multidimensional_replace( $original, $this->id_data['keys'], $value );
+		if ( empty( $this->id_data['keys'] ) ) {
+			return $value;
+		} else {
+			return $this->multidimensional_replace( $original, $this->id_data['keys'], $value );
+		}
 	}
 
 	/**
@@ -984,13 +1004,23 @@ class WP_Customize_Nav_Menu_Item_Setting extends WP_Customize_Setting {
 	 * Handle previewing the setting.
 	 *
 	 * @since 4.3.0
+	 * @since 4.4.0 Added boolean return value.
 	 * @access public
 	 *
 	 * @see WP_Customize_Manager::post_value()
+	 *
+	 * @return bool False if method short-circuited due to no-op.
 	 */
 	public function preview() {
 		if ( $this->is_previewed ) {
-			return;
+			return false;
+		}
+
+		$undefined = new stdClass();
+		$is_placeholder = ( $this->post_id < 0 );
+		$is_dirty = ( $undefined !== $this->post_value( $undefined ) );
+		if ( ! $is_placeholder && ! $is_dirty ) {
+			return false;
 		}
 
 		$this->is_previewed              = true;
@@ -1006,6 +1036,8 @@ class WP_Customize_Nav_Menu_Item_Setting extends WP_Customize_Setting {
 		}
 
 		// @todo Add get_post_metadata filters for plugins to add their data.
+
+		return true;
 	}
 
 	/**
@@ -1618,13 +1650,23 @@ class WP_Customize_Nav_Menu_Setting extends WP_Customize_Setting {
 	 * Handle previewing the setting.
 	 *
 	 * @since 4.3.0
+	 * @since 4.4.0 Added boolean return value
 	 * @access public
 	 *
 	 * @see WP_Customize_Manager::post_value()
+	 *
+	 * @return bool False if method short-circuited due to no-op.
 	 */
 	public function preview() {
 		if ( $this->is_previewed ) {
-			return;
+			return false;
+		}
+
+		$undefined = new stdClass();
+		$is_placeholder = ( $this->term_id < 0 );
+		$is_dirty = ( $undefined !== $this->post_value( $undefined ) );
+		if ( ! $is_placeholder && ! $is_dirty ) {
+			return false;
 		}
 
 		$this->is_previewed       = true;
@@ -1635,6 +1677,8 @@ class WP_Customize_Nav_Menu_Setting extends WP_Customize_Setting {
 		add_filter( 'wp_get_nav_menu_object', array( $this, 'filter_wp_get_nav_menu_object' ), 10, 2 );
 		add_filter( 'default_option_nav_menu_options', array( $this, 'filter_nav_menu_options' ) );
 		add_filter( 'option_nav_menu_options', array( $this, 'filter_nav_menu_options' ) );
+
+		return true;
 	}
 
 	/**
