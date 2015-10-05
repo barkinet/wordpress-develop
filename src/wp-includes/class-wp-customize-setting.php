@@ -82,6 +82,26 @@ class WP_Customize_Setting {
 	protected $id_data = array();
 
 	/**
+	 * Cache of multidimensional values to improve performance.
+	 *
+	 * @since 4.4.0
+	 * @access protected
+	 * @var array
+	 * @static
+	 */
+	protected static $aggregated_multidimensionals = array();
+
+	/**
+	 * Whether the multidimensional setting is aggregated.
+	 *
+	 * @todo Do we need this? We can look at $aggregated_multidimensionals anyway
+	 * @since 4.4.0
+	 * @access protected
+	 * @var bool
+	 */
+	protected $is_multidimensional_aggregated = false;
+
+	/**
 	 * Constructor.
 	 *
 	 * Any supplied $args override class property defaults.
@@ -96,27 +116,84 @@ class WP_Customize_Setting {
 	public function __construct( $manager, $id, $args = array() ) {
 		$keys = array_keys( get_object_vars( $this ) );
 		foreach ( $keys as $key ) {
-			if ( isset( $args[ $key ] ) )
+			if ( isset( $args[ $key ] ) ) {
 				$this->$key = $args[ $key ];
+			}
 		}
 
 		$this->manager = $manager;
 		$this->id = $id;
 
 		// Parse the ID for array keys.
-		$this->id_data[ 'keys' ] = preg_split( '/\[/', str_replace( ']', '', $this->id ) );
-		$this->id_data[ 'base' ] = array_shift( $this->id_data[ 'keys' ] );
+		$this->id_data['keys'] = preg_split( '/\[/', str_replace( ']', '', $this->id ) );
+		$this->id_data['base'] = array_shift( $this->id_data['keys'] );
 
 		// Rebuild the ID.
 		$this->id = $this->id_data[ 'base' ];
-		if ( ! empty( $this->id_data[ 'keys' ] ) )
-			$this->id .= '[' . implode( '][', $this->id_data[ 'keys' ] ) . ']';
+		if ( ! empty( $this->id_data[ 'keys' ] ) ) {
+			$this->id .= '[' . implode( '][', $this->id_data['keys'] ) . ']';
+		}
 
-		if ( $this->sanitize_callback )
+		if ( $this->sanitize_callback ) {
 			add_filter( "customize_sanitize_{$this->id}", $this->sanitize_callback, 10, 2 );
-
-		if ( $this->sanitize_js_callback )
+		}
+		if ( $this->sanitize_js_callback ) {
 			add_filter( "customize_sanitize_js_{$this->id}", $this->sanitize_js_callback, 10, 2 );
+		}
+
+		if ( 'option' === $this->type || 'theme_mod' === $this->type ) {
+			// Other setting types can opt-in to aggregate multidimensional explicitly.
+			$this->aggregate_multidimensional();
+		}
+	}
+
+	/**
+	 * Get parsed ID data for multidimensional setting.
+	 *
+	 * @since 4.4.0
+	 * @access public
+	 *
+	 * @return array {
+	 *     ID data for multidimensional setting.
+	 *
+	 *     @type string $base ID base
+	 *     @type array  $keys Keys for multidimensional array.
+	 * }
+	 */
+	final public function id_data() {
+		return $this->id_data;
+	}
+
+	/**
+	 * Set up the setting for aggregated multidimensional values.
+	 *
+	 * When a multidimensional setting gets aggregated, all of its preview and update
+	 * calls get combined into one call, greatly improving performance.
+	 *
+	 * @since 4.4.0
+	 * @access protected
+	 */
+	protected function aggregate_multidimensional() {
+		if ( empty( $this->id_data['keys'] ) ) {
+			return;
+		}
+
+		$id_base = $this->id_data['base'];
+		if ( ! isset( self::$aggregated_multidimensionals[ $this->type ] ) ) {
+			self::$aggregated_multidimensionals[ $this->type ] = array();
+		}
+		if ( ! isset( self::$aggregated_multidimensionals[ $this->type ][ $id_base ] ) ) {
+			self::$aggregated_multidimensionals[ $this->type ][ $id_base ] = array(
+				'previewed_instances'       => array(), // Calling preview() will add the $setting to the array.
+				'preview_applied_instances' => array(), // Flags for which settings have had their values applied.
+				'value_inspected_instances' => array(), // Keep track of which settings have had value() called.
+
+				'root_value'                => $this->get_root_value( array() ), // Root value for initial state, manipulated by preview and update calls.
+				'previewed_value'           => null,    // Root value which has multidimensional replacements applied for each previewed instance.
+				'updated_value'             => null,    // Each call to update() will do the multidimensional replacements on $this->get_root_value().
+			);
+		}
+		$this->is_multidimensional_aggregated = true;
 	}
 
 	/**
@@ -169,6 +246,9 @@ class WP_Customize_Setting {
 		if ( ! isset( $this->_previewed_blog_id ) ) {
 			$this->_previewed_blog_id = get_current_blog_id();
 		}
+		$id_base = $this->id_data['base'];
+		$is_multidimensional = ! empty( $this->id_data['keys'] );
+		$multidimensional_filter = array( $this, '_multidimensional_preview_filter' );
 
 		/*
 		 * Check if the setting has a pre-existing value (an isset check),
@@ -177,26 +257,50 @@ class WP_Customize_Setting {
 		 * to be previewed.
 		 */
 		$undefined = new stdClass();
-		$default = $this->default;
-		$this->default = $undefined; // Temporarily set default to undefined so we can detect if existing value is set.
-		$value = $this->value();
-		$this->default = $default;
-		$isset = ( $undefined !== $value );
-		if ( $isset && $undefined === $this->post_value( $undefined ) ) {
+		$needs_preview = ( $undefined !== $this->post_value( $undefined ) );
+		$value = null;
+
+		// Since no post value was defined, check if we have an initial value set.
+		if ( ! $needs_preview ) {
+			if ( $this->is_multidimensional_aggregated ) {
+				$root = self::$aggregated_multidimensionals[ $this->type ][ $id_base ]['root_value'];
+				$value = $this->multidimensional_get( $root, $this->id_data['keys'], $undefined );
+			} else {
+				$default = $this->default;
+				$this->default = $undefined; // Temporarily set default to undefined so we can detect if existing value is set.
+				$value = $this->value();
+				$this->default = $default;
+			}
+			$needs_preview = ( $undefined === $value ); // Because the default needs to be supplied.
+		}
+
+		if ( ! $needs_preview ) {
 			return false;
 		}
 
-		$this->_original_value = ( $isset ? $value : $default );
-		switch( $this->type ) {
+//		$this->_original_value = ( $value ?: $default );
+		switch ( $this->type ) {
 			case 'theme_mod' :
-				add_filter( 'theme_mod_' . $this->id_data[ 'base' ], array( $this, '_preview_filter' ) );
+				if ( ! $is_multidimensional ) {
+					add_filter( "theme_mod_{$id_base}", array( $this, '_preview_filter' ) );
+				} else {
+					if ( empty( self::$aggregated_multidimensionals[ $this->type ][ $id_base ]['previewed_instances'] ) ) {
+						// Only add this filter once for this ID base.
+						add_filter( "theme_mod_{$id_base}", $multidimensional_filter );
+					}
+					self::$aggregated_multidimensionals[ $this->type ][ $id_base ]['previewed_instances'][ $this->id ] = $this;
+				}
 				break;
 			case 'option' :
-				if ( empty( $this->id_data[ 'keys' ] ) )
-					add_filter( 'pre_option_' . $this->id_data[ 'base' ], array( $this, '_preview_filter' ) );
-				else {
-					add_filter( 'option_' . $this->id_data[ 'base' ], array( $this, '_preview_filter' ) );
-					add_filter( 'default_option_' . $this->id_data[ 'base' ], array( $this, '_preview_filter' ) );
+				if ( ! $is_multidimensional ) {
+					add_filter( "pre_option_{$id_base}", array( $this, '_preview_filter' ) );
+				} else {
+					if ( empty( self::$aggregated_multidimensionals[ $this->type ][ $id_base ]['previewed_instances'] ) ) {
+						// Only add these filters once for this ID base.
+						add_filter( "option_{$id_base}", $multidimensional_filter );
+						add_filter( "default_option_{$id_base}", $multidimensional_filter );
+					}
+					self::$aggregated_multidimensionals[ $this->type ][ $id_base ]['previewed_instances'][ $this->id ] = $this;
 				}
 				break;
 			default :
@@ -229,14 +333,13 @@ class WP_Customize_Setting {
 	}
 
 	/**
-	 * Callback function to filter the theme mods and options.
+	 * Callback function to filter non-multidimensional theme mods and options.
 	 *
 	 * If switch_to_blog() was called after the preview() method, and the current
 	 * blog is now not the same blog, then this method does a no-op and returns
 	 * the original value.
 	 *
 	 * @since 3.4.0
-	 * @uses WP_Customize_Setting::multidimensional_replace()
 	 *
 	 * @param mixed $original Old value.
 	 * @return mixed New or old value.
@@ -246,13 +349,58 @@ class WP_Customize_Setting {
 			return $original;
 		}
 
-		$value = $this->post_value( $this->default );
-
-		if ( empty( $this->id_data['keys'] ) ) {
-			return $value;
+		$undefined = new stdClass(); // Symbol hack.
+		$post_value = $this->post_value( $undefined );
+		if ( $undefined !== $post_value ) {
+			$value = $post_value;
 		} else {
-			return $this->multidimensional_replace( $original, $this->id_data['keys'], $value );
+			$value = $original;
 		}
+		return $value;
+	}
+
+	/**
+	 * Callback function to filter multidimensional theme mods and options.
+	 *
+	 * For all multidimensional settings of a given type, the preview filter for
+	 * the first setting previewed will be used to apply the values for the others.
+	 *
+	 * @since 4.4.0
+	 * @access public
+	 *
+	 * @see WP_Customize_Setting::$aggregated_multidimensionals
+	 * @param mixed $original Original root value.
+	 * @return mixed New or old value.
+	 */
+	public function _multidimensional_preview_filter( $original ) {
+		if ( ! $this->is_current_blog_previewed() ) {
+			return $original;
+		}
+
+		$id_base = $this->id_data['base'];
+
+		// If no settings have been previewed yet (which should not be the case, since $this is), just pass through the original value.
+		if ( empty( self::$aggregated_multidimensionals[ $this->type ][ $id_base ]['previewed_instances'] ) ) {
+			return $original;
+		}
+
+		foreach ( self::$aggregated_multidimensionals[ $this->type ][ $id_base ]['previewed_instances'] as $previewed_setting ) {
+			// Skip applying previewed value for any settings that have already been applied.
+			if ( ! empty( self::$aggregated_multidimensionals[ $this->type ][ $id_base ]['preview_applied_instances'][ $previewed_setting->id ] ) ) {
+				continue;
+			}
+
+			// Do the replacements of the posted/default sub value into the root value.
+			$value = $previewed_setting->post_value( $previewed_setting->default );
+			$root = self::$aggregated_multidimensionals[ $previewed_setting->type ][ $id_base ]['root_value'];
+			$root = $previewed_setting->multidimensional_replace( $root, $previewed_setting->id_data['keys'], $value );
+			self::$aggregated_multidimensionals[ $previewed_setting->type ][ $id_base ]['root_value'] = $root;
+
+			// Mark this setting having been applied so that it will be skipped when the filter is called again.
+			self::$aggregated_multidimensionals[ $previewed_setting->type ][ $id_base ]['preview_applied_instances'][ $previewed_setting->id ] = true;
+		}
+
+		return self::$aggregated_multidimensionals[ $this->type ][ $id_base ]['root_value'];
 	}
 
 	/**
@@ -319,6 +467,57 @@ class WP_Customize_Setting {
 	}
 
 	/**
+	 * Get the root value for a setting, especially for multidimensional ones.
+	 *
+	 * @since 4.4.0
+	 * @access protected
+	 *
+	 * @param mixed $default Value to return if root does not exist.
+	 * @return mixed
+	 */
+	protected function get_root_value( $default = null ) {
+		$id_base = $this->id_data['base'];
+		if ( 'option' === $this->type ) {
+			return get_option( $id_base, $default );
+		} else if ( 'theme_mod' ) {
+			return get_theme_mod( $id_base, $default );
+		} else {
+			/*
+			 * Any WP_Customize_Setting subclass implementing aggregate multidimensional
+			 * will need to override this method to obtain the data from the appropriate
+			 * location.
+			 */
+			return $default;
+		}
+	}
+
+	/**
+	 * Set the root value for a setting, especially for multidimensional ones.
+	 *
+	 * @since 4.4.0
+	 * @access protected
+	 *
+	 * @param mixed $value Value to set as root of multidimensional setting.
+	 * @return bool Whether the multidimensional root was updated successfully.
+	 */
+	protected function set_root_value( $value ) {
+		$id_base = $this->id_data['base'];
+		if ( 'option' === $this->type ) {
+			return update_option( $id_base, $value );
+		} else if ( 'theme_mod' ) {
+			set_theme_mod( $id_base, $value );
+			return true;
+		} else {
+			/*
+			 * Any WP_Customize_Setting subclass implementing aggregate multidimensional
+			 * will need to override this method to obtain the data from the appropriate
+			 * location.
+			 */
+			return false;
+		}
+	}
+
+	/**
 	 * Save the value of the setting, using the related API.
 	 *
 	 * @since 3.4.0
@@ -327,72 +526,81 @@ class WP_Customize_Setting {
 	 * @return bool The result of saving the value.
 	 */
 	protected function update( $value ) {
-		switch ( $this->type ) {
-			case 'theme_mod' :
-				$this->_update_theme_mod( $value );
+		$id_base = $this->id_data['base'];
+		if ( 'option' === $this->type || 'theme_mod' === $this->type ) {
+			if ( ! $this->is_multidimensional_aggregated ) {
+				return $this->set_root_value( $value );
+			} else {
+				if ( isset( self::$aggregated_multidimensionals[ $this->type ][ $id_base ]['updated_value'] ) ) {
+					$root = self::$aggregated_multidimensionals[ $this->type ][ $id_base ]['updated_value'];
+				} else {
+					$root = $this->get_root_value( $this->default );
+				}
+				$root = $this->multidimensional_replace( $root, $this->id_data['keys'], $value );
+				self::$aggregated_multidimensionals[ $this->type ][ $id_base ]['updated_value'] = $root;
 				return true;
+			}
+		} else {
+			/**
+			 * Fires when the {@see WP_Customize_Setting::update()} method is called for settings
+			 * not handled as theme_mods or options.
+			 *
+			 * The dynamic portion of the hook name, `$this->type`, refers to the type of setting.
+			 *
+			 * @since 3.4.0
+			 *
+			 * @param mixed                $value Value of the setting.
+			 * @param WP_Customize_Setting $this  WP_Customize_Setting instance.
+			 */
+			do_action( "customize_update_{$this->type}", $value, $this );
 
-			case 'option' :
-				return $this->_update_option( $value );
-
-			default :
-
-				/**
-				 * Fires when the {@see WP_Customize_Setting::update()} method is called for settings
-				 * not handled as theme_mods or options.
-				 *
-				 * The dynamic portion of the hook name, `$this->type`, refers to the type of setting.
-				 *
-				 * @since 3.4.0
-				 *
-				 * @param mixed                $value Value of the setting.
-				 * @param WP_Customize_Setting $this  WP_Customize_Setting instance.
-				 */
-				do_action( "customize_update_{$this->type}", $value, $this );
-
-				return has_action( "customize_update_{$this->type}" );
+			return has_action( "customize_update_{$this->type}" );
 		}
 	}
 
 	/**
-	 * Update the theme mod from the value of the parameter.
+	 * Deprecated method.
 	 *
 	 * @since 3.4.0
-	 *
-	 * @param mixed $value The value to update.
+	 * @deprecated 4.4.0 Deprecated in favor of update() method.
 	 */
-	protected function _update_theme_mod( $value ) {
-		// Handle non-array theme mod.
-		if ( empty( $this->id_data[ 'keys' ] ) ) {
-			set_theme_mod( $this->id_data[ 'base' ], $value );
+	protected function _update_theme_mod() {
+		_deprecated_function( __METHOD__, '4.4.0' );
+	}
+
+	/**
+	 * Deprecated method.
+	 *
+	 * @since 3.4.0
+	 * @deprecated 4.4.0 Deprecated in favor of update() method.
+	 */
+	protected function _update_option() {
+		_deprecated_function( __METHOD__, '4.4.0' );
+	}
+
+	/**
+	 * Finalize/commit the updates for multidimensional settings.
+	 *
+	 * @see WP_Customize_Manager::save()
+	 * @since 4.4.0
+	 * @access public
+	 */
+	final public function finalize_multidimensional_update() {
+		if ( ! $this->is_multidimensional_aggregated ) {
 			return;
 		}
-		// Handle array-based theme mod.
-		$mods = get_theme_mod( $this->id_data[ 'base' ] );
-		$mods = $this->multidimensional_replace( $mods, $this->id_data[ 'keys' ], $value );
-		if ( isset( $mods ) ) {
-			set_theme_mod( $this->id_data[ 'base' ], $mods );
+		$id_base = $this->id_data['base'];
+		if ( self::$aggregated_multidimensionals[ $this->type ][ $id_base ]['update_finalized'] ) {
+			return;
 		}
-	}
-
-	/**
-	 * Update the option from the value of the setting.
-	 *
-	 * @since 3.4.0
-	 *
-	 * @param mixed $value The value to update.
-	 * @return bool The result of saving the value.
-	 */
-	protected function _update_option( $value ) {
-		// Handle non-array option.
-		if ( empty( $this->id_data[ 'keys' ] ) )
-			return update_option( $this->id_data[ 'base' ], $value );
-
-		// Handle array-based options.
-		$options = get_option( $this->id_data[ 'base' ] );
-		$options = $this->multidimensional_replace( $options, $this->id_data[ 'keys' ], $value );
-		if ( isset( $options ) )
-			return update_option( $this->id_data[ 'base' ], $options );
+		if ( ! isset( self::$aggregated_multidimensionals[ $this->type ][ $id_base ]['updated_value'] ) ) {
+			return;
+		}
+		$root = self::$aggregated_multidimensionals[ $this->type ][ $id_base ]['updated_value'];
+		if ( isset( $root ) ) {
+			$this->set_root_value( $root );
+		}
+		self::$aggregated_multidimensionals[ $this->type ][ $id_base ]['update_finalized'] = true;
 	}
 
 	/**
@@ -403,39 +611,40 @@ class WP_Customize_Setting {
 	 * @return mixed The value.
 	 */
 	public function value() {
-		// Get the callback that corresponds to the setting type.
-		switch( $this->type ) {
-			case 'theme_mod' :
-				$function = 'get_theme_mod';
-				break;
-			case 'option' :
-				$function = 'get_option';
-				break;
-			default :
+		$id_base = $this->id_data['base'];
+		$is_core_type = ( 'option' === $this->type || 'theme_mod' === $this->type );
 
-				/**
-				 * Filter a Customize setting value not handled as a theme_mod or option.
-				 *
-				 * The dynamic portion of the hook name, `$this->id_date['base']`, refers to
-				 * the base slug of the setting name.
-				 *
-				 * For settings handled as theme_mods or options, see those corresponding
-				 * functions for available hooks.
-				 *
-				 * @since 3.4.0
-				 *
-				 * @param mixed $default The setting default value. Default empty.
-				 */
-				return apply_filters( 'customize_value_' . $this->id_data[ 'base' ], $this->default );
+		if ( ! $is_core_type && ! $this->is_multidimensional_aggregated ) {
+			$value = $this->get_root_value( $this->default ); // @todo Should $this->default be used here?
+
+			/**
+			 * Filter a Customize setting value not handled as a theme_mod or option.
+			 *
+			 * The dynamic portion of the hook name, `$this->id_date['base']`, refers to
+			 * the base slug of the setting name.
+			 *
+			 * For settings handled as theme_mods or options, see those corresponding
+			 * functions for available hooks.
+			 *
+			 * @since 3.4.0
+			 *
+			 * @param mixed $default The setting default value. Default empty.
+			 */
+			$value = apply_filters( 'customize_value_' . $this->id_data['base'], $value );
+		} else if ( $this->is_multidimensional_aggregated ) {
+			$value = self::$aggregated_multidimensionals[ $this->type ][ $id_base ]['root_value'];
+
+			if ( ! isset( self::$aggregated_multidimensionals[ $this->type ][ $id_base ]['value_inspected_instances'][ $this->id ] ) ) {
+				$value = $this->multidimensional_get( $value, $this->id_data['keys'], $this->default );
+				self::$aggregated_multidimensionals[ $this->type ][ $id_base ]['root_value'] = $value;
+
+				// Mark this multidimensional setting as having had its value inspected.
+				self::$aggregated_multidimensionals[ $this->type ][ $id_base ]['value_inspected_instances'][ $this->id ] = $this;
+			}
+		} else {
+			$value = $this->get_root_value( $this->default );
 		}
-
-		// Handle non-array value
-		if ( empty( $this->id_data[ 'keys' ] ) )
-			return $function( $this->id_data[ 'base' ], $this->default );
-
-		// Handle array-based value
-		$values = $function( $this->id_data[ 'base' ] );
-		return $this->multidimensional_get( $values, $this->id_data[ 'keys' ], $this->default );
+		return $value;
 	}
 
 	/**
@@ -540,7 +749,7 @@ class WP_Customize_Setting {
 	 * @param $root
 	 * @param $keys
 	 * @param mixed $value The value to update.
-	 * @return
+	 * @return mixed
 	 */
 	final protected function multidimensional_replace( $root, $keys, $value ) {
 		if ( ! isset( $value ) )
@@ -873,7 +1082,7 @@ class WP_Customize_Nav_Menu_Item_Setting extends WP_Customize_Setting {
 	}
 
 	/**
-	 * Get the instance data for a given widget setting.
+	 * Get the instance data for a given nav_menu_item setting.
 	 *
 	 * @since 4.3.0
 	 * @access public
