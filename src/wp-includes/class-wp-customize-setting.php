@@ -186,11 +186,8 @@ class WP_Customize_Setting {
 			self::$aggregated_multidimensionals[ $this->type ][ $id_base ] = array(
 				'previewed_instances'       => array(), // Calling preview() will add the $setting to the array.
 				'preview_applied_instances' => array(), // Flags for which settings have had their values applied.
-				'value_inspected_instances' => array(), // Keep track of which settings have had value() called.
-
+				'updated_instances'         => array(), // Keep track of which settings have had update() called; will determine whether
 				'root_value'                => $this->get_root_value( array() ), // Root value for initial state, manipulated by preview and update calls.
-				'previewed_value'           => null,    // Root value which has multidimensional replacements applied for each previewed instance.
-				'updated_value'             => null,    // Each call to update() will do the multidimensional replacements on $this->get_root_value().
 			);
 		}
 		$this->is_multidimensional_aggregated = true;
@@ -278,7 +275,6 @@ class WP_Customize_Setting {
 			return false;
 		}
 
-//		$this->_original_value = ( $value ?: $default );
 		switch ( $this->type ) {
 			case 'theme_mod' :
 				if ( ! $is_multidimensional ) {
@@ -354,7 +350,12 @@ class WP_Customize_Setting {
 		if ( $undefined !== $post_value ) {
 			$value = $post_value;
 		} else {
-			$value = $original;
+			/*
+			 * Note that we don't use $original here because preview() will
+			 * not add the filter in the first place if it has an initial value
+			 * and there is no post value.
+			 */
+			$value = $this->default;
 		}
 		return $value;
 	}
@@ -531,13 +532,11 @@ class WP_Customize_Setting {
 			if ( ! $this->is_multidimensional_aggregated ) {
 				return $this->set_root_value( $value );
 			} else {
-				if ( isset( self::$aggregated_multidimensionals[ $this->type ][ $id_base ]['updated_value'] ) ) {
-					$root = self::$aggregated_multidimensionals[ $this->type ][ $id_base ]['updated_value'];
-				} else {
-					$root = $this->get_root_value( $this->default );
-				}
+				$root = self::$aggregated_multidimensionals[ $this->type ][ $id_base ]['root_value'];
 				$root = $this->multidimensional_replace( $root, $this->id_data['keys'], $value );
-				self::$aggregated_multidimensionals[ $this->type ][ $id_base ]['updated_value'] = $root;
+				self::$aggregated_multidimensionals[ $this->type ][ $id_base ]['root_value'] = $root;
+				self::$aggregated_multidimensionals[ $this->type ][ $id_base ]['updated_instances'] = $this; // Mark this setting as updated.
+				// @todo Should actually just go ahead and call set set_root_value() and skip the whole finalize logic?
 				return true;
 			}
 		} else {
@@ -590,16 +589,17 @@ class WP_Customize_Setting {
 			return;
 		}
 		$id_base = $this->id_data['base'];
+
+		// Abort finalizing a multidimensional if none have been updated.
+		if ( empty( self::$aggregated_multidimensionals[ $this->type ][ $id_base ]['updated_instances'] ) ) {
+			return;
+		}
+
 		if ( self::$aggregated_multidimensionals[ $this->type ][ $id_base ]['update_finalized'] ) {
 			return;
 		}
-		if ( ! isset( self::$aggregated_multidimensionals[ $this->type ][ $id_base ]['updated_value'] ) ) {
-			return;
-		}
-		$root = self::$aggregated_multidimensionals[ $this->type ][ $id_base ]['updated_value'];
-		if ( isset( $root ) ) {
-			$this->set_root_value( $root );
-		}
+		// @todo We should make sure we don't inject the default values into the array. Should be OK since preview() would not have applied.
+		$this->set_root_value( self::$aggregated_multidimensionals[ $this->type ][ $id_base ]['root_value'] );
 		self::$aggregated_multidimensionals[ $this->type ][ $id_base ]['update_finalized'] = true;
 	}
 
@@ -630,17 +630,10 @@ class WP_Customize_Setting {
 			 *
 			 * @param mixed $default The setting default value. Default empty.
 			 */
-			$value = apply_filters( 'customize_value_' . $this->id_data['base'], $value );
+			$value = apply_filters( "customize_value_{$id_base}", $value );
 		} else if ( $this->is_multidimensional_aggregated ) {
-			$value = self::$aggregated_multidimensionals[ $this->type ][ $id_base ]['root_value'];
-
-			if ( ! isset( self::$aggregated_multidimensionals[ $this->type ][ $id_base ]['value_inspected_instances'][ $this->id ] ) ) {
-				$value = $this->multidimensional_get( $value, $this->id_data['keys'], $this->default );
-				self::$aggregated_multidimensionals[ $this->type ][ $id_base ]['root_value'] = $value;
-
-				// Mark this multidimensional setting as having had its value inspected.
-				self::$aggregated_multidimensionals[ $this->type ][ $id_base ]['value_inspected_instances'][ $this->id ] = $this;
-			}
+			$root_value = self::$aggregated_multidimensionals[ $this->type ][ $id_base ]['root_value'];
+			$value = $this->multidimensional_get( $root_value, $this->id_data['keys'], $this->default );
 		} else {
 			$value = $this->get_root_value( $this->default );
 		}
