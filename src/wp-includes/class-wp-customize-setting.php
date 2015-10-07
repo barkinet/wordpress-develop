@@ -94,7 +94,6 @@ class WP_Customize_Setting {
 	/**
 	 * Whether the multidimensional setting is aggregated.
 	 *
-	 * @todo Do we need this? We can look at $aggregated_multidimensionals anyway
 	 * @since 4.4.0
 	 * @access protected
 	 * @var bool
@@ -586,7 +585,7 @@ class WP_Customize_Setting {
 		$is_core_type = ( 'option' === $this->type || 'theme_mod' === $this->type );
 
 		if ( ! $is_core_type && ! $this->is_multidimensional_aggregated ) {
-			$value = $this->get_root_value( $this->default ); // @todo Should $this->default be used here?
+			$value = $this->get_root_value( $this->default );
 
 			/**
 			 * Filter a Customize setting value not handled as a theme_mod or option.
