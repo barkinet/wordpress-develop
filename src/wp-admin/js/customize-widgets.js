@@ -1528,9 +1528,11 @@
 				var panelMetaContainer, noRenderedAreasNotice, shouldShowNotice;
 				panelMetaContainer = panel.container.find( '.panel-meta' );
 				noRenderedAreasNotice = $( '<div></div>', {
-					'class': 'no-widget-areas-rendered-notice',
-					text: l10n.noAreasRendered
+					'class': 'no-widget-areas-rendered-notice'
 				});
+				noRenderedAreasNotice.append( $( '<em></em>', {
+					text: l10n.noAreasRendered
+				} ) );
 				panelMetaContainer.append( noRenderedAreasNotice );
 
 				shouldShowNotice = function() {

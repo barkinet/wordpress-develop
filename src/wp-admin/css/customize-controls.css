@@ -131,9 +131,6 @@ body {
 	padding: 12px 15px;
 	border-top: 1px solid #ddd;
 }
-#customize-controls .no-widget-areas-rendered-notice {
-	font-style: italic;
-}
 #customize-controls .customize-info .customize-panel-description.open + .no-widget-areas-rendered-notice {
 	border-top: none;
 }
