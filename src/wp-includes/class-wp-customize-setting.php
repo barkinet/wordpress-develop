@@ -186,7 +186,6 @@ class WP_Customize_Setting {
 			self::$aggregated_multidimensionals[ $this->type ][ $id_base ] = array(
 				'previewed_instances'       => array(), // Calling preview() will add the $setting to the array.
 				'preview_applied_instances' => array(), // Flags for which settings have had their values applied.
-				'updated_instances'         => array(), // Keep track of which settings have had update() called; will determine whether
 				'root_value'                => $this->get_root_value( array() ), // Root value for initial state, manipulated by preview and update calls.
 			);
 		}
@@ -535,9 +534,7 @@ class WP_Customize_Setting {
 				$root = self::$aggregated_multidimensionals[ $this->type ][ $id_base ]['root_value'];
 				$root = $this->multidimensional_replace( $root, $this->id_data['keys'], $value );
 				self::$aggregated_multidimensionals[ $this->type ][ $id_base ]['root_value'] = $root;
-				self::$aggregated_multidimensionals[ $this->type ][ $id_base ]['updated_instances'] = $this; // Mark this setting as updated.
-				// @todo Should actually just go ahead and call set set_root_value() and skip the whole finalize logic?
-				return true;
+				return $this->set_root_value( $root );
 			}
 		} else {
 			/**
@@ -564,7 +561,7 @@ class WP_Customize_Setting {
 	 * @deprecated 4.4.0 Deprecated in favor of update() method.
 	 */
 	protected function _update_theme_mod() {
-		_deprecated_function( __METHOD__, '4.4.0' );
+		_deprecated_function( __METHOD__, '4.4.0', __CLASS__ . '::update()' );
 	}
 
 	/**
@@ -574,33 +571,7 @@ class WP_Customize_Setting {
 	 * @deprecated 4.4.0 Deprecated in favor of update() method.
 	 */
 	protected function _update_option() {
-		_deprecated_function( __METHOD__, '4.4.0' );
-	}
-
-	/**
-	 * Finalize/commit the updates for multidimensional settings.
-	 *
-	 * @see WP_Customize_Manager::save()
-	 * @since 4.4.0
-	 * @access public
-	 */
-	final public function finalize_multidimensional_update() {
-		if ( ! $this->is_multidimensional_aggregated ) {
-			return;
-		}
-		$id_base = $this->id_data['base'];
-
-		// Abort finalizing a multidimensional if none have been updated.
-		if ( empty( self::$aggregated_multidimensionals[ $this->type ][ $id_base ]['updated_instances'] ) ) {
-			return;
-		}
-
-		if ( self::$aggregated_multidimensionals[ $this->type ][ $id_base ]['update_finalized'] ) {
-			return;
-		}
-		// @todo We should make sure we don't inject the default values into the array. Should be OK since preview() would not have applied.
-		$this->set_root_value( self::$aggregated_multidimensionals[ $this->type ][ $id_base ]['root_value'] );
-		self::$aggregated_multidimensionals[ $this->type ][ $id_base ]['update_finalized'] = true;
+		_deprecated_function( __METHOD__, '4.4.0', __CLASS__ . '::update()' );
 	}
 
 	/**
