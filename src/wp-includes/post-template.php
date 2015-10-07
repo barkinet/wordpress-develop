@@ -451,11 +451,17 @@ function get_post_class( $class = '', $post_id = null ) {
 			$classes[] = 'format-standard';
 	}
 
-	// Post requires password
-	if ( post_password_required( $post->ID ) ) {
+	$post_password_required = post_password_required( $post->ID );
+
+	// Post requires password.
+	if ( $post_password_required ) {
 		$classes[] = 'post-password-required';
-	// Post thumbnails
-	} elseif ( ! is_attachment( $post ) && current_theme_supports( 'post-thumbnails' ) && has_post_thumbnail( $post->ID ) ) {
+	} elseif ( ! empty( $post->post_password ) ) {
+		$classes[] = 'post-password-protected';
+	}
+
+	// Post thumbnails.
+	if ( current_theme_supports( 'post-thumbnails' ) && has_post_thumbnail( $post->ID ) && ! is_attachment( $post ) && ! $post_password_required ) {
 		$classes[] = 'has-post-thumbnail';
 	}
 
@@ -1648,7 +1654,17 @@ function wp_post_revision_title_expanded( $revision, $link = true ) {
 	elseif ( wp_is_post_autosave( $revision ) )
 		$revision_date_author = sprintf( $autosavef, $revision_date_author );
 
-	return $revision_date_author;
+	/**
+	 * Filter the formatted author and date for a revision.
+	 *
+	 * @since 4.4.0
+	 *
+	 * @param string  $revision_date_author The formatted string.
+	 * @param WP_Post $revision             The revision object.
+	 * @param bool    $link                 Whether to link to the revisions page, as passed into
+	 *                                      wp_post_revision_title_expanded().
+	 */
+	return apply_filters( 'wp_post_revision_title_expanded', $revision_date_author, $revision, $link );
 }
 
 /**

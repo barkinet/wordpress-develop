@@ -695,6 +695,19 @@ function set_transient( $transient, $value, $expiration = 0 ) {
 	 */
 	$value = apply_filters( 'pre_set_transient_' . $transient, $value, $expiration, $transient );
 
+	/**
+	 * Filter the expiration for a transient before its value is set.
+	 *
+	 * The dynamic portion of the hook name, `$transient`, refers to the transient name.
+	 *
+	 * @since 4.4.0
+	 *
+	 * @param int    $expiration Time until expiration in seconds.
+	 * @param mixed  $value      New value of transient.
+	 * @param string $transient  Transient name.
+	 */
+	$expiration = apply_filters( 'expiration_of_transient_' . $transient, $expiration, $value, $transient );
+
 	if ( wp_using_ext_object_cache() ) {
 		$result = wp_cache_set( $transient, $value, 'transient', $expiration );
 	} else {
@@ -1510,7 +1523,7 @@ function get_site_transient( $transient ) {
 	 * returning the passed value instead.
 	 *
 	 * @since 2.9.0
-	 * @since 4.4.0 The `$transient` parameter was added
+	 * @since 4.4.0 The `$transient` parameter was added.
 	 *
 	 * @param mixed  $pre_site_transient The default value to return if the site transient does not exist.
 	 *                                   Any value other than false will short-circuit the retrieval
@@ -1548,7 +1561,7 @@ function get_site_transient( $transient ) {
 	 * The dynamic portion of the hook name, `$transient`, refers to the transient name.
 	 *
 	 * @since 2.9.0
-	 * @since 4.4.0 The `$transient` parameter was added
+	 * @since 4.4.0 The `$transient` parameter was added.
 	 *
 	 * @param mixed  $value     Value of site transient.
 	 * @param string $transient Transient name.
@@ -1580,14 +1593,27 @@ function set_site_transient( $transient, $value, $expiration = 0 ) {
 	 * The dynamic portion of the hook name, `$transient`, refers to the transient name.
 	 *
 	 * @since 3.0.0
-	 * @since 4.4.0 The `$transient` parameter was added
+	 * @since 4.4.0 The `$transient` parameter was added.
 	 *
-	 * @param mixed  $value     Value of site transient.
+	 * @param mixed  $value     New value of site transient.
 	 * @param string $transient Transient name.
 	 */
 	$value = apply_filters( 'pre_set_site_transient_' . $transient, $value, $transient );
 
 	$expiration = (int) $expiration;
+
+	/**
+	 * Filter the expiration for a site transient before its value is set.
+	 *
+	 * The dynamic portion of the hook name, `$transient`, refers to the transient name.
+	 *
+	 * @since 4.4.0
+	 *
+	 * @param int    $expiration Time until expiration in seconds.
+	 * @param mixed  $value      New value of site transient.
+	 * @param string $transient  Transient name.
+	 */
+	$expiration = apply_filters( 'expiration_of_site_transient_' . $transient, $expiration, $value, $transient );
 
 	if ( wp_using_ext_object_cache() ) {
 		$result = wp_cache_set( $transient, $value, 'site-transient', $expiration );

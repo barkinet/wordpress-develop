@@ -680,15 +680,15 @@ function _http_build_query( $data, $prefix = null, $sep = null, $key = '', $urle
  *     add_query_arg( 'key', 'value', 'http://example.com' );
  *
  * Using an associative array:
- * 
+ *
  *     add_query_arg( array(
  *         'key1' => 'value1',
  *         'key2' => 'value2',
  *     ), 'http://example.com' );
- * 
+ *
  * Omitting the URL from either use results in the current URL being used
  * (the value of `$_SERVER['REQUEST_URI']`).
- * 
+ *
  * Values are expected to be encoded appropriately with urlencode() or rawurlencode().
  *
  * Setting any query variable's value to boolean false removes the key (see remove_query_arg()).
@@ -992,9 +992,7 @@ function status_header( $code ) {
 	if ( empty( $description ) )
 		return;
 
-	$protocol = $_SERVER['SERVER_PROTOCOL'];
-	if ( 'HTTP/1.1' != $protocol && 'HTTP/1.0' != $protocol )
-		$protocol = 'HTTP/1.0';
+	$protocol = wp_get_server_protocol();
 	$status_header = "$protocol $code $description";
 	if ( function_exists( 'apply_filters' ) )
 
@@ -1257,37 +1255,6 @@ function do_robots() {
 	 * @param bool   $public Whether the site is considered "public".
 	 */
 	echo apply_filters( 'robots_txt', $output, $public );
-}
-
-/**
- * Check or set whether WordPress is in "installation" mode.
- *
- * If the `WP_INSTALLING` constant is defined during the bootstrap, `wp_installing()` will default to `true`.
- *
- * @since 4.4.0
- *
- * @staticvar bool $installing
- *
- * @param bool $is_installing Optional. True to set WP into Installing mode, false to turn Installing mode off.
- *                            Omit this parameter if you only want to fetch the current status.
- * @return bool True if WP is installing, otherwise false. When a `$is_installing` is passed, the function will
- *              report whether WP was in installing mode prior to the change to `$is_installing`.
- */
-function wp_installing( $is_installing = null ) {
-	static $installing = null;
-
-	// Support for the `WP_INSTALLING` constant, defined before WP is loaded.
-	if ( is_null( $installing ) ) {
-		$installing = defined( 'WP_INSTALLING' ) && WP_INSTALLING;
-	}
-
-	if ( ! is_null( $is_installing ) ) {
-		$old_installing = $installing;
-		$installing = $is_installing;
-		return (bool) $old_installing;
-	}
-
-	return (bool) $installing;
 }
 
 /**
@@ -5021,4 +4988,22 @@ function wp_post_preview_js() {
 	}());
 	</script>
 	<?php
+}
+
+/**
+ * Parses and formats a MySQL datetime (Y-m-d H:i:s) for ISO8601/RFC3339.
+ *
+ * Explicitly strips timezones, as datetimes are not saved with any timezone
+ * information. Including any information on the offset could be misleading.
+ *
+ * @since 4.4.0
+ *
+ * @param string $date_string Date string to parse and format.
+ * @return string Date formatted for ISO8601/RFC3339.
+ */
+function mysql_to_rfc3339( $date_string ) {
+	$formatted = mysql2date( 'c', $date_string, false );
+
+	// Strip timezone information
+	return preg_replace( '/(?:Z|[+-]\d{2}(?::\d{2})?)$/', '', $formatted );
 }
