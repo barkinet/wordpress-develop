@@ -60,11 +60,6 @@ class Tests_Comment_GetPageOfComment extends WP_UnitTestCase {
 	 * @ticket 11334
 	 */
 	public function test_subsequent_calls_should_hit_cache() {
-		// `get_page_of_comment()` calls `get_option()`, which is not properly cached when WP_INSTALLING.
-		if ( is_multisite() ) {
-			$this->markTestSkipped( 'Not testable in MS: wpmu_create_blog() defines WP_INSTALLING, which causes cache misses.' );
-		}
-
 		global $wpdb;
 
 		$p = $this->factory->post->create();
@@ -170,5 +165,76 @@ class Tests_Comment_GetPageOfComment extends WP_UnitTestCase {
 		wp_set_comment_status( $c3, '1' );
 
 		$this->assertEquals( 2, get_page_of_comment( $c1, array( 'per_page' => 2 ) ) );
+	}
+
+	/**
+	 * @ticket 34057
+	 */
+	public function test_query_should_be_limited_to_comments_on_the_proper_post() {
+		$posts = $this->factory->post->create_many( 2 );
+
+		$now = time();
+		$comments_0 = $comments_1 = array();
+		for ( $i = 0; $i < 5; $i++ ) {
+			$comments_0[] = $this->factory->comment->create( array( 'comment_post_ID' => $posts[0], 'comment_date_gmt' => date( 'Y-m-d H:i:s', $now - ( $i * 60 ) ) ) );
+			$comments_1[] = $this->factory->comment->create( array( 'comment_post_ID' => $posts[1], 'comment_date_gmt' => date( 'Y-m-d H:i:s', $now - ( $i * 60 ) ) ) );
+		}
+
+		$found_0 = get_page_of_comment( $comments_0[0], array( 'per_page' => 2 ) );
+		$this->assertEquals( 3, $found_0 );
+
+		$found_1 = get_page_of_comment( $comments_1[1], array( 'per_page' => 2 ) );
+		$this->assertEquals( 2, $found_1 );
+	}
+
+	/**
+	 * @ticket 13939
+	 */
+	public function test_only_top_level_comments_should_be_included_in_older_count() {
+		$post = $this->factory->post->create();
+
+		$now = time();
+		$comment_parents = $comment_children = array();
+		for ( $i = 0; $i < 5; $i++ ) {
+			$parent = $this->factory->comment->create( array( 'comment_post_ID' => $post, 'comment_date_gmt' => date( 'Y-m-d H:i:s', $now - ( $i * 60 ) ) ) );
+			$comment_parents[ $i ] = $parent;
+
+			$child = $this->factory->comment->create( array( 'comment_post_ID' => $post, 'comment_date_gmt' => date( 'Y-m-d H:i:s', $now - ( $i * 59 ) ), 'comment_parent' => $parent ) );
+			$comment_children[ $i ] = $child;
+		}
+
+		$page_1_indicies = array( 2, 3, 4 );
+		$page_2_indicies = array( 0, 1 );
+
+		$args = array(
+			'per_page' => 3,
+			'max_depth' => 2,
+		);
+
+		foreach ( $page_1_indicies as $p1i ) {
+			$this->assertSame( 1, (int) get_page_of_comment( $comment_parents[ $p1i ], $args ) );
+			$this->assertSame( 1, (int) get_page_of_comment( $comment_children[ $p1i ], $args ) );
+		}
+
+		foreach ( $page_2_indicies as $p2i ) {
+			$this->assertSame( 2, (int) get_page_of_comment( $comment_parents[ $p2i ], $args ) );
+			$this->assertSame( 2, (int) get_page_of_comment( $comment_children[ $p2i ], $args ) );
+		}
+	}
+
+	/**
+	 * @ticket 13939
+	 */
+	public function test_comments_per_page_option_should_be_fallback_when_query_var_is_not_available() {
+		$now = time();
+
+		$p = $this->factory->post->create();
+		$c1 = $this->factory->comment->create( array( 'comment_post_ID' => $p, 'comment_date_gmt' => date( 'Y-m-d H:i:s', $now ) ) );
+		$c2 = $this->factory->comment->create( array( 'comment_post_ID' => $p, 'comment_date_gmt' => date( 'Y-m-d H:i:s', $now - 20 ) ) );
+		$c3 = $this->factory->comment->create( array( 'comment_post_ID' => $p, 'comment_date_gmt' => date( 'Y-m-d H:i:s', $now - 30 ) ) );
+
+		update_option( 'comments_per_page', 2 );
+
+		$this->assertEquals( 2, get_page_of_comment( $c1 ) );
 	}
 }

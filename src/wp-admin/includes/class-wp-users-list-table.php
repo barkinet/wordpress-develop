@@ -107,6 +107,16 @@ class WP_Users_List_Table extends WP_List_Table {
 		if ( isset( $_REQUEST['order'] ) )
 			$args['order'] = $_REQUEST['order'];
 
+		/**
+		 * Filter the query arguments used to retrieve users for the current users list table.
+		 *
+		 * @since 4.4.0
+		 *
+		 * @param array $args Arguments passed to WP_User_Query to retrieve items for the current
+		 *                    users list table.
+		 */
+		$args = apply_filters( 'users_list_table_query_args', $args );
+
 		// Query the user IDs for this page
 		$wp_user_search = new WP_User_Query( $args );
 
@@ -214,13 +224,12 @@ class WP_Users_List_Table extends WP_List_Table {
 	 *                      or below the table ("bottom").
 	 */
 	protected function extra_tablenav( $which ) {
-		if ( 'top' != $which )
-			return;
+		$id = 'bottom' === $which ? 'new_role2' : 'new_role';
 	?>
 	<div class="alignleft actions">
-		<?php if ( current_user_can( 'promote_users' ) ) : ?>
-		<label class="screen-reader-text" for="new_role"><?php _e( 'Change role to&hellip;' ) ?></label>
-		<select name="new_role" id="new_role">
+		<?php if ( current_user_can( 'promote_users' ) && $this->has_items() ) : ?>
+		<label class="screen-reader-text" for="<?php echo $id ?>"><?php _e( 'Change role to&hellip;' ) ?></label>
+		<select name="<?php echo $id ?>" id="<?php echo $id ?>">
 			<option value=""><?php _e( 'Change role to&hellip;' ) ?></option>
 			<?php wp_dropdown_roles(); ?>
 		</select>
@@ -250,8 +259,10 @@ class WP_Users_List_Table extends WP_List_Table {
 	 * @return string The bulk action required.
 	 */
 	public function current_action() {
-		if ( isset($_REQUEST['changeit']) && !empty($_REQUEST['new_role']) )
+		if ( isset( $_REQUEST['changeit'] ) &&
+			( ! empty( $_REQUEST['new_role'] ) || ! empty( $_REQUEST['new_role2'] ) ) ) {
 			return 'promote';
+		}
 
 		return parent::current_action();
 	}

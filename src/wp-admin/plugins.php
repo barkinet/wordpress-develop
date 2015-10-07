@@ -55,9 +55,9 @@ if ( $action ) {
 				unset( $recent[ $plugin ] );
 				update_option( 'recently_activated', $recent );
 			} else {
-				$recent = (array) get_site_option( 'recently_activated' );
+				$recent = (array) get_network_option( 'recently_activated' );
 				unset( $recent[ $plugin ] );
-				update_site_option( 'recently_activated', $recent );
+				update_network_option( 'recently_activated', $recent );
 			}
 
 			if ( isset($_GET['from']) && 'import' == $_GET['from'] ) {
@@ -101,7 +101,7 @@ if ( $action ) {
 			if ( ! is_network_admin() ) {
 				$recent = (array) get_option('recently_activated' );
 			} else {
-				$recent = (array) get_site_option('recently_activated' );
+				$recent = (array) get_network_option( 'recently_activated' );
 			}
 
 			foreach ( $plugins as $plugin ) {
@@ -111,7 +111,7 @@ if ( $action ) {
 			if ( ! is_network_admin() ) {
 				update_option( 'recently_activated', $recent );
 			} else {
-				update_site_option( 'recently_activated', $recent );
+				update_network_option( 'recently_activated', $recent );
 			}
 
 			wp_redirect( self_admin_url("plugins.php?activate-multi=true&plugin_status=$status&paged=$page&s=$s") );
@@ -182,7 +182,7 @@ if ( $action ) {
 			if ( ! is_network_admin() ) {
 				update_option( 'recently_activated', array( $plugin => time() ) + (array) get_option( 'recently_activated' ) );
 			} else {
-				update_site_option( 'recently_activated', array( $plugin => time() ) + (array) get_site_option( 'recently_activated' ) );
+				update_network_option( 'recently_activated', array( $plugin => time() ) + (array) get_network_option( 'recently_activated' ) );
 			}
 
 			if ( headers_sent() )
@@ -220,7 +220,7 @@ if ( $action ) {
 			if ( ! is_network_admin() ) {
 				update_option( 'recently_activated', $deactivated + (array) get_option( 'recently_activated' ) );
 			} else {
-				update_site_option( 'recently_activated', $deactivated + (array) get_site_option( 'recently_activated' ) );
+				update_network_option( 'recently_activated', $deactivated + (array) get_network_option( 'recently_activated' ) );
 			}
 
 			wp_redirect( self_admin_url("plugins.php?deactivate-multi=true&plugin_status=$status&paged=$page&s=$s") );
@@ -368,18 +368,21 @@ if ( $action ) {
 				<?php
 				require_once(ABSPATH . 'wp-admin/admin-footer.php');
 				exit;
-			} //Endif verify-delete
-			$delete_result = delete_plugins($plugins);
+			} else {
+				$plugins_to_delete = count( $plugins );
+			} // endif verify-delete
+
+			$delete_result = delete_plugins( $plugins );
 
 			set_transient('plugins_delete_result_' . $user_ID, $delete_result); //Store the result in a cache rather than a URL param due to object type & length
-			wp_redirect( self_admin_url("plugins.php?deleted=true&plugin_status=$status&paged=$page&s=$s") );
+			wp_redirect( self_admin_url("plugins.php?deleted=$plugins_to_delete&plugin_status=$status&paged=$page&s=$s") );
 			exit;
 
 		case 'clear-recent-list':
 			if ( ! is_network_admin() ) {
 				update_option( 'recently_activated', array() );
 			} else {
-				update_site_option( 'recently_activated', array() );
+				update_network_option( 'recently_activated', array() );
 			}
 			break;
 	}
@@ -422,6 +425,12 @@ get_current_screen()->set_help_sidebar(
 	'<p>' . __('<a href="https://codex.wordpress.org/Managing_Plugins#Plugin_Management" target="_blank">Documentation on Managing Plugins</a>') . '</p>' .
 	'<p>' . __('<a href="https://wordpress.org/support/" target="_blank">Support Forums</a>') . '</p>'
 );
+
+get_current_screen()->set_screen_reader_content( array(
+	'heading_views'      => __( 'Filter plugins list' ),
+	'heading_pagination' => __( 'Plugins list navigation' ),
+	'heading_list'       => __( 'Plugins list' ),
+) );
 
 $title = __('Plugins');
 $parent_file = 'plugins.php';
@@ -470,7 +479,7 @@ if ( ! empty( $invalid ) ) {
 		<div id="message" class="updated notice is-dismissible">
 			<p>
 				<?php
-				if ( 1 == $plugins_to_delete ) {
+				if ( 1 == (int) $_GET['deleted'] ) {
 					_e( 'The selected plugin has been <strong>deleted</strong>.' );
 				} else {
 					_e( 'The selected plugins have been <strong>deleted</strong>.' );

@@ -39,7 +39,7 @@
  * @return string|void The string of the URL, if redirect needed.
  */
 function redirect_canonical( $requested_url = null, $do_redirect = true ) {
-	global $wp_rewrite, $is_IIS, $wp_query, $wpdb;
+	global $wp_rewrite, $is_IIS, $wp_query, $wpdb, $wp;
 
 	if ( isset( $_SERVER['REQUEST_METHOD'] ) && ! in_array( strtoupper( $_SERVER['REQUEST_METHOD'] ), array( 'GET', 'HEAD' ) ) ) {
 		return;
@@ -67,14 +67,9 @@ function redirect_canonical( $requested_url = null, $do_redirect = true ) {
 	}
 
 	$original = @parse_url($requested_url);
-	if ( false === $original )
+	if ( false === $original ) {
 		return;
-
-	// Some PHP setups turn requests for / into /index.php in REQUEST_URI
-	// See: https://core.trac.wordpress.org/ticket/5017
-	// See: https://core.trac.wordpress.org/ticket/7173
-	// Disabled, for now:
-	// $original['path'] = preg_replace('|/index\.php$|', '/', $original['path']);
+	}
 
 	$redirect = $original;
 	$redirect_url = false;
@@ -157,7 +152,9 @@ function redirect_canonical( $requested_url = null, $do_redirect = true ) {
 
 	} elseif ( is_object($wp_rewrite) && $wp_rewrite->using_permalinks() ) {
 		// rewriting of old ?p=X, ?m=2004, ?m=200401, ?m=20040101
-		if ( is_attachment() && ! $redirect_url ) {
+		if ( is_attachment() &&
+			! array_diff( array_keys( $wp->query_vars ), array( 'attachment', 'attachment_id' ) ) &&
+			! $redirect_url ) {
 			if ( ! empty( $_GET['attachment_id'] ) ) {
 				$redirect_url = get_attachment_link( get_query_var( 'attachment_id' ) );
 				if ( $redirect_url ) {

@@ -146,6 +146,7 @@ require( ABSPATH . WPINC . '/update.php' );
 require( ABSPATH . WPINC . '/canonical.php' );
 require( ABSPATH . WPINC . '/shortcodes.php' );
 require( ABSPATH . WPINC . '/class-wp-embed.php' );
+require( ABSPATH . WPINC . '/embed-functions.php' );
 require( ABSPATH . WPINC . '/media.php' );
 require( ABSPATH . WPINC . '/http.php' );
 require( ABSPATH . WPINC . '/widgets.php' );
@@ -321,7 +322,7 @@ require_once( ABSPATH . WPINC . '/locale.php' );
 $GLOBALS['wp_locale'] = new WP_Locale();
 
 // Load the functions for the active theme, for both parent and child theme if applicable.
-if ( ! defined( 'WP_INSTALLING' ) || 'wp-activate.php' === $pagenow ) {
+if ( ! wp_installing() || 'wp-activate.php' === $pagenow ) {
 	if ( TEMPLATEPATH !== STYLESHEETPATH && file_exists( STYLESHEETPATH . '/functions.php' ) )
 		include( STYLESHEETPATH . '/functions.php' );
 	if ( file_exists( TEMPLATEPATH . '/functions.php' ) )

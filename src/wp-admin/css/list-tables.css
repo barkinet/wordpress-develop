@@ -152,7 +152,8 @@
 
 #replysubmit {
 	margin: 0;
-	padding: 0 5px 3px;
+	padding: 5px 7px 10px;
+	overflow: hidden;
 	text-align: center;
 }
 
@@ -166,11 +167,23 @@
 	text-align: center;
 }
 
-#replyrow h5 {
-	margin: .2em 0 0;
-	padding: 0 5px;
-	line-height: 1.4em;
-	font-size: 1em;
+#replyrow.inline-edit-row fieldset.comment-reply {
+	font-size: inherit;
+	line-height: inherit;
+}
+
+#replyrow legend {
+	margin: 0;
+	padding: .2em 5px 0;
+	font-size: 13px;
+	line-height: 1.4;
+	font-weight: 600;
+}
+
+#replyrow.inline-edit-row label {
+	display: inline;
+	vertical-align: baseline;
+	line-height: inherit;
 }
 
 #edithead .inside,
@@ -285,7 +298,7 @@ th .comment-grey-bubble:before {
 ------------------------------------------------------------------------------*/
 
 table.fixed {
-	table-layout: auto;
+	table-layout: fixed;
 }
 
 .fixed .column-rating,
@@ -433,7 +446,6 @@ table.media .column-title .filename {
 }
 
 #commentsdiv #edithead .inside input {
-	vertical-align: middle;
 	width: 160px;
 }
 
@@ -600,7 +612,7 @@ th.sortable a,
 th.sorted a {
 	display: block;
 	overflow: hidden;
-	padding: 8px 10px;
+	padding: 8px;
 }
 
 .fixed .column-comments.sortable a,
@@ -1606,11 +1618,6 @@ div.action-links,
 	margin: 0 20px 20px 0;
 }
 
-.plugin-icon img {
-	width: 128px;
-	height: 128px;
-}
-
 .no-plugin-results {
 	color: #999;
 	font-size: 18px;
@@ -1676,6 +1683,10 @@ div.action-links,
 
 	.plugin-card .desc p:first-of-type {
 		margin-top: 0;
+	}
+
+	.fixed .column-date {
+		width: 14%;
 	}
 }
 

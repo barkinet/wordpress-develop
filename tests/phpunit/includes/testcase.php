@@ -48,6 +48,7 @@ class WP_UnitTestCase extends PHPUnit_Framework_TestCase {
 			$this->reset_post_types();
 			$this->reset_taxonomies();
 			$this->reset_post_statuses();
+			$this->set_permalink_structure();
 		}
 
 		$this->start_transaction();
@@ -299,6 +300,13 @@ class WP_UnitTestCase extends PHPUnit_Framework_TestCase {
 
 	function assertWPError( $actual, $message = '' ) {
 		$this->assertInstanceOf( 'WP_Error', $actual, $message );
+	}
+
+	function assertNotWPError( $actual, $message = '' ) {
+		if ( is_wp_error( $actual ) && '' === $message ) {
+			$message = $actual->get_error_message();
+		}
+		$this->assertNotInstanceOf( 'WP_Error', $actual, $message );
 	}
 
 	function assertEqualFields( $object, $fields ) {
@@ -609,5 +617,22 @@ class WP_UnitTestCase extends PHPUnit_Framework_TestCase {
 		} else {
 			return wp_delete_user( $user_id );
 		}
+	}
+
+	/**
+	 * Utility method that resets permalinks and flushes rewrites.
+	 *
+	 * @since 4.4.0
+	 *
+	 * @global WP_Rewrite $wp_rewrite
+	 *
+	 * @param string $structure Optional. Permalink structure to set. Default empty.
+	 */
+	public function set_permalink_structure( $structure = '' ) {
+		global $wp_rewrite;
+
+		$wp_rewrite->init();
+		$wp_rewrite->set_permalink_structure( $structure );
+		$wp_rewrite->flush_rules();
 	}
 }

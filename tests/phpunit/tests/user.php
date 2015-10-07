@@ -600,6 +600,39 @@ class Tests_User extends WP_UnitTestCase {
 	}
 
 	/**
+	 * @ticket 24618
+	 */
+	public function test_validate_username_string() {
+		$this->assertTrue( validate_username( 'johndoe' ) );
+		$this->assertTrue( validate_username( 'test@test.com' ) );
+	}
+
+	/**
+	 * @ticket 24618
+	 */
+	public function test_validate_username_contains_uppercase_letters() {
+		if ( is_multisite() ) {
+			$this->assertFalse( validate_username( 'JohnDoe' ) );
+		} else {
+			$this->assertTrue( validate_username( 'JohnDoe' ) );
+		}
+	}
+
+	/**
+	 * @ticket 24618
+	 */
+	public function test_validate_username_empty() {
+		$this->assertFalse( validate_username( '' ) );
+	}
+
+	/**
+	 * @ticket 24618
+	 */
+	public function test_validate_username_invalid() {
+		$this->assertFalse( validate_username( '@#&99sd' ) );
+	}
+
+	/**
 	 * @ticket 29696
 	 */
 	public function test_wp_insert_user_should_sanitize_user_nicename_parameter() {
@@ -612,6 +645,25 @@ class Tests_User extends WP_UnitTestCase {
 		$updated_user = new WP_User( $user->ID );
 
 		$this->assertSame( $user->user_nicename, $updated_user->user_nicename );
+	}
+
+	/**
+	 * @ticket 33793
+	 */
+	public function test_wp_insert_user_should_accept_user_login_with_60_characters() {
+		$user_login = str_repeat( 'a', 60 );
+		$u = wp_insert_user( array(
+			'user_login' => $user_login,
+			'user_email' => $user_login . '@example.com',
+			'user_pass' => 'password',
+			'user_nicename' => 'something-short',
+		) );
+
+		$this->assertInternalType( 'int', $u );
+		$this->assertGreaterThan( 0, $u );
+
+		$user = new WP_User( $u );
+		$this->assertSame( $user_login, $user->user_login );
 	}
 
 	/**

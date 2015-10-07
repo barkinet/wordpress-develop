@@ -7,7 +7,7 @@ add_action( 'wp_head', 'wp_no_robots' );
 
 require( dirname( __FILE__ ) . '/wp-blog-header.php' );
 
-if ( is_array( get_site_option( 'illegal_names' )) && isset( $_GET[ 'new' ] ) && in_array( $_GET[ 'new' ], get_site_option( 'illegal_names' ) ) ) {
+if ( is_array( get_network_option( 'illegal_names' ) ) && isset( $_GET[ 'new' ] ) && in_array( $_GET[ 'new' ], get_network_option( 'illegal_names' ) ) ) {
 	wp_redirect( network_home_url() );
 	die();
 }
@@ -66,7 +66,7 @@ function wpmu_signup_stylesheet() {
 }
 
 add_action( 'wp_head', 'wpmu_signup_stylesheet' );
-get_header();
+get_header( 'wp-signup' );
 
 /**
  * Fires before the site sign-up form.
@@ -76,7 +76,7 @@ get_header();
 do_action( 'before_signup_form' );
 ?>
 <div id="signup-content" class="widecolumn">
-<div class="mu_register">
+<div class="mu_register wp-signup-container">
 <?php
 /**
  * Generates and displays the Signup and Create Site forms
@@ -353,8 +353,13 @@ function validate_another_blog_signup() {
 	 */
 	$meta = apply_filters( 'add_signup_meta', $meta_defaults );
 
-	wpmu_create_blog( $domain, $path, $blog_title, $current_user->ID, $meta, $wpdb->siteid );
-	confirm_another_blog_signup($domain, $path, $blog_title, $current_user->user_login, $current_user->user_email, $meta);
+	$blog_id = wpmu_create_blog( $domain, $path, $blog_title, $current_user->ID, $meta, $wpdb->siteid );
+
+	if ( is_wp_error( $blog_id ) ) {
+		return false;
+	}
+
+	confirm_another_blog_signup( $domain, $path, $blog_title, $current_user->user_login, $current_user->user_email, $meta, $blog_id );
 	return true;
 }
 
@@ -362,18 +367,43 @@ function validate_another_blog_signup() {
  * Confirm a new site signup
  *
  * @since MU
+ * @since 4.4.0 Added the `$blog_id` parameter.
  *
  * @param string $domain The domain URL
  * @param string $path The site root path
+ * @param string $blog_title The blog title
  * @param string $user_name The username
  * @param string $user_email The user's email address
- * @param array $meta Any additional meta from the 'add_signup_meta' filter in validate_blog_signup()
+ * @param array  $meta Any additional meta from the 'add_signup_meta' filter in validate_blog_signup()
+ * @param int    $blog_id The blog ID
  */
-function confirm_another_blog_signup( $domain, $path, $blog_title, $user_name, $user_email = '', $meta = array() ) {
+function confirm_another_blog_signup( $domain, $path, $blog_title, $user_name, $user_email = '', $meta = array(), $blog_id = 0 ) {
+
+	if ( $blog_id ) {
+		switch_to_blog( $blog_id );
+		$home_url  = home_url( '/' );
+		$login_url = wp_login_url();
+		restore_current_blog();
+	} else {
+		$home_url  = 'http://' . $domain . $path;
+		$login_url = 'http://' . $domain . $path . 'wp-login.php';
+	}
+
+	$site = sprintf( '<a href="%1$s">%2$s</a>',
+		esc_url( $home_url ),
+		$blog_title
+	);
+
 	?>
-	<h2><?php printf( __( 'The site %s is yours.' ), "<a href='http://{$domain}{$path}'>{$blog_title}</a>" ) ?></h2>
+	<h2><?php printf( __( 'The site %s is yours.' ), $site ); ?></h2>
 	<p>
-		<?php printf( __( '<a href="http://%1$s">http://%2$s</a> is your new site. <a href="%3$s">Log in</a> as &#8220;%4$s&#8221; using your existing password.' ), $domain.$path, $domain.$path, "http://" . $domain.$path . "wp-login.php", $user_name ) ?>
+		<?php printf(
+			__( '<a href="%1$s">%2$s</a> is your new site. <a href="%3$s">Log in</a> as &#8220;%4$s&#8221; using your existing password.' ),
+			esc_url( $home_url ),
+			untrailingslashit( $domain . $path ),
+			esc_url( $login_url ),
+			$user_name
+		); ?>
 	</p>
 	<?php
 	/**
@@ -643,7 +673,7 @@ function confirm_blog_signup( $domain, $path, $blog_title, $user_name = '', $use
 }
 
 // Main
-$active_signup = get_site_option( 'registration', 'none' );
+$active_signup = get_network_option( 'registration', 'none' );
 /**
  * Filter the type of site sign-up.
  *
@@ -729,4 +759,4 @@ if ( $active_signup == 'none' ) {
  */
 do_action( 'after_signup_form' ); ?>
 
-<?php get_footer(); ?>
+<?php get_footer( 'wp-signup' );

@@ -169,10 +169,7 @@ class Tests_Post_WpUniquePostSlug extends WP_UnitTestCase {
 	 * @ticket 5305
 	 */
 	public function test_slugs_resulting_in_permalinks_that_resemble_year_archives_should_be_suffixed() {
-		global $wp_rewrite;
-		$wp_rewrite->init();
-		$wp_rewrite->set_permalink_structure( '/%postname%/' );
-		$wp_rewrite->flush_rules();
+		$this->set_permalink_structure( '/%postname%/' );
 
 		$p = $this->factory->post->create( array(
 			'post_type' => 'post',
@@ -181,19 +178,13 @@ class Tests_Post_WpUniquePostSlug extends WP_UnitTestCase {
 
 		$found = wp_unique_post_slug( '2015', $p, 'publish', 'post', 0 );
 		$this->assertEquals( '2015-2', $found );
-
-		$wp_rewrite->set_permalink_structure( '' );
-		flush_rewrite_rules();
 	}
 
 	/**
 	 * @ticket 5305
 	 */
 	public function test_slugs_resulting_in_permalinks_that_resemble_year_archives_should_not_be_suffixed_for_already_published_posts() {
-		global $wp_rewrite;
-		$wp_rewrite->init();
-		$wp_rewrite->set_permalink_structure( '/%postname%/' );
-		$wp_rewrite->flush_rules();
+		$this->set_permalink_structure( '/%postname%/' );
 
 		$p = $this->factory->post->create( array(
 			'post_type' => 'post',
@@ -203,19 +194,13 @@ class Tests_Post_WpUniquePostSlug extends WP_UnitTestCase {
 
 		$found = wp_unique_post_slug( '2015', $p, 'publish', 'post', 0 );
 		$this->assertEquals( '2015-2', $found );
-
-		$wp_rewrite->set_permalink_structure( '' );
-		flush_rewrite_rules();
 	}
 
 	/**
 	 * @ticket 5305
 	 */
 	public function test_yearlike_slugs_should_not_be_suffixed_if_permalink_structure_does_not_result_in_a_clash_with_year_archives() {
-		global $wp_rewrite;
-		$wp_rewrite->init();
-		$wp_rewrite->set_permalink_structure( '/%year%/%postname%/' );
-		$wp_rewrite->flush_rules();
+		$this->set_permalink_structure( '/%year%/%postname%/' );
 
 		$p = $this->factory->post->create( array(
 			'post_type' => 'post',
@@ -224,19 +209,13 @@ class Tests_Post_WpUniquePostSlug extends WP_UnitTestCase {
 
 		$found = wp_unique_post_slug( '2015', $p, 'publish', 'post', 0 );
 		$this->assertEquals( '2015', $found );
-
-		$wp_rewrite->set_permalink_structure( '' );
-		flush_rewrite_rules();
 	}
 
 	/**
 	 * @ticket 5305
 	 */
 	public function test_slugs_resulting_in_permalinks_that_resemble_month_archives_should_be_suffixed() {
-		global $wp_rewrite;
-		$wp_rewrite->init();
-		$wp_rewrite->set_permalink_structure( '/%year%/%postname%/' );
-		$wp_rewrite->flush_rules();
+		$this->set_permalink_structure( '/%year%/%postname%/' );
 
 		$p = $this->factory->post->create( array(
 			'post_type' => 'post',
@@ -245,19 +224,13 @@ class Tests_Post_WpUniquePostSlug extends WP_UnitTestCase {
 
 		$found = wp_unique_post_slug( '11', $p, 'publish', 'post', 0 );
 		$this->assertEquals( '11-2', $found );
-
-		$wp_rewrite->set_permalink_structure( '' );
-		flush_rewrite_rules();
 	}
 
 	/**
 	 * @ticket 5305
 	 */
 	public function test_monthlike_slugs_should_not_be_suffixed_if_permalink_structure_does_not_result_in_a_clash_with_month_archives() {
-		global $wp_rewrite;
-		$wp_rewrite->init();
-		$wp_rewrite->set_permalink_structure( '/%year%/foo/%postname%/' );
-		$wp_rewrite->flush_rules();
+		$this->set_permalink_structure( '/%year%/foo/%postname%/' );
 
 		$p = $this->factory->post->create( array(
 			'post_type' => 'post',
@@ -266,19 +239,13 @@ class Tests_Post_WpUniquePostSlug extends WP_UnitTestCase {
 
 		$found = wp_unique_post_slug( '11', $p, 'publish', 'post', 0 );
 		$this->assertEquals( '11', $found );
-
-		$wp_rewrite->set_permalink_structure( '' );
-		flush_rewrite_rules();
 	}
 
 	/**
 	 * @ticket 5305
 	 */
 	public function test_monthlike_slugs_should_not_be_suffixed_for_invalid_month_numbers() {
-		global $wp_rewrite;
-		$wp_rewrite->init();
-		$wp_rewrite->set_permalink_structure( '/%year%/%postname%/' );
-		$wp_rewrite->flush_rules();
+		$this->set_permalink_structure( '/%year%/%postname%/' );
 
 		$p = $this->factory->post->create( array(
 			'post_type' => 'post',
@@ -287,19 +254,13 @@ class Tests_Post_WpUniquePostSlug extends WP_UnitTestCase {
 
 		$found = wp_unique_post_slug( '13', $p, 'publish', 'post', 0 );
 		$this->assertEquals( '13', $found );
-
-		$wp_rewrite->set_permalink_structure( '' );
-		flush_rewrite_rules();
 	}
 
 	/**
 	 * @ticket 5305
 	 */
 	public function test_slugs_resulting_in_permalinks_that_resemble_day_archives_should_be_suffixed() {
-		global $wp_rewrite;
-		$wp_rewrite->init();
-		$wp_rewrite->set_permalink_structure( '/%year%/%monthnum%/%postname%/' );
-		$wp_rewrite->flush_rules();
+		$this->set_permalink_structure( '/%year%/%monthnum%/%postname%/' );
 
 		$p = $this->factory->post->create( array(
 			'post_type' => 'post',
@@ -308,19 +269,13 @@ class Tests_Post_WpUniquePostSlug extends WP_UnitTestCase {
 
 		$found = wp_unique_post_slug( '30', $p, 'publish', 'post', 0 );
 		$this->assertEquals( '30-2', $found );
-
-		$wp_rewrite->set_permalink_structure( '' );
-		flush_rewrite_rules();
 	}
 
 	/**
 	 * @ticket 5305
 	 */
 	public function test_daylike_slugs_should_not_be_suffixed_if_permalink_structure_does_not_result_in_a_clash_with_day_archives() {
-		global $wp_rewrite;
-		$wp_rewrite->init();
-		$wp_rewrite->set_permalink_structure( '/%year%/%monthnum%/%day%/%postname%/' );
-		$wp_rewrite->flush_rules();
+		$this->set_permalink_structure( '/%year%/%monthnum%/%day%/%postname%/' );
 
 		$p = $this->factory->post->create( array(
 			'post_type' => 'post',
@@ -329,19 +284,13 @@ class Tests_Post_WpUniquePostSlug extends WP_UnitTestCase {
 
 		$found = wp_unique_post_slug( '30', $p, 'publish', 'post', 0 );
 		$this->assertEquals( '30', $found );
-
-		$wp_rewrite->set_permalink_structure( '' );
-		flush_rewrite_rules();
 	}
 
 	/**
 	 * @ticket 5305
 	 */
 	public function test_daylike_slugs_should_not_be_suffixed_for_invalid_day_numbers() {
-		global $wp_rewrite;
-		$wp_rewrite->init();
-		$wp_rewrite->set_permalink_structure( '/%year%/%monthnum%/%postname%/' );
-		$wp_rewrite->flush_rules();
+		$this->set_permalink_structure( '/%year%/%monthnum%/%postname%/' );
 
 		$p = $this->factory->post->create( array(
 			'post_type' => 'post',
@@ -350,8 +299,5 @@ class Tests_Post_WpUniquePostSlug extends WP_UnitTestCase {
 
 		$found = wp_unique_post_slug( '32', $p, 'publish', 'post', 0 );
 		$this->assertEquals( '32', $found );
-
-		$wp_rewrite->set_permalink_structure( '' );
-		flush_rewrite_rules();
 	}
 }

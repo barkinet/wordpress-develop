@@ -386,6 +386,9 @@ function get_attachment_link( $post = null, $leavename = false ) {
 
 	$post = get_post( $post );
 	$parent = ( $post->post_parent > 0 && $post->post_parent != $post->ID ) ? get_post( $post->post_parent ) : false;
+	if ( $parent && ! in_array( $parent->post_type, get_post_types() ) ) {
+		$parent = false;
+	}
 
 	if ( $wp_rewrite->using_permalinks() && $parent ) {
 		if ( 'page' == $parent->post_type )
@@ -403,6 +406,8 @@ function get_attachment_link( $post = null, $leavename = false ) {
 
 		if ( ! $leavename )
 			$link = str_replace( '%postname%', $name, $link );
+	} elseif ( $wp_rewrite->using_permalinks() && ! $leavename ) {
+		$link = home_url( user_trailingslashit( $post->post_name ) );
 	}
 
 	if ( ! $link )
@@ -1010,7 +1015,7 @@ function get_search_link( $query = '' ) {
 		$link = home_url('?s=' . urlencode($search) );
 	} else {
 		$search = urlencode($search);
-		$search = str_replace('%2F', '/', $search); // %2F(/) is not valid within a URL, send it unencoded.
+		$search = str_replace('%2F', '/', $search); // %2F(/) is not valid within a URL, send it un-encoded.
 		$link = str_replace( '%search%', $search, $permastruct );
 		$link = home_url( user_trailingslashit( $link, 'search' ) );
 	}
@@ -2332,13 +2337,17 @@ function posts_nav_link( $sep = '', $prelabel = '', $nxtlabel = '' ) {
  * Return navigation to next/previous post when applicable.
  *
  * @since 4.1.0
+ * @since 4.4.0 Introduced the `in_same_term`, `excluded_terms`, and `taxonomy` arguments.
  *
  * @param array $args {
  *     Optional. Default post navigation arguments. Default empty array.
  *
- *     @type string $prev_text          Anchor text to display in the previous post link. Default `%title`.
- *     @type string $next_text          Anchor text to display in the next post link. Default `%title`.
- *     @type string $screen_reader_text Screen reader text for nav element. Default 'Post navigation'.
+ *     @type string       $prev_text          Anchor text to display in the previous post link. Default '%title'.
+ *     @type string       $next_text          Anchor text to display in the next post link. Default '%title'.
+ *     @type bool         $in_same_term       Whether link should be in a same taxonomy term. Default false.
+ *     @type array|string $excluded_terms     Array or comma-separated list of excluded term IDs. Default empty.
+ *     @type string       $taxonomy           Taxonomy, if `$in_same_term` is true. Default 'category'.
+ *     @type string       $screen_reader_text Screen reader text for nav element. Default 'Post navigation'.
  * }
  * @return string Markup for post links.
  */
@@ -2346,12 +2355,29 @@ function get_the_post_navigation( $args = array() ) {
 	$args = wp_parse_args( $args, array(
 		'prev_text'          => '%title',
 		'next_text'          => '%title',
+		'in_same_term'       => false,
+		'excluded_terms'     => '',
+		'taxonomy'           => 'category',
 		'screen_reader_text' => __( 'Post navigation' ),
 	) );
 
 	$navigation = '';
-	$previous   = get_previous_post_link( '<div class="nav-previous">%link</div>', $args['prev_text'] );
-	$next       = get_next_post_link( '<div class="nav-next">%link</div>', $args['next_text'] );
+
+	$previous = get_previous_post_link(
+		'<div class="nav-previous">%link</div>',
+		$args['prev_text'],
+		$args['in_same_term'],
+		$args['excluded_terms'],
+		$args['taxonomy']
+	);
+
+	$next = get_next_post_link(
+		'<div class="nav-next">%link</div>',
+		$args['next_text'],
+		$args['in_same_term'],
+		$args['excluded_terms'],
+		$args['taxonomy']
+	);
 
 	// Only add markup if there's somewhere to navigate to.
 	if ( $previous || $next ) {

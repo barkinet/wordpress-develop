@@ -3,39 +3,8 @@
  * @group link
  */
 class Tests_Link_GetPostCommentsFeedLink extends WP_UnitTestCase {
-	private static $rewrite;
-	private static $permalink_structure;
-
-	static function setUpBeforeClass() {
-		global $wp_rewrite;
-
-		parent::setUpBeforeClass();
-
-		self::$rewrite = $wp_rewrite;
-		self::$permalink_structure = get_option( 'permalink_structure' );
-	}
-
-	public static function tearDownAfterClass() {
-		parent::tearDownAfterClass();
-
-		self::$rewrite->init();
-		self::$rewrite->set_permalink_structure( self::$permalink_structure );
-		self::$rewrite->flush_rules();
-	}
-
-	public function setUp() {
-		parent::setUp();
-		self::$rewrite->init();
-	}
-
-	private function set_permalink_structure( $structure ) {
-		self::$rewrite->set_permalink_structure( $structure );
-		self::$rewrite->flush_rules();
-	}
 
 	public function test_post_link() {
-		$this->set_permalink_structure( '' );
-
 		$post_id = $this->factory->post->create();
 
 		$link = get_post_comments_feed_link( $post_id );
@@ -59,8 +28,6 @@ class Tests_Link_GetPostCommentsFeedLink extends WP_UnitTestCase {
 	}
 
 	public function test_attachment_link() {
-		$this->set_permalink_structure( '' );
-
 		$post_id = $this->factory->post->create();
 		$attachment_id = $this->factory->attachment->create_object( 'image.jpg', $post_id, array(
 			'post_mime_type' => 'image/jpeg',
@@ -112,8 +79,6 @@ class Tests_Link_GetPostCommentsFeedLink extends WP_UnitTestCase {
 	}
 
 	public function test_unattached_link() {
-		$this->set_permalink_structure( '' );
-
 		$attachment_id = $this->factory->attachment->create_object( 'image.jpg', 0, array(
 			'post_mime_type' => 'image/jpeg',
 			'post_type' => 'attachment'

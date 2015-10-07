@@ -311,7 +311,7 @@ function wp_default_scripts( &$scripts ) {
 
 	$scripts->add( 'comment-reply', "/wp-includes/js/comment-reply$suffix.js", array(), false, 1 );
 
-	$scripts->add( 'json2', "/wp-includes/js/json2$suffix.js", array(), '2011-02-23' );
+	$scripts->add( 'json2', "/wp-includes/js/json2$suffix.js", array(), '2015-05-03' );
 	did_action( 'init' ) && $scripts->add_data( 'json2', 'conditional', 'lt IE 8' );
 
 	$scripts->add( 'underscore', "/wp-includes/js/underscore$dev_suffix.js", array(), '1.6.0', 1 );
@@ -829,7 +829,7 @@ function wp_just_in_time_script_localization() {
 function wp_style_loader_src( $src, $handle ) {
 	global $_wp_admin_css_colors;
 
-	if ( defined('WP_INSTALLING') )
+	if ( wp_installing() )
 		return preg_replace( '#^wp-admin/#', './', $src );
 
 	if ( 'colors' == $handle ) {
@@ -1161,13 +1161,13 @@ function script_concat_settings() {
 
 	if ( ! isset($compress_scripts) ) {
 		$compress_scripts = defined('COMPRESS_SCRIPTS') ? COMPRESS_SCRIPTS : true;
-		if ( $compress_scripts && ( ! get_site_option('can_compress_scripts') || $compressed_output ) )
+		if ( $compress_scripts && ( ! get_network_option( 'can_compress_scripts' ) || $compressed_output ) )
 			$compress_scripts = false;
 	}
 
 	if ( ! isset($compress_css) ) {
 		$compress_css = defined('COMPRESS_CSS') ? COMPRESS_CSS : true;
-		if ( $compress_css && ( ! get_site_option('can_compress_scripts') || $compressed_output ) )
+		if ( $compress_css && ( ! get_network_option( 'can_compress_scripts' ) || $compressed_output ) )
 			$compress_css = false;
 	}
 }

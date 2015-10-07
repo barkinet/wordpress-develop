@@ -135,8 +135,8 @@ function wp_dashboard_setup() {
  *
  * @param string   $widget_id
  * @param string   $widget_name
- * @param callback $callback
- * @param callback $control_callback
+ * @param callable $callback
+ * @param callable $control_callback
  * @param array    $callback_args
  */
 function wp_add_dashboard_widget( $widget_id, $widget_name, $callback, $control_callback = null, $callback_args = null ) {
@@ -886,7 +886,7 @@ function wp_dashboard_rss_output( $widget_id ) {
  * @since 2.5.0
  *
  * @param string $widget_id
- * @param callback $callback
+ * @param callable $callback
  * @param array $check_urls RSS feeds
  * @return bool False on failure. True on success.
  */
@@ -926,9 +926,10 @@ function wp_dashboard_cached_rss_widget( $widget_id, $callback, $check_urls = ar
 	return true;
 }
 
-/* Dashboard Widgets Controls */
+//
+// Dashboard Widgets Controls
+//
 
-// Calls widget_control callback
 /**
  * Calls widget control callback.
  *
@@ -1007,7 +1008,7 @@ function wp_dashboard_primary() {
 			 *
 			 * @param string $link The widget's primary link URL.
 			 */
-			'link' => apply_filters( 'dashboard_primary_link', __( 'http://wordpress.org/news/' ) ),
+			'link' => apply_filters( 'dashboard_primary_link', __( 'https://wordpress.org/news/' ) ),
 
 			/**
 			 * Filter the primary feed URL for the 'WordPress News' dashboard widget.
@@ -1195,7 +1196,7 @@ function wp_dashboard_plugins_output( $rss, $args = array() ) {
  * @return bool|null True if not multisite, user can't upload files, or the space check option is disabled.
 */
 function wp_dashboard_quota() {
-	if ( !is_multisite() || !current_user_can( 'upload_files' ) || get_site_option( 'upload_space_check_disabled' ) )
+	if ( !is_multisite() || !current_user_can( 'upload_files' ) || get_network_option( 'upload_space_check_disabled' ) )
 		return true;
 
 	$quota = get_space_allowed();

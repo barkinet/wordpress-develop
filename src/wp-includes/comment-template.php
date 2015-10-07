@@ -659,7 +659,7 @@ function comment_ID() {
  * Retrieve the link to a given comment.
  *
  * @since 1.5.0
- * @since 4.4.0 Added the ability for `$comment` to also accept a WP_Comment object.
+ * @since 4.4.0 Added the ability for `$comment` to also accept a WP_Comment object. Added `$cpage` argument.
  *
  * @see get_page_of_comment()
  *
@@ -667,7 +667,16 @@ function comment_ID() {
  * @global bool       $in_comment_loop
  *
  * @param WP_Comment|int|null $comment Comment to retrieve. Default current comment.
- * @param array               $args    Optional. An array of arguments to override the defaults.
+ * @param array               $args {
+ *     An array of optional arguments to override the defaults.
+ *
+ *     @type string     $type      Passed to {@see get_page_of_comment()}.
+ *     @type int        $page      Current page of comments, for calculating comment pagination.
+ *     @type int        $per_page  Per-page value for comment pagination.
+ *     @type int        $max_depth Passed to {@see get_page_of_comment()}.
+ *     @type int|string $cpage     Value to use for the comment's "comment-page" or "cpage" value. If provided, this
+ *                                 value overrides any value calculated from `$page` and `$per_page`.
+ * }
  * @return string The permalink to the given comment.
  */
 function get_comment_link( $comment = null, $args = array() ) {
@@ -680,42 +689,86 @@ function get_comment_link( $comment = null, $args = array() ) {
 		$args = array( 'page' => $args );
 	}
 
-	$defaults = array( 'type' => 'all', 'page' => '', 'per_page' => '', 'max_depth' => '' );
+	$defaults = array(
+		'type'      => 'all',
+		'page'      => '',
+		'per_page'  => '',
+		'max_depth' => '',
+		'cpage'     => null,
+	);
 	$args = wp_parse_args( $args, $defaults );
 
-	if ( '' === $args['per_page'] )
-		$args['per_page'] = get_option('comments_per_page');
+	$link = get_permalink( $comment->comment_post_ID );
 
-	if ( empty($args['per_page']) ) {
-		$args['per_page'] = 0;
-		$args['page'] = 0;
+	// The 'cpage' param takes precedence.
+	if ( ! is_null( $args['cpage'] ) ) {
+		$cpage = $args['cpage'];
+
+	// No 'cpage' is provided, so we calculate one.
+	} else {
+		if ( '' === $args['per_page'] ) {
+			$args['per_page'] = get_option('comments_per_page');
+		}
+
+		if ( empty( $args['per_page'] ) ) {
+			$args['per_page'] = 0;
+			$args['page'] = 0;
+		}
+
+		$cpage = $args['page'];
+
+		if ( '' == $cpage ) {
+			if ( ! empty( $in_comment_loop ) ) {
+				$cpage = get_query_var( 'cpage' );
+			} else {
+				// Requires a database hit, so we only do it when we can't figure out from context.
+				$cpage = get_page_of_comment( $comment->comment_ID, $args );
+			}
+		}
+
+		/*
+		 * If the default page displays the oldest comments, the permalinks for comments on the default page
+		 * do not need a 'cpage' query var.
+		 */
+		$default_comments_page = get_option( 'default_comments_page' );
+		if ( 'oldest' === get_option( 'default_comments_page' ) && 1 === $cpage ) {
+			$cpage = '';
+		}
 	}
 
-	if ( $args['per_page'] ) {
-		if ( '' == $args['page'] )
-			$args['page'] = ( !empty($in_comment_loop) ) ? get_query_var('cpage') : get_page_of_comment( $comment->comment_ID, $args );
+	if ( $cpage ) {
+		if ( $wp_rewrite->using_permalinks() ) {
+			if ( $cpage ) {
+				$link = trailingslashit( $link ) . $wp_rewrite->comments_pagination_base . '-' . $cpage;
+			}
 
-		if ( $wp_rewrite->using_permalinks() )
-			$link = user_trailingslashit( trailingslashit( get_permalink( $comment->comment_post_ID ) ) . $wp_rewrite->comments_pagination_base . '-' . $args['page'], 'comment' );
-		else
-			$link = add_query_arg( 'cpage', $args['page'], get_permalink( $comment->comment_post_ID ) );
-	} else {
-		$link = get_permalink( $comment->comment_post_ID );
+			$link = user_trailingslashit( $link, 'comment' );
+		} elseif ( $cpage ) {
+			$link = add_query_arg( 'cpage', $cpage, $link );
+		}
+
+	}
+
+	if ( $wp_rewrite->using_permalinks() ) {
+		$link = user_trailingslashit( $link, 'comment' );
 	}
 
 	$link = $link . '#comment-' . $comment->comment_ID;
+
 	/**
 	 * Filter the returned single comment permalink.
 	 *
 	 * @since 2.8.0
+	 * @since 4.4.0 Added the `$cpage` parameter.
 	 *
 	 * @see get_page_of_comment()
 	 *
 	 * @param string     $link    The comment permalink with '#comment-$id' appended.
 	 * @param WP_Comment $comment The current comment object.
 	 * @param array      $args    An array of arguments to override the defaults.
+	 * @param int        $cpage   The calculated 'cpage' value.
 	 */
-	return apply_filters( 'get_comment_link', $link, $comment, $args );
+	return apply_filters( 'get_comment_link', $link, $comment, $args, $cpage );
 }
 
 /**
@@ -1233,81 +1286,38 @@ function comments_template( $file = '/comments.php', $separate_comments = false 
 		$per_page = (int) get_option( 'comments_per_page' );
 	}
 
-	$flip_comment_order = $trim_comments_on_page = false;
-	if ( $post->comment_count > $per_page ) {
-		$comment_args['number'] = $per_page;
+	$comment_args['order']  = 'ASC';
+	$comment_args['number'] = $per_page;
+	$page = (int) get_query_var( 'cpage' );
 
-		/*
-		 * For legacy reasons, higher page numbers always mean more recent comments, regardless of sort order.
-		 * Since we don't have full pagination info until after the query, we use some tricks to get the
-		 * right comments for the current page.
-		 *
-		 * Abandon all hope, ye who enter here!
-		 */
-		$page = (int) get_query_var( 'cpage' );
-		if ( 'newest' === get_option( 'default_comments_page' ) ) {
-			if ( $page ) {
-				$comment_args['order'] = 'ASC';
+	if ( $page ) {
+		$comment_args['offset'] = ( $page - 1 ) * $per_page;
+	} elseif ( 'oldest' === get_option( 'default_comments_page' ) ) {
+		$comment_args['offset'] = 0;
+	} else {
+		// If fetching the first page of 'newest', we need a top-level comment count.
+		$top_level_query = new WP_Comment_Query();
+		$top_level_count = $top_level_query->query( array(
+			'count'   => true,
+			'orderby' => false,
+			'post_id' => $post->ID,
+			'parent'  => 0,
+		) );
 
-				/*
-				 * We don't have enough data (namely, the total number of comments) to calculate an
-				 * exact offset. We'll fetch too many comments, and trim them as needed
-				 * after the query.
-				 */
-				$offset = ( $page - 2 ) * $per_page;
-				if ( 0 > $offset ) {
-					// `WP_Comment_Query` doesn't support negative offsets.
-					$comment_args['offset'] = 0;
-				} else {
-					$comment_args['offset'] = $offset;
-				}
-
-				// Fetch double the number of comments we need.
-				$comment_args['number'] += $per_page;
-				$trim_comments_on_page = true;
-			} else {
-				$comment_args['order'] = 'DESC';
-				$comment_args['offset'] = 0;
-				$flip_comment_order = true;
-			}
-		} else {
-			$comment_args['order'] = 'ASC';
-			if ( $page ) {
-				$comment_args['offset'] = ( $page - 1 ) * $per_page;
-			} else {
-				$comment_args['offset'] = 0;
-			}
-		}
+		$comment_args['offset'] = ( ceil( $top_level_count / $per_page ) - 1 ) * $per_page;
 	}
 
 	$comment_query = new WP_Comment_Query( $comment_args );
 	$_comments = $comment_query->comments;
 
-	// Delightful pagination quirk #1: first page of results sometimes needs reordering.
-	if ( $flip_comment_order ) {
-		$_comments = array_reverse( $_comments );
-	}
-
-	// Delightful pagination quirk #2: reverse chronological order requires page shifting.
-	if ( $trim_comments_on_page ) {
-		// Correct the value of max_num_pages, which is wrong because we manipulated the per_page 'number'.
-		$comment_query->max_num_pages = ceil( $comment_query->found_comments / $per_page );
-
-		// Identify the number of comments that should appear on page 1.
-		$page_1_count = $comment_query->found_comments - ( ( $comment_query->max_num_pages - 1 ) * $per_page );
-
-		// Use that value to shift the matched comments.
-		if ( 1 === $page ) {
-			$_comments = array_slice( $_comments, 0, $page_1_count );
-		} else {
-			$_comments = array_slice( $_comments, $page_1_count, $per_page );
-		}
-	}
-
 	// Trees must be flattened before they're passed to the walker.
 	$comments_flat = array();
 	foreach ( $_comments as $_comment ) {
-		$comments_flat = array_merge( $comments_flat, array( $_comment ), $_comment->get_children( 'flat' ) );
+		$comments_flat = array_merge( $comments_flat, array( $_comment ), $_comment->get_children( array(
+			'format' => 'flat',
+			'status' => $comment_args['status'],
+			'orderby' => $comment_args['orderby']
+		) ) );
 	}
 
 	/**
@@ -1319,6 +1329,10 @@ function comments_template( $file = '/comments.php', $separate_comments = false 
 	 * @param int   $post_ID  Post ID.
 	 */
 	$wp_query->comments = apply_filters( 'comments_array', $comments_flat, $post->ID );
+
+	// Set up lazy-loading for comment metadata.
+	add_action( 'get_comment_metadata', array( $wp_query, 'lazyload_comment_meta' ), 10, 2 );
+
 	$comments = &$wp_query->comments;
 	$wp_query->comment_count = count($wp_query->comments);
 	$wp_query->max_num_comment_pages = $comment_query->max_num_pages;
@@ -1909,8 +1923,21 @@ function wp_list_comments( $args = array(), $comments = null ) {
 		}
 
 		// Pagination is already handled by `WP_Comment_Query`, so we tell Walker not to bother.
-		if ( 1 < $wp_query->max_num_comment_pages ) {
-			$r['page'] = 1;
+		if ( $wp_query->max_num_comment_pages ) {
+			$default_comments_page = get_option( 'default_comments_page' );
+			$cpage = get_query_var( 'cpage' );
+			if ( 'newest' === $default_comments_page ) {
+				$r['cpage'] = $cpage;
+
+			// When first page shows oldest comments, post permalink is the same as the comment permalink.
+			} elseif ( $cpage == 1 ) {
+				$r['cpage'] = '';
+			} else {
+				$r['cpage'] = $cpage;
+			}
+
+			$r['page'] = 0;
+			$r['per_page'] = 0;
 		}
 	}
 
@@ -1975,8 +2002,8 @@ function wp_list_comments( $args = array(), $comments = null ) {
  *
  * @since 3.0.0
  * @since 4.1.0 Introduced the 'class_submit' argument.
- * @since 4.2.0 Introduced 'submit_button' and 'submit_fields' arguments.
- * @since 4.4.0 Introduced 'title_reply_before', 'title_reply_after',
+ * @since 4.2.0 Introduced the 'submit_button' and 'submit_fields' arguments.
+ * @since 4.4.0 Introduced the 'class_form', 'title_reply_before', 'title_reply_after',
  *              'cancel_reply_before', and 'cancel_reply_after' arguments.
  *
  * @param array       $args {
@@ -1997,6 +2024,7 @@ function wp_list_comments( $args = array(), $comments = null ) {
  *     @type string $comment_notes_after  HTML element for a message displayed after the comment form.
  *     @type string $id_form              The comment form element id attribute. Default 'commentform'.
  *     @type string $id_submit            The comment submit element id attribute. Default 'submit'.
+ *     @type string $class_form           The comment form element class attribute. Default 'comment-form'.
  *     @type string $class_submit         The comment submit element class attribute. Default 'submit'.
  *     @type string $name_submit          The comment submit element name attribute. Default 'submit'.
  *     @type string $title_reply          The translatable 'reply' button label. Default 'Leave a Reply'.
@@ -2065,6 +2093,7 @@ function comment_form( $args = array(), $post_id = null ) {
 		'comment_notes_after'  => '',
 		'id_form'              => 'commentform',
 		'id_submit'            => 'submit',
+		'class_form'           => 'comment-form',
 		'class_submit'         => 'submit',
 		'name_submit'          => 'submit',
 		'title_reply'          => __( 'Leave a Reply' ),
@@ -2126,7 +2155,7 @@ function comment_form( $args = array(), $post_id = null ) {
 				 */
 				do_action( 'comment_form_must_log_in_after' );
 			else : ?>
-				<form action="<?php echo site_url( '/wp-comments-post.php' ); ?>" method="post" id="<?php echo esc_attr( $args['id_form'] ); ?>" class="comment-form"<?php echo $html5 ? ' novalidate' : ''; ?>>
+				<form action="<?php echo site_url( '/wp-comments-post.php' ); ?>" method="post" id="<?php echo esc_attr( $args['id_form'] ); ?>" class="<?php echo esc_attr( $args['class_form'] ); ?>"<?php echo $html5 ? ' novalidate' : ''; ?>>
 					<?php
 					/**
 					 * Fires at the top of the comment form, inside the form tag.

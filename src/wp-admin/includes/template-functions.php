@@ -220,7 +220,7 @@ function wp_popular_terms_checklist( $taxonomy, $default = 0, $number = 10, $ech
 }
 
 /**
- * {@internal Missing Short Description}}
+ * Outputs a link category checklist element.
  *
  * @since 2.5.1
  *
@@ -330,7 +330,7 @@ function get_inline_data($post) {
 }
 
 /**
- * {@internal Missing Short Description}}
+ * Outputs the in-line comment reply-to form in the Comments list table.
  *
  * @since 2.7.0
  *
@@ -380,8 +380,21 @@ function wp_comment_reply( $position = 1, $checkbox = false, $mode = 'single', $
 <?php else : ?>
 <div id="com-reply" style="display:none;"><div id="replyrow" style="display:none;">
 <?php endif; ?>
-	<div id="replyhead" style="display:none;"><h5><?php _e( 'Reply to Comment' ); ?></h5></div>
-	<div id="addhead" style="display:none;"><h5><?php _e('Add new Comment'); ?></h5></div>
+	<fieldset class="comment-reply">
+	<legend>
+		<span class="hidden" id="editlegend"><?php _e( 'Edit Comment' ); ?></span>
+		<span class="hidden" id="replyhead"><?php _e( 'Reply to Comment' ); ?></span>
+		<span class="hidden" id="addhead"><?php _e( 'Add new Comment' ); ?></span>
+	</legend>
+
+	<div id="replycontainer">
+	<label for="replycontent" class="screen-reader-text"><?php _e( 'Comment' ); ?></label>
+	<?php
+	$quicktags_settings = array( 'buttons' => 'strong,em,link,block,del,ins,img,ul,ol,li,code,close' );
+	wp_editor( '', 'replycontent', array( 'media_buttons' => false, 'tinymce' => false, 'quicktags' => $quicktags_settings ) );
+	?>
+	</div>
+
 	<div id="edithead" style="display:none;">
 		<div class="inside">
 		<label for="author-name"><?php _e( 'Name' ) ?></label>
@@ -397,14 +410,6 @@ function wp_comment_reply( $position = 1, $checkbox = false, $mode = 'single', $
 		<label for="author-url"><?php _e('URL') ?></label>
 		<input type="text" id="author-url" name="newcomment_author_url" class="code" size="103" value="" />
 		</div>
-		<div style="clear:both;"></div>
-	</div>
-
-	<div id="replycontainer">
-	<?php
-	$quicktags_settings = array( 'buttons' => 'strong,em,link,block,del,ins,img,ul,ol,li,code,close' );
-	wp_editor( '', 'replycontent', array( 'media_buttons' => false, 'tinymce' => false, 'quicktags' => $quicktags_settings ) );
-	?>
 	</div>
 
 	<p id="replysubmit" class="submit">
@@ -415,7 +420,6 @@ function wp_comment_reply( $position = 1, $checkbox = false, $mode = 'single', $
 	<a href="#comments-form" class="cancel button-secondary alignleft"><?php _e('Cancel'); ?></a>
 	<span class="waiting spinner"></span>
 	<span class="error" style="display:none;"></span>
-	<br class="clear" />
 	</p>
 
 	<input type="hidden" name="action" id="action" value="" />
@@ -430,6 +434,7 @@ function wp_comment_reply( $position = 1, $checkbox = false, $mode = 'single', $
 		if ( current_user_can( 'unfiltered_html' ) )
 			wp_nonce_field( 'unfiltered-html-comment', '_wp_unfiltered_html_comment', false );
 	?>
+	</fieldset>
 <?php if ( $table_row ) : ?>
 </td></tr></tbody></table>
 <?php else : ?>
@@ -456,7 +461,7 @@ function wp_comment_trashnotice() {
 }
 
 /**
- * {@internal Missing Short Description}}
+ * Outputs a post's public meta data in the Custom Fields meta box.
  *
  * @since 1.2.0
  *
@@ -499,7 +504,7 @@ function list_meta( $meta ) {
 }
 
 /**
- * {@internal Missing Short Description}}
+ * Outputs a single row of public meta data in the Custom Fields meta box.
  *
  * @since 2.5.0
  *
@@ -850,7 +855,7 @@ function wp_import_upload_form( $action ) {
  *
  * @param string           $id            String for use in the 'id' attribute of tags.
  * @param string           $title         Title of the meta box.
- * @param callback         $callback      Function that fills the box with the desired content.
+ * @param callable         $callback      Function that fills the box with the desired content.
  *                                        The function should echo its output.
  * @param string|WP_Screen $screen        Optional. The screen on which to show the box (like a post
  *                                        type, 'link', or 'comment'). Default is the current screen.
@@ -984,8 +989,9 @@ function do_meta_boxes( $screen, $context, $object ) {
 					$hidden_class = in_array($box['id'], $hidden) ? ' hide-if-js' : '';
 					echo '<div id="' . $box['id'] . '" class="postbox ' . postbox_classes($box['id'], $page) . $hidden_class . '" ' . '>' . "\n";
 					if ( 'dashboard_browser_nag' != $box['id'] ) {
-						echo '<button class="handlediv button-link" title="' . esc_attr__( 'Click to toggle' ) . '" aria-expanded="true">';
-						echo '<span class="screen-reader-text">' . sprintf( __( 'Click to toggle %s panel' ), $box['title'] ) . '</span><br />';
+						echo '<button type="button" class="handlediv button-link" aria-expanded="true">';
+						echo '<span class="screen-reader-text">' . sprintf( __( 'Toggle panel: %s' ), $box['title'] ) . '</span>';
+						echo '<span class="toggle-indicator" aria-hidden="true"></span>';
 						echo '</button>';
 					}
 					echo "<h3 class='hndle'><span>{$box['title']}</span></h3>\n";
@@ -1412,7 +1418,7 @@ function settings_errors( $setting = '', $sanitize = false, $hide_on_update = fa
 }
 
 /**
- * {@internal Missing Short Description}}
+ * Outputs the modal window used for attaching media to posts or pages in the media-listing screen.
  *
  * @since 2.7.0
  *
@@ -1631,12 +1637,14 @@ function _post_states($post) {
 		$post_states['scheduled'] = __( 'Scheduled' );
 	}
 
-	if ( get_option( 'page_on_front' ) == $post->ID ) {
-		$post_states['page_on_front'] = __( 'Front Page' );
-	}
+	if ( 'page' === get_option( 'show_on_front' ) ) {
+		if ( intval( get_option( 'page_on_front' ) ) === $post->ID ) {
+			$post_states['page_on_front'] = __( 'Front Page' );
+		}
 
-	if ( get_option( 'page_for_posts' ) == $post->ID ) {
-		$post_states['page_for_posts'] = __( 'Posts Page' );
+		if ( intval( get_option( 'page_for_posts' ) ) === $post->ID ) {
+			$post_states['page_for_posts'] = __( 'Posts Page' );
+		}
 	}
 
 	/**

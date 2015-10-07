@@ -19,12 +19,12 @@ if ( ! is_multisite() )
 if ( ! current_user_can( 'manage_sites' ) )
 	wp_die( __( 'You do not have sufficient permissions to add sites to this network.' ) );
 
-	get_current_screen()->add_help_tab( array(
-		'id'      => 'overview',
-		'title'   => __('Overview'),
-		'content' =>
-			'<p>' . __('This screen is for Super Admins to add new sites to the network. This is not affected by the registration settings.') . '</p>' .
-			'<p>' . __('If the admin email for the new site does not exist in the database, a new user will also be created.') . '</p>'
+get_current_screen()->add_help_tab( array(
+	'id'      => 'overview',
+	'title'   => __('Overview'),
+	'content' =>
+		'<p>' . __('This screen is for Super Admins to add new sites to the network. This is not affected by the registration settings.') . '</p>' .
+		'<p>' . __('If the admin email for the new site does not exist in the database, a new user will also be created.') . '</p>'
 ) );
 
 get_current_screen()->set_help_sidebar(
@@ -46,10 +46,11 @@ if ( isset($_REQUEST['action']) && 'add-site' == $_REQUEST['action'] ) {
 
 	// If not a subdomain install, make sure the domain isn't a reserved word
 	if ( ! is_subdomain_install() ) {
-		/** This filter is documented in wp-includes/ms-functions.php */
-		$subdirectory_reserved_names = apply_filters( 'subdirectory_reserved_names', array( 'page', 'comments', 'blog', 'files', 'feed', 'wp-admin', 'wp-content', 'wp-includes', 'wp-json' ) );
-		if ( in_array( $domain, $subdirectory_reserved_names ) )
-			wp_die( sprintf( __('The following words are reserved for use by WordPress functions and cannot be used as blog names: <code>%s</code>' ), implode( '</code>, <code>', $subdirectory_reserved_names ) ) );
+		$subdirectory_reserved_names = get_subdirectory_reserved_names();
+
+		if ( in_array( $domain, $subdirectory_reserved_names ) ) {
+			wp_die( sprintf( __( 'The following words are reserved for use by WordPress functions and cannot be used as blog names: <code>%s</code>' ), implode( '</code>, <code>', $subdirectory_reserved_names ) ) );
+		}
 	}
 
 	$title = $blog['title'];
@@ -123,7 +124,7 @@ Name: %3$s' ),
 			get_site_url( $id ),
 			wp_unslash( $title )
 		);
-		wp_mail( get_site_option('admin_email'), sprintf( __( '[%s] New Site Created' ), $current_site->site_name ), $content_mail, 'From: "Site Admin" <' . get_site_option( 'admin_email' ) . '>' );
+		wp_mail( get_network_option( 'admin_email' ), sprintf( __( '[%s] New Site Created' ), $current_site->site_name ), $content_mail, 'From: "Site Admin" <' . get_network_option( 'admin_email' ) . '>' );
 		wpmu_welcome_notification( $id, $user_id, $password, $title, array( 'public' => 1 ) );
 		wp_redirect( add_query_arg( array( 'update' => 'added', 'id' => $id ), 'site-new.php' ) );
 		exit;
@@ -188,7 +189,7 @@ if ( ! empty( $messages ) ) {
 				<td>
 					<?php
 					// Network default.
-					$lang = get_site_option( 'WPLANG' );
+					$lang = get_network_option( 'WPLANG' );
 
 					// Use English if the default isn't available.
 					if ( ! in_array( $lang, $languages ) ) {

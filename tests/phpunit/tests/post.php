@@ -415,10 +415,7 @@ class Tests_Post extends WP_UnitTestCase {
 	 * @ticket 5305
 	 */
 	public function test_wp_insert_post_should_not_allow_a_bare_numeric_slug_that_might_conflict_with_a_date_archive_when_generating_from_an_empty_post_title() {
-		global $wp_rewrite;
-		$wp_rewrite->init();
-		$wp_rewrite->set_permalink_structure( '/%postname%/' );
-		$wp_rewrite->flush_rules();
+		$this->set_permalink_structure( '/%postname%/' );
 
 		$p = wp_insert_post( array(
 			'post_title' => '',
@@ -429,7 +426,7 @@ class Tests_Post extends WP_UnitTestCase {
 
 		$post = get_post( $p );
 
-		$wp_rewrite->set_permalink_structure( '' );
+		$this->set_permalink_structure();
 
 		$this->assertEquals( "$p-2", $post->post_name );
 	}
@@ -505,10 +502,7 @@ class Tests_Post extends WP_UnitTestCase {
 		// bug: permalink doesn't work if post title is empty
 		// might only fail if the post ID is greater than four characters
 
-		global $wp_rewrite;
-		$wp_rewrite->init();
-		$wp_rewrite->set_permalink_structure('/%year%/%monthnum%/%day%/%postname%/');
-		$wp_rewrite->flush_rules();
+		$this->set_permalink_structure('/%year%/%monthnum%/%day%/%postname%/');
 
 		$post = array(
 			'post_author' => $this->author_id,
@@ -525,8 +519,6 @@ class Tests_Post extends WP_UnitTestCase {
 
 		// permalink should include the post ID at the end
 		$this->assertEquals(get_option('siteurl').'/2007/10/31/'.$id.'/', $plink);
-
-		$wp_rewrite->set_permalink_structure('');
 	}
 
 	/**
@@ -1217,5 +1209,29 @@ class Tests_Post extends WP_UnitTestCase {
 		$post_id = $this->factory->post->create( array( 'post_author' => null ) );
 
 		$this->assertEquals( $this->author_id, get_post( $post_id )->post_author );
+	}
+
+	/**
+	 * @ticket 15946
+	 */
+	function test_wp_insert_post_should_respect_post_date_gmt() {
+		$post = array(
+			'post_author' => $this->author_id,
+			'post_status' => 'publish',
+			'post_content' => rand_str(),
+			'post_title' => rand_str(),
+			'post_date_gmt' => '2014-01-01 12:00:00',
+		);
+
+		// insert a post and make sure the ID is ok
+		$id = wp_insert_post($post);
+
+		$out = get_post($id);
+
+		$this->assertEquals($post['post_content'], $out->post_content);
+		$this->assertEquals($post['post_title'], $out->post_title);
+		$this->assertEquals($post['post_author'], $out->post_author);
+		$this->assertEquals(get_date_from_gmt($post['post_date_gmt']), $out->post_date);
+		$this->assertEquals($post['post_date_gmt'], $out->post_date_gmt);
 	}
 }

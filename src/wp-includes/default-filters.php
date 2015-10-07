@@ -129,12 +129,13 @@ add_filter( 'the_title', 'wptexturize'   );
 add_filter( 'the_title', 'convert_chars' );
 add_filter( 'the_title', 'trim'          );
 
-add_filter( 'the_content', 'wptexturize'        );
-add_filter( 'the_content', 'convert_smilies'    );
-add_filter( 'the_content', 'convert_chars'      );
-add_filter( 'the_content', 'wpautop'            );
-add_filter( 'the_content', 'shortcode_unautop'  );
-add_filter( 'the_content', 'prepend_attachment' );
+add_filter( 'the_content', 'wptexturize'                       );
+add_filter( 'the_content', 'convert_smilies'                   );
+add_filter( 'the_content', 'convert_chars'                     );
+add_filter( 'the_content', 'wpautop'                           );
+add_filter( 'the_content', 'shortcode_unautop'                 );
+add_filter( 'the_content', 'prepend_attachment'                );
+add_filter( 'the_content', 'wp_make_content_images_responsive' );
 
 add_filter( 'the_excerpt',     'wptexturize'      );
 add_filter( 'the_excerpt',     'convert_smilies'  );
@@ -200,8 +201,6 @@ add_filter( 'nav_menu_meta_box_object', '_wp_nav_menu_meta_box_object'        );
 add_filter( 'pingback_ping_source_uri', 'pingback_ping_source_uri'            );
 add_filter( 'xmlrpc_pingback_error',    'xmlrpc_pingback_error'               );
 add_filter( 'title_save_pre',           'trim'                                );
-add_filter( 'get_comment_metadata',     'wp_lazyload_comment_meta',     10, 2 );
-add_filter( 'get_term_metadata',        'wp_lazyload_term_meta',        10, 2 );
 
 add_filter( 'http_request_host_is_external', 'allowed_http_request_hosts', 10, 2 );
 
@@ -294,8 +293,9 @@ add_action( 'begin_fetch_post_thumbnail_html', '_wp_post_thumbnail_class_filter_
 add_action( 'end_fetch_post_thumbnail_html',   '_wp_post_thumbnail_class_filter_remove' );
 
 // Redirect Old Slugs
-add_action( 'template_redirect', 'wp_old_slug_redirect'              );
-add_action( 'post_updated',      'wp_check_for_changed_slugs', 12, 3 );
+add_action( 'template_redirect',  'wp_old_slug_redirect'              );
+add_action( 'post_updated',       'wp_check_for_changed_slugs', 12, 3 );
+add_action( 'attachment_updated', 'wp_check_for_changed_slugs', 12, 3 );
 
 // Nonce check for Post Previews
 add_action( 'init', '_show_post_preview' );

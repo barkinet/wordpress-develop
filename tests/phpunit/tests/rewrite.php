@@ -9,16 +9,11 @@ class Tests_Rewrite extends WP_UnitTestCase {
 	private $home_url;
 
 	function setUp() {
-		global $wp_rewrite;
 		parent::setUp();
-
-		// Need rewrite rules in place to use url_to_postid
-		$wp_rewrite->init();
-		$wp_rewrite->set_permalink_structure( '/%year%/%monthnum%/%day%/%postname%/' );
 
 		create_initial_taxonomies();
 
-		$wp_rewrite->flush_rules();
+		$this->set_permalink_structure( '/%year%/%monthnum%/%day%/%postname%/' );
 
 		$this->home_url = get_option( 'home' );
 	}
@@ -31,6 +26,63 @@ class Tests_Rewrite extends WP_UnitTestCase {
 		parent::tearDown();
 	}
 
+	/**
+	 * @ticket 16840
+	 */
+	public function test_add_rule() {
+		global $wp_rewrite;
+
+		$pattern  = 'path/to/rewrite/([^/]+)/?$';
+		$redirect = 'index.php?test_var1=$matches[1]&test_var2=1';
+
+		$wp_rewrite->add_rule( $pattern, $redirect );
+
+		$wp_rewrite->flush_rules();
+
+		$rewrite_rules = $wp_rewrite->rewrite_rules();
+
+		$this->assertSame( $redirect, $rewrite_rules[ $pattern ] );
+	}
+
+	/**
+	 * @ticket 16840
+	 */
+	public function test_add_rule_redirect_array() {
+		global $wp_rewrite;
+
+		$pattern  = 'path/to/rewrite/([^/]+)/?$';
+		$redirect = 'index.php?test_var1=$matches[1]&test_var2=1';
+
+		$wp_rewrite->add_rule( $pattern, array(
+			'test_var1' => '$matches[1]',
+			'test_var2' => '1'
+		) );
+
+		$wp_rewrite->flush_rules();
+
+		$rewrite_rules = $wp_rewrite->rewrite_rules();
+
+		$this->assertSame( $redirect, $rewrite_rules[ $pattern ] );
+	}
+
+	/**
+	 * @ticket 16840
+	 */
+	public function test_add_rule_top() {
+		global $wp_rewrite;
+
+		$pattern  = 'path/to/rewrite/([^/]+)/?$';
+		$redirect = 'index.php?test_var1=$matches[1]&test_var2=1';
+
+		$wp_rewrite->add_rule( $pattern, $redirect, 'top' );
+
+		$wp_rewrite->flush_rules();
+
+		$extra_rules_top = $wp_rewrite->extra_rules_top;
+
+		$this->assertContains( $redirect, $extra_rules_top[ $pattern ] );
+	}
+
 	function test_url_to_postid() {
 
 		$id = $this->factory->post->create();
@@ -38,6 +90,36 @@ class Tests_Rewrite extends WP_UnitTestCase {
 
 		$id = $this->factory->post->create( array( 'post_type' => 'page' ) );
 		$this->assertEquals( $id, url_to_postid( get_permalink( $id ) ) );
+	}
+
+	function test_url_to_postid_set_url_scheme_https_to_http() {
+		$post_id = $this->factory->post->create();
+		$permalink = get_permalink( $post_id );
+		$this->assertEquals( $post_id, url_to_postid( set_url_scheme( $permalink, 'https' ) ) );
+
+		$post_id = $this->factory->post->create( array( 'post_type' => 'page' ) );
+		$permalink = get_permalink( $post_id );
+		$this->assertEquals( $post_id, url_to_postid( set_url_scheme( $permalink, 'https' ) ) );
+	}
+
+	function test_url_to_postid_set_url_scheme_http_to_https() {
+		// Save server data for cleanup
+		$is_ssl = is_ssl();
+		$http_host = $_SERVER['HTTP_HOST'];
+
+		$_SERVER['HTTPS'] = 'on';
+
+		$post_id = $this->factory->post->create();
+		$permalink = get_permalink( $post_id );
+		$this->assertEquals( $post_id, url_to_postid( set_url_scheme( $permalink, 'http' ) ) );
+
+		$post_id = $this->factory->post->create( array( 'post_type' => 'page' ) );
+		$permalink = get_permalink( $post_id );
+		$this->assertEquals( $post_id, url_to_postid( set_url_scheme( $permalink, 'http' ) ) );
+
+		// Cleanup.
+		$_SERVER['HTTPS'] = $is_ssl ? 'on' : 'off';
+		$_SERVER['HTTP_HOST'] = $http_host;
 	}
 
 	function test_url_to_postid_custom_post_type() {

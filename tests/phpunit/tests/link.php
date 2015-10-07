@@ -20,9 +20,7 @@ class Tests_Link extends WP_UnitTestCase {
 	function test_get_pagenum_link_case_insensitivity() {
 		$old_req_uri = $_SERVER['REQUEST_URI'];
 
-		global $wp_rewrite;
-		$wp_rewrite->set_permalink_structure('/%year%/%monthnum%/%day%/%postname%/');
-		$wp_rewrite->flush_rules();
+		$this->set_permalink_structure( '/%year%/%monthnum%/%day%/%postname%/' );
 
 		add_filter( 'home_url', array( $this, '_get_pagenum_link_cb' ) );
 		$_SERVER['REQUEST_URI'] = '/woohoo';
@@ -35,14 +33,8 @@ class Tests_Link extends WP_UnitTestCase {
 	}
 
 	function test_wp_get_shortlink() {
-		global $wp_rewrite;
-
 		$post_id = $this->factory->post->create();
 		$post_id2 = $this->factory->post->create();
-
-		$wp_rewrite->init();
-		$wp_rewrite->set_permalink_structure( '' );
-		$wp_rewrite->flush_rules();
 
 		// Basic case
 		$this->assertEquals( get_permalink( $post_id ), wp_get_shortlink( $post_id, 'post' ) );
@@ -71,8 +63,7 @@ class Tests_Link extends WP_UnitTestCase {
 		$this->assertEquals( '', wp_get_shortlink( 0 ) );
 		$this->assertEquals( '', wp_get_shortlink() );
 
-		$wp_rewrite->set_permalink_structure( '/%year%/%monthnum%/%day%/%postname%/' );
-		$wp_rewrite->flush_rules();
+		$this->set_permalink_structure( '/%year%/%monthnum%/%day%/%postname%/' );
 
 		// With a permalink structure set, get_permalink() will no longer match.
 		$this->assertNotEquals( get_permalink( $post_id ), wp_get_shortlink( $post_id, 'post' ) );
@@ -92,9 +83,7 @@ class Tests_Link extends WP_UnitTestCase {
 		// Don't test against get_permalink() since it uses ?page_id= for pages.
 		$this->assertEquals( home_url( '?p=' . $post_id ), wp_get_shortlink( $post_id, 'post' ) );
 
-		global $wp_rewrite;
-		$wp_rewrite->set_permalink_structure( '/%year%/%monthnum%/%day%/%postname%/' );
-		$wp_rewrite->flush_rules();
+		$this->set_permalink_structure( '/%year%/%monthnum%/%day%/%postname%/' );
 
 		$this->assertEquals( home_url( '?p=' . $post_id ), wp_get_shortlink( $post_id, 'post' ) );
 	}
@@ -109,10 +98,7 @@ class Tests_Link extends WP_UnitTestCase {
 
 		$this->assertEquals( home_url( '/' ), wp_get_shortlink( $post_id, 'post' ) );
 
-		global $wp_rewrite;
-		$wp_rewrite->permalink_structure = '';
-		$wp_rewrite->set_permalink_structure( '/%year%/%monthnum%/%day%/%postname%/' );
-		$wp_rewrite->flush_rules();
+		$this->set_permalink_structure( '/%year%/%monthnum%/%day%/%postname%/' );
 
 		$this->assertEquals( home_url( '/' ), wp_get_shortlink( $post_id, 'post' ) );
 	}
@@ -394,5 +380,58 @@ class Tests_Link extends WP_UnitTestCase {
 		), trailingslashit( home_url() ) );
 
 		$this->assertEquals( $non_pretty_permalink, get_permalink( $p ) );
+	}
+
+	/**
+	 * @ticket 1914
+	 */
+	public function test_unattached_attachment_has_a_pretty_permalink() {
+		$this->set_permalink_structure( '/%year%/%monthnum%/%day%/%postname%/' );
+
+		$attachment_id = $this->factory->attachment->create_object( 'image.jpg', 0, array(
+			'post_mime_type' => 'image/jpeg',
+			'post_type' => 'attachment',
+			'post_title' => 'An Attachment!',
+			'post_status' => 'inherit',
+		) );
+
+		$attachment = get_post( $attachment_id );
+
+		$this->assertSame( home_url( user_trailingslashit( $attachment->post_name ) ), get_permalink( $attachment_id ) );
+	}
+
+	/**
+	 * @ticket 1914
+	 */
+	public function test_attachment_attached_to_non_existent_post_type_has_a_pretty_permalink() {
+		global $wp_post_types;
+
+		$this->set_permalink_structure( '/%year%/%monthnum%/%day%/%postname%/' );
+
+		register_post_type( 'not_a_post_type', array( 'public' => true ) );
+
+		flush_rewrite_rules();
+
+		$post_id = $this->factory->post->create( array( 'post_type' => 'not_a_post_type' ) );
+
+		$attachment_id = $this->factory->attachment->create_object( 'image.jpg', $post_id, array(
+			'post_mime_type' => 'image/jpeg',
+			'post_type' => 'attachment',
+			'post_title' => 'An Attachment!',
+			'post_status' => 'inherit',
+		) );
+
+		$attachment = get_post( $attachment_id );
+
+		$this->assertSame( get_permalink( $post_id ) . user_trailingslashit( $attachment->post_name ), get_permalink( $attachment_id ) );
+
+		foreach( $wp_post_types as $id => $pt ) {
+			if ( 'not_a_post_type' === $pt->name ) {
+				unset( $wp_post_types[ $id ] );
+				break;
+			}
+		}
+
+		$this->assertSame( home_url( user_trailingslashit( $attachment->post_name ) ), get_permalink( $attachment_id ) );
 	}
 }

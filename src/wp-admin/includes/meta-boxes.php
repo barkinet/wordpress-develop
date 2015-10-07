@@ -51,6 +51,16 @@ if ( 'publish' == $post->post_status ) {
 <input type="hidden" name="wp-preview" id="wp-preview" value="" />
 </div>
 <?php endif; // public post type ?>
+<?php
+/**
+ * Fires before the post time/date setting in the Publish meta box.
+ *
+ * @since 4.4.0
+ *
+ * @param WP_Post $post WP_Post object for the current post.
+ */
+do_action( 'post_submitbox_minor_actions', $post );
+?>
 <div class="clear"></div>
 </div><!-- #minor-publishing-actions -->
 
@@ -207,8 +217,11 @@ if ( $can_publish ) : // Contributors don't get to choose the date of publish ?>
  * Fires after the post time/date setting in the Publish meta box.
  *
  * @since 2.9.0
+ * @since 4.4.0 Added the `$post` parameter.
+ *
+ * @param WP_Post $post WP_Post object for the current post.
  */
-do_action( 'post_submitbox_misc_actions' );
+do_action( 'post_submitbox_misc_actions', $post );
 ?>
 </div>
 <div class="clear"></div>
@@ -345,7 +358,7 @@ function attachment_submit_meta_box( $post ) {
  *
  *     @type string   $id       Meta box ID.
  *     @type string   $title    Meta box title.
- *     @type callback $callback Meta box display callback.
+ *     @type callable $callback Meta box display callback.
  *     @type array    $args     Extra meta box arguments.
  * }
  */
@@ -386,7 +399,7 @@ function post_format_meta_box( $post, $box ) {
  *
  *     @type string   $id       Meta box ID.
  *     @type string   $title    Meta box title.
- *     @type callback $callback Meta box display callback.
+ *     @type callable $callback Meta box display callback.
  *     @type array    $args {
  *         Extra meta box arguments.
  *
@@ -442,7 +455,7 @@ function post_tags_meta_box( $post, $box ) {
  *
  *     @type string   $id       Meta box ID.
  *     @type string   $title    Meta box title.
- *     @type callback $callback Meta box display callback.
+ *     @type callable $callback Meta box display callback.
  *     @type array    $args {
  *         Extra meta box arguments.
  *

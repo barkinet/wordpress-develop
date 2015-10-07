@@ -7,19 +7,22 @@
  */
 
 /**
- * Add a straight rewrite rule.
+ * Adds a straight rewrite rule.
  *
  * @since 2.1.0
+ * @since 4.4.0 Array support was added to the `$redirect` parameter.
  *
- * @global WP_Rewrite $wp_rewrite
+ * @global WP_Rewrite $wp_rewrite WordPress Rewrite Component.
  *
- * @param string $regex    Regular Expression to match request against.
- * @param string $redirect Page to redirect to.
- * @param string $after    Optional, default is 'bottom'. Where to add rule, can also be 'top'.
+ * @param string       $regex    Regular Expression to match request against.
+ * @param string|array $redirect Page to redirect to, or array of query vars and values.
+ * @param string       $after    Optional. Location where to insert the new rule. Accepts 'top',
+ *                               or 'bottom'. Default 'bottom'.
  */
-function add_rewrite_rule($regex, $redirect, $after = 'bottom') {
+function add_rewrite_rule( $regex, $redirect, $after = 'bottom' ) {
 	global $wp_rewrite;
-	$wp_rewrite->add_rule($regex, $redirect, $after);
+
+	$wp_rewrite->add_rule( $regex, $redirect, $after );
 }
 
 /**
@@ -36,7 +39,7 @@ function add_rewrite_rule($regex, $redirect, $after = 'bottom') {
  *
  * @param string $tag   Name of the new rewrite tag.
  * @param string $regex Regular expression to substitute the tag for in rewrite rules.
- * @param string $query String to append to the rewritten query. Must end in '='. Optional.
+ * @param string $query Optional. String to append to the rewritten query. Must end in '='. Default empty.
  */
 function add_rewrite_tag( $tag, $regex, $query = '' ) {
 	// validate the tag's name
@@ -59,12 +62,13 @@ function add_rewrite_tag( $tag, $regex, $query = '' ) {
  *
  * @since 3.0.0
  *
+ * @see WP_Rewrite::add_permastruct()
  * @global WP_Rewrite $wp_rewrite
  *
  * @param string $name   Name for permalink structure.
  * @param string $struct Permalink structure.
- * @param array  $args   Optional configuration for building the rules from the permalink structure,
- *                       see {@link WP_Rewrite::add_permastruct()} for full details.
+ * @param array  $args   Optional. Arguments for building the rules from the permalink structure,
+ *                       see WP_Rewrite::add_permastruct() for full details. Default empty array.
  */
 function add_permastruct( $name, $struct, $args = array() ) {
 	global $wp_rewrite;
@@ -86,7 +90,7 @@ function add_permastruct( $name, $struct, $args = array() ) {
  * @global WP_Rewrite $wp_rewrite
  *
  * @param string   $feedname
- * @param callback $function Callback to run on feed display.
+ * @param callable $function Callback to run on feed display.
  * @return string Feed action name.
  */
 function add_feed($feedname, $function) {
@@ -334,6 +338,9 @@ function url_to_postid( $url ) {
 	// Get rid of URL ?query=string
 	$url_split = explode('?', $url);
 	$url = $url_split[0];
+
+	// Set the correct URL scheme.
+	$url = set_url_scheme( $url );
 
 	// Add 'www.' if it is absent and should be there
 	if ( false !== strpos(home_url(), '://www.') && false === strpos($url, '://www.') )

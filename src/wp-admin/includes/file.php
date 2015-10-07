@@ -51,18 +51,21 @@ $wp_file_descriptions = array(
  *
  * @global array $wp_file_descriptions
  * @param string $file Filesystem path or filename
- * @return string Description of file from $wp_file_descriptions or basename of $file if description doesn't exist
+ * @return string Description of file from $wp_file_descriptions or basename of $file if description doesn't exist.
+ *                Appends 'Page Template' to basename of $file if the file is a page template
  */
 function get_file_description( $file ) {
-	global $wp_file_descriptions;
+	global $wp_file_descriptions, $allowed_files;
 
-	if ( isset( $wp_file_descriptions[basename( $file )] ) ) {
-		return $wp_file_descriptions[basename( $file )];
-	}
-	elseif ( file_exists( $file ) && is_file( $file ) ) {
-		$template_data = implode( '', file( $file ) );
-		if ( preg_match( '|Template Name:(.*)$|mi', $template_data, $name ))
-			return sprintf( __( '%s Page Template' ), _cleanup_header_comment($name[1]) );
+	$relative_pathinfo = pathinfo( $file );
+	$file_path = $allowed_files[ $file ];
+	if ( isset( $wp_file_descriptions[ basename( $file ) ] ) && '.' === $relative_pathinfo['dirname'] ) {
+		return $wp_file_descriptions[ basename( $file ) ];
+	} elseif ( file_exists( $file_path ) && is_file( $file_path ) ) {
+		$template_data = implode( '', file( $file_path ) );
+		if ( preg_match( '|Template Name:(.*)$|mi', $template_data, $name ) ) {
+			return sprintf( __( '%s Page Template' ), _cleanup_header_comment( $name[1] ) );
+		}
 	}
 
 	return trim( basename( $file ) );
@@ -909,7 +912,7 @@ function WP_Filesystem( $args = false, $context = false, $allow_relaxed_file_own
  *
  * @since 2.5.0
  *
- * @global callback $_wp_filesystem_direct_method
+ * @global callable $_wp_filesystem_direct_method
  *
  * @param array  $args                         Optional. Connection details. Default empty array.
  * @param string $context                      Optional. Full path to the directory that is tested
@@ -1078,7 +1081,7 @@ function request_filesystem_credentials($form_post, $type = '', $error = false, 
 			$stored_credentials['hostname'] .= ':' . $stored_credentials['port'];
 
 		unset($stored_credentials['password'], $stored_credentials['port'], $stored_credentials['private_key'], $stored_credentials['public_key']);
-		if ( ! defined( 'WP_INSTALLING' ) ) {
+		if ( ! wp_installing() ) {
 			update_option( 'ftp_credentials', $stored_credentials );
 		}
 		return $credentials;

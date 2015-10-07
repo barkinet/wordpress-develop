@@ -244,7 +244,7 @@ function the_content( $more_link_text = null, $strip_teaser = false) {
  * @global int   $multipage
  *
  * @param string $more_link_text Optional. Content for when there is more text.
- * @param bool $strip_teaser Optional. Strip teaser content before the more text. Default is false.
+ * @param bool   $strip_teaser   Optional. Strip teaser content before the more text. Default is false.
  * @return string
  */
 function get_the_content( $more_link_text = null, $strip_teaser = false ) {
@@ -316,7 +316,8 @@ function get_the_content( $more_link_text = null, $strip_teaser = false ) {
  *
  * @since 3.1.0
  * @access private
- * @param array $match Match array from preg_replace_callback
+ *
+ * @param array $match Match array from preg_replace_callback.
  * @return string
  */
 function _convert_urlencoded_to_entities( $match ) {
@@ -391,8 +392,8 @@ function has_excerpt( $id = 0 ) {
  *
  * @since 2.7.0
  *
- * @param string|array $class One or more classes to add to the class list.
- * @param int|WP_Post $post_id Optional. Post ID or post object.
+ * @param string|array $class   One or more classes to add to the class list.
+ * @param int|WP_Post  $post_id Optional. Post ID or post object. Defaults to the global `$post`.
  */
 function post_class( $class = '', $post_id = null ) {
 	// Separates classes with a single space, collates classes for post DIV
@@ -450,11 +451,17 @@ function get_post_class( $class = '', $post_id = null ) {
 			$classes[] = 'format-standard';
 	}
 
-	// Post requires password
-	if ( post_password_required( $post->ID ) ) {
+	$post_password_required = post_password_required( $post->ID );
+
+	// Post requires password.
+	if ( $post_password_required ) {
 		$classes[] = 'post-password-required';
-	// Post thumbnails
-	} elseif ( ! is_attachment( $post ) && current_theme_supports( 'post-thumbnails' ) && has_post_thumbnail( $post->ID ) ) {
+	} elseif ( ! empty( $post->post_password ) ) {
+		$classes[] = 'post-password-protected';
+	}
+
+	// Post thumbnails.
+	if ( current_theme_supports( 'post-thumbnails' ) && has_post_thumbnail( $post->ID ) && ! is_attachment( $post ) && ! $post_password_required ) {
 		$classes[] = 'has-post-thumbnail';
 	}
 
@@ -950,8 +957,10 @@ function post_custom( $key = '' ) {
 /**
  * Display list of post custom fields.
  *
- * @internal This will probably change at some point...
  * @since 1.2.0
+ *
+ * @internal This will probably change at some point...
+ *
  */
 function the_meta() {
 	if ( $keys = get_post_custom_keys() ) {
@@ -1264,10 +1273,21 @@ function wp_page_menu( $args = array() ) {
 	$list_args['title_li'] = '';
 	$menu .= str_replace( array( "\r", "\n", "\t" ), '', wp_list_pages($list_args) );
 
+	$container = sanitize_text_field( $args['container'] );
+
 	if ( $menu ) {
+
+		// wp_nav_menu doesn't set before and after
+		if ( isset( $args['fallback_cb'] ) &&
+			'wp_page_menu' === $args['fallback_cb'] &&
+			'ul' !== $container ) {
+			$args['before'] = '<ul>';
+			$args['after'] = '</ul>';
+		}
+
 		$menu = $args['before'] . $menu . $args['after'];
 	}
-	$container = sanitize_text_field( $args['container'] );
+
 	$attrs = '';
 	if ( ! empty( $args['menu_id'] ) ) {
 		$attrs .= ' id="' . esc_attr( $args['menu_id'] ) . '"';
@@ -1634,7 +1654,17 @@ function wp_post_revision_title_expanded( $revision, $link = true ) {
 	elseif ( wp_is_post_autosave( $revision ) )
 		$revision_date_author = sprintf( $autosavef, $revision_date_author );
 
-	return $revision_date_author;
+	/**
+	 * Filter the formatted author and date for a revision.
+	 *
+	 * @since 4.4.0
+	 *
+	 * @param string  $revision_date_author The formatted string.
+	 * @param WP_Post $revision             The revision object.
+	 * @param bool    $link                 Whether to link to the revisions page, as passed into
+	 *                                      wp_post_revision_title_expanded().
+	 */
+	return apply_filters( 'wp_post_revision_title_expanded', $revision_date_author, $revision, $link );
 }
 
 /**

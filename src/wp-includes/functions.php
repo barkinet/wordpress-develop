@@ -680,15 +680,15 @@ function _http_build_query( $data, $prefix = null, $sep = null, $key = '', $urle
  *     add_query_arg( 'key', 'value', 'http://example.com' );
  *
  * Using an associative array:
- * 
+ *
  *     add_query_arg( array(
  *         'key1' => 'value1',
  *         'key2' => 'value2',
  *     ), 'http://example.com' );
- * 
+ *
  * Omitting the URL from either use results in the current URL being used
  * (the value of `$_SERVER['REQUEST_URI']`).
- * 
+ *
  * Values are expected to be encoded appropriately with urlencode() or rawurlencode().
  *
  * Setting any query variable's value to boolean false removes the key (see remove_query_arg()).
@@ -992,9 +992,7 @@ function status_header( $code ) {
 	if ( empty( $description ) )
 		return;
 
-	$protocol = $_SERVER['SERVER_PROTOCOL'];
-	if ( 'HTTP/1.1' != $protocol && 'HTTP/1.0' != $protocol )
-		$protocol = 'HTTP/1.0';
+	$protocol = wp_get_server_protocol();
 	$status_header = "$protocol $code $description";
 	if ( function_exists( 'apply_filters' ) )
 
@@ -1285,7 +1283,7 @@ function is_blog_installed() {
 		return true;
 
 	$suppress = $wpdb->suppress_errors();
-	if ( ! defined( 'WP_INSTALLING' ) ) {
+	if ( ! wp_installing() ) {
 		$alloptions = wp_load_alloptions();
 	}
 	// If siteurl is not set to autoload, check it specifically
@@ -1762,7 +1760,7 @@ function wp_upload_dir( $time = null ) {
 	 * Honor the value of UPLOADS. This happens as long as ms-files rewriting is disabled.
 	 * We also sometimes obey UPLOADS when rewriting is enabled -- see the next block.
 	 */
-	if ( defined( 'UPLOADS' ) && ! ( is_multisite() && get_site_option( 'ms_files_rewriting' ) ) ) {
+	if ( defined( 'UPLOADS' ) && ! ( is_multisite() && get_network_option( 'ms_files_rewriting' ) ) ) {
 		$dir = ABSPATH . UPLOADS;
 		$url = trailingslashit( $siteurl ) . UPLOADS;
 	}
@@ -1770,7 +1768,7 @@ function wp_upload_dir( $time = null ) {
 	// If multisite (and if not the main site in a post-MU network)
 	if ( is_multisite() && ! ( is_main_network() && is_main_site() && defined( 'MULTISITE' ) ) ) {
 
-		if ( ! get_site_option( 'ms_files_rewriting' ) ) {
+		if ( ! get_network_option( 'ms_files_rewriting' ) ) {
 			/*
 			 * If ms-files rewriting is disabled (networks created post-3.5), it is fairly
 			 * straightforward: Append sites/%d if we're not on the main site (for post-MU
@@ -1873,7 +1871,7 @@ function wp_upload_dir( $time = null ) {
  *
  * @param string   $dir                      Directory.
  * @param string   $filename                 File name.
- * @param callback $unique_filename_callback Callback. Default null.
+ * @param callable $unique_filename_callback Callback. Default null.
  * @return string New filename, if given wasn't unique.
  */
 function wp_unique_filename( $dir, $filename, $unique_filename_callback = null ) {
@@ -2395,7 +2393,7 @@ function wp_die( $message = '', $title = '', $args = array() ) {
 		 *
 		 * @since 3.4.0
 		 *
-		 * @param callback $function Callback function name.
+		 * @param callable $function Callback function name.
 		 */
 		$function = apply_filters( 'wp_die_ajax_handler', '_ajax_wp_die_handler' );
 	} elseif ( defined( 'XMLRPC_REQUEST' ) && XMLRPC_REQUEST ) {
@@ -2404,7 +2402,7 @@ function wp_die( $message = '', $title = '', $args = array() ) {
 		 *
 		 * @since 3.4.0
 		 *
-		 * @param callback $function Callback function name.
+		 * @param callable $function Callback function name.
 		 */
 		$function = apply_filters( 'wp_die_xmlrpc_handler', '_xmlrpc_wp_die_handler' );
 	} else {
@@ -2413,7 +2411,7 @@ function wp_die( $message = '', $title = '', $args = array() ) {
 		 *
 		 * @since 3.0.0
 		 *
-		 * @param callback $function Callback function name.
+		 * @param callable $function Callback function name.
 		 */
 		$function = apply_filters( 'wp_die_handler', '_default_wp_die_handler' );
 	}
@@ -2587,9 +2585,11 @@ function _default_wp_die_handler( $message, $title = '', $args = array() ) {
 		 	box-shadow: inset 0 2px 5px -3px rgba( 0, 0, 0, 0.5 );
 		}
 
-		<?php if ( 'rtl' == $text_direction ) : ?>
-		body { font-family: Tahoma, Arial; }
-		<?php endif; ?>
+		<?php
+		if ( 'rtl' == $text_direction ) {
+			echo 'body { font-family: Tahoma, Arial; }';
+		}
+		?>
 	</style>
 </head>
 <body id="error-page">
@@ -3335,7 +3335,7 @@ function dead_db() {
 	}
 
 	// If installing or in the admin, provide the verbose message.
-	if ( defined('WP_INSTALLING') || defined('WP_ADMIN') )
+	if ( wp_installing() || defined( 'WP_ADMIN' ) )
 		wp_die($wpdb->error);
 
 	// Otherwise, be terse.
@@ -3766,20 +3766,6 @@ function is_ssl() {
 }
 
 /**
- * Whether SSL login should be forced.
- *
- * @since 2.6.0
- *
- * @see force_ssl_admin()
- *
- * @param string|bool $force Optional Whether to force SSL login. Default null.
- * @return bool True if forced, false if not forced.
- */
-function force_ssl_login( $force = null ) {
-	return force_ssl_admin( $force );
-}
-
-/**
  * Whether to force SSL used for the Administration Screens.
  *
  * @since 2.6.0
@@ -4017,7 +4003,7 @@ function global_terms_enabled() {
 		if ( ! is_null( $filter ) )
 			$global_terms = (bool) $filter;
 		else
-			$global_terms = (bool) get_site_option( 'global_terms_enabled', false );
+			$global_terms = (bool) get_network_option( 'global_terms_enabled', false );
 	}
 	return $global_terms;
 }
@@ -4475,7 +4461,7 @@ function _wp_mysql_week( $column ) {
  * @since 3.1.0
  * @access private
  *
- * @param callback $callback      Function that accepts ( ID, $callback_args ) and outputs parent_ID.
+ * @param callable $callback      Function that accepts ( ID, $callback_args ) and outputs parent_ID.
  * @param int      $start         The ID to start the loop check at.
  * @param int      $start_parent  The parent_ID of $start to use instead of calling $callback( $start ).
  *                                Use null to always use $callback
@@ -4500,7 +4486,7 @@ function wp_find_hierarchy_loop( $callback, $start, $start_parent, $callback_arg
  * @since 3.1.0
  * @access private
  *
- * @param callback $callback      Function that accepts ( ID, callback_arg, ... ) and outputs parent_ID.
+ * @param callable $callback      Function that accepts ( ID, callback_arg, ... ) and outputs parent_ID.
  * @param int      $start         The ID to start the loop check at.
  * @param array    $override      Optional. An array of ( ID => parent_ID, ... ) to use instead of $callback.
  *                                Default empty array.
@@ -5002,4 +4988,22 @@ function wp_post_preview_js() {
 	}());
 	</script>
 	<?php
+}
+
+/**
+ * Parses and formats a MySQL datetime (Y-m-d H:i:s) for ISO8601/RFC3339.
+ *
+ * Explicitly strips timezones, as datetimes are not saved with any timezone
+ * information. Including any information on the offset could be misleading.
+ *
+ * @since 4.4.0
+ *
+ * @param string $date_string Date string to parse and format.
+ * @return string Date formatted for ISO8601/RFC3339.
+ */
+function mysql_to_rfc3339( $date_string ) {
+	$formatted = mysql2date( 'c', $date_string, false );
+
+	// Strip timezone information
+	return preg_replace( '/(?:Z|[+-]\d{2}(?::\d{2})?)$/', '', $formatted );
 }

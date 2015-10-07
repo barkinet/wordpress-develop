@@ -316,7 +316,7 @@ else
 if ( is_multisite() && is_network_admin() && ! IS_PROFILE_PAGE && current_user_can( 'manage_network_options' ) && !isset($super_admins) ) { ?>
 <tr class="user-super-admin-wrap"><th><?php _e('Super Admin'); ?></th>
 <td>
-<?php if ( $profileuser->user_email != get_site_option( 'admin_email' ) || ! is_super_admin( $profileuser->ID ) ) : ?>
+<?php if ( $profileuser->user_email != get_network_option( 'admin_email' ) || ! is_super_admin( $profileuser->ID ) ) : ?>
 <p><label><input type="checkbox" id="super_admin" name="super_admin"<?php checked( is_super_admin( $profileuser->ID ) ); ?> /> <?php _e( 'Grant this user super admin privileges for the Network.' ); ?></label></p>
 <?php else : ?>
 <p><?php _e( 'Super admin privileges cannot be removed because this user has the network admin email.' ); ?></p>
@@ -438,9 +438,17 @@ if ( is_multisite() && is_network_admin() && ! IS_PROFILE_PAGE && current_user_c
 </tr>
 
 <?php
-/** This filter is documented in wp-admin/user-new.php */
-$show_password_fields = apply_filters( 'show_password_fields', true, $profileuser );
-if ( $show_password_fields ) :
+/**
+ * Filter the display of the password fields.
+ *
+ * @since 1.5.1
+ * @since 2.8.0 Added the `$profileuser` parameter.
+ * @since 4.4.0 Now evaluated only in user-edit.php.
+ *
+ * @param bool    $show        Whether to show the password fields. Default true.
+ * @param WP_User $profileuser User object for the current user to edit.
+ */
+if ( $show_password_fields = apply_filters( 'show_password_fields', true, $profileuser ) ) :
 ?>
 </table>
 

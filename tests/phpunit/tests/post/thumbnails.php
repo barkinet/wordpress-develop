@@ -13,7 +13,7 @@ class Tests_Post_Thumbnail_Template extends WP_UnitTestCase {
 
 		$this->post          = $this->factory->post->create_and_get();
 		$file                = DIR_TESTDATA . '/images/canola.jpg';
-		$this->attachment_id = $this->factory->attachment->create_object( $file, $this->post->ID, array(
+		$this->attachment_id = $this->factory->attachment->create_upload_object( $file, $this->post->ID, array(
 			'post_mime_type' => 'image/jpeg',
 		) );
 	}
@@ -76,7 +76,9 @@ class Tests_Post_Thumbnail_Template extends WP_UnitTestCase {
 		$this->assertEquals( '', get_the_post_thumbnail( $this->post ) );
 		set_post_thumbnail( $this->post, $this->attachment_id );
 
-		$expected = wp_get_attachment_image( $this->attachment_id, 'post-thumbnail', false, array( 'class' => 'attachment-post-thumbnail wp-post-image' ) );
+		$expected = wp_get_attachment_image( $this->attachment_id, 'post-thumbnail', false, array(
+			'class' => 'attachment-post-thumbnail size-post-thumbnail wp-post-image'
+		) );
 
 		$this->assertEquals( $expected, get_the_post_thumbnail( $this->post ) );
 
@@ -102,7 +104,9 @@ class Tests_Post_Thumbnail_Template extends WP_UnitTestCase {
 
 		set_post_thumbnail( $this->post, $this->attachment_id );
 
-		$expected = wp_get_attachment_image( $this->attachment_id, 'post-thumbnail', false, array( 'class' => 'attachment-post-thumbnail wp-post-image' ) );
+		$expected = wp_get_attachment_image( $this->attachment_id, 'post-thumbnail', false, array(
+			'class' => 'attachment-post-thumbnail size-post-thumbnail wp-post-image'
+		) );
 
 		ob_start();
 		the_post_thumbnail();
@@ -115,17 +119,34 @@ class Tests_Post_Thumbnail_Template extends WP_UnitTestCase {
 	 * @ticket 33070
 	 */
 	function test_get_the_post_thumbnail_url() {
-		$this->assertEquals( '', get_the_post_thumbnail_url() );
-		$this->assertEquals( '', get_the_post_thumbnail_url( $this->post ) );
+		$this->assertFalse( has_post_thumbnail( $this->post ) );
+		$this->assertFalse( get_the_post_thumbnail_url() );
+		$this->assertFalse( get_the_post_thumbnail_url( $this->post ) );
 
 		set_post_thumbnail( $this->post, $this->attachment_id );
 
-		$this->assertEquals( '', get_the_post_thumbnail_url() );
+		$this->assertFalse( get_the_post_thumbnail_url() );
 		$this->assertEquals( wp_get_attachment_url( $this->attachment_id ), get_the_post_thumbnail_url( $this->post ) );
 
 		$GLOBALS['post'] = $this->post;
 
 		$this->assertEquals( wp_get_attachment_url( $this->attachment_id ), get_the_post_thumbnail_url() );
+	}
+
+	/**
+	 * @ticket 33070
+	 */
+	function test_get_the_post_thumbnail_url_with_invalid_post() {
+		$post = $this->factory->post->create_and_get();
+
+		set_post_thumbnail( $post, $this->attachment_id );
+
+		$this->assertTrue( false !== get_the_post_thumbnail_url( $post->ID ) );
+
+		$deleted = wp_delete_post( $post->ID, true );
+		$this->assertNotEmpty( $deleted );
+
+		$this->assertFalse( get_the_post_thumbnail_url( $post->ID ) );
 	}
 
 	/**

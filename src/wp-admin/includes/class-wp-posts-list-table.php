@@ -79,16 +79,17 @@ class WP_Posts_List_Table extends WP_List_Table {
 
 		$post_type        = $this->screen->post_type;
 		$post_type_object = get_post_type_object( $post_type );
+
 		$exclude_states   = get_post_stati( array(
 			'show_in_admin_all_list' => false,
 		) );
-		$this->user_posts_count = $wpdb->get_var( $wpdb->prepare( "
+		$this->user_posts_count = intval( $wpdb->get_var( $wpdb->prepare( "
 			SELECT COUNT( 1 )
 			FROM $wpdb->posts
 			WHERE post_type = %s
 			AND post_status NOT IN ( '" . implode( "','", $exclude_states ) . "' )
 			AND post_author = %d
-		", $post_type, get_current_user_id() ) );
+		", $post_type, get_current_user_id() ) ) );
 
 		if ( $this->user_posts_count && ! current_user_can( $post_type_object->cap->edit_others_posts ) && empty( $_REQUEST['post_status'] ) && empty( $_REQUEST['all_posts'] ) && empty( $_REQUEST['author'] ) && empty( $_REQUEST['show_sticky'] ) ) {
 			$_GET['author'] = get_current_user_id();
@@ -120,6 +121,30 @@ class WP_Posts_List_Table extends WP_List_Table {
 	}
 
 	/**
+	 * Get the value of the 'orderby' query var.
+	 *
+	 * @access protected
+	 * @since 4.4.0
+	 *
+	 * @return string The value of 'orderby'.
+	 */
+	protected function get_orderby() {
+		return strtolower( get_query_var( 'orderby' ) );
+	}
+
+	/**
+	 * Get the value of the 'order' query var.
+	 *
+	 * @access protected
+	 * @since 4.4.0
+	 *
+	 * @return string The value of 'order'.
+	 */
+	protected function get_order() {
+		return strtolower( get_query_var( 'order' ) );
+	}
+
+	/**
 	 *
 	 * @global array    $avail_post_stati
 	 * @global WP_Query $wp_query
@@ -129,6 +154,7 @@ class WP_Posts_List_Table extends WP_List_Table {
 	public function prepare_items() {
 		global $avail_post_stati, $wp_query, $per_page, $mode;
 
+		// is going to call wp()
 		$avail_post_stati = wp_edit_posts_query();
 
 		$this->set_hierarchical_display( is_post_type_hierarchical( $this->screen->post_type ) && 'menu_order title' === $wp_query->query['orderby'] );
@@ -148,6 +174,8 @@ class WP_Posts_List_Table extends WP_List_Table {
 				$total_items = $post_counts[ $_REQUEST['post_status'] ];
 			} elseif ( isset( $_REQUEST['show_sticky'] ) && $_REQUEST['show_sticky'] ) {
 				$total_items = $this->sticky_posts_count;
+			} elseif ( isset( $_GET['author'] ) && $_GET['author'] == get_current_user_id() ) {
+				$total_items = $this->user_posts_count;
 			} else {
 				$total_items = array_sum( $post_counts );
 
@@ -260,13 +288,19 @@ class WP_Posts_List_Table extends WP_List_Table {
 
 		$status_links = array();
 		$num_posts = wp_count_posts( $post_type, 'readable' );
+		$total_posts = array_sum( (array) $num_posts );
 		$class = '';
 
 		$current_user_id = get_current_user_id();
 		$all_args = array( 'post_type' => $post_type );
 		$mine = '';
 
-		if ( $this->user_posts_count ) {
+		// Subtract post types that are not included in the admin all list.
+		foreach ( get_post_stati( array( 'show_in_admin_all_list' => false ) ) as $state ) {
+			$total_posts -= $num_posts->$state;
+		}
+
+		if ( $this->user_posts_count && $this->user_posts_count !== $total_posts ) {
 			if ( isset( $_GET['author'] ) && ( $_GET['author'] == $current_user_id ) ) {
 				$class = 'current';
 			}
@@ -292,13 +326,7 @@ class WP_Posts_List_Table extends WP_List_Table {
 			$class = '';
 		}
 
-		$total_posts = array_sum( (array) $num_posts );
-
-		// Subtract post types that are not included in the admin all list.
-		foreach ( get_post_stati( array('show_in_admin_all_list' => false) ) as $state )
-			$total_posts -= $num_posts->$state;
-
-		if ( empty( $class ) && ( ( $this->is_base_request() && ! $this->user_posts_count ) || isset( $_REQUEST['all_posts'] ) ) ) {
+		if ( empty( $class ) && ( $this->is_base_request() || isset( $_REQUEST['all_posts'] ) ) ) {
 			$class = 'current';
 		}
 
