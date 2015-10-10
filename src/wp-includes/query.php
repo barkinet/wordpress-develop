@@ -719,6 +719,26 @@ function is_404() {
 }
 
 /**
+ * Is the query for an embedded post?
+ *
+ * @since 4.4.0
+ *
+ * @global WP_Query $wp_query Global WP_Query instance.
+ *
+ * @return bool Whether we're in an embedded post or not.
+ */
+function is_embed() {
+	global $wp_query;
+
+	if ( ! isset( $wp_query ) ) {
+		_doing_it_wrong( __FUNCTION__, __( 'Conditional query tags do not work before the query is run. Before then, they always return false.' ), '3.1' );
+		return false;
+	}
+
+	return $wp_query->is_embed();
+}
+
+/**
  * Is the query the main query?
  *
  * @since 3.3.0
@@ -1201,6 +1221,15 @@ class WP_Query {
 	public $is_404 = false;
 
 	/**
+	 * Set if query is embed.
+	 *
+	 * @since 4.4.0
+	 * @access public
+	 * @var bool
+	 */
+	public $is_embed = false;
+
+	/**
 	 * Set if query is within comments popup window.
 	 *
 	 * @since 1.5.0
@@ -1480,7 +1509,8 @@ class WP_Query {
 	 * @since 1.5.0
 	 * @since 4.2.0 Introduced the ability to order by specific clauses of a `$meta_query`, by passing the clause's
 	 *              array key to `$orderby`.
-	 * @since 4.4.0 Introduced `$post_name__in` and `$title` parameters.
+	 * @since 4.4.0 Introduced `$post_name__in` and `$title` parameters. `$s` was updated to support excluded
+	 *              search terms, by prepending a hyphen.
 	 * @access public
 	 *
 	 * @param string|array $query {
@@ -1558,7 +1588,9 @@ class WP_Query {
 	 *     @type int          $posts_per_archive_page  The number of posts to query for by archive page. Overrides
 	 *                                                 'posts_per_page' when is_archive(), or is_search() are true.
 	 *     @type array        $post_name__in           An array of post slugs that results must match.
-	 *     @type string       $s                       Search keyword.
+	 *     @type string       $s                       Search keyword(s). Prepending a term with a hyphen will
+	 *                                                 exclude posts matching that term. Eg, 'pillow -sofa' will
+	 *                                                 return posts containing 'pillow' but not 'sofa'.
 	 *     @type int          $second                  Second of the minute. Default empty. Accepts numbers 0-60.
 	 *     @type bool         $sentence                Whether to search by phrase. Default false.
 	 *     @type bool         $suppress_filters        Whether to suppress filters. Default false.
@@ -1845,6 +1877,8 @@ class WP_Query {
 		if ( '404' == $qv['error'] )
 			$this->set_404();
 
+		$this->is_embed = isset( $qv['embed'] ) && ( $this->is_singular || $this->is_404 );
+
 		$this->query_vars_hash = md5( serialize( $this->query_vars ) );
 		$this->query_vars_changed = false;
 
@@ -2127,13 +2161,24 @@ class WP_Query {
 		$searchand = '';
 		$q['search_orderby_title'] = array();
 		foreach ( $q['search_terms'] as $term ) {
-			if ( $n ) {
+			// Terms prefixed with '-' should be excluded.
+			$include = '-' !== substr( $term, 0, 1 );
+			if ( $include ) {
+				$like_op  = 'LIKE';
+				$andor_op = 'OR';
+			} else {
+				$like_op  = 'NOT LIKE';
+				$andor_op = 'AND';
+				$term     = substr( $term, 1 );
+			}
+
+			if ( $n && $include ) {
 				$like = '%' . $wpdb->esc_like( $term ) . '%';
 				$q['search_orderby_title'][] = $wpdb->prepare( "$wpdb->posts.post_title LIKE %s", $like );
 			}
 
 			$like = $n . $wpdb->esc_like( $term ) . $n;
-			$search .= $wpdb->prepare( "{$searchand}(($wpdb->posts.post_title LIKE %s) OR ($wpdb->posts.post_content LIKE %s))", $like, $like );
+			$search .= $wpdb->prepare( "{$searchand}(($wpdb->posts.post_title $like_op %s) $andor_op ($wpdb->posts.post_content $like_op %s))", $like, $like );
 			$searchand = ' AND ';
 		}
 
@@ -2233,11 +2278,19 @@ class WP_Query {
 
 		if ( $q['search_terms_count'] > 1 ) {
 			$num_terms = count( $q['search_orderby_title'] );
-			$like = '%' . $wpdb->esc_like( $q['s'] ) . '%';
+
+			// If the search terms contain negative queries, don't bother ordering by sentence matches.
+			$like = '';
+			if ( ! preg_match( '/(?:\s|^)\-/', $q['s'] ) ) {
+				$like = '%' . $wpdb->esc_like( $q['s'] ) . '%';
+			}
 
 			$search_orderby = '(CASE ';
+
 			// sentence match in 'post_title'
-			$search_orderby .= $wpdb->prepare( "WHEN $wpdb->posts.post_title LIKE %s THEN 1 ", $like );
+			if ( $like ) {
+				$search_orderby .= $wpdb->prepare( "WHEN $wpdb->posts.post_title LIKE %s THEN 1 ", $like );
+			}
 
 			// sanity limit, sort as sentence when more than 6 terms
 			// (few searches are longer than 6 terms and most titles are not)
@@ -2250,7 +2303,9 @@ class WP_Query {
 			}
 
 			// sentence match in 'post_content'
-			$search_orderby .= $wpdb->prepare( "WHEN $wpdb->posts.post_content LIKE %s THEN 4 ", $like );
+			if ( $like ) {
+				$search_orderby .= $wpdb->prepare( "WHEN $wpdb->posts.post_content LIKE %s THEN 4 ", $like );
+			}
 			$search_orderby .= 'ELSE 5 END)';
 		} else {
 			// single word or sentence search
@@ -4635,6 +4690,17 @@ class WP_Query {
 	}
 
 	/**
+	 * Is the query for an embedded post?
+	 *
+	 * @since 3.1.0
+	 *
+	 * @return bool
+	 */
+	public function is_embed() {
+		return (bool) $this->is_embed;
+	}
+
+	/**
 	 * Is the query the main query?
 	 *
 	 * @since 3.3.0
@@ -4935,6 +5001,8 @@ function wp_old_slug_redirect() {
 			$link = user_trailingslashit( trailingslashit( $link ) . 'feed' );
 		} elseif ( isset( $GLOBALS['wp_query']->query_vars['paged'] ) && $GLOBALS['wp_query']->query_vars['paged'] > 1 ) {
 			$link = user_trailingslashit( trailingslashit( $link ) . 'page/' . $GLOBALS['wp_query']->query_vars['paged'] );
+		} elseif( is_embed() ) {
+			$link = user_trailingslashit( trailingslashit( $link ) . 'embed' );
 		} elseif ( is_404() ) {
 			// Add rewrite endpoints if necessary.
 			foreach ( $wp_rewrite->endpoints as $endpoint ) {

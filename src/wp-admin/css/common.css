@@ -1570,10 +1570,17 @@ form.upgrade .hint {
 	background-position: bottom left;
 }
 
-#screen-options-wrap h5,
+#screen-options-wrap h5, /* Back-compat for old plugins */
+#screen-options-wrap legend,
 #contextual-help-wrap h5 {
-	margin: 8px 0;
-	font-size: 13px;
+	margin: 0;
+	padding: 8px 0;
+ 	font-size: 13px;
+	font-weight: 600;
+}
+
+.ie8 #screen-options-wrap legend {
+	color: inherit;
 }
 
 .metabox-prefs label {
@@ -1582,25 +1589,28 @@ form.upgrade .hint {
 	line-height: 30px;
 }
 
-.metabox-prefs label input[type=checkbox] {
-	margin-top: -4px;
+#number-of-columns {
+	display: inline-block;
+	vertical-align: middle;
+	line-height: 30px;
+}
+
+.metabox-prefs input[type=checkbox] {
+	margin-top: 0;
 	margin-right: 6px;
 }
 
-.metabox-prefs label input {
-	margin: 0 5px 0 2px;
+.metabox-prefs label input,
+.metabox-prefs label input[type=checkbox] {
+	margin: -4px 5px 0 0;
 }
 
 .metabox-prefs .columns-prefs label input {
-	margin: 0 2px;
+	margin: -1px 2px 0 0;
 }
 
 .metabox-prefs label a {
 	display: none;
-}
-
-.metabox-prefs .screen-options {
-	padding-top: 10px;
 }
 
 .metabox-prefs .screen-options input,
@@ -1617,6 +1627,10 @@ form.upgrade .hint {
 .metabox-prefs .screen-options label {
 	line-height: 28px;
 	padding-right: 0;
+}
+
+.screen-options + .screen-options {
+    margin-top: 10px;
 }
 
 /*------------------------------------------------------------------------------
@@ -1900,7 +1914,7 @@ html.wp-toolbar {
 }
 
 .columns-prefs label {
-	padding: 0 5px;
+	padding: 0 10px 0 0;
 }
 
 /* @todo: what is this doing here */
@@ -1960,15 +1974,20 @@ html.wp-toolbar {
 	border-bottom: none;
 	background: #e4e4e4;
 	color: #555;
-	font-size: 12px;
-	line-height: 16px;
-	display: inline-block;
-	padding: 4px 14px 6px;
-	text-decoration: none;
-	margin: -4px 4px -1px 0;
 }
 
-.nav-tab:hover {
+.nav-tab,
+.nav-tab-small .nav-tab {
+	display: inline-block;
+	margin: -4px 4px -1px 0;
+	padding: 5px 14px;
+	font-size: 12px;
+	line-height: 16px;
+	text-decoration: none;
+}
+
+.nav-tab:hover,
+.nav-tab:focus {
 	background-color: #fff;
 	color: #464646;
 }
@@ -1978,7 +1997,8 @@ html.wp-toolbar {
 }
 
 .nav-tab-active,
-.nav-tab-active:hover {
+.nav-tab-active:hover,
+.nav-tab-active:focus {
 	border-bottom: 1px solid #f1f1f1;
 	background: #f1f1f1;
 	color: #000;
@@ -1995,7 +2015,7 @@ h3.nav-tab-wrapper {
 h1 .nav-tab,
 h2 .nav-tab {
 	padding: 6px 10px;
-	font-weight: bold;
+	font-weight: 600;
 	font-size: 15px;
 	line-height: 24px;
 }

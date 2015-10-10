@@ -981,16 +981,21 @@ function get_status_header_desc( $code ) {
  * Set HTTP status header.
  *
  * @since 2.0.0
+ * @since 4.4.0 Added the `$description` parameter.
  *
  * @see get_status_header_desc()
  *
- * @param int $code HTTP status code.
+ * @param int    $code        HTTP status code.
+ * @param string $description Optional. A custom description for the HTTP status.
  */
-function status_header( $code ) {
-	$description = get_status_header_desc( $code );
+function status_header( $code, $description = '' ) {
+	if ( ! $description ) {
+		$description = get_status_header_desc( $code );
+	}
 
-	if ( empty( $description ) )
+	if ( empty( $description ) ) {
 		return;
+	}
 
 	$protocol = wp_get_server_protocol();
 	$status_header = "$protocol $code $description";
@@ -1244,6 +1249,7 @@ function do_robots() {
 		$site_url = parse_url( site_url() );
 		$path = ( !empty( $site_url['path'] ) ) ? $site_url['path'] : '';
 		$output .= "Disallow: $path/wp-admin/\n";
+		$output .= "Allow: $path/wp-admin/admin-ajax.php\n";
 	}
 
 	/**
@@ -1760,7 +1766,7 @@ function wp_upload_dir( $time = null ) {
 	 * Honor the value of UPLOADS. This happens as long as ms-files rewriting is disabled.
 	 * We also sometimes obey UPLOADS when rewriting is enabled -- see the next block.
 	 */
-	if ( defined( 'UPLOADS' ) && ! ( is_multisite() && get_network_option( 'ms_files_rewriting' ) ) ) {
+	if ( defined( 'UPLOADS' ) && ! ( is_multisite() && get_site_option( 'ms_files_rewriting' ) ) ) {
 		$dir = ABSPATH . UPLOADS;
 		$url = trailingslashit( $siteurl ) . UPLOADS;
 	}
@@ -1768,7 +1774,7 @@ function wp_upload_dir( $time = null ) {
 	// If multisite (and if not the main site in a post-MU network)
 	if ( is_multisite() && ! ( is_main_network() && is_main_site() && defined( 'MULTISITE' ) ) ) {
 
-		if ( ! get_network_option( 'ms_files_rewriting' ) ) {
+		if ( ! get_site_option( 'ms_files_rewriting' ) ) {
 			/*
 			 * If ms-files rewriting is disabled (networks created post-3.5), it is fairly
 			 * straightforward: Append sites/%d if we're not on the main site (for post-MU
@@ -2685,6 +2691,9 @@ function wp_json_encode( $data, $options = 0, $depth = 512 ) {
 		$args = array( $data );
 	}
 
+	// Prepare the data for JSON serialization.
+	$data = _wp_json_prepare_data( $data );
+
 	$json = @call_user_func_array( 'json_encode', $args );
 
 	// If json_encode() was successful, no need to do more sanity checking.
@@ -2795,6 +2804,56 @@ function _wp_json_convert_string( $string ) {
 		}
 	} else {
 		return wp_check_invalid_utf8( $string, true );
+	}
+}
+
+/**
+ * Prepares response data to be serialized to JSON.
+ *
+ * This supports the JsonSerializable interface for PHP 5.2-5.3 as well.
+ *
+ * @ignore
+ * @since 4.4.0
+ * @access private
+ *
+ * @param mixed $data Native representation.
+ * @return bool|int|float|null|string|array Data ready for `json_encode()`.
+ */
+function _wp_json_prepare_data( $data ) {
+	if ( ! defined( 'WP_JSON_SERIALIZE_COMPATIBLE' ) || WP_JSON_SERIALIZE_COMPATIBLE === false ) {
+		return $data;
+	}
+
+	switch ( gettype( $data ) ) {
+		case 'boolean':
+		case 'integer':
+		case 'double':
+		case 'string':
+		case 'NULL':
+			// These values can be passed through.
+			return $data;
+
+		case 'array':
+			// Arrays must be mapped in case they also return objects.
+			return array_map( '_wp_json_prepare_data', $data );
+
+		case 'object':
+			// If this is an incomplete object (__PHP_Incomplete_Class), bail.
+			if ( ! is_object( $data ) ) {
+				return null;
+			}
+
+			if ( $data instanceof JsonSerializable ) {
+				$data = $data->jsonSerialize();
+			} else {
+				$data = get_object_vars( $data );
+			}
+
+			// Now, pass the array (or whatever was returned from jsonSerialize through).
+			return _wp_json_prepare_data( $data );
+
+		default:
+			return null;
 	}
 }
 
@@ -3116,6 +3175,24 @@ function wp_array_slice_assoc( $array, $keys ) {
 			$slice[ $key ] = $array[ $key ];
 
 	return $slice;
+}
+
+/**
+ * Determines if the variable is a numeric-indexed array.
+ *
+ * @since 4.4.0
+ *
+ * @param mixed $data Variable to check.
+ * @return bool Whether the variable is a list.
+ */
+function wp_is_numeric_array( $data ) {
+	if ( ! is_array( $data ) ) {
+		return false;
+	}
+
+	$keys = array_keys( $data );
+	$string_keys = array_filter( $keys, 'is_string' );
+	return count( $string_keys ) === 0;
 }
 
 /**
@@ -4003,7 +4080,7 @@ function global_terms_enabled() {
 		if ( ! is_null( $filter ) )
 			$global_terms = (bool) $filter;
 		else
-			$global_terms = (bool) get_network_option( 'global_terms_enabled', false );
+			$global_terms = (bool) get_site_option( 'global_terms_enabled', false );
 	}
 	return $global_terms;
 }

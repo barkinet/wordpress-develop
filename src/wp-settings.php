@@ -29,6 +29,15 @@ require( ABSPATH . WPINC . '/default-constants.php' );
 global $wp_version, $wp_db_version, $tinymce_version, $required_php_version, $required_mysql_version;
 require( ABSPATH . WPINC . '/version.php' );
 
+/**
+ * If not already configured, `$blog_id` will default to 1 in a single site
+ * configuration. In multisite, it will be overridden by default in ms-settings.php.
+ *
+ * @global int $blog_id
+ * @since 2.0.0
+ */
+global $blog_id;
+
 // Set initial default constants including WP_MEMORY_LIMIT, WP_MAX_MEMORY_LIMIT, WP_DEBUG, SCRIPT_DEBUG, WP_CONTENT_DIR and WP_CACHE.
 wp_initial_constants();
 
@@ -147,12 +156,14 @@ require( ABSPATH . WPINC . '/canonical.php' );
 require( ABSPATH . WPINC . '/shortcodes.php' );
 require( ABSPATH . WPINC . '/class-wp-embed.php' );
 require( ABSPATH . WPINC . '/embed-functions.php' );
+require( ABSPATH . WPINC . '/class-wp-oembed-controller.php' );
 require( ABSPATH . WPINC . '/media.php' );
 require( ABSPATH . WPINC . '/http.php' );
 require( ABSPATH . WPINC . '/widgets.php' );
 require( ABSPATH . WPINC . '/nav-menu.php' );
 require( ABSPATH . WPINC . '/nav-menu-template.php' );
 require( ABSPATH . WPINC . '/admin-bar.php' );
+require( ABSPATH . WPINC . '/rest-api.php' );
 
 // Load multisite-specific files.
 if ( is_multisite() ) {
