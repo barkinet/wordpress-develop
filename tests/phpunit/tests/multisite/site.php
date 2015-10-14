@@ -11,16 +11,6 @@ if ( is_multisite() ) :
 class Tests_Multisite_Site extends WP_UnitTestCase {
 	protected $suppress = false;
 
-	protected static $space_used;
-	protected static $space_allowed;
-
-	public static function setUpBeforeClass() {
-		parent::setUpBeforeClass();
-
-		self::$space_allowed = get_space_allowed();
-		self::$space_used = get_space_used();
-	}
-
 	function setUp() {
 		global $wpdb;
 		parent::setUp();
@@ -906,166 +896,6 @@ class Tests_Multisite_Site extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Provide a hardcoded amount for space used when testing upload quota,
-	 * allowed space, and available space.
-	 *
-	 * @return int
-	 */
-	function _filter_space_used() {
-		return 300;
-	}
-
-	function test_upload_is_user_over_quota_default() {
-		$this->assertFalse( upload_is_user_over_quota( false ) );
-	}
-
-	function test_upload_is_user_over_quota_check_enabled() {
-		update_site_option( 'upload_space_check_disabled', false );
-		// will be set to ''
-		$this->assertEmpty( get_site_option( 'upload_space_check_disabled' ) );
-
-		$this->assertEquals(
-			upload_is_user_over_quota( false ),
-			self::$space_used > self::$space_allowed
-		);
-	}
-
-	/**
-	 * When the upload space check is disabled, using more than the available
-	 * quota is allowed.
-	 */
-	function test_upload_is_user_over_check_disabled() {
-		update_site_option( 'upload_space_check_disabled', true );
-		update_site_option( 'blog_upload_space', 100 );
-		add_filter( 'pre_get_space_used', array( $this, '_filter_space_used' ) );
-		$quota = upload_is_user_over_quota( false );
-		remove_filter( 'pre_get_space_used', array( $this, '_filter_space_used' ) );
-
-		$this->assertFalse( $quota );
-	}
-
-	/**
-	 * If 0 is set for `blog_upload_space`, a fallback of 100 is used.
-	 */
-	function test_upload_is_user_over_quota_upload_space_0() {
-		update_site_option( 'upload_space_check_disabled', false );
-		update_site_option( 'blog_upload_space', 0 );
-
-		$this->assertEquals(
-			upload_is_user_over_quota( false ),
-			self::$space_used > self::$space_allowed
-		);
-	}
-
-	/**
-	 * Filter the space space used as 300 to trigger a true upload quota
-	 * without requiring actual files.
-	 */
-	function test_upload_is_user_over_quota_upload_space_0_filter_space_used() {
-		update_site_option( 'upload_space_check_disabled', false );
-		update_site_option( 'blog_upload_space', 0 );
-		add_filter( 'pre_get_space_used', array( $this, '_filter_space_used' ) );
-		$quota = upload_is_user_over_quota( false );
-		remove_filter( 'pre_get_space_used', array( $this, '_filter_space_used' ) );
-
-		$this->assertTrue( $quota );
-	}
-
-	function test_upload_is_user_over_quota_upload_space_200() {
-		update_site_option( 'upload_space_check_disabled', false );
-		update_site_option( 'blog_upload_space', 200 );
-		$this->assertEquals(
-			upload_is_user_over_quota( false ),
-			self::$space_used > 200
-		);
-	}
-
-	function test_upload_is_user_over_quota_upload_space_200_filter_space_used() {
-		update_site_option( 'upload_space_check_disabled', false );
-		update_site_option( 'blog_upload_space', 200 );
-		add_filter( 'pre_get_space_used', array( $this, '_filter_space_used' ) );
-		$quota = upload_is_user_over_quota( false );
-		remove_filter( 'pre_get_space_used', array( $this, '_filter_space_used' ) );
-
-		$this->assertTrue( $quota );
-	}
-
-	/**
-	 * If the space used is exactly the same as the available quota, an over
-	 * quota response is not expected.
-	 *
-	 * @group woo
-	 */
-	function test_upload_is_user_over_quota_upload_space_exact() {
-		update_site_option( 'upload_space_check_disabled', false );
-		update_site_option( 'blog_upload_space', 300 );
-		add_filter( 'pre_get_space_used', array( $this, '_filter_space_used' ) );
-		$quota = upload_is_user_over_quota( false );
-		$used = get_space_used();
-		remove_filter( 'pre_get_space_used', array( $this, '_filter_space_used' ) );
-
-		$this->assertEquals(
-			$quota,
-			$used > 300
-		);
-	}
-
-	function test_upload_is_user_over_quota_upload_space_negative() {
-		update_site_option( 'upload_space_check_disabled', false );
-		update_site_option( 'blog_upload_space', -1 );
-		$this->assertTrue( upload_is_user_over_quota( false ) );
-	}
-
-	function test_is_upload_space_available_default() {
-		$this->assertTrue( is_upload_space_available() );
-	}
-
-	function test_is_upload_space_available_check_disabled() {
-		update_site_option( 'upload_space_check_disabled', true );
-		$this->assertTrue( is_upload_space_available() );
-	}
-
-	function test_is_upload_space_available_space_used_is_less() {
-		update_site_option( 'upload_space_check_disabled', false );
-		update_site_option( 'blog_upload_space', 350 );
-		add_filter( 'pre_get_space_used', array( $this, '_filter_space_used' ) );
-		$available = is_upload_space_available();
-		remove_filter( 'pre_get_space_used', array( $this, '_filter_space_used' ) );
-
-		$this->assertTrue( is_upload_space_available() );
-		$this->assertEquals(
-			$available,
-			self::$space_used < 350
-		);
-	}
-
-	function test_is_upload_space_available_space_used_is_more() {
-		update_site_option( 'upload_space_check_disabled', false );
-		update_site_option( 'blog_upload_space', 250 );
-		add_filter( 'pre_get_space_used', array( $this, '_filter_space_used' ) );
-		$available = is_upload_space_available();
-		$used = get_space_used();
-		remove_filter( 'pre_get_space_used', array( $this, '_filter_space_used' ) );
-
-		$this->assertEquals(
-			$available,
-			$used < 250
-		);
-	}
-
-	function test_is_upload_space_available_upload_space_0() {
-		update_site_option( 'upload_space_check_disabled', false );
-		update_site_option( 'blog_upload_space', 0 );
-		$this->assertTrue( is_upload_space_available() );
-	}
-
-	function test_is_upload_space_available_upload_space_negative() {
-		update_site_option( 'upload_space_check_disabled', false );
-		update_site_option( 'blog_upload_space', -1 );
-		$this->assertFalse( is_upload_space_available() );
-	}
-
-	/**
 	 * Test the primary purpose of get_blog_post(), to retrieve a post from
 	 * another site on the network.
 	 */
@@ -1170,6 +1000,67 @@ class Tests_Multisite_Site extends WP_UnitTestCase {
 		$blogaddress = get_blogaddress_by_id( 42 );
 		$this->assertEquals( '', $blogaddress );
 	}
+
+	/**
+	 * @ticket 33620
+	 * @dataProvider data_new_blog_url_schemes
+	 */
+	function test_new_blog_url_schemes( $home_scheme, $siteurl_scheme, $force_ssl_admin ) {
+		$current_site = get_current_site();
+
+		$home    = get_option( 'home' );
+		$siteurl = get_site_option( 'siteurl' );
+		$admin   = force_ssl_admin();
+
+		// Setup:
+		update_option( 'home', set_url_scheme( $home, $home_scheme ) );
+		update_site_option( 'siteurl', set_url_scheme( $siteurl, $siteurl_scheme ) );
+		force_ssl_admin( $force_ssl_admin );
+
+		// Install:
+		$new = wpmu_create_blog( $current_site->domain, '/new-blog/', 'New Blog', get_current_user_id() );
+
+		// Reset:
+		update_option( 'home', $home );
+		update_site_option( 'siteurl', $siteurl );
+		force_ssl_admin( $admin );
+
+		// Assert:
+		$this->assertNotWPError( $new );
+		$this->assertSame( $home_scheme, parse_url( get_blog_option( $new, 'home' ), PHP_URL_SCHEME ) );
+		$this->assertSame( $siteurl_scheme, parse_url( get_blog_option( $new, 'siteurl' ), PHP_URL_SCHEME ) );
+	}
+
+	function data_new_blog_url_schemes() {
+		return array(
+			array(
+				'https',
+				'https',
+				false,
+			),
+			array(
+				'http',
+				'https',
+				false,
+			),
+			array(
+				'https',
+				'http',
+				false,
+			),
+			array(
+				'http',
+				'http',
+				false,
+			),
+			array(
+				'http',
+				'http',
+				true,
+			),
+		);
+	}
+
 }
 
 endif;

@@ -288,7 +288,7 @@ function wp_default_scripts( &$scripts ) {
 		'error_uploading' => __('&#8220;%s&#8221; has failed to upload.')
 	);
 
-	$scripts->add( 'plupload', '/wp-includes/js/plupload/plupload.full.min.js', array(), '2.1.1' );
+	$scripts->add( 'plupload', '/wp-includes/js/plupload/plupload.full.min.js', array(), '2.1.8' );
 	// Back compat handles:
 	foreach ( array( 'all', 'html5', 'flash', 'silverlight', 'html4' ) as $handle ) {
 		$scripts->add( "plupload-$handle", false, array( 'plupload' ), '2.1.1' );
@@ -465,6 +465,8 @@ function wp_default_scripts( &$scripts ) {
 			'post' => array( 'id' => 0 ),
 		),
 	) );
+
+	$scripts->add( 'wp-oembed', "/wp-includes/js/wp-oembed$suffix.js" );
 
 	// To enqueue media-views or media-editor, call wp_enqueue_media().
 	// Both rely on numerous settings, styles, and templates to operate correctly.
@@ -1161,13 +1163,13 @@ function script_concat_settings() {
 
 	if ( ! isset($compress_scripts) ) {
 		$compress_scripts = defined('COMPRESS_SCRIPTS') ? COMPRESS_SCRIPTS : true;
-		if ( $compress_scripts && ( ! get_network_option( 'can_compress_scripts' ) || $compressed_output ) )
+		if ( $compress_scripts && ( ! get_site_option('can_compress_scripts') || $compressed_output ) )
 			$compress_scripts = false;
 	}
 
 	if ( ! isset($compress_css) ) {
 		$compress_css = defined('COMPRESS_CSS') ? COMPRESS_CSS : true;
-		if ( $compress_css && ( ! get_network_option( 'can_compress_scripts' ) || $compressed_output ) )
+		if ( $compress_css && ( ! get_site_option('can_compress_scripts') || $compressed_output ) )
 			$compress_css = false;
 	}
 }

@@ -474,7 +474,7 @@ function wp_dropdown_categories( $args = '' ) {
  * Display or retrieve the HTML list of categories.
  *
  * @since 2.1.0
- * @since 4.4.0 Introduced the `hide_title_if_empty` argument. The `current_category` argument was modified to
+ * @since 4.4.0 Introduced the `hide_title_if_empty` and `separator` arguments. The `current_category` argument was modified to
  *              optionally accept an array of values.
  *
  * @param string|array $args {
@@ -530,6 +530,7 @@ function wp_list_categories( $args = '' ) {
 		'hierarchical' => true, 'title_li' => __( 'Categories' ),
 		'hide_title_if_empty' => false,
 		'echo' => 1, 'depth' => 0,
+		'separator' => '<br />',
 		'taxonomy' => 'category'
 	);
 
@@ -1137,8 +1138,14 @@ function get_the_terms( $post, $taxonomy ) {
 	$terms = get_object_term_cache( $post->ID, $taxonomy );
 	if ( false === $terms ) {
 		$terms = wp_get_object_terms( $post->ID, $taxonomy );
-		wp_cache_add($post->ID, $terms, $taxonomy . '_relationships');
+		$to_cache = array();
+		foreach ( $terms as $key => $term ) {
+			$to_cache[ $key ] = $term->data;
+		}
+		wp_cache_add( $post->ID, $to_cache, $taxonomy . '_relationships' );
 	}
+
+	$terms = array_map( 'get_term', $terms );
 
 	/**
 	 * Filter the list of terms attached to the given post.

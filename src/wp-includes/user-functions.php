@@ -735,6 +735,7 @@ function update_user_meta($user_id, $meta_key, $meta_value, $prev_value = '') {
  * Using $strategy = 'memory' this is memory-intensive and should handle around 10^5 users, but see WP Bug #12257.
  *
  * @since 3.0.0
+ * @since 4.4.0 The number of users with no role is now included in the `none` element.
  *
  * @global wpdb $wpdb
  *
@@ -775,10 +776,14 @@ function count_users($strategy = 'time') {
 		// Get the meta_value index from the end of the result set.
 		$total_users = (int) $row[$col];
 
+		$role_counts['none'] = ( $total_users - array_sum( $role_counts ) );
+
 		$result['total_users'] = $total_users;
 		$result['avail_roles'] =& $role_counts;
 	} else {
-		$avail_roles = array();
+		$avail_roles = array(
+			'none' => 0,
+		);
 
 		$users_of_blog = $wpdb->get_col( "SELECT meta_value FROM $wpdb->usermeta WHERE meta_key = '{$blog_prefix}capabilities'" );
 
@@ -786,6 +791,9 @@ function count_users($strategy = 'time') {
 			$b_roles = maybe_unserialize($caps_meta);
 			if ( ! is_array( $b_roles ) )
 				continue;
+			if ( empty( $b_roles ) ) {
+				$avail_roles['none']++;
+			}
 			foreach ( $b_roles as $b_role => $val ) {
 				if ( isset($avail_roles[$b_role]) ) {
 					$avail_roles[$b_role]++;
@@ -797,6 +805,10 @@ function count_users($strategy = 'time') {
 
 		$result['total_users'] = count( $users_of_blog );
 		$result['avail_roles'] =& $avail_roles;
+	}
+
+	if ( is_multisite() ) {
+		$result['avail_roles']['none'] = 0;
 	}
 
 	return $result;
@@ -1102,9 +1114,18 @@ function sanitize_user_field($field, $value, $user_id, $context) {
  *
  * @since 3.0.0
  *
- * @param object $user User object to be cached
+ * @param object|WP_User $user User object to be cached
+ * @return bool|null Returns false on failure.
  */
-function update_user_caches($user) {
+function update_user_caches( $user ) {
+	if ( $user instanceof WP_User ) {
+		if ( ! $user->exists() ) {
+			return false;
+		}
+
+		$user = $user->data;
+	}
+
 	wp_cache_add($user->ID, $user, 'users');
 	wp_cache_add($user->user_login, $user->ID, 'userlogins');
 	wp_cache_add($user->user_email, $user->ID, 'useremail');
@@ -1581,7 +1602,7 @@ function wp_update_user($userdata) {
 	// Escape data pulled from DB.
 	$user = add_magic_quotes( $user );
 
-	if ( ! empty($userdata['user_pass']) ) {
+	if ( ! empty( $userdata['user_pass'] ) && $userdata['user_pass'] !== $user_obj->user_pass ) {
 		// If password is changing, hash it now
 		$plaintext_pass = $userdata['user_pass'];
 		$userdata['user_pass'] = wp_hash_password( $userdata['user_pass'] );
@@ -1811,7 +1832,7 @@ function _get_additional_user_keys( $user ) {
  */
 function wp_get_user_contact_methods( $user = null ) {
 	$methods = array();
-	if ( get_network_option( 'initial_db_version' ) < 23588 ) {
+	if ( get_site_option( 'initial_db_version' ) < 23588 ) {
 		$methods = array(
 			'aim'    => __( 'AIM' ),
 			'yim'    => __( 'Yahoo IM' ),
@@ -1858,6 +1879,83 @@ function wp_get_password_hint() {
 	 * @param string $hint The password hint text.
 	 */
 	return apply_filters( 'password_hint', $hint );
+}
+
+/**
+ * Creates, stores, then returns a password reset key for user.
+ *
+ * @since 4.4.0
+ *
+ * @global wpdb         $wpdb      WordPress database abstraction object.
+ * @global PasswordHash $wp_hasher Portable PHP password hashing framework.
+ *
+ * @param WP_User $user User to retrieve password reset key for.
+ *
+ * @return string|WP_Error Password reset key on success. WP_Error on error.
+ */
+function get_password_reset_key( $user ) {
+	global $wpdb, $wp_hasher;
+
+	/**
+	 * Fires before a new password is retrieved.
+	 *
+	 * @since 1.5.0
+	 * @deprecated 1.5.1 Misspelled. Use 'retrieve_password' hook instead.
+	 *
+	 * @param string $user_login The user login name.
+	 */
+	do_action( 'retreive_password', $user->user_login );
+
+	/**
+	 * Fires before a new password is retrieved.
+	 *
+	 * @since 1.5.1
+	 *
+	 * @param string $user_login The user login name.
+	 */
+	do_action( 'retrieve_password', $user->user_login );
+
+	/**
+	 * Filter whether to allow a password to be reset.
+	 *
+	 * @since 2.7.0
+	 *
+	 * @param bool true           Whether to allow the password to be reset. Default true.
+	 * @param int  $user_data->ID The ID of the user attempting to reset a password.
+	 */
+	$allow = apply_filters( 'allow_password_reset', true, $user->ID );
+
+	if ( ! $allow ) {
+		return new WP_Error( 'no_password_reset', __( 'Password reset is not allowed for this user' ) );
+	} elseif ( is_wp_error( $allow ) ) {
+		return $allow;
+	}
+
+	// Generate something random for a password reset key.
+	$key = wp_generate_password( 20, false );
+
+	/**
+	 * Fires when a password reset key is generated.
+	 *
+	 * @since 2.5.0
+	 *
+	 * @param string $user_login The username for the user.
+	 * @param string $key        The generated password reset key.
+	 */
+	do_action( 'retrieve_password_key', $user->user_login, $key );
+
+	// Now insert the key, hashed, into the DB.
+	if ( empty( $wp_hasher ) ) {
+		require_once ABSPATH . WPINC . '/class-phpass.php';
+		$wp_hasher = new PasswordHash( 8, true );
+	}
+	$hashed = time() . ':' . $wp_hasher->HashPassword( $key );
+	$key_saved = $wpdb->update( $wpdb->users, array( 'user_activation_key' => $hashed ), array( 'user_login' => $user->user_login ) );
+	if ( false === $key_saved ) {
+		return WP_Error( 'no_password_key_update', __( 'Could not save password reset key to database.' ) );
+	}
+
+	return $key;
 }
 
 /**
@@ -2144,4 +2242,33 @@ function wp_destroy_other_sessions() {
 function wp_destroy_all_sessions() {
 	$manager = WP_Session_Tokens::get_instance( get_current_user_id() );
 	$manager->destroy_all();
+}
+
+/**
+ * Get the user IDs of all users with no role on this site.
+ *
+ * This function returns an empty array when used on Multisite.
+ *
+ * @since 4.4.0
+ *
+ * @return array Array of user IDs.
+ */
+function wp_get_users_with_no_role() {
+	global $wpdb;
+
+	if ( is_multisite() ) {
+		return array();
+	}
+
+	$prefix = $wpdb->get_blog_prefix();
+	$regex  = implode( '|', wp_roles()->get_names() );
+	$regex  = preg_replace( '/[^a-zA-Z_\|-]/', '', $regex );
+	$users  = $wpdb->get_col( $wpdb->prepare( "
+		SELECT user_id
+		FROM $wpdb->usermeta
+		WHERE meta_key = '{$prefix}capabilities'
+		AND meta_value NOT REGEXP %s
+	", $regex ) );
+
+	return $users;
 }

@@ -1275,6 +1275,11 @@ function wp_page_menu( $args = array() ) {
 
 	$container = sanitize_text_field( $args['container'] );
 
+	// Fallback in case `wp_nav_menu()` was called without a container.
+	if ( empty( $container ) ) {
+		$container = 'div';
+	}
+
 	if ( $menu ) {
 
 		// wp_nav_menu doesn't set before and after
@@ -1397,11 +1402,14 @@ function the_attachment_link( $id = 0, $fullsize = false, $deprecated = false, $
  * @since 4.4.0 The `$id` parameter can now accept either a post ID or `WP_Post` object.
  *
  * @param int|WP_Post  $id        Optional. Post ID or post object.
- * @param string       $size      Optional, default is 'thumbnail'. Size of image, either array or string.
- * @param bool         $permalink Optional, default is false. Whether to add permalink to image.
- * @param bool         $icon      Optional, default is false. Whether to include icon.
- * @param string|bool  $text      Optional, default is false. If string, then will be link text.
- * @param array|string $attr      Optional. Array or string of attributes.
+ * @param string|array $size      Optional. Image size. Accepts any valid image size, or an array
+ *                                of width and height values in pixels (in that order).
+ *                                Default 'thumbnail'.
+ * @param bool         $permalink Optional, Whether to add permalink to image. Default false.
+ * @param bool         $icon      Optional. Whether the attachment is an icon. Default false.
+ * @param string|false $text      Optional. Link text to use. Activated by passing a string, false otherwise.
+ *                                Default false.
+ * @param array|string $attr      Optional. Array or string of attributes. Default empty.
  * @return string HTML content.
  */
 function wp_get_attachment_link( $id = 0, $size = 'thumbnail', $permalink = false, $icon = false, $text = false, $attr = '' ) {
@@ -1429,12 +1437,13 @@ function wp_get_attachment_link( $id = 0, $size = 'thumbnail', $permalink = fals
 	 *
 	 * @since 2.7.0
 	 *
-	 * @param string      $link_html The page link HTML output.
-	 * @param int         $id        Post ID.
-	 * @param string      $size      Image size. Default 'thumbnail'.
-	 * @param bool        $permalink Whether to add permalink to image. Default false.
-	 * @param bool        $icon      Whether to include an icon. Default false.
-	 * @param string|bool $text      If string, will be link text. Default false.
+	 * @param string       $link_html The page link HTML output.
+	 * @param int          $id        Post ID.
+	 * @param string|array $size      Size of the image. Image size or array of width and height values (in that order).
+	 *                                Default 'thumbnail'.
+	 * @param bool         $permalink Whether to add permalink to image. Default false.
+	 * @param bool         $icon      Whether to include an icon. Default false.
+	 * @param string|bool  $text      If string, will be link text. Default false.
 	 */
 	return apply_filters( 'wp_get_attachment_link', "<a href='$url'>$link_text</a>", $id, $size, $permalink, $icon, $text );
 }

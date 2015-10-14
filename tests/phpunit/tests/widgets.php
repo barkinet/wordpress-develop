@@ -465,6 +465,11 @@ class Tests_Widgets extends WP_UnitTestCase {
 		$this->assertArrayHasKey( 'title', $instance );
 		unset( $option_value['_multiwidget'] );
 
+		// Pretend this widget is new.
+		delete_option( 'widget_nav_menu' );
+		$never_used = get_option( 'widget_nav_menu' );
+		$this->assertFalse( $never_used );
+
 		wp_widgets_init();
 		$wp_widget_search = $wp_registered_widgets['search-2']['callback'][0];
 
@@ -475,6 +480,11 @@ class Tests_Widgets extends WP_UnitTestCase {
 		foreach ( $option_value as $widget_number => $instance ) {
 			$this->assertEquals( $settings[ $widget_number ], $option_value[ $widget_number ] );
 		}
+
+		// After widgets_init(), get_settings() should create the widget option.
+		$never_used = get_option( 'widget_nav_menu' );
+		$this->assertEquals( 1, $never_used['_multiwidget'] );
+		$this->assertArrayNotHasKey( 0, $never_used );
 	}
 
 	/**
@@ -597,4 +607,22 @@ class Tests_Widgets extends WP_UnitTestCase {
 			$this->assertContains( $contained, $control );
 		}
 	}
+
+	function test_the_widget_custom_before_title_arg() {
+		register_widget( 'WP_Widget_Text' );
+
+		ob_start();
+		the_widget(
+			'WP_Widget_Text',
+			array( 'title' => 'Notes', 'text' => 'Sample text' ),
+			array( 'before_widget' => '<span class="special %s">', 'after_widget' => '</span>' )
+		);
+		$actual = ob_get_clean();
+		
+		unregister_widget( 'WP_Widget_Text' );
+
+		$this->assertRegExp( '/<span class="special widget_text">/', $actual );
+
+	}
+
 }

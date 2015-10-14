@@ -113,7 +113,7 @@ function create_initial_taxonomies() {
 		'query_var' => false,
 		'rewrite' => false,
 		'public' => false,
-		'show_ui' => false,
+		'show_ui' => true,
 		'_builtin' => true,
 	) );
 
@@ -708,51 +708,71 @@ function get_tax_sql( $tax_query, $primary_table, $primary_id_column ) {
  * @todo Better formatting for DocBlock
  *
  * @since 2.3.0
+ * @since 4.4.0 Converted to return a WP_Term object if `$output` is `OBJECT`.
+ *              The `$taxonomy` parameter was made optional.
  *
  * @global wpdb $wpdb WordPress database abstraction object.
  * @see sanitize_term_field() The $context param lists the available values for get_term_by() $filter param.
  *
- * @param int|object $term     If integer, will get from database. If object will apply filters and return $term.
- * @param string     $taxonomy Taxonomy name that $term is part of.
+ * @param int|WP_Term|object $term If integer, term data will be fetched from the database, or from the cache if
+ *                                 available. If stdClass object (as in the results of a database query), will apply
+ *                                 filters and return a `WP_Term` object corresponding to the `$term` data. If `WP_Term`,
+ *                                 will return `$term`.
+ * @param string     $taxonomy Optional. Taxonomy name that $term is part of.
  * @param string     $output   Constant OBJECT, ARRAY_A, or ARRAY_N
  * @param string     $filter   Optional, default is raw or no WordPress defined filter will applied.
- * @return object|array|null|WP_Error Term Row from database. Will return null if $term is empty. If taxonomy does not
- * exist then WP_Error will be returned.
+ * @return mixed Type corresponding to `$output` on success or null on failure. When `$output` is `OBJECT`,
+ *               a WP_Term instance is returned. If taxonomy does not exist then WP_Error will be returned.
  */
-function get_term($term, $taxonomy, $output = OBJECT, $filter = 'raw') {
-	global $wpdb;
-
+function get_term( $term, $taxonomy = '', $output = OBJECT, $filter = 'raw' ) {
 	if ( empty( $term ) ) {
 		return new WP_Error( 'invalid_term', __( 'Empty Term' ) );
 	}
 
-	if ( ! taxonomy_exists( $taxonomy ) ) {
+	if ( $taxonomy && ! taxonomy_exists( $taxonomy ) ) {
 		return new WP_Error( 'invalid_taxonomy', __( 'Invalid taxonomy' ) );
 	}
 
-	if ( is_object($term) && empty($term->filter) ) {
-		wp_cache_add( $term->term_id, $term, $taxonomy );
+	if ( $term instanceof WP_Term ) {
 		$_term = $term;
-	} else {
-		if ( is_object($term) )
-			$term = $term->term_id;
-		if ( !$term = (int) $term )
-			return null;
-		if ( ! $_term = wp_cache_get( $term, $taxonomy ) ) {
-			$_term = $wpdb->get_row( $wpdb->prepare( "SELECT t.*, tt.* FROM $wpdb->terms AS t INNER JOIN $wpdb->term_taxonomy AS tt ON t.term_id = tt.term_id WHERE tt.taxonomy = %s AND t.term_id = %d LIMIT 1", $taxonomy, $term) );
-			if ( ! $_term )
-				return null;
-			wp_cache_add( $term, $_term, $taxonomy );
+	} elseif ( is_object( $term ) ) {
+		if ( empty( $term->filter ) || 'raw' === $term->filter ) {
+			$_term = sanitize_term( $term, $taxonomy, 'raw' );
+			$_term = new WP_Term( $_term );
+		} else {
+			$_term = WP_Term::get_instance( $term->term_id );
 		}
+	} else {
+		$_term = WP_Term::get_instance( $term );
+	}
+
+	// If `$taxonomy` was provided, make sure it matches the taxonomy of the located term.
+	if ( $_term && $taxonomy && $taxonomy !== $_term->taxonomy ) {
+		// If there are two terms with the same ID, split the other one to a new term.
+		$new_term_id = _split_shared_term( $_term->term_id, $_term->term_taxonomy_id );
+
+		// If no split occurred, this is an invalid request.
+		if ( $new_term_id === $_term->term_id ) {
+			return new WP_Error( 'invalid_term', __( 'Empty Term' ) );
+
+		// The term has been split. Refetch the term from the proper taxonomy.
+		} else {
+			return get_term( $_term->term_id, $taxonomy, $output, $filter );
+		}
+	}
+
+	if ( ! $_term ) {
+		return null;
 	}
 
 	/**
 	 * Filter a term.
 	 *
 	 * @since 2.3.0
+	 * @since 4.4.0 `$_term` can now also be a WP_Term object.
 	 *
-	 * @param int|object $_term    Term object or ID.
-	 * @param string     $taxonomy The taxonomy slug.
+	 * @param int|WP_Term $_term    Term object or ID.
+	 * @param string      $taxonomy The taxonomy slug.
 	 */
 	$_term = apply_filters( 'get_term', $_term, $taxonomy );
 
@@ -763,24 +783,23 @@ function get_term($term, $taxonomy, $output = OBJECT, $filter = 'raw') {
 	 * to the taxonomy slug.
 	 *
 	 * @since 2.3.0
+	 * @since 4.4.0 `$_term` can now also be a WP_Term object.
 	 *
-	 * @param int|object $_term    Term object or ID.
-	 * @param string     $taxonomy The taxonomy slug.
+	 * @param int|WP_Term $_term    Term object or ID.
+	 * @param string      $taxonomy The taxonomy slug.
 	 */
 	$_term = apply_filters( "get_$taxonomy", $_term, $taxonomy );
-	$_term = sanitize_term($_term, $taxonomy, $filter);
 
-	if ( $output == OBJECT ) {
-		return $_term;
-	} elseif ( $output == ARRAY_A ) {
-		$__term = get_object_vars($_term);
-		return $__term;
+	// Sanitize term, according to the specified filter.
+	$_term->filter( $filter );
+
+	if ( $output == ARRAY_A ) {
+		return $_term->to_array();
 	} elseif ( $output == ARRAY_N ) {
-		$__term = array_values(get_object_vars($_term));
-		return $__term;
-	} else {
-		return $_term;
+		return array_values( $_term->to_array() );
 	}
+
+	return $_term;
 }
 
 /**
@@ -798,7 +817,8 @@ function get_term($term, $taxonomy, $output = OBJECT, $filter = 'raw') {
  * @todo Better formatting for DocBlock.
  *
  * @since 2.3.0
- * @since 4.4.0 `$taxonomy` is optional if `$field` is 'term_taxonomy_id'.
+ * @since 4.4.0 `$taxonomy` is optional if `$field` is 'term_taxonomy_id'. Converted to return
+ *              a WP_Term object if `$output` is `OBJECT`.
  *
  * @global wpdb $wpdb WordPress database abstraction object.
  * @see sanitize_term_field() The $context param lists the available values for get_term_by() $filter param.
@@ -808,8 +828,8 @@ function get_term($term, $taxonomy, $output = OBJECT, $filter = 'raw') {
  * @param string     $taxonomy Taxonomy name. Optional, if `$field` is 'term_taxonomy_id'.
  * @param string     $output   Constant OBJECT, ARRAY_A, or ARRAY_N
  * @param string     $filter   Optional, default is raw or no WordPress defined filter will applied.
- * @return object|array|null|WP_Error|false Term Row from database.
- *                                          Will return false if $taxonomy does not exist or $term was not found.
+ * @return WP_Term|bool WP_Term instance on success. Will return false if `$taxonomy` does not exist
+ *                      or `$term` was not found.
  */
 function get_term_by( $field, $value, $taxonomy = '', $output = OBJECT, $filter = 'raw' ) {
 	global $wpdb;
@@ -822,17 +842,17 @@ function get_term_by( $field, $value, $taxonomy = '', $output = OBJECT, $filter 
 	$tax_clause = $wpdb->prepare( "AND tt.taxonomy = %s", $taxonomy );
 
 	if ( 'slug' == $field ) {
-		$field = 't.slug';
+		$_field = 't.slug';
 		$value = sanitize_title($value);
 		if ( empty($value) )
 			return false;
 	} elseif ( 'name' == $field ) {
 		// Assume already escaped
 		$value = wp_unslash($value);
-		$field = 't.name';
+		$_field = 't.name';
 	} elseif ( 'term_taxonomy_id' == $field ) {
 		$value = (int) $value;
-		$field = 'tt.term_taxonomy_id';
+		$_field = 'tt.term_taxonomy_id';
 
 		// No `taxonomy` clause when searching by 'term_taxonomy_id'.
 		$tax_clause = '';
@@ -844,7 +864,7 @@ function get_term_by( $field, $value, $taxonomy = '', $output = OBJECT, $filter 
 		return $term;
 	}
 
-	$term = $wpdb->get_row( $wpdb->prepare( "SELECT t.*, tt.* FROM $wpdb->terms AS t INNER JOIN $wpdb->term_taxonomy AS tt ON t.term_id = tt.term_id WHERE $field = %s $tax_clause LIMIT 1", $value ) );
+	$term = $wpdb->get_row( $wpdb->prepare( "SELECT t.*, tt.* FROM $wpdb->terms AS t INNER JOIN $wpdb->term_taxonomy AS tt ON t.term_id = tt.term_id WHERE $_field = %s $tax_clause LIMIT 1", $value ) );
 	if ( ! $term )
 		return false;
 
@@ -853,25 +873,9 @@ function get_term_by( $field, $value, $taxonomy = '', $output = OBJECT, $filter 
 		$taxonomy = $term->taxonomy;
 	}
 
-	wp_cache_add( $term->term_id, $term, $taxonomy );
+	wp_cache_add( $term->term_id, $term, 'terms' );
 
-	/** This filter is documented in wp-includes/taxonomy-functions.php */
-	$term = apply_filters( 'get_term', $term, $taxonomy );
-
-	/** This filter is documented in wp-includes/taxonomy-functions.php */
-	$term = apply_filters( "get_$taxonomy", $term, $taxonomy );
-
-	$term = sanitize_term($term, $taxonomy, $filter);
-
-	if ( $output == OBJECT ) {
-		return $term;
-	} elseif ( $output == ARRAY_A ) {
-		return get_object_vars($term);
-	} elseif ( $output == ARRAY_N ) {
-		return array_values(get_object_vars($term));
-	} else {
-		return $term;
-	}
+	return get_term( $term, $taxonomy, $output, $filter );
 }
 
 /**
@@ -916,20 +920,20 @@ function get_term_children( $term_id, $taxonomy ) {
 /**
  * Get sanitized Term field.
  *
- * Does checks for $term, based on the $taxonomy. The function is for contextual
- * reasons and for simplicity of usage. See sanitize_term_field() for more
- * information.
+ * The function is for contextual reasons and for simplicity of usage.
  *
  * @since 2.3.0
+ * @since 4.4.0 The `$taxonomy` parameter was made optional. `$term` can also now accept a WP_Term object.
  *
- * @param string $field    Term field to fetch.
- * @param int    $term     Term ID.
- * @param string $taxonomy Taxonomy Name.
- * @param string $context  Optional, default is display. Look at sanitize_term_field() for available options.
+ * @see sanitize_term_field()
+ *
+ * @param string      $field    Term field to fetch.
+ * @param int|WP_Term $term     Term ID or object.
+ * @param string      $taxonomy Optional. Taxonomy Name. Default empty.
+ * @param string      $context  Optional, default is display. Look at sanitize_term_field() for available options.
  * @return string|int|null|WP_Error Will return an empty string if $term is not an object or if $field is not set in $term.
  */
-function get_term_field( $field, $term, $taxonomy, $context = 'display' ) {
-	$term = (int) $term;
+function get_term_field( $field, $term, $taxonomy = '', $context = 'display' ) {
 	$term = get_term( $term, $taxonomy );
 	if ( is_wp_error($term) )
 		return $term;
@@ -940,7 +944,7 @@ function get_term_field( $field, $term, $taxonomy, $context = 'display' ) {
 	if ( !isset($term->$field) )
 		return '';
 
-	return sanitize_term_field($field, $term->$field, $term->term_id, $taxonomy, $context);
+	return sanitize_term_field( $field, $term->$field, $term->term_id, $term->taxonomy, $context );
 }
 
 /**
@@ -987,7 +991,8 @@ function get_term_to_edit( $id, $taxonomy ) {
  * @since 2.3.0
  * @since 4.2.0 Introduced 'name' and 'childless' parameters.
  * @since 4.4.0 Introduced the ability to pass 'term_id' as an alias of 'id' for the `orderby` parameter.
- *              Introduced the 'meta_query' and 'update_term_meta_cache' parameters.
+ *              Introduced the 'meta_query' and 'update_term_meta_cache' parameters. Converted to return
+ *              a list of WP_Term objects.
  *
  * @global wpdb  $wpdb WordPress database abstraction object.
  * @global array $wp_filter
@@ -1048,8 +1053,8 @@ function get_term_to_edit( $id, $taxonomy ) {
  *     @type array        $meta_query             Meta query clauses to limit retrieved terms by.
  *                                                See `WP_Meta_Query`. Default empty.
  * }
- * @return array|int|WP_Error List of Term Objects and their children. Will return WP_Error, if any of $taxonomies
- *                        do not exist.
+ * @return array|int|WP_Error List of WP_Term instances and their children. Will return WP_Error, if any of $taxonomies
+ *                            do not exist.
  */
 function get_terms( $taxonomies, $args = '' ) {
 	global $wpdb;
@@ -1137,30 +1142,6 @@ function get_terms( $taxonomies, $args = '' ) {
 		if ( ! $in_hierarchy ) {
 			return $empty_array;
 		}
-	}
-
-	// $args can be whatever, only use the args defined in defaults to compute the key.
-	$filter_key = ( has_filter('list_terms_exclusions') ) ? serialize($GLOBALS['wp_filter']['list_terms_exclusions']) : '';
-	$key = md5( serialize( wp_array_slice_assoc( $args, array_keys( $defaults ) ) ) . serialize( $taxonomies ) . $filter_key );
-	$last_changed = wp_cache_get( 'last_changed', 'terms' );
-	if ( ! $last_changed ) {
-		$last_changed = microtime();
-		wp_cache_set( 'last_changed', $last_changed, 'terms' );
-	}
-	$cache_key = "get_terms:$key:$last_changed";
-	$cache = wp_cache_get( $cache_key, 'terms' );
-	if ( false !== $cache ) {
-
-		/**
-		 * Filter the given taxonomy's terms cache.
-		 *
-		 * @since 2.3.0
-		 *
-		 * @param array $cache      Cached array of terms for the given taxonomy.
-		 * @param array $taxonomies An array of taxonomies.
-		 * @param array $args       An array of get_terms() arguments.
-		 */
-		return apply_filters( 'get_terms', $cache, $taxonomies, $args );
 	}
 
 	$_orderby = strtolower( $args['orderby'] );
@@ -1410,6 +1391,32 @@ function get_terms( $taxonomies, $args = '' ) {
 
 	$query = "SELECT $fields FROM $wpdb->terms AS t $join WHERE $where $orderby $order $limits";
 
+	// $args can be anything. Only use the args defined in defaults to compute the key.
+	$key = md5( serialize( wp_array_slice_assoc( $args, array_keys( $defaults ) ) ) . serialize( $taxonomies ) . $query );
+	$last_changed = wp_cache_get( 'last_changed', 'terms' );
+	if ( ! $last_changed ) {
+		$last_changed = microtime();
+		wp_cache_set( 'last_changed', $last_changed, 'terms' );
+	}
+	$cache_key = "get_terms:$key:$last_changed";
+	$cache = wp_cache_get( $cache_key, 'terms' );
+	if ( false !== $cache ) {
+		if ( 'all' === $_fields ) {
+			$cache = array_map( 'get_term', $cache );
+		}
+
+		/**
+		 * Filter the given taxonomy's terms cache.
+		 *
+		 * @since 2.3.0
+		 *
+		 * @param array $cache      Cached array of terms for the given taxonomy.
+		 * @param array $taxonomies An array of taxonomies.
+		 * @param array $args       An array of get_terms() arguments.
+		 */
+		return apply_filters( 'get_terms', $cache, $taxonomies, $args );
+	}
+
 	if ( 'count' == $_fields ) {
 		return $wpdb->get_var( $query );
 	}
@@ -1500,6 +1507,10 @@ function get_terms( $taxonomies, $args = '' ) {
 	}
 
 	wp_cache_add( $cache_key, $terms, 'terms', DAY_IN_SECONDS );
+
+	if ( 'all' === $_fields ) {
+		$terms = array_map( 'get_term', $terms );
+	}
 
 	/** This filter is documented in wp-includes/taxonomy */
 	return apply_filters( 'get_terms', $terms, $taxonomies, $args );
@@ -2187,7 +2198,8 @@ function wp_delete_category( $cat_ID ) {
  * @since 2.3.0
  * @since 4.2.0 Added support for 'taxonomy', 'parent', and 'term_taxonomy_id' values of `$orderby`.
  *              Introduced `$parent` argument.
- * @since 4.4.0 Introduced `$meta_query` and `$update_term_meta_cache` arguments.
+ * @since 4.4.0 Introduced `$meta_query` and `$update_term_meta_cache` arguments. When `$fields` is 'all' or
+ *              'all_with_object_id', an array of `WP_Term` objects will be returned.
  *
  * @global wpdb $wpdb WordPress database abstraction object.
  *
@@ -2329,12 +2341,31 @@ function wp_get_object_terms($object_ids, $taxonomies, $args = array()) {
 	$objects = false;
 	if ( 'all' == $fields || 'all_with_object_id' == $fields ) {
 		$_terms = $wpdb->get_results( $query );
+		$object_id_index = array();
 		foreach ( $_terms as $key => $term ) {
-			$_terms[$key] = sanitize_term( $term, $taxonomy, 'raw' );
+			$term = sanitize_term( $term, $taxonomy, 'raw' );
+			$_terms[ $key ] = $term;
+
+			if ( isset( $term->object_id ) ) {
+				$object_id_index[ $key ] = $term->object_id;
+			}
 		}
+
+		update_term_cache( $_terms );
+		$_terms = array_map( 'get_term', $_terms );
+
+		// Re-add the object_id data, which is lost when fetching terms from cache.
+		if ( 'all_with_object_id' === $fields ) {
+			foreach ( $_terms as $key => $_term ) {
+				if ( isset( $object_id_index[ $key ] ) ) {
+					$_term->object_id = $object_id_index[ $key ];
+				}
+			}
+		}
+
 		$terms = array_merge( $terms, $_terms );
-		update_term_cache( $terms );
 		$objects = true;
+
 	} elseif ( 'ids' == $fields || 'names' == $fields || 'slugs' == $fields ) {
 		$_terms = $wpdb->get_col( $query );
 		$_field = ( 'ids' == $fields ) ? 'term_id' : 'name';
@@ -3035,7 +3066,7 @@ function wp_update_term( $term_id, $taxonomy, $args = array() ) {
 	$term_id = (int) $term_id;
 
 	// First, get all of the original args
-	$term = get_term( $term_id, $taxonomy, ARRAY_A );
+	$term = get_term( $term_id, $taxonomy );
 
 	if ( is_wp_error( $term ) ) {
 		return $term;
@@ -3045,8 +3076,10 @@ function wp_update_term( $term_id, $taxonomy, $args = array() ) {
 		return new WP_Error( 'invalid_term', __( 'Empty Term' ) );
 	}
 
+	$term = (array) $term->data;
+
 	// Escape data pulled from DB.
-	$term = wp_slash($term);
+	$term = wp_slash( $term );
 
 	// Merge old and new args with new args overwriting old ones.
 	$args = array_merge($term, $args);
@@ -3422,14 +3455,14 @@ function clean_term_cache($ids, $taxonomy = '', $clean_taxonomy = true) {
 		foreach ( (array) $terms as $term ) {
 			$taxonomies[] = $term->taxonomy;
 			$ids[] = $term->term_id;
-			wp_cache_delete($term->term_id, $term->taxonomy);
+			wp_cache_delete( $term->term_id, 'terms' );
 		}
 		$taxonomies = array_unique($taxonomies);
 	} else {
 		$taxonomies = array($taxonomy);
 		foreach ( $taxonomies as $taxonomy ) {
 			foreach ( $ids as $id ) {
-				wp_cache_delete($id, $taxonomy);
+				wp_cache_delete( $id, 'terms' );
 			}
 		}
 	}
@@ -3548,11 +3581,13 @@ function update_object_term_cache($object_ids, $object_type) {
  */
 function update_term_cache( $terms, $taxonomy = '' ) {
 	foreach ( (array) $terms as $term ) {
-		$term_taxonomy = $taxonomy;
-		if ( empty($term_taxonomy) )
-			$term_taxonomy = $term->taxonomy;
+		// Create a copy in case the array was passed by reference.
+		$_term = $term;
 
-		wp_cache_add( $term->term_id, $term, $term_taxonomy );
+		// Object ID should not be cached.
+		unset( $_term->object_id );
+
+		wp_cache_add( $term->term_id, $_term, 'terms' );
 	}
 }
 

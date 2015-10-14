@@ -31,8 +31,9 @@
  *
  * @param int          $width   Width of the image in pixels.
  * @param int          $height  Height of the image in pixels.
- * @param string|array $size    Optional. Size or array of sizes of what the result image
- *                              should be. Accepts any valid image size name. Default 'medium'.
+ * @param string|array $size    Optional. Image size. Accepts any valid image size, or an array
+ *                              of width and height values in pixels (in that order).
+ *                              Default 'medium'.
  * @param string       $context Optional. Could be 'display' (like in a theme) or 'edit'
  *                              (like inserting into an editor). Default null.
  * @return array Width and height of what the result image should resize to.
@@ -146,8 +147,9 @@ function image_hwstring( $width, $height ) {
  * @since 2.5.0
  *
  * @param int          $id   Attachment ID for image.
- * @param array|string $size Optional. Image size to scale to. Accepts a registered image size
- *                           or flat array of height and width values. Default 'medium'.
+ * @param array|string $size Optional. Image size to scale to. Accepts any valid image size,
+ *                           or an array of width and height values in pixels (in that order).
+ *                           Default 'medium'.
  * @return false|array Array containing the image URL, width, height, and boolean for whether
  *                     the image is an intermediate size. False on failure.
  */
@@ -166,7 +168,8 @@ function image_downsize( $id, $size = 'medium' ) {
 	 *
 	 * @param bool         $downsize Whether to short-circuit the image downsize. Default false.
 	 * @param int          $id       Attachment ID for image.
-	 * @param array|string $size     Size of image, either array or string. Default 'medium'.
+	 * @param array|string $size     Size of image. Image size or array of width and height values (in that order).
+	 *                               Default 'medium'.
 	 */
 	if ( $out = apply_filters( 'image_downsize', false, $id, $size ) ) {
 		return $out;
@@ -228,7 +231,7 @@ function image_downsize( $id, $size = 'medium' ) {
  * @param string     $name   Image size identifier.
  * @param int        $width  Image width in pixels.
  * @param int        $height Image height in pixels.
- * @param bool|array $crop   Optional. Whether to crop images to specified height and width or resize.
+ * @param bool|array $crop   Optional. Whether to crop images to specified width and height or resize.
  *                           An array can specify positioning of the crop area. Default false.
  */
 function add_image_size( $name, $width = 0, $height = 0, $crop = false ) {
@@ -287,7 +290,7 @@ function remove_image_size( $name ) {
  *
  * @param int        $width  Image width in pixels.
  * @param int        $height Image height in pixels.
- * @param bool|array $crop   Optional. Whether to crop images to specified height and width or resize.
+ * @param bool|array $crop   Optional. Whether to crop images to specified width and height or resize.
  *                           An array can specify positioning of the crop area. Default false.
  */
 function set_post_thumbnail_size( $width = 0, $height = 0, $crop = false ) {
@@ -312,8 +315,9 @@ function set_post_thumbnail_size( $width = 0, $height = 0, $crop = false ) {
  * @param string       $alt   Image Description for the alt attribute.
  * @param string       $title Image Description for the title attribute.
  * @param string       $align Part of the class name for aligning the image.
- * @param string|array $size  Optional. Registered image size to retrieve a tag for, or flat array
- *                            of height and width values. Default 'medium'.
+ * @param string|array $size  Optional. Registered image size to retrieve a tag for. Accepts any
+ *                            valid image size, or an array of width and height values in pixels
+ *                            (in that order). Default 'medium'.
  * @return string HTML IMG element for given image attachment
  */
 function get_image_tag( $id, $alt, $title, $align, $size = 'medium' ) {
@@ -330,10 +334,11 @@ function get_image_tag( $id, $alt, $title, $align, $size = 'medium' ) {
 	 *
 	 * @since 2.6.0
 	 *
-	 * @param string $class CSS class name or space-separated list of classes.
-	 * @param int    $id    Attachment ID.
-	 * @param string $align Part of the class name for aligning the image.
-	 * @param string $size  Optional. Default is 'medium'.
+	 * @param string       $class CSS class name or space-separated list of classes.
+	 * @param int          $id    Attachment ID.
+	 * @param string       $align Part of the class name for aligning the image.
+	 * @param string|array $size  Size of image. Image size or array of width and height values (in that order).
+	 *                            Default 'medium'.
 	 */
 	$class = apply_filters( 'get_image_tag_class', $class, $id, $align, $size );
 
@@ -344,12 +349,13 @@ function get_image_tag( $id, $alt, $title, $align, $size = 'medium' ) {
 	 *
 	 * @since 2.6.0
 	 *
-	 * @param string $html  HTML content for the image.
-	 * @param int    $id    Attachment ID.
-	 * @param string $alt   Alternate text.
-	 * @param string $title Attachment title.
-	 * @param string $align Part of the class name for aligning the image.
-	 * @param string $size  Optional. Default is 'medium'.
+	 * @param string       $html  HTML content for the image.
+	 * @param int          $id    Attachment ID.
+	 * @param string       $alt   Alternate text.
+	 * @param string       $title Attachment title.
+	 * @param string       $align Part of the class name for aligning the image.
+	 * @param string|array $size  Size of image. Image size or array of width and height values (in that order).
+	 *                            Default 'medium'.
 	 */
 	return apply_filters( 'get_image_tag', $html, $id, $alt, $title, $align, $size );
 }
@@ -449,11 +455,11 @@ function wp_constrain_dimensions( $current_width, $current_height, $max_width = 
  * @param int        $orig_h Original height in pixels.
  * @param int        $dest_w New width in pixels.
  * @param int        $dest_h New height in pixels.
- * @param bool|array $crop   Optional. Whether to crop image to specified height and width or resize.
+ * @param bool|array $crop   Optional. Whether to crop image to specified width and height or resize.
  *                           An array can specify positioning of the crop area. Default false.
  * @return false|array False on failure. Returned array matches parameters for `imagecopyresampled()`.
  */
-function image_resize_dimensions($orig_w, $orig_h, $dest_w, $dest_h, $crop = false) {
+function image_resize_dimensions( $orig_w, $orig_h, $dest_w, $dest_h, $crop = false ) {
 
 	if ($orig_w <= 0 || $orig_h <= 0)
 		return false;
@@ -474,7 +480,7 @@ function image_resize_dimensions($orig_w, $orig_h, $dest_w, $dest_h, $crop = fal
 	 * @param int        $orig_h Original height in pixels.
 	 * @param int        $dest_w New width in pixels.
 	 * @param int        $dest_h New height in pixels.
-	 * @param bool|array $crop   Whether to crop image to specified height and width or resize.
+	 * @param bool|array $crop   Whether to crop image to specified width and height or resize.
 	 *                           An array can specify positioning of the crop area. Default false.
 	 */
 	$output = apply_filters( 'image_resize_dimensions', null, $orig_w, $orig_h, $dest_w, $dest_h, $crop );
@@ -555,7 +561,7 @@ function image_resize_dimensions($orig_w, $orig_h, $dest_w, $dest_h, $crop = fal
  * @param string $file   File path.
  * @param int    $width  Image width.
  * @param int    $height Image height.
- * @param bool   $crop   Optional. Whether to crop image to specified height and width or resize.
+ * @param bool   $crop   Optional. Whether to crop image to specified width and height or resize.
  *                       Default false.
  * @return false|array False, if no image was created. Metadata array on success.
  */
@@ -598,8 +604,9 @@ function image_make_intermediate_size( $file, $width, $height, $crop = false ) {
  * @since 2.5.0
  *
  * @param int          $post_id Attachment ID.
- * @param array|string $size    Optional. Registered image size to retrieve or flat array of height
- *                              and width dimensions. Default 'thumbnail'.
+ * @param array|string $size    Optional. Image size. Accepts any valid image size, or an array
+ *                              of width and height values in pixels (in that order).
+ *                              Default 'thumbnail'.
  * @return false|array False on failure or array of file path, width, and height on success.
  */
 function image_get_intermediate_size( $post_id, $size = 'thumbnail' ) {
@@ -700,8 +707,8 @@ function get_intermediate_image_sizes() {
  * @since 2.5.0
  *
  * @param int          $attachment_id Image attachment ID.
- * @param string|array $size          Optional. Registered image size to retrieve the source for or a flat
- *                                    array of height and width dimensions. Default 'thumbnail'.
+ * @param string|array $size          Optional. Image size. Accepts any valid image size, or an array of width
+ *                                    and height values in pixels (in that order). Default 'thumbnail'.
  * @param bool         $icon          Optional. Whether the image should be treated as an icon. Default false.
  * @return false|array Returns an array (url, width, height, is_intermediate), or false, if no image is available.
  */
@@ -730,8 +737,8 @@ function wp_get_attachment_image_src( $attachment_id, $size = 'thumbnail', $icon
 	 *
 	 * @param array|false  $image         Either array with src, width & height, icon src, or false.
 	 * @param int          $attachment_id Image attachment ID.
-	 * @param string|array $size          Registered image size to retrieve the source for or a flat
-	 *                                    array of height and width dimensions. Default 'thumbnail'.
+	 * @param string|array $size          Size of image. Image size or array of width and height values
+	 *                                    (in that order). Default 'thumbnail'.
 	 * @param bool         $icon          Whether the image should be treated as an icon. Default false.
 	 */
 	return apply_filters( 'wp_get_attachment_image_src', $image, $attachment_id, $size, $icon );
@@ -748,8 +755,8 @@ function wp_get_attachment_image_src( $attachment_id, $size = 'thumbnail', $icon
  * @since 2.5.0
  *
  * @param int          $attachment_id Image attachment ID.
- * @param string|array $size          Optional. Registered image size or flat array of height and width
- *                                    dimensions. Default 'thumbnail'.
+ * @param string|array $size          Optional. Image size. Accepts any valid image size, or an array of width
+ *                                    and height values in pixels (in that order). Default 'thumbnail'.
  * @param bool         $icon          Optional. Whether the image should be treated as an icon. Default false.
  * @param string|array $attr          Optional. Attributes for the image markup. Default empty.
  * @return string HTML img element or empty string on failure.
@@ -794,7 +801,8 @@ function wp_get_attachment_image($attachment_id, $size = 'thumbnail', $icon = fa
 		 *
 		 * @param array        $attr       Attributes for the image markup.
 		 * @param WP_Post      $attachment Image attachment post.
-		 * @param string|array $size       Requested size.
+		 * @param string|array $size       Requested size. Image size or array of width and height values
+		 *                                 (in that order). Default 'thumbnail'.
 		 */
 		$attr = apply_filters( 'wp_get_attachment_image_attributes', $attr, $attachment, $size );
 		$attr = array_map( 'esc_attr', $attr );
@@ -814,8 +822,8 @@ function wp_get_attachment_image($attachment_id, $size = 'thumbnail', $icon = fa
  * @since 4.4.0
  *
  * @param int          $attachment_id Image attachment ID.
- * @param string|array $size          Optional. Registered image size to retrieve the source for or a flat
- *                                    array of height and width dimensions. Default 'thumbnail'.
+ * @param string|array $size          Optional. Image size to retrieve. Accepts any valid image size, or an array
+ *                                    of width and height values in pixels (in that order). Default 'thumbnail'.
  * @param bool         $icon          Optional. Whether the image should be treated as an icon. Default false.
  * @return string|false Attachment URL or false if no image is available.
  */
@@ -913,7 +921,11 @@ function wp_get_attachment_image_srcset_array( $attachment_id, $size = 'medium' 
 		$candidate_url = path_join( dirname( $img_url ), $img['file'] );
 
 		// Calculate the new image ratio.
-		$img_ratio_compare = $img['height'] / $img['width'];
+		if ( $img['width'] ) {
+			$img_ratio_compare = $img['height'] / $img['width'];
+		} else {
+			$img_ratio_compare = 0;
+		}
 
 		// If the new ratio differs by less than 0.01, use it.
 		if ( abs( $img_ratio - $img_ratio_compare ) < 0.01 && ! in_array( $candidate_url, $candidates ) ) {
@@ -1369,23 +1381,24 @@ add_shortcode('gallery', 'gallery_shortcode');
  * @param array $attr {
  *     Attributes of the gallery shortcode.
  *
- *     @type string $order      Order of the images in the gallery. Default 'ASC'. Accepts 'ASC', 'DESC'.
- *     @type string $orderby    The field to use when ordering the images. Default 'menu_order ID'.
- *                              Accepts any valid SQL ORDERBY statement.
- *     @type int    $id         Post ID.
- *     @type string $itemtag    HTML tag to use for each image in the gallery.
- *                              Default 'dl', or 'figure' when the theme registers HTML5 gallery support.
- *     @type string $icontag    HTML tag to use for each image's icon.
- *                              Default 'dt', or 'div' when the theme registers HTML5 gallery support.
- *     @type string $captiontag HTML tag to use for each image's caption.
- *                              Default 'dd', or 'figcaption' when the theme registers HTML5 gallery support.
- *     @type int    $columns    Number of columns of images to display. Default 3.
- *     @type string $size       Size of the images to display. Default 'thumbnail'.
- *     @type string $ids        A comma-separated list of IDs of attachments to display. Default empty.
- *     @type string $include    A comma-separated list of IDs of attachments to include. Default empty.
- *     @type string $exclude    A comma-separated list of IDs of attachments to exclude. Default empty.
- *     @type string $link       What to link each image to. Default empty (links to the attachment page).
- *                              Accepts 'file', 'none'.
+ *     @type string       $order      Order of the images in the gallery. Default 'ASC'. Accepts 'ASC', 'DESC'.
+ *     @type string       $orderby    The field to use when ordering the images. Default 'menu_order ID'.
+ *                                    Accepts any valid SQL ORDERBY statement.
+ *     @type int          $id         Post ID.
+ *     @type string       $itemtag    HTML tag to use for each image in the gallery.
+ *                                    Default 'dl', or 'figure' when the theme registers HTML5 gallery support.
+ *     @type string       $icontag    HTML tag to use for each image's icon.
+ *                                    Default 'dt', or 'div' when the theme registers HTML5 gallery support.
+ *     @type string       $captiontag HTML tag to use for each image's caption.
+ *                                    Default 'dd', or 'figcaption' when the theme registers HTML5 gallery support.
+ *     @type int          $columns    Number of columns of images to display. Default 3.
+ *     @type string|array $size       Size of the images to display. Accepts any valid image size, or an array of width
+ *                                    and height values in pixels (in that order). Default 'thumbnail'.
+ *     @type string       $ids        A comma-separated list of IDs of attachments to display. Default empty.
+ *     @type string       $include    A comma-separated list of IDs of attachments to include. Default empty.
+ *     @type string       $exclude    A comma-separated list of IDs of attachments to exclude. Default empty.
+ *     @type string       $link       What to link each image to. Default empty (links to the attachment page).
+ *                                    Accepts 'file', 'none'.
  * }
  * @return string HTML content to display gallery.
  */
@@ -2397,8 +2410,9 @@ add_shortcode( 'video', 'wp_video_shortcode' );
  *
  * @see adjacent_image_link()
  *
- * @param string|array $size Optional. Registered image size or flat array of height and width dimensions.
- *                           0 or 'none' will default to 'post_title' or `$text`. Default 'thumbnail'.
+ * @param string|array $size Optional. Image size. Accepts any valid image size, an array of width and
+ *                           height values in pixels (in that order), 0, or 'none'. 0 or 'none' will
+ *                           default to 'post_title' or `$text`. Default 'thumbnail'.
  * @param string       $text Optional. Link text. Default false.
  */
 function previous_image_link( $size = 'thumbnail', $text = false ) {
@@ -2412,11 +2426,12 @@ function previous_image_link( $size = 'thumbnail', $text = false ) {
  *
  * @see adjacent_image_link()
  *
- * @param string|array $size Optional. Registered image size or flat array of height and width dimensions.
- *                           0 or 'none' will default to 'post_title' or `$text`. Default 'thumbnail'.
+ * @param string|array $size Optional. Image size. Accepts any valid image size, an array of width and
+ *                           height values in pixels (in that order), 0, or 'none'. 0 or 'none' will
+ *                           default to 'post_title' or `$text`. Default 'thumbnail'.
  * @param string       $text Optional. Link text. Default false.
  */
-function next_image_link($size = 'thumbnail', $text = false) {
+function next_image_link( $size = 'thumbnail', $text = false ) {
 	adjacent_image_link(false, $size, $text);
 }
 
@@ -2428,8 +2443,8 @@ function next_image_link($size = 'thumbnail', $text = false) {
  * @since 2.5.0
  *
  * @param bool         $prev Optional. Whether to display the next (false) or previous (true) link. Default true.
- * @param string|array $size Optional. Registered image size or flat array of height and width dimensions.
- *                                     Default 'thumbnail'.
+ * @param string|array $size Optional. Image size. Accepts any valid image size, or an array of width and height
+ *                           values in pixels (in that order). Default 'thumbnail'.
  * @param bool         $text Optional. Link text. Default false.
  */
 function adjacent_image_link( $prev = true, $size = 'thumbnail', $text = false ) {

@@ -325,15 +325,9 @@ h6 {
 }
 
 h1 {
+	color: #23282d;
 	font-size: 2em;
 	margin: .67em 0;
-}
-
-.wrap > h1 {
-	color: #23282d;
-	font-size: 1.5em;
-	margin: .83em 0;
-	font-weight: 400;
 }
 
 h2,
@@ -568,12 +562,14 @@ code {
 	margin: 10px 20px 0 2px;
 }
 
+.wrap > h2:first-child, /* Back-compat for old plugins */
 .wrap h1,
 .subtitle {
 	font-weight: normal;
 	margin: 0;
 }
 
+.wrap > h2:first-child, /* Back-compat for old plugins */
 .wrap h1 {
 	font-size: 23px;
 	font-weight: 400;
@@ -1570,10 +1566,17 @@ form.upgrade .hint {
 	background-position: bottom left;
 }
 
-#screen-options-wrap h5,
+#screen-options-wrap h5, /* Back-compat for old plugins */
+#screen-options-wrap legend,
 #contextual-help-wrap h5 {
-	margin: 8px 0;
-	font-size: 13px;
+	margin: 0;
+	padding: 8px 0;
+ 	font-size: 13px;
+	font-weight: 600;
+}
+
+.ie8 #screen-options-wrap legend {
+	color: inherit;
 }
 
 .metabox-prefs label {
@@ -1582,25 +1585,28 @@ form.upgrade .hint {
 	line-height: 30px;
 }
 
-.metabox-prefs label input[type=checkbox] {
-	margin-top: -4px;
+#number-of-columns {
+	display: inline-block;
+	vertical-align: middle;
+	line-height: 30px;
+}
+
+.metabox-prefs input[type=checkbox] {
+	margin-top: 0;
 	margin-right: 6px;
 }
 
-.metabox-prefs label input {
-	margin: 0 5px 0 2px;
+.metabox-prefs label input,
+.metabox-prefs label input[type=checkbox] {
+	margin: -4px 5px 0 0;
 }
 
 .metabox-prefs .columns-prefs label input {
-	margin: 0 2px;
+	margin: -1px 2px 0 0;
 }
 
 .metabox-prefs label a {
 	display: none;
-}
-
-.metabox-prefs .screen-options {
-	padding-top: 10px;
 }
 
 .metabox-prefs .screen-options input,
@@ -1617,6 +1623,15 @@ form.upgrade .hint {
 .metabox-prefs .screen-options label {
 	line-height: 28px;
 	padding-right: 0;
+}
+
+.screen-options + .screen-options {
+    margin-top: 10px;
+}
+
+.metabox-prefs .submit {
+	margin-top: 1em;
+	padding: 0;
 }
 
 /*------------------------------------------------------------------------------
@@ -1900,7 +1915,7 @@ html.wp-toolbar {
 }
 
 .columns-prefs label {
-	padding: 0 5px;
+	padding: 0 10px 0 0;
 }
 
 /* @todo: what is this doing here */
@@ -1960,15 +1975,20 @@ html.wp-toolbar {
 	border-bottom: none;
 	background: #e4e4e4;
 	color: #555;
-	font-size: 12px;
-	line-height: 16px;
-	display: inline-block;
-	padding: 4px 14px 6px;
-	text-decoration: none;
-	margin: -4px 4px -1px 0;
 }
 
-.nav-tab:hover {
+.nav-tab,
+.nav-tab-small .nav-tab {
+	display: inline-block;
+	margin: -4px 4px -1px 0;
+	padding: 5px 14px;
+	font-size: 12px;
+	line-height: 16px;
+	text-decoration: none;
+}
+
+.nav-tab:hover,
+.nav-tab:focus {
 	background-color: #fff;
 	color: #464646;
 }
@@ -1978,24 +1998,28 @@ html.wp-toolbar {
 }
 
 .nav-tab-active,
-.nav-tab-active:hover {
+.nav-tab-active:hover,
+.nav-tab-active:focus {
 	border-bottom: 1px solid #f1f1f1;
 	background: #f1f1f1;
 	color: #000;
 }
 
-h1.nav-tab-wrapper,
+h1.nav-tab-wrapper, /* Back-compat for pre-4.4 */
 h2.nav-tab-wrapper,
 h3.nav-tab-wrapper {
 	border-bottom: 1px solid #ccc;
-	padding-bottom: 0;
-	padding-left: 10px;
+	margin: 0;
+	padding: 9px 15px 0 10px;
+	font-size: 23px;
+	font-weight: 400;
+	line-height: 29px;
 }
 
-h1 .nav-tab,
+h1 .nav-tab, /* Back-compat for pre-4.4 */
 h2 .nav-tab {
 	padding: 6px 10px;
-	font-weight: bold;
+	font-weight: 600;
 	font-size: 15px;
 	line-height: 24px;
 }
@@ -2028,11 +2052,19 @@ h2 .nav-tab {
 	margin-right: 190px;
 }
 
-.metabox-holder h3 {
+.metabox-holder h3.hndle, /* Back-compat for pre-4.4 */
+.metabox-holder .stuffbox > h3, /* Back-compat for pre-4.4 */
+.metabox-holder h2 {
 	font-size: 14px;
 	padding: 8px 12px;
 	margin: 0;
 	line-height: 1.4;
+}
+
+/* Back-compat for nav-menus screen */
+.nav-menus-php .metabox-holder h3 {
+	padding: 10px 10px 11px 14px;
+	line-height: 21px;
 }
 
 #templateside ul li a {
@@ -2097,7 +2129,8 @@ body.iframe {
 	width: auto;
 }
 
-#post-body #post-body-content #namediv h3 {
+#post-body #post-body-content #namediv h3, /* Back-compat for pre-4.4 */
+#post-body #post-body-content #namediv h2 {
 	margin-top: 0;
 }
 
@@ -2109,7 +2142,8 @@ body.iframe {
 	margin: 2px 0 0 9px;
 }
 
-#namediv h3 label {
+#namediv h3 label, /* Back-compat for pre-4.4 */
+#namediv h2 label {
 	vertical-align: baseline;
 }
 
@@ -3400,7 +3434,9 @@ img {
 		font-size: 14px;
 	}
 
-	.metabox-holder h3 {
+	.metabox-holder h3.hndle, /* Back-compat for pre-4.4 */
+	.metabox-holder .stuffbox > h3, /* Back-compat for pre-4.4 */
+	.metabox-holder h2 {
 		padding: 12px;
 	}
 

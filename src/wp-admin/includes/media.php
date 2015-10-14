@@ -106,16 +106,18 @@ function the_media_upload_tabs() {
  *
  * @since 2.5.0
  *
- * @param int     $id      image attachment id
- * @param string  $caption image caption
- * @param string  $title   image title attribute
- * @param string  $align   image css alignment property
- * @param string  $url     image src url
- * @param string  $rel     image rel attribute
- * @param string  $size    image size (thumbnail, medium, large, full or added  with add_image_size() )
- * @return string the html to insert into editor
+ * @param int          $id      Image attachment id.
+ * @param string       $caption Image caption.
+ * @param string       $title   Image title attribute.
+ * @param string       $align   Image CSS alignment property.
+ * @param string       $url     Optional. Image src URL. Default empty.
+ * @param string       $rel     Optional. Image rel attribute. Default empty.
+ * @param string|array $size    Optional. Image size. Accepts any valid image size, or an array of width
+ *                              and height values in pixels (in that order). Default 'medium'.
+ * @param string       $alt     Optional. Image alt attribute. Default empty.
+ * @return string The HTML output to insert into the editor.
  */
-function get_image_send_to_editor( $id, $caption, $title, $align, $url='', $rel = '', $size='medium', $alt = '' ) {
+function get_image_send_to_editor( $id, $caption, $title, $align, $url = '', $rel = '', $size = 'medium', $alt = '' ) {
 
 	$html = get_image_tag($id, $alt, '', $align, $size);
 
@@ -133,14 +135,15 @@ function get_image_send_to_editor( $id, $caption, $title, $align, $url='', $rel 
 	 *
 	 * @since 2.5.0
 	 *
-	 * @param string $html    The image HTML markup to send.
-	 * @param int    $id      The attachment id.
-	 * @param string $caption The image caption.
-	 * @param string $title   The image title.
-	 * @param string $align   The image alignment.
-	 * @param string $url     The image source URL.
-	 * @param string $size    The image size.
-	 * @param string $alt     The image alternative, or alt, text.
+	 * @param string       $html    The image HTML markup to send.
+	 * @param int          $id      The attachment id.
+	 * @param string       $caption The image caption.
+	 * @param string       $title   The image title.
+	 * @param string       $align   The image alignment.
+	 * @param string       $url     The image source URL.
+	 * @param string|array $size    Size of image. Image size or array of width and height values
+	 *                              (in that order). Default 'medium'.
+	 * @param string       $alt     The image alternative, or alt, text.
 	 */
 	$html = apply_filters( 'image_send_to_editor', $html, $id, $caption, $title, $align, $url, $size, $alt );
 
@@ -847,6 +850,10 @@ function media_sideload_image( $file, $post_id, $desc = null, $return = 'html' )
 
 		// Set variables for storage, fix file filename for query strings.
 		preg_match( '/[^\?]+\.(jpe?g|jpe|gif|png)\b/i', $file, $matches );
+		if ( ! $matches ) {
+			return new WP_Error( 'image_sideload_failed', __( 'Invalid image URL' ) );
+		}
+
 		$file_array = array();
 		$file_array['name'] = basename( $matches[0] );
 

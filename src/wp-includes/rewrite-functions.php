@@ -7,22 +7,25 @@
  */
 
 /**
- * Adds a straight rewrite rule.
+ * Adds a rewrite rule that transforms a URL structure to a set of query vars.
+ *
+ * Any value in the $after parameter that isn't 'bottom' will result in the rule
+ * being placed at the top of the rewrite rules.
  *
  * @since 2.1.0
- * @since 4.4.0 Array support was added to the `$redirect` parameter.
+ * @since 4.4.0 Array support was added to the `$query` parameter.
  *
  * @global WP_Rewrite $wp_rewrite WordPress Rewrite Component.
  *
- * @param string       $regex    Regular Expression to match request against.
- * @param string|array $redirect Page to redirect to, or array of query vars and values.
- * @param string       $after    Optional. Location where to insert the new rule. Accepts 'top',
- *                               or 'bottom'. Default 'bottom'.
+ * @param string       $regex Regular expression to match request against.
+ * @param string|array $query The corresponding query vars for this rewrite rule.
+ * @param string       $after Optional. Priority of the new rule. Accepts 'top'
+ *                            or 'bottom'. Default 'bottom'.
  */
-function add_rewrite_rule( $regex, $redirect, $after = 'bottom' ) {
+function add_rewrite_rule( $regex, $query, $after = 'bottom' ) {
 	global $wp_rewrite;
 
-	$wp_rewrite->add_rule( $regex, $redirect, $after );
+	$wp_rewrite->add_rule( $regex, $query, $after );
 }
 
 /**
@@ -89,18 +92,24 @@ function add_permastruct( $name, $struct, $args = array() ) {
  *
  * @global WP_Rewrite $wp_rewrite
  *
- * @param string   $feedname
+ * @param string   $feedname Feed name.
  * @param callable $function Callback to run on feed display.
  * @return string Feed action name.
  */
-function add_feed($feedname, $function) {
+function add_feed( $feedname, $function ) {
 	global $wp_rewrite;
-	if ( ! in_array($feedname, $wp_rewrite->feeds) ) //override the file if it is
+
+	if ( ! in_array( $feedname, $wp_rewrite->feeds ) ) {
 		$wp_rewrite->feeds[] = $feedname;
+	}
+
 	$hook = 'do_feed_' . $feedname;
+
 	// Remove default function hook
-	remove_action($hook, $hook);
-	add_action($hook, $function, 10, 1);
+	remove_action( $hook, $hook );
+
+	add_action( $hook, $function, 10, 2 );
+
 	return $hook;
 }
 

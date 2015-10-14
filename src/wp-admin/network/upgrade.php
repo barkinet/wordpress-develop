@@ -52,7 +52,7 @@ switch ( $action ) {
 			 * @global string $wp_db_version
 			 */
 			global $wp_db_version;
-			update_network_option( 'wpmu_upgrade_site', $wp_db_version );
+			update_site_option( 'wpmu_upgrade_site', $wp_db_version );
 		}
 
 		$blogs = $wpdb->get_results( "SELECT blog_id FROM {$wpdb->blogs} WHERE site_id = '{$wpdb->siteid}' AND spam = '0' AND deleted = '0' AND archived = '0' ORDER BY registered DESC LIMIT {$n}, 5", ARRAY_A );
@@ -109,13 +109,13 @@ switch ( $action ) {
 	break;
 	case 'show':
 	default:
-		if ( get_network_option( 'wpmu_upgrade_site' ) != $GLOBALS['wp_db_version'] ) :
+		if ( get_site_option( 'wpmu_upgrade_site' ) != $GLOBALS['wp_db_version'] ) :
 		?>
-		<h2><?php _e( 'Database Upgrade Required' ); ?></h2>
+		<h2><?php _e( 'Database Update Required' ); ?></h2>
 		<p><?php _e( 'WordPress has been updated! Before we send you on your way, we need to individually upgrade the sites in your network.' ); ?></p>
 		<?php endif; ?>
 
-		<p><?php _e( 'The database upgrade process may take a little while, so please be patient.' ); ?></p>
+		<p><?php _e( 'The database update process may take a little while, so please be patient.' ); ?></p>
 		<p><a class="button" href="upgrade.php?action=upgrade"><?php _e( 'Upgrade Network' ); ?></a></p>
 		<?php
 		/**

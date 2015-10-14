@@ -165,7 +165,7 @@ function wp_ajax_wp_compression_test() {
 		wp_die( -1 );
 
 	if ( ini_get('zlib.output_compression') || 'ob_gzhandler' == ini_get('output_handler') ) {
-		update_network_option( 'can_compress_scripts', 0 );
+		update_site_option('can_compress_scripts', 0);
 		wp_die( 0 );
 	}
 
@@ -196,9 +196,9 @@ function wp_ajax_wp_compression_test() {
 			echo $out;
 			wp_die();
 		} elseif ( 'no' == $_GET['test'] ) {
-			update_network_option( 'can_compress_scripts', 0 );
+			update_site_option('can_compress_scripts', 0);
 		} elseif ( 'yes' == $_GET['test'] ) {
-			update_network_option( 'can_compress_scripts', 1 );
+			update_site_option('can_compress_scripts', 1);
 		}
 	}
 
@@ -2801,7 +2801,8 @@ function wp_ajax_query_themes() {
 		$theme->author      = wp_kses( $theme->author, $themes_allowedtags );
 		$theme->version     = wp_kses( $theme->version, $themes_allowedtags );
 		$theme->description = wp_kses( $theme->description, $themes_allowedtags );
-		$theme->num_ratings = sprintf( _n( '(based on %s rating)', '(based on %s ratings)', $theme->num_ratings ), number_format_i18n( $theme->num_ratings ) );
+		$theme->stars       = wp_star_rating( array( 'rating' => $theme->rating, 'type' => 'percent', 'number' => $theme->num_ratings, 'echo' => false ) );
+		$theme->num_ratings = number_format_i18n( $theme->num_ratings );
 		$theme->preview_url = set_url_scheme( $theme->preview_url );
 	}
 
