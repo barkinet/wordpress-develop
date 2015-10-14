@@ -300,7 +300,7 @@
 		 * @param {Object}  args.completeCallback
 		 */
 		onChangeActive: function( active, args ) {
-			var duration, construct = this;
+			var duration, construct = this, expandedOtherPanel;
 			if ( args.unchanged ) {
 				if ( args.completeCallback ) {
 					args.completeCallback();
@@ -309,6 +309,17 @@
 			}
 
 			duration = ( 'resolved' === api.previewer.deferred.active.state() ? args.duration : 0 );
+
+			// If this is a panel, and it is not currently expanded but another panel is expanded, do not animate.
+			if ( construct.extended( api.Panel ) ) {
+				api.panel.each(function ( panel ) {
+					if ( panel !== construct && panel.expanded() ) {
+						expandedOtherPanel = panel;
+						duration = 0;
+					}
+				});
+			}
+
 			if ( ! $.contains( document, construct.container[0] ) ) {
 				// jQuery.fn.slideUp is not hiding an element if it is not in the DOM
 				construct.container.toggle( active );
@@ -328,6 +339,11 @@
 				} else {
 					construct.container.stop( true, true ).slideUp( duration, args.completeCallback );
 				}
+			}
+
+			// Recalculate the margin-top immediately, not waiting for debounced reflow, to prevent momentary (100ms) vertical jiggle.
+			if ( expandedOtherPanel ) {
+				expandedOtherPanel._recalculateTopMargin();
 			}
 		},
 
