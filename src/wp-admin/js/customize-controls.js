@@ -1384,7 +1384,7 @@
 		_recalculateTopMargin: function() {
 			var panel = this, headerActionsHeight, content, accordionSection;
 			headerActionsHeight = $( '#customize-header-actions' ).height();
-			accordionSection = panel.container.closest( '.accordion-section' )
+			accordionSection = panel.container.closest( '.accordion-section' );
 			content = accordionSection.find( '.control-panel-content' );
 			content.css( 'margin-top', ( parseInt( content.css( 'margin-top' ), 10 ) - ( content.offset().top - headerActionsHeight ) ) );
 		},
