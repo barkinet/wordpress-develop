@@ -52,4 +52,20 @@ jQuery( window ).load( function() {
 
 		$( document ).off( 'widget-added' );
 	});
+
+	test( 'widgets panel should have notice', function() {
+		var panel = api.panel( 'widgets' );
+		ok( panel.extended( api.Widgets.WidgetsPanel ) );
+
+		panel.deferred.embedded.done( function() {
+			ok( 1 === panel.container.find( '.no-widget-areas-rendered-notice' ).length );
+			ok( panel.container.find( '.no-widget-areas-rendered-notice' ).is( ':visible' ) );
+			api.section( 'sidebar-widgets-sidebar-1' ).active( true );
+			api.control( 'sidebars_widgets[sidebar-1]' ).active( true );
+			api.trigger( 'pane-contents-reflowed' );
+			ok( ! panel.container.find( '.no-widget-areas-rendered-notice' ).is( ':visible' ) );
+		} );
+
+		expect( 4 );
+	});
 });
