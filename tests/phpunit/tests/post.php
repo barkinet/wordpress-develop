@@ -6,18 +6,40 @@
  * @group post
  */
 class Tests_Post extends WP_UnitTestCase {
-	function setUp() {
-		parent::setUp();
-		$this->author_id = $this->factory->user->create( array( 'role' => 'editor' ) );
-		$this->old_current_user = get_current_user_id();
-		wp_set_current_user( $this->author_id );
-		_set_cron_array(array());
-		$this->post_ids = array();
+	protected static $editor_id;
+	protected static $grammarian_id;
+
+	public static function wpSetUpBeforeClass( $factory ) {
+		self::$editor_id = $factory->user->create( array( 'role' => 'editor' ) );
+
+		add_role( 'grammarian', 'Grammarian', array(
+			'read'                 => true,
+			'edit_posts'           => true,
+			'edit_others_posts'    => true,
+			'edit_published_posts' => true,
+		) );
+
+		self::$grammarian_id = $factory->user->create( array( 'role' => 'grammarian' ) );
 	}
 
-	function tearDown() {
-		wp_set_current_user( $this->old_current_user );
-		parent::tearDown();
+	public static function wpTearDownAfterClass() {
+		$ids = array( self::$editor_id, self::$grammarian_id );
+		foreach ( $ids as $id ) {
+			if ( is_multisite() ) {
+				wpmu_delete_user( $id );
+			} else {
+				wp_delete_user( $id );
+			}
+		}
+	}
+
+	function setUp() {
+		parent::setUp();
+
+		wp_set_current_user( self::$editor_id );
+		_set_cron_array( array() );
+
+		$this->post_ids = array();
 	}
 
 	// helper function: return the timestamp(s) of cron jobs for the specified hook and post
@@ -40,7 +62,7 @@ class Tests_Post extends WP_UnitTestCase {
 
 		foreach ( $post_types as $post_type ) {
 			$post = array(
-				'post_author' => $this->author_id,
+				'post_author' => self::$editor_id,
 				'post_status' => 'publish',
 				'post_content' => rand_str(),
 				'post_title' => rand_str(),
@@ -94,7 +116,7 @@ class Tests_Post extends WP_UnitTestCase {
 		$future_date = strtotime('+1 day');
 
 		$post = array(
-			'post_author' => $this->author_id,
+			'post_author' => self::$editor_id,
 			'post_status' => 'publish',
 			'post_content' => rand_str(),
 			'post_title' => rand_str(),
@@ -129,7 +151,7 @@ class Tests_Post extends WP_UnitTestCase {
 
 
 		$post = array(
-			'post_author' => $this->author_id,
+			'post_author' => self::$editor_id,
 			'post_status' => 'publish',
 			'post_content' => rand_str(),
 			'post_title' => rand_str(),
@@ -171,7 +193,7 @@ class Tests_Post extends WP_UnitTestCase {
 		$future_date_2 = strtotime('+2 day');
 
 		$post = array(
-			'post_author' => $this->author_id,
+			'post_author' => self::$editor_id,
 			'post_status' => 'publish',
 			'post_content' => rand_str(),
 			'post_title' => rand_str(),
@@ -211,7 +233,7 @@ class Tests_Post extends WP_UnitTestCase {
 		$future_date = strtotime('+1 day');
 
 		$post = array(
-			'post_author' => $this->author_id,
+			'post_author' => self::$editor_id,
 			'post_status' => 'draft',
 			'post_content' => rand_str(),
 			'post_title' => rand_str(),
@@ -243,7 +265,7 @@ class Tests_Post extends WP_UnitTestCase {
 		$future_date_1 = strtotime('+1 day');
 
 		$post = array(
-			'post_author' => $this->author_id,
+			'post_author' => self::$editor_id,
 			'post_status' => 'publish',
 			'post_content' => rand_str(),
 			'post_title' => rand_str(),
@@ -284,7 +306,7 @@ class Tests_Post extends WP_UnitTestCase {
 
 		foreach ($statuses as $status) {
 			$post = array(
-				'post_author' => $this->author_id,
+				'post_author' => self::$editor_id,
 				'post_status' => 'publish',
 				'post_content' => rand_str(),
 				'post_title' => rand_str(),
@@ -324,7 +346,7 @@ class Tests_Post extends WP_UnitTestCase {
 		$future_date = strtotime('+1 day');
 
 		$post = array(
-			'post_author' => $this->author_id,
+			'post_author' => self::$editor_id,
 			'post_status' => 'private',
 			'post_content' => rand_str(),
 			'post_title' => rand_str(),
@@ -357,7 +379,7 @@ class Tests_Post extends WP_UnitTestCase {
 		// insert a post with an invalid date, make sure it fails
 
 		$post = array(
-			'post_author' => $this->author_id,
+			'post_author' => self::$editor_id,
 			'post_status' => 'public',
 			'post_content' => rand_str(),
 			'post_title' => rand_str(),
@@ -378,7 +400,7 @@ class Tests_Post extends WP_UnitTestCase {
 		$future_date_1 = strtotime('+1 day');
 
 		$post = array(
-			'post_author' => $this->author_id,
+			'post_author' => self::$editor_id,
 			'post_status' => 'publish',
 			'post_content' => rand_str(),
 			'post_title' => rand_str(),
@@ -476,7 +498,7 @@ class Tests_Post extends WP_UnitTestCase {
 		$future_date = strtotime('+1 day');
 
 		$post = array(
-			'post_author' => $this->author_id,
+			'post_author' => self::$editor_id,
 			'post_status' => 'publish',
 			'post_content' => rand_str(),
 			'post_title' => rand_str(),
@@ -505,7 +527,7 @@ class Tests_Post extends WP_UnitTestCase {
 		$this->set_permalink_structure('/%year%/%monthnum%/%day%/%postname%/');
 
 		$post = array(
-			'post_author' => $this->author_id,
+			'post_author' => self::$editor_id,
 			'post_status' => 'publish',
 			'post_content' => rand_str(),
 			'post_title' => '',
@@ -769,7 +791,7 @@ class Tests_Post extends WP_UnitTestCase {
 
 		$title = rand_str();
 		$post_data = array(
-			'post_author' => $this->author_id,
+			'post_author' => self::$editor_id,
 			'post_status' => 'public',
 			'post_content' => rand_str(),
 			'post_title' => $title,
@@ -781,7 +803,7 @@ class Tests_Post extends WP_UnitTestCase {
 		$this->assertTrue( ( is_int($insert_post_id) && $insert_post_id > 0 ) );
 
 		$post = get_post( $insert_post_id );
-		$this->assertEquals( $post->post_author, $this->author_id );
+		$this->assertEquals( $post->post_author, self::$editor_id );
 		$this->assertEquals( $post->post_title, $title );
 	}
 
@@ -793,7 +815,7 @@ class Tests_Post extends WP_UnitTestCase {
 		register_post_type( $post_type );
 		$this->factory->post->create( array(
 			'post_type' => $post_type,
-			'post_author' => $this->author_id
+			'post_author' => self::$editor_id
 		) );
 		$count = wp_count_posts( $post_type, 'readable' );
 		$this->assertEquals( 1, $count->publish );
@@ -804,27 +826,27 @@ class Tests_Post extends WP_UnitTestCase {
 	function test_wp_count_posts_filtered() {
 		$post_type = rand_str(20);
 		register_post_type( $post_type );
-		$this->factory->post->create_many( 10, array(
+		$this->factory->post->create_many( 3, array(
 			'post_type' => $post_type,
-			'post_author' => $this->author_id
+			'post_author' => self::$editor_id
 		) );
 		$count1 = wp_count_posts( $post_type, 'readable' );
-		$this->assertEquals( 10, $count1->publish );
+		$this->assertEquals( 3, $count1->publish );
 		add_filter( 'wp_count_posts', array( $this, 'filter_wp_count_posts' ) );
 
 		$count2 = wp_count_posts( $post_type, 'readable' );
-		$this->assertEquals( 7, $count2->publish );
+		$this->assertEquals( 2, $count2->publish );
 
 		remove_filter( 'wp_count_posts', array( $this, 'filter_wp_count_posts' ) );
 	}
 
 	function filter_wp_count_posts( $counts ) {
-		$counts->publish = 7;
+		$counts->publish = 2;
 		return $counts;
 	}
 
 	function test_wp_count_posts_insert_invalidation() {
-		$post_ids = $this->factory->post->create_many( 10 );
+		$post_ids = $this->factory->post->create_many( 3 );
 		$initial_counts = wp_count_posts();
 
 		$key = array_rand( $post_ids );
@@ -837,12 +859,12 @@ class Tests_Post extends WP_UnitTestCase {
 
 		$after_draft_counts = wp_count_posts();
 		$this->assertEquals( 1, $after_draft_counts->draft );
-		$this->assertEquals( 9, $after_draft_counts->publish );
+		$this->assertEquals( 2, $after_draft_counts->publish );
 		$this->assertNotEquals( $initial_counts->publish, $after_draft_counts->publish );
 	}
 
 	function test_wp_count_posts_trash_invalidation() {
-		$post_ids = $this->factory->post->create_many( 10 );
+		$post_ids = $this->factory->post->create_many( 3 );
 		$initial_counts = wp_count_posts();
 
 		$key = array_rand( $post_ids );
@@ -855,7 +877,7 @@ class Tests_Post extends WP_UnitTestCase {
 
 		$after_trash_counts = wp_count_posts();
 		$this->assertEquals( 1, $after_trash_counts->trash );
-		$this->assertEquals( 9, $after_trash_counts->publish );
+		$this->assertEquals( 2, $after_trash_counts->publish );
 		$this->assertNotEquals( $initial_counts->publish, $after_trash_counts->publish );
 	}
 
@@ -1026,7 +1048,7 @@ class Tests_Post extends WP_UnitTestCase {
 	 */
 	function test_wp_insert_post_default_comment_ping_status_open() {
 		$post_id = $this->factory->post->create( array(
-			'post_author' => $this->author_id,
+			'post_author' => self::$editor_id,
 			'post_status' => 'public',
 			'post_content' => rand_str(),
 			'post_title' => rand_str(),
@@ -1042,7 +1064,7 @@ class Tests_Post extends WP_UnitTestCase {
 	 */
 	function test_wp_insert_post_page_default_comment_ping_status_closed() {
 		$post_id = $this->factory->post->create( array(
-			'post_author' => $this->author_id,
+			'post_author' => self::$editor_id,
 			'post_status' => 'public',
 			'post_content' => rand_str(),
 			'post_title' => rand_str(),
@@ -1061,7 +1083,7 @@ class Tests_Post extends WP_UnitTestCase {
 		$post_type = rand_str(20);
 		register_post_type( $post_type, array( 'supports' => array( 'comments', 'trackbacks' ) ) );
 		$post_id = $this->factory->post->create( array(
-			'post_author' => $this->author_id,
+			'post_author' => self::$editor_id,
 			'post_status' => 'public',
 			'post_content' => rand_str(),
 			'post_title' => rand_str(),
@@ -1081,7 +1103,7 @@ class Tests_Post extends WP_UnitTestCase {
 		$post_type = rand_str(20);
 		register_post_type( $post_type );
 		$post_id = $this->factory->post->create( array(
-			'post_author' => $this->author_id,
+			'post_author' => self::$editor_id,
 			'post_status' => 'public',
 			'post_content' => rand_str(),
 			'post_title' => rand_str(),
@@ -1101,16 +1123,7 @@ class Tests_Post extends WP_UnitTestCase {
 	 * @ticket 24153
 	 */
 	function test_user_without_publish_cannot_affect_sticky() {
-		// Create a role with edit_others_posts.
-		add_role( 'grammarian', 'Grammarian', array(
-			'read'                 => true,
-			'edit_posts'           => true,
-			'edit_others_posts'    => true,
-			'edit_published_posts' => true,
-		) );
-		$editor_user = $this->factory->user->create( array( 'role' => 'grammarian' ) );
-		$old_uid = get_current_user_id();
-		wp_set_current_user( $editor_user );
+		wp_set_current_user( self::$grammarian_id );
 
 		// Sanity Check.
 		$this->assertFalse( current_user_can( 'publish_posts' ) );
@@ -1137,9 +1150,6 @@ class Tests_Post extends WP_UnitTestCase {
 		$this->assertTrue( is_sticky( $saved_post->ID ) );
 		$this->assertEquals( 'Updated', $saved_post->post_title );
 		$this->assertEquals( 'Updated', $saved_post->post_content );
-
-		// Teardown
-		wp_set_current_user( $old_uid );
 	}
 
 	/**
@@ -1159,16 +1169,7 @@ class Tests_Post extends WP_UnitTestCase {
 		// Sanity Check.
 		$this->assertTrue( is_sticky( $post->ID ) );
 
-		// Create a role with edit_others_posts.
-		add_role( 'grammarian', 'Grammarian', array(
-			'read'                 => true,
-			'edit_posts'           => true,
-			'edit_others_posts'    => true,
-			'edit_published_posts' => true,
-		) );
-		$editor_user = $this->factory->user->create( array( 'role' => 'grammarian' ) );
-		$old_uid = get_current_user_id();
-		wp_set_current_user( $editor_user );
+		wp_set_current_user( self::$grammarian_id );
 
 		// Sanity Check.
 		$this->assertFalse( current_user_can( 'publish_posts' ) );
@@ -1188,9 +1189,6 @@ class Tests_Post extends WP_UnitTestCase {
 		$this->assertTrue( is_sticky( $saved_post->ID ) );
 		$this->assertEquals( 'Updated', $saved_post->post_title );
 		$this->assertEquals( 'Updated', $saved_post->post_content );
-
-		// Teardown
-		wp_set_current_user( $old_uid );
 	}
 
 	/**
@@ -1208,7 +1206,7 @@ class Tests_Post extends WP_UnitTestCase {
 	public function test_wp_insert_post_author_null() {
 		$post_id = $this->factory->post->create( array( 'post_author' => null ) );
 
-		$this->assertEquals( $this->author_id, get_post( $post_id )->post_author );
+		$this->assertEquals( self::$editor_id, get_post( $post_id )->post_author );
 	}
 
 	/**
@@ -1216,7 +1214,7 @@ class Tests_Post extends WP_UnitTestCase {
 	 */
 	function test_wp_insert_post_should_respect_post_date_gmt() {
 		$post = array(
-			'post_author' => $this->author_id,
+			'post_author' => self::$editor_id,
 			'post_status' => 'publish',
 			'post_content' => rand_str(),
 			'post_title' => rand_str(),

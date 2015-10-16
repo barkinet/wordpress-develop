@@ -9,22 +9,17 @@
  * @group query
  */
 class Tests_Canonical extends WP_Canonical_UnitTestCase {
-	public static function setUpBeforeClass() {
-		self::generate_shared_fixtures();
+	public static function wpSetUpBeforeClass( $factory ) {
+		self::generate_shared_fixtures( $factory );
 	}
 
-	public static function tearDownAfterClass() {
+	public static function wpTearDownAfterClass() {
 		self::delete_shared_fixtures();
 	}
 
 	public function setUp() {
 		parent::setUp();
 		wp_set_current_user( self::$author_id );
-	}
-
-	public function tearDown() {
-		wp_set_current_user( self::$old_current_user );
-		parent::tearDown();
 	}
 
 	/**
