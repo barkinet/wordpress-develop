@@ -310,14 +310,21 @@
 
 			duration = ( 'resolved' === api.previewer.deferred.active.state() ? args.duration : 0 );
 
-			// If this is a panel, and it is not currently expanded but another panel is expanded, do not animate.
 			if ( construct.extended( api.Panel ) ) {
+				// If this is a panel is not currently expanded but another panel is expanded, do not animate.
 				api.panel.each(function ( panel ) {
 					if ( panel !== construct && panel.expanded() ) {
 						expandedOtherPanel = panel;
 						duration = 0;
 					}
 				});
+
+				// Collapse any expanded sections inside of this panel first before deactivating.
+				if ( ! active ) {
+					_.each( construct.sections(), function( section ) {
+						section.collapse( { duration: 0 } );
+					} );
+				}
 			}
 
 			if ( ! $.contains( document, construct.container[0] ) ) {
