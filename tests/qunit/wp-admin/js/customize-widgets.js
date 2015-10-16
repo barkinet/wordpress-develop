@@ -34,9 +34,14 @@ jQuery( window ).load( function() {
 		ok( ! section.expanded() );
 		ok( 0 === control.container.find( '> .widget' ).length );
 
+		// Preview sets the active state.
+		section.active.set( true );
+		control.active.set( true );
+		api.control( 'sidebars_widgets[sidebar-1]' ).active.set( true );
+
 		section.expand();
-		ok( ! widgetAddedEvent );
-		ok( 1 === control.container.find( '> .widget' ).length );
+		ok( ! widgetAddedEvent, 'expected widget added event not fired' );
+		ok( 1 === control.container.find( '> .widget' ).length, 'expected there to be one .widget element in the container' );
 		ok( 0 === control.container.find( '.widget-content' ).children().length );
 
 		control.expand();
