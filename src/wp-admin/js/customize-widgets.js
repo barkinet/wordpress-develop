@@ -1542,23 +1542,20 @@
 				};
 
 				/*
-				 * Defer setting visibility of no-rendered-areas-notice until
-				 * preview finishes loading since this is when the active
-				 * sections become available.
+				 * Set the initial visibility state for rendered notice.
+				 * Update the visibility of the notice whenever a reflow happens.
 				 */
+				noRenderedAreasNotice.toggle( shouldShowNotice() );
 				api.previewer.deferred.active.done( function () {
 					noRenderedAreasNotice.toggle( shouldShowNotice() );
-
-					// Update the visibility of the notice whenever a reflow happens.
-					api.bind( 'pane-contents-reflowed', function() {
-						api.previewer.deferred.active.done( function () {
-							if ( shouldShowNotice() ) {
-								noRenderedAreasNotice.slideDown( 'fast' );
-							} else {
-								noRenderedAreasNotice.slideUp( 'fast' );
-							}
-						});
-					});
+				});
+				api.bind( 'pane-contents-reflowed', function() {
+					var duration = ( 'resolved' === api.previewer.deferred.active.state() ) ? 'fast' : 0;
+					if ( shouldShowNotice() ) {
+						noRenderedAreasNotice.slideDown( duration );
+					} else {
+						noRenderedAreasNotice.slideUp( duration );
+					}
 				});
 			});
 		},
