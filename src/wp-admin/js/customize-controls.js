@@ -300,7 +300,7 @@
 		 * @param {Object}  args.completeCallback
 		 */
 		onChangeActive: function( active, args ) {
-			var duration, construct = this, expandedOtherPanel;
+			var duration, construct = this, expandedOtherConstructs = [];
 			if ( args.unchanged ) {
 				if ( args.completeCallback ) {
 					args.completeCallback();
@@ -310,15 +310,27 @@
 
 			duration = ( 'resolved' === api.previewer.deferred.active.state() ? args.duration : 0 );
 
+			// If this is a panel/section is not currently expanded but another is expanded, do not animate.
 			if ( construct.extended( api.Panel ) ) {
-				// If this is a panel is not currently expanded but another panel is expanded, do not animate.
 				api.panel.each(function ( panel ) {
 					if ( panel !== construct && panel.expanded() ) {
-						expandedOtherPanel = panel;
-						duration = 0;
+						expandedOtherConstructs.push( panel );
 					}
 				});
+			}
+			if ( construct.extended( api.Section ) ) {
+				api.section.each(function ( section ) {
+					if ( section !== construct && section.expanded() ) {
+						expandedOtherConstructs.push( section );
+					}
+				});
+			}
 
+			if ( expandedOtherConstructs.length ) {
+				duration = 0;
+			}
+
+			if ( construct.extended( api.Panel ) ) {
 				// Collapse any expanded sections inside of this panel first before deactivating.
 				if ( ! active ) {
 					_.each( construct.sections(), function( section ) {
@@ -349,9 +361,9 @@
 			}
 
 			// Recalculate the margin-top immediately, not waiting for debounced reflow, to prevent momentary (100ms) vertical jiggle.
-			if ( expandedOtherPanel ) {
-				expandedOtherPanel._recalculateTopMargin();
-			}
+			_.each( expandedOtherConstructs, function( expandedOtherConstruct ) {
+				expandedOtherConstruct._recalculateTopMargin();
+			});
 		},
 
 		/**
