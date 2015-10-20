@@ -1144,6 +1144,14 @@ class WP_Customize_Nav_Menu_Item_Setting extends WP_Customize_Setting {
 			}
 		}
 
+		if ( ! isset( $this->value['_invalid'] ) ) {
+			$this->value['_invalid'] = (
+				( 'post_type' === $this->value['type'] && ! post_type_exists( $this->value['object'] ) )
+				||
+				( 'taxonomy' === $this->value['type'] && ! taxonomy_exists( $this->value['object'] ) )
+			);
+		}
+
 		// Remove remaining properties available on a setup nav_menu_item post object which aren't relevant to the setting value.
 		$irrelevant_properties = array(
 			'ID',
@@ -1451,6 +1459,8 @@ class WP_Customize_Nav_Menu_Item_Setting extends WP_Customize_Setting {
 		if ( ! get_post_status_object( $menu_item_value['status'] ) ) {
 			$menu_item_value['status'] = 'publish';
 		}
+
+		$menu_item_value['_invalid'] = (bool) $menu_item_value['_invalid'];
 
 		/** This filter is documented in wp-includes/class-wp-customize-setting.php */
 		return apply_filters( "customize_sanitize_{$this->id}", $menu_item_value, $this );
