@@ -1,6 +1,14 @@
 <?php
 /**
- * Class for implementing site icon functionality.
+ * Administration API: WP_Site_Icon class
+ *
+ * @package WordPress
+ * @subpackage Administration
+ * @since 4.3.0
+ */
+
+/**
+ * Core class used to implement site icon functionality.
  *
  * @since 4.3.0
  */
@@ -80,7 +88,7 @@ class WP_Site_Icon {
 	 */
 	public function create_attachment_object( $cropped, $parent_attachment_id ) {
 		$parent     = get_post( $parent_attachment_id );
-		$parent_url = $parent->guid;
+		$parent_url = wp_get_attachment_url( $parent->ID );
 		$url        = str_replace( basename( $parent_url ), basename( $cropped ), $parent_url );
 
 		$size       = @getimagesize( $cropped );

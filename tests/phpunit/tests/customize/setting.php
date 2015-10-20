@@ -102,7 +102,7 @@ class Tests_WP_Customize_Setting extends WP_UnitTestCase {
 			$setting = new WP_Customize_Setting( $this->manager, $name, compact( 'type', 'default' ) );
 			$this->assertEquals( $this->undefined, call_user_func( $type_options['getter'], $name, $this->undefined ) );
 			$this->assertEquals( $default, $setting->value() );
-			$setting->preview();
+			$this->assertTrue( $setting->preview(), 'Preview should not no-op since setting has no existing value.' );
 			$this->assertEquals( $default, call_user_func( $type_options['getter'], $name, $this->undefined ), sprintf( 'Expected %s(%s) to return setting default: %s.', $type_options['getter'], $name, $default ) );
 			$this->assertEquals( $default, $setting->value() );
 
@@ -114,18 +114,18 @@ class Tests_WP_Customize_Setting extends WP_UnitTestCase {
 			$setting = new WP_Customize_Setting( $this->manager, $name, compact( 'type', 'default' ) );
 			$this->assertEquals( $initial_value, call_user_func( $type_options['getter'], $name ) );
 			$this->assertEquals( $initial_value, $setting->value() );
-			$setting->preview();
+			$this->assertFalse( $setting->preview(), 'Preview should no-op since setting value was extant and no post value was present.' );
 			$this->assertEquals( 0, did_action( "customize_preview_{$setting->id}" ) ); // only applicable for custom types (not options or theme_mods)
 			$this->assertEquals( 0, did_action( "customize_preview_{$setting->type}" ) ); // only applicable for custom types (not options or theme_mods)
 			$this->assertEquals( $initial_value, call_user_func( $type_options['getter'], $name ) );
 			$this->assertEquals( $initial_value, $setting->value() );
 
-			// @todo What if we call the setter after preview() is called? If no post_value, should the new set value be stored? If that happens, then the following 3 assertions should be inverted
 			$overridden_value = "overridden_value_$name";
 			call_user_func( $type_options['setter'], $name, $overridden_value );
-			$this->assertEquals( $initial_value, call_user_func( $type_options['getter'], $name ) );
-			$this->assertEquals( $initial_value, $setting->value() );
-			$this->assertNotEquals( $overridden_value, $setting->value() );
+			$message = 'Initial value should be overridden because initial preview() was no-op due to setting having existing value and/or post value was absent.';
+			$this->assertEquals( $overridden_value, call_user_func( $type_options['getter'], $name ), $message );
+			$this->assertEquals( $overridden_value, $setting->value(), $message );
+			$this->assertNotEquals( $initial_value, $setting->value(), $message );
 
 			// Non-multidimensional: Test unset setting being overridden by a post value
 			$name = "unset_{$type}_overridden";
@@ -133,7 +133,7 @@ class Tests_WP_Customize_Setting extends WP_UnitTestCase {
 			$setting = new WP_Customize_Setting( $this->manager, $name, compact( 'type', 'default' ) );
 			$this->assertEquals( $this->undefined, call_user_func( $type_options['getter'], $name, $this->undefined ) );
 			$this->assertEquals( $default, $setting->value() );
-			$setting->preview(); // activate post_data
+			$this->assertTrue( $setting->preview(), 'Preview applies because setting has post_data_overrides.' ); // activate post_data
 			$this->assertEquals( $this->post_data_overrides[ $name ], call_user_func( $type_options['getter'], $name, $this->undefined ) );
 			$this->assertEquals( $this->post_data_overrides[ $name ], $setting->value() );
 
@@ -145,7 +145,7 @@ class Tests_WP_Customize_Setting extends WP_UnitTestCase {
 			$setting = new WP_Customize_Setting( $this->manager, $name, compact( 'type', 'default' ) );
 			$this->assertEquals( $initial_value, call_user_func( $type_options['getter'], $name, $this->undefined ) );
 			$this->assertEquals( $initial_value, $setting->value() );
-			$setting->preview(); // activate post_data
+			$this->assertTrue( $setting->preview(), 'Preview applies because setting has post_data_overrides.' ); // activate post_data
 			$this->assertEquals( 0, did_action( "customize_preview_{$setting->id}" ) ); // only applicable for custom types (not options or theme_mods)
 			$this->assertEquals( 0, did_action( "customize_preview_{$setting->type}" ) ); // only applicable for custom types (not options or theme_mods)
 			$this->assertEquals( $this->post_data_overrides[ $name ], call_user_func( $type_options['getter'], $name, $this->undefined ) );
@@ -167,7 +167,7 @@ class Tests_WP_Customize_Setting extends WP_UnitTestCase {
 			$setting = new WP_Customize_Setting( $this->manager, $name, compact( 'type', 'default' ) );
 			$this->assertEquals( $this->undefined, call_user_func( $type_options['getter'], $base_name, $this->undefined ) );
 			$this->assertEquals( $default, $setting->value() );
-			$setting->preview();
+			$this->assertTrue( $setting->preview() );
 			$base_value = call_user_func( $type_options['getter'], $base_name, $this->undefined );
 			$this->assertArrayHasKey( 'foo', $base_value );
 			$this->assertEquals( $default, $base_value['foo'] );
@@ -311,8 +311,8 @@ class Tests_WP_Customize_Setting extends WP_UnitTestCase {
 		$this->assertEquals( $initial_value, $this->custom_type_getter( $name, $this->undefined ) );
 		$this->assertEquals( $initial_value, $setting->value() );
 		$setting->preview();
-		$this->assertEquals( 1, did_action( "customize_preview_{$setting->id}" ) );
-		$this->assertEquals( 2, did_action( "customize_preview_{$setting->type}" ) );
+		$this->assertEquals( 0, did_action( "customize_preview_{$setting->id}" ), 'Zero preview actions because initial value is set with no incoming post value, so there is no preview to apply.' );
+		$this->assertEquals( 1, did_action( "customize_preview_{$setting->type}" ) );
 		$this->assertEquals( $initial_value, $this->custom_type_getter( $name, $this->undefined ) ); // should be same as above
 		$this->assertEquals( $initial_value, $setting->value() ); // should be same as above
 
@@ -325,8 +325,8 @@ class Tests_WP_Customize_Setting extends WP_UnitTestCase {
 		$this->assertEquals( $this->undefined, $this->custom_type_getter( $name, $this->undefined ) );
 		$this->assertEquals( $default, $setting->value() );
 		$setting->preview();
-		$this->assertEquals( 1, did_action( "customize_preview_{$setting->id}" ) );
-		$this->assertEquals( 3, did_action( "customize_preview_{$setting->type}" ) );
+		$this->assertEquals( 1, did_action( "customize_preview_{$setting->id}" ), 'One preview action now because initial value was not set and/or there is no incoming post value, so there is is a preview to apply.' );
+		$this->assertEquals( 2, did_action( "customize_preview_{$setting->type}" ) );
 		$this->assertEquals( $post_data_overrides[ $name ], $this->custom_type_getter( $name, $this->undefined ) );
 		$this->assertEquals( $post_data_overrides[ $name ], $setting->value() );
 
@@ -342,7 +342,7 @@ class Tests_WP_Customize_Setting extends WP_UnitTestCase {
 		$this->assertEquals( $initial_value, $setting->value() );
 		$setting->preview();
 		$this->assertEquals( 1, did_action( "customize_preview_{$setting->id}" ) );
-		$this->assertEquals( 4, did_action( "customize_preview_{$setting->type}" ) );
+		$this->assertEquals( 3, did_action( "customize_preview_{$setting->type}" ) );
 		$this->assertEquals( $post_data_overrides[ $name ], $this->custom_type_getter( $name, $this->undefined ) );
 		$this->assertEquals( $post_data_overrides[ $name ], $setting->value() );
 
@@ -364,6 +364,64 @@ class Tests_WP_Customize_Setting extends WP_UnitTestCase {
 		$setting->preview();
 		$this->assertEquals( $default, get_option( $name, $this->undefined ), sprintf( 'Expected get_option(%s) to return setting default: %s.', $name, $default ) );
 		$this->assertEquals( $default, $setting->value() );
+	}
+
+	/**
+	 * Test setting save method for custom type.
+	 *
+	 * @see WP_Customize_Setting::save()
+	 * @see WP_Customize_Setting::update()
+	 */
+	function test_update_custom_type() {
+		$type = 'custom';
+		$name = 'foo';
+		$setting = new WP_Customize_Setting( $this->manager, $name, compact( 'type' ) );
+		$this->manager->add_setting( $setting );
+		add_action( 'customize_update_custom', array( $this, 'handle_customize_update_custom_foo_action' ), 10, 2 );
+		add_action( 'customize_save_foo', array( $this, 'handle_customize_save_custom_foo_action' ), 10, 2 );
+
+		// Try saving before value set.
+		$this->assertTrue( 0 === did_action( 'customize_update_custom' ) );
+		$this->assertTrue( 0 === did_action( 'customize_save_foo' ) );
+		$this->assertFalse( $setting->save() );
+		$this->assertTrue( 0 === did_action( 'customize_update_custom' ) );
+		$this->assertTrue( 0 === did_action( 'customize_save_foo' ) );
+
+		// Try setting post value without user as admin.
+		$this->manager->set_post_value( $setting->id, 'hello world' );
+		$this->assertFalse( $setting->save() );
+		$this->assertTrue( 0 === did_action( 'customize_update_custom' ) );
+		$this->assertTrue( 0 === did_action( 'customize_save_foo' ) );
+
+		// Satisfy all requirements for save to happen.
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
+		$this->assertTrue( false !== $setting->save() );
+		$this->assertTrue( 1 === did_action( 'customize_update_custom' ) );
+		$this->assertTrue( 1 === did_action( 'customize_save_foo' ) );
+	}
+
+	/**
+	 * Check customize_update_custom action.
+	 *
+	 * @see Tests_WP_Customize_Setting::test_update_custom_type()
+	 * @param mixed $value
+	 * @param WP_Customize_Setting $setting
+	 */
+	function handle_customize_update_custom_foo_action( $value, $setting = null ) {
+		$this->assertEquals( 'hello world', $value );
+		$this->assertInstanceOf( 'WP_Customize_Setting', $setting );
+	}
+
+	/**
+	 * Check customize_save_foo action.
+	 *
+	 * @see Tests_WP_Customize_Setting::test_update_custom_type()
+	 * @param WP_Customize_Setting $setting
+	 */
+	function handle_customize_save_custom_foo_action( $setting ) {
+		$this->assertInstanceOf( 'WP_Customize_Setting', $setting );
+		$this->assertEquals( 'custom', $setting->type );
+		$this->assertEquals( 'foo', $setting->id );
 	}
 
 	/**
@@ -407,7 +465,7 @@ class Tests_WP_Customize_Setting extends WP_UnitTestCase {
 		$setting->preview();
 		$this->assertTrue( $setting->is_current_blog_previewed() );
 
-		$blog_id = $this->factory->blog->create();
+		$blog_id = self::factory()->blog->create();
 		switch_to_blog( $blog_id );
 		$this->assertFalse( $setting->is_current_blog_previewed() );
 		$this->assertNotEquals( $post_value, $setting->value() );

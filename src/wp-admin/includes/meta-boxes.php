@@ -3,15 +3,23 @@
 // -- Post related Meta Boxes
 
 /**
- * Display post submit form fields.
+ * Displays post submit form fields.
  *
  * @since 2.7.0
  *
  * @global string $action
  *
- * @param object $post
+ * @param WP_Post  $post Current post object.
+ * @param array    $args {
+ *     Array of arguments for building the post submit meta box.
+ *
+ *     @type string   $id       Meta box ID.
+ *     @type string   $title    Meta box title.
+ *     @type callable $callback Meta box display callback.
+ *     @type array    $args     Extra meta box arguments.
+ * }
  */
-function post_submit_meta_box($post, $args = array() ) {
+function post_submit_meta_box( $post, $args = array() ) {
 	global $action;
 
 	$post_type = $post->post_type;
@@ -40,22 +48,10 @@ function post_submit_meta_box($post, $args = array() ) {
 <?php if ( is_post_type_viewable( $post_type_object ) ) : ?>
 <div id="preview-action">
 <?php
+$preview_link = esc_url( get_preview_post_link( $post ) );
 if ( 'publish' == $post->post_status ) {
-	$preview_link = esc_url( get_permalink( $post->ID ) );
 	$preview_button = __( 'Preview Changes' );
 } else {
-	$preview_link = set_url_scheme( get_permalink( $post->ID ) );
-
-	/**
-	 * Filter the URI of a post preview in the post submit box.
-	 *
-	 * @since 2.0.5
-	 * @since 4.0.0 $post parameter was added.
-	 *
-	 * @param string  $preview_link URI the user will be directed to for a post preview.
-	 * @param WP_Post $post         Post object.
-	 */
-	$preview_link = esc_url( apply_filters( 'preview_post_link', add_query_arg( 'preview', 'true', $preview_link ), $post ) );
 	$preview_button = __( 'Preview' );
 }
 ?>
@@ -63,6 +59,16 @@ if ( 'publish' == $post->post_status ) {
 <input type="hidden" name="wp-preview" id="wp-preview" value="" />
 </div>
 <?php endif; // public post type ?>
+<?php
+/**
+ * Fires before the post time/date setting in the Publish meta box.
+ *
+ * @since 4.4.0
+ *
+ * @param WP_Post $post WP_Post object for the current post.
+ */
+do_action( 'post_submitbox_minor_actions', $post );
+?>
 <div class="clear"></div>
 </div><!-- #minor-publishing-actions -->
 
@@ -219,8 +225,11 @@ if ( $can_publish ) : // Contributors don't get to choose the date of publish ?>
  * Fires after the post time/date setting in the Publish meta box.
  *
  * @since 2.9.0
+ * @since 4.4.0 Added the `$post` parameter.
+ *
+ * @param WP_Post $post WP_Post object for the current post.
  */
-do_action( 'post_submitbox_misc_actions' );
+do_action( 'post_submitbox_misc_actions', $post );
 ?>
 </div>
 <div class="clear"></div>
@@ -357,7 +366,7 @@ function attachment_submit_meta_box( $post ) {
  *
  *     @type string   $id       Meta box ID.
  *     @type string   $title    Meta box title.
- *     @type callback $callback Meta box display callback.
+ *     @type callable $callback Meta box display callback.
  *     @type array    $args     Extra meta box arguments.
  * }
  */
@@ -398,7 +407,7 @@ function post_format_meta_box( $post, $box ) {
  *
  *     @type string   $id       Meta box ID.
  *     @type string   $title    Meta box title.
- *     @type callback $callback Meta box display callback.
+ *     @type callable $callback Meta box display callback.
  *     @type array    $args {
  *         Extra meta box arguments.
  *
@@ -418,12 +427,16 @@ function post_tags_meta_box( $post, $box ) {
 	$taxonomy = get_taxonomy( $r['taxonomy'] );
 	$user_can_assign_terms = current_user_can( $taxonomy->cap->assign_terms );
 	$comma = _x( ',', 'tag delimiter' );
+	$terms_to_edit = get_terms_to_edit( $post->ID, $tax_name );
+	if ( ! is_string( $terms_to_edit ) ) {
+		$terms_to_edit = '';
+	}
 ?>
 <div class="tagsdiv" id="<?php echo $tax_name; ?>">
 	<div class="jaxtag">
 	<div class="nojs-tags hide-if-js">
 	<p><?php echo $taxonomy->labels->add_or_remove_items; ?></p>
-	<textarea name="<?php echo "tax_input[$tax_name]"; ?>" rows="3" cols="20" class="the-tags" id="tax-input-<?php echo $tax_name; ?>" <?php disabled( ! $user_can_assign_terms ); ?>><?php echo str_replace( ',', $comma . ' ', get_terms_to_edit( $post->ID, $tax_name ) ); // textarea_escaped by esc_attr() ?></textarea></div>
+	<textarea name="<?php echo "tax_input[$tax_name]"; ?>" rows="3" cols="20" class="the-tags" id="tax-input-<?php echo $tax_name; ?>" <?php disabled( ! $user_can_assign_terms ); ?>><?php echo str_replace( ',', $comma . ' ', $terms_to_edit ); // textarea_escaped by esc_attr() ?></textarea></div>
  	<?php if ( $user_can_assign_terms ) : ?>
 	<div class="ajaxtag hide-if-no-js">
 		<label class="screen-reader-text" for="new-tag-<?php echo $tax_name; ?>"><?php echo $box['title']; ?></label>
@@ -454,7 +467,7 @@ function post_tags_meta_box( $post, $box ) {
  *
  *     @type string   $id       Meta box ID.
  *     @type string   $title    Meta box title.
- *     @type callback $callback Meta box display callback.
+ *     @type callable $callback Meta box display callback.
  *     @type array    $args {
  *         Extra meta box arguments.
  *
@@ -487,23 +500,21 @@ function post_categories_meta_box( $post, $box ) {
 
 		<div id="<?php echo $tax_name; ?>-all" class="tabs-panel">
 			<?php
-            $name = ( $tax_name == 'category' ) ? 'post_category' : 'tax_input[' . $tax_name . ']';
-            echo "<input type='hidden' name='{$name}[]' value='0' />"; // Allows for an empty term set to be sent. 0 is an invalid Term ID and will be ignored by empty() checks.
-            ?>
+			$name = ( $tax_name == 'category' ) ? 'post_category' : 'tax_input[' . $tax_name . ']';
+			echo "<input type='hidden' name='{$name}[]' value='0' />"; // Allows for an empty term set to be sent. 0 is an invalid Term ID and will be ignored by empty() checks.
+			?>
 			<ul id="<?php echo $tax_name; ?>checklist" data-wp-lists="list:<?php echo $tax_name; ?>" class="categorychecklist form-no-clear">
 				<?php wp_terms_checklist( $post->ID, array( 'taxonomy' => $tax_name, 'popular_cats' => $popular_ids ) ); ?>
 			</ul>
 		</div>
 	<?php if ( current_user_can( $taxonomy->cap->edit_terms ) ) : ?>
 			<div id="<?php echo $tax_name; ?>-adder" class="wp-hidden-children">
-				<h4>
-					<a id="<?php echo $tax_name; ?>-add-toggle" href="#<?php echo $tax_name; ?>-add" class="hide-if-no-js">
-						<?php
-							/* translators: %s: add new taxonomy label */
-							printf( __( '+ %s' ), $taxonomy->labels->add_new_item );
-						?>
-					</a>
-				</h4>
+				<a id="<?php echo $tax_name; ?>-add-toggle" href="#<?php echo $tax_name; ?>-add" class="hide-if-no-js taxonomy-add-new">
+					<?php
+						/* translators: %s: add new taxonomy label */
+						printf( __( '+ %s' ), $taxonomy->labels->add_new_item );
+					?>
+				</a>
 				<p id="<?php echo $tax_name; ?>-add" class="category-add wp-hidden-child">
 					<label class="screen-reader-text" for="new<?php echo $tax_name; ?>"><?php echo $taxonomy->labels->add_new_item; ?></label>
 					<input type="text" name="new<?php echo $tax_name; ?>" id="new<?php echo $tax_name; ?>" class="form-required form-input-tip" value="<?php echo esc_attr( $taxonomy->labels->new_item_name ); ?>" aria-required="true"/>
@@ -690,7 +701,7 @@ function post_comment_meta_box( $post ) {
 		}
 
 		?>
-		<p class="hide-if-no-js" id="show-comments"><a href="#commentstatusdiv" onclick="commentsBox.get(<?php echo $total; ?>);return false;"><?php _e('Show comments'); ?></a> <span class="spinner"></span></p>
+		<p class="hide-if-no-js" id="show-comments"><a href="#commentstatusdiv" onclick="commentsBox.load(<?php echo $total; ?>);return false;"><?php _e('Show comments'); ?></a> <span class="spinner"></span></p>
 		<?php
 	}
 
@@ -706,8 +717,9 @@ function post_comment_meta_box( $post ) {
  */
 function post_slug_meta_box($post) {
 /** This filter is documented in wp-admin/edit-tag-form.php */
+$editable_slug = apply_filters( 'editable_slug', $post->post_name, $post );
 ?>
-<label class="screen-reader-text" for="post_name"><?php _e('Slug') ?></label><input name="post_name" type="text" size="13" id="post_name" value="<?php echo esc_attr( apply_filters( 'editable_slug', $post->post_name ) ); ?>" />
+<label class="screen-reader-text" for="post_name"><?php _e('Slug') ?></label><input name="post_name" type="text" size="13" id="post_name" value="<?php echo esc_attr( $editable_slug ); ?>" />
 <?php
 }
 
@@ -789,7 +801,18 @@ function page_attributes_meta_box($post) {
 	if ( 'page' == $post->post_type && 0 != count( get_page_templates( $post ) ) && get_option( 'page_for_posts' ) != $post->ID ) {
 		$template = !empty($post->page_template) ? $post->page_template : false;
 		?>
-<p><strong><?php _e('Template') ?></strong></p>
+<p><strong><?php _e('Template') ?></strong><?php
+	/**
+	 * Fires immediately after the heading inside the 'Template' section
+	 * of the 'Page Attributes' meta box.
+	 *
+	 * @since 4.4.0
+	 *
+	 * @param string  $template The template used for the current post.
+	 * @param WP_Post $post     The current post.
+	 */
+	do_action( 'page_attributes_meta_box_template', $template, $post );
+?></p>
 <label class="screen-reader-text" for="page_template"><?php _e('Page Template') ?></label><select name="page_template" id="page_template">
 <?php
 /**
@@ -920,7 +943,7 @@ function link_categories_meta_box($link) {
 	</div>
 
 	<div id="category-adder" class="wp-hidden-children">
-		<h4><a id="category-add-toggle" href="#category-add"><?php _e( '+ Add New Category' ); ?></a></h4>
+		<a id="category-add-toggle" href="#category-add" class="taxonomy-add-new"><?php _e( '+ Add New Category' ); ?></a>
 		<p id="link-category-add" class="wp-hidden-child">
 			<label class="screen-reader-text" for="newcat"><?php _e( '+ Add New Category' ); ?></label>
 			<input type="text" name="newcat" id="newcat" class="form-required form-input-tip" value="<?php esc_attr_e( 'New category name' ); ?>" aria-required="true" />

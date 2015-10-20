@@ -12,7 +12,6 @@ require_once( ABSPATH . 'wp-admin/includes/ajax-actions.php' );
  * @subpackage UnitTests
  * @since      3.4.0
  * @group      ajax
- * @runTestsInSeparateProcesses
  */
 class Tests_Ajax_Autosave extends WP_Ajax_UnitTestCase {
 
@@ -34,20 +33,11 @@ class Tests_Ajax_Autosave extends WP_Ajax_UnitTestCase {
 	public function setUp() {
 		parent::setUp();
 		// Set a user so the $post has 'post_author'
-		$this->user_id = $this->factory->user->create( array( 'role' => 'administrator' ) );
+		$this->user_id = self::factory()->user->create( array( 'role' => 'administrator' ) );
 		wp_set_current_user( $this->user_id );
 
-		$post_id = $this->factory->post->create( array( 'post_status' => 'draft' ) );
+		$post_id = self::factory()->post->create( array( 'post_status' => 'draft' ) );
 		$this->_post = get_post( $post_id );
-	}
-
-	/**
-	 * Tear down the test fixture.
-	 * Reset the current user
-	 */
-	public function tearDown() {
-		wp_set_current_user( 0 );
-		parent::tearDown();
 	}
 
 	/**
@@ -98,7 +88,7 @@ class Tests_Ajax_Autosave extends WP_Ajax_UnitTestCase {
 	 */
 	public function test_autosave_locked_post() {
 		// Lock the post to another user
-		$another_user_id = $this->factory->user->create( array( 'role' => 'editor' ) );
+		$another_user_id = self::factory()->user->create( array( 'role' => 'editor' ) );
 		wp_set_current_user( $another_user_id );
 		wp_set_post_lock( $this->_post->ID );
 

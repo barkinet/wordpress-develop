@@ -31,8 +31,9 @@
  *
  * @param int          $width   Width of the image in pixels.
  * @param int          $height  Height of the image in pixels.
- * @param string|array $size    Optional. Size or array of sizes of what the result image
- *                              should be. Accepts any valid image size name. Default 'medium'.
+ * @param string|array $size    Optional. Image size. Accepts any valid image size, or an array
+ *                              of width and height values in pixels (in that order).
+ *                              Default 'medium'.
  * @param string       $context Optional. Could be 'display' (like in a theme) or 'edit'
  *                              (like inserting into an editor). Default null.
  * @return array Width and height of what the result image should resize to.
@@ -146,9 +147,11 @@ function image_hwstring( $width, $height ) {
  * @since 2.5.0
  *
  * @param int          $id   Attachment ID for image.
- * @param array|string $size Optional. Image size to scale to. Accepts a registered image size
- *                           or flat array of height and width values. Default 'medium'.
- * @return false|array False on failure, array on success.
+ * @param array|string $size Optional. Image size to scale to. Accepts any valid image size,
+ *                           or an array of width and height values in pixels (in that order).
+ *                           Default 'medium'.
+ * @return false|array Array containing the image URL, width, height, and boolean for whether
+ *                     the image is an intermediate size. False on failure.
  */
 function image_downsize( $id, $size = 'medium' ) {
 
@@ -165,7 +168,8 @@ function image_downsize( $id, $size = 'medium' ) {
 	 *
 	 * @param bool         $downsize Whether to short-circuit the image downsize. Default false.
 	 * @param int          $id       Attachment ID for image.
-	 * @param array|string $size     Size of image, either array or string. Default 'medium'.
+	 * @param array|string $size     Size of image. Image size or array of width and height values (in that order).
+	 *                               Default 'medium'.
 	 */
 	if ( $out = apply_filters( 'image_downsize', false, $id, $size ) ) {
 		return $out;
@@ -227,7 +231,7 @@ function image_downsize( $id, $size = 'medium' ) {
  * @param string     $name   Image size identifier.
  * @param int        $width  Image width in pixels.
  * @param int        $height Image height in pixels.
- * @param bool|array $crop   Optional. Whether to crop images to specified height and width or resize.
+ * @param bool|array $crop   Optional. Whether to crop images to specified width and height or resize.
  *                           An array can specify positioning of the crop area. Default false.
  */
 function add_image_size( $name, $width = 0, $height = 0, $crop = false ) {
@@ -286,7 +290,7 @@ function remove_image_size( $name ) {
  *
  * @param int        $width  Image width in pixels.
  * @param int        $height Image height in pixels.
- * @param bool|array $crop   Optional. Whether to crop images to specified height and width or resize.
+ * @param bool|array $crop   Optional. Whether to crop images to specified width and height or resize.
  *                           An array can specify positioning of the crop area. Default false.
  */
 function set_post_thumbnail_size( $width = 0, $height = 0, $crop = false ) {
@@ -311,8 +315,9 @@ function set_post_thumbnail_size( $width = 0, $height = 0, $crop = false ) {
  * @param string       $alt   Image Description for the alt attribute.
  * @param string       $title Image Description for the title attribute.
  * @param string       $align Part of the class name for aligning the image.
- * @param string|array $size  Optional. Registered image size to retrieve a tag for, or flat array
- *                            of height and width values. Default 'medium'.
+ * @param string|array $size  Optional. Registered image size to retrieve a tag for. Accepts any
+ *                            valid image size, or an array of width and height values in pixels
+ *                            (in that order). Default 'medium'.
  * @return string HTML IMG element for given image attachment
  */
 function get_image_tag( $id, $alt, $title, $align, $size = 'medium' ) {
@@ -329,10 +334,11 @@ function get_image_tag( $id, $alt, $title, $align, $size = 'medium' ) {
 	 *
 	 * @since 2.6.0
 	 *
-	 * @param string $class CSS class name or space-separated list of classes.
-	 * @param int    $id    Attachment ID.
-	 * @param string $align Part of the class name for aligning the image.
-	 * @param string $size  Optional. Default is 'medium'.
+	 * @param string       $class CSS class name or space-separated list of classes.
+	 * @param int          $id    Attachment ID.
+	 * @param string       $align Part of the class name for aligning the image.
+	 * @param string|array $size  Size of image. Image size or array of width and height values (in that order).
+	 *                            Default 'medium'.
 	 */
 	$class = apply_filters( 'get_image_tag_class', $class, $id, $align, $size );
 
@@ -343,12 +349,13 @@ function get_image_tag( $id, $alt, $title, $align, $size = 'medium' ) {
 	 *
 	 * @since 2.6.0
 	 *
-	 * @param string $html  HTML content for the image.
-	 * @param int    $id    Attachment ID.
-	 * @param string $alt   Alternate text.
-	 * @param string $title Attachment title.
-	 * @param string $align Part of the class name for aligning the image.
-	 * @param string $size  Optional. Default is 'medium'.
+	 * @param string       $html  HTML content for the image.
+	 * @param int          $id    Attachment ID.
+	 * @param string       $alt   Alternate text.
+	 * @param string       $title Attachment title.
+	 * @param string       $align Part of the class name for aligning the image.
+	 * @param string|array $size  Size of image. Image size or array of width and height values (in that order).
+	 *                            Default 'medium'.
 	 */
 	return apply_filters( 'get_image_tag', $html, $id, $alt, $title, $align, $size );
 }
@@ -448,11 +455,11 @@ function wp_constrain_dimensions( $current_width, $current_height, $max_width = 
  * @param int        $orig_h Original height in pixels.
  * @param int        $dest_w New width in pixels.
  * @param int        $dest_h New height in pixels.
- * @param bool|array $crop   Optional. Whether to crop image to specified height and width or resize.
+ * @param bool|array $crop   Optional. Whether to crop image to specified width and height or resize.
  *                           An array can specify positioning of the crop area. Default false.
  * @return false|array False on failure. Returned array matches parameters for `imagecopyresampled()`.
  */
-function image_resize_dimensions($orig_w, $orig_h, $dest_w, $dest_h, $crop = false) {
+function image_resize_dimensions( $orig_w, $orig_h, $dest_w, $dest_h, $crop = false ) {
 
 	if ($orig_w <= 0 || $orig_h <= 0)
 		return false;
@@ -473,7 +480,7 @@ function image_resize_dimensions($orig_w, $orig_h, $dest_w, $dest_h, $crop = fal
 	 * @param int        $orig_h Original height in pixels.
 	 * @param int        $dest_w New width in pixels.
 	 * @param int        $dest_h New height in pixels.
-	 * @param bool|array $crop   Whether to crop image to specified height and width or resize.
+	 * @param bool|array $crop   Whether to crop image to specified width and height or resize.
 	 *                           An array can specify positioning of the crop area. Default false.
 	 */
 	$output = apply_filters( 'image_resize_dimensions', null, $orig_w, $orig_h, $dest_w, $dest_h, $crop );
@@ -554,7 +561,7 @@ function image_resize_dimensions($orig_w, $orig_h, $dest_w, $dest_h, $crop = fal
  * @param string $file   File path.
  * @param int    $width  Image width.
  * @param int    $height Image height.
- * @param bool   $crop   Optional. Whether to crop image to specified height and width or resize.
+ * @param bool   $crop   Optional. Whether to crop image to specified width and height or resize.
  *                       Default false.
  * @return false|array False, if no image was created. Metadata array on success.
  */
@@ -597,9 +604,21 @@ function image_make_intermediate_size( $file, $width, $height, $crop = false ) {
  * @since 2.5.0
  *
  * @param int          $post_id Attachment ID.
- * @param array|string $size    Optional. Registered image size to retrieve or flat array of height
- *                              and width dimensions. Default 'thumbnail'.
- * @return false|array False on failure or array of file path, width, and height on success.
+ * @param array|string $size    Optional. Image size. Accepts any valid image size, or an array
+ *                              of width and height values in pixels (in that order).
+ *                              Default 'thumbnail'.
+ * @return false|array $data {
+ *     Array of file relative path, width, and height on success. Additionally includes absolute
+ *     path and URL if registered size is passed to $size parameter. False on failure.
+ *
+ *     @type string $file   Image's path relative to uploads directory
+ *     @type int    $width  Width of image
+ *     @type int    $height Height of image
+ *     @type string $path   Optional. Image's absolute filesystem path. Only returned if registered
+ *                          size is passed to `$size` parameter.
+ *     @type string $url    Optional. Image's URL. Only returned if registered size is passed to `$size`
+ *                          parameter.
+ * }
  */
 function image_get_intermediate_size( $post_id, $size = 'thumbnail' ) {
 	if ( !is_array( $imagedata = wp_get_attachment_metadata( $post_id ) ) )
@@ -612,9 +631,10 @@ function image_get_intermediate_size( $post_id, $size = 'thumbnail' ) {
 		foreach ( $imagedata['sizes'] as $_size => $data ) {
 			// If there's an exact match to an existing image size, short circuit.
 			if ( $data['width'] == $size[0] && $data['height'] == $size[1] ) {
-				$file = $data['file'];
-				list($width, $height) = image_constrain_size_for_editor( $data['width'], $data['height'], $size );
-				return compact( 'file', 'width', 'height' );
+				list( $data['width'], $data['height'] ) = image_constrain_size_for_editor( $data['width'], $data['height'], $size );
+
+				/** This filter is documented in wp-includes/media.php */
+				return apply_filters( 'image_get_intermediate_size', $data, $post_id, $size );
 			}
 			// If it's not an exact match but it's at least the dimensions requested.
 			if ( $data['width'] >= $size[0] && $data['height'] >= $size[1] ) {
@@ -639,10 +659,11 @@ function image_get_intermediate_size( $post_id, $size = 'thumbnail' ) {
 				  ) ) {
 				  continue;
 				}
-				// If we're still here, then we're going to use this size
-				$file = $data['file'];
-				list( $width, $height ) = image_constrain_size_for_editor( $data['width'], $data['height'], $size );
-				return compact( 'file', 'width', 'height' );
+				// If we're still here, then we're going to use this size.
+				list( $data['width'], $data['height'] ) = image_constrain_size_for_editor( $data['width'], $data['height'], $size );
+
+				/** This filter is documented in wp-includes/media.php */
+				return apply_filters( 'image_get_intermediate_size', $data, $post_id, $size );
 			}
 		}
 	}
@@ -657,7 +678,21 @@ function image_get_intermediate_size( $post_id, $size = 'thumbnail' ) {
 		$data['path'] = path_join( dirname($imagedata['file']), $data['file'] );
 		$data['url'] = path_join( dirname($file_url), $data['file'] );
 	}
-	return $data;
+
+	/**
+	 * Filter the output of image_get_intermediate_size()
+	 *
+	 * @since 4.4.0
+	 *
+	 * @see image_get_intermediate_size()
+	 *
+	 * @param array        $data    Array of file relative path, width, and height on success. May also include
+	 *                              file absolute path and URL.
+	 * @param int          $post_id The post_id of the image attachment
+	 * @param string|array $size    Registered image size or flat array of initially-requested height and width
+	 *                              dimensions (in that order).
+	 */
+	return apply_filters( 'image_get_intermediate_size', $data, $post_id, $size );
 }
 
 /**
@@ -691,13 +726,18 @@ function get_intermediate_image_sizes() {
  *
  * A mime icon for files, thumbnail or intermediate size for images.
  *
+ * The returned array contains four values: the URL of the attachment image src,
+ * the width of the image file, the height of the image file, and a boolean
+ * representing whether the returned array describes an intermediate (generated)
+ * image size or the original, full-sized upload.
+ *
  * @since 2.5.0
  *
  * @param int          $attachment_id Image attachment ID.
- * @param string|array $size          Optional. Registered image size to retrieve the source for or a flat
- *                                    array of height and width dimensions. Default 'thumbnail'.
+ * @param string|array $size          Optional. Image size. Accepts any valid image size, or an array of width
+ *                                    and height values in pixels (in that order). Default 'thumbnail'.
  * @param bool         $icon          Optional. Whether the image should be treated as an icon. Default false.
- * @return false|array Returns an array (url, width, height), or false, if no image is available.
+ * @return false|array Returns an array (url, width, height, is_intermediate), or false, if no image is available.
  */
 function wp_get_attachment_image_src( $attachment_id, $size = 'thumbnail', $icon = false ) {
 	// get a thumbnail or intermediate image if there is one
@@ -706,7 +746,7 @@ function wp_get_attachment_image_src( $attachment_id, $size = 'thumbnail', $icon
 		$src = false;
 
 		if ( $icon && $src = wp_mime_type_icon( $attachment_id ) ) {
-			/** This filter is documented in wp-includes/post.php */
+			/** This filter is documented in wp-includes/post-functions.php */
 			$icon_dir = apply_filters( 'icon_dir', ABSPATH . WPINC . '/images/media' );
 
 			$src_file = $icon_dir . '/' . wp_basename( $src );
@@ -724,8 +764,8 @@ function wp_get_attachment_image_src( $attachment_id, $size = 'thumbnail', $icon
 	 *
 	 * @param array|false  $image         Either array with src, width & height, icon src, or false.
 	 * @param int          $attachment_id Image attachment ID.
-	 * @param string|array $size          Registered image size to retrieve the source for or a flat
-	 *                                    array of height and width dimensions. Default 'thumbnail'.
+	 * @param string|array $size          Size of image. Image size or array of width and height values
+	 *                                    (in that order). Default 'thumbnail'.
 	 * @param bool         $icon          Whether the image should be treated as an icon. Default false.
 	 */
 	return apply_filters( 'wp_get_attachment_image_src', $image, $attachment_id, $size, $icon );
@@ -742,8 +782,8 @@ function wp_get_attachment_image_src( $attachment_id, $size = 'thumbnail', $icon
  * @since 2.5.0
  *
  * @param int          $attachment_id Image attachment ID.
- * @param string|array $size          Optional. Registered image size or flat array of height and width
- *                                    dimensions. Default 'thumbnail'.
+ * @param string|array $size          Optional. Image size. Accepts any valid image size, or an array of width
+ *                                    and height values in pixels (in that order). Default 'thumbnail'.
  * @param bool         $icon          Optional. Whether the image should be treated as an icon. Default false.
  * @param string|array $attr          Optional. Attributes for the image markup. Default empty.
  * @return string HTML img element or empty string on failure.
@@ -761,7 +801,7 @@ function wp_get_attachment_image($attachment_id, $size = 'thumbnail', $icon = fa
 		$attachment = get_post($attachment_id);
 		$default_attr = array(
 			'src'	=> $src,
-			'class'	=> "attachment-$size_class",
+			'class'	=> "attachment-$size_class size-$size_class",
 			'alt'	=> trim(strip_tags( get_post_meta($attachment_id, '_wp_attachment_image_alt', true) )), // Use Alt field first
 		);
 		if ( empty($default_attr['alt']) )
@@ -771,6 +811,16 @@ function wp_get_attachment_image($attachment_id, $size = 'thumbnail', $icon = fa
 
 		$attr = wp_parse_args($attr, $default_attr);
 
+		// Generate srcset and sizes if not already present.
+		if ( empty( $attr['srcset'] ) && $srcset = wp_get_attachment_image_srcset( $attachment_id, $size ) ) {
+			$attr['srcset'] = $srcset;
+			$sizes_args = array(
+				'height' => $height,
+				'width'  => $width,
+			);
+			$attr['sizes'] = wp_get_attachment_image_sizes( $attachment_id, $size, $sizes_args );
+		}
+
 		/**
 		 * Filter the list of attachment image attributes.
 		 *
@@ -778,7 +828,8 @@ function wp_get_attachment_image($attachment_id, $size = 'thumbnail', $icon = fa
 		 *
 		 * @param array        $attr       Attributes for the image markup.
 		 * @param WP_Post      $attachment Image attachment post.
-		 * @param string|array $size       Requested size.
+		 * @param string|array $size       Requested size. Image size or array of width and height values
+		 *                                 (in that order). Default 'thumbnail'.
 		 */
 		$attr = apply_filters( 'wp_get_attachment_image_attributes', $attr, $attachment, $size );
 		$attr = array_map( 'esc_attr', $attr );
@@ -790,6 +841,402 @@ function wp_get_attachment_image($attachment_id, $size = 'thumbnail', $icon = fa
 	}
 
 	return $html;
+}
+
+/**
+ * Get the URL of an image attachment.
+ *
+ * @since 4.4.0
+ *
+ * @param int          $attachment_id Image attachment ID.
+ * @param string|array $size          Optional. Image size to retrieve. Accepts any valid image size, or an array
+ *                                    of width and height values in pixels (in that order). Default 'thumbnail'.
+ * @param bool         $icon          Optional. Whether the image should be treated as an icon. Default false.
+ * @return string|false Attachment URL or false if no image is available.
+ */
+function wp_get_attachment_image_url( $attachment_id, $size = 'thumbnail', $icon = false ) {
+	$image = wp_get_attachment_image_src( $attachment_id, $size, $icon );
+	return isset( $image['0'] ) ? $image['0'] : false;
+}
+
+/**
+ * Retrieves an array of URLs and pixel widths representing sizes of an image.
+ *
+ * The purpose is to populate a source set when creating responsive image markup.
+ *
+ * @since 4.4.0
+ *
+ * @param  int    $attachment_id Image attachment ID.
+ * @param  string $size          Optional. Name of image size. Default 'medium'.
+ * @return array|bool $images {
+ *     Array image candidate values containing a URL, descriptor type, and
+ *     descriptor value. False if none exist.
+ *
+ *     @type array $values {
+ *        @type string $url        An image URL.
+ *        @type string $descriptor A width or density descriptor used in a srcset.
+ *        @type int    $value      The descriptor value representing a width or
+ *                                 or pixel density.
+ *     }
+ * }
+ *
+ */
+function wp_get_attachment_image_srcset_array( $attachment_id, $size = 'medium' ) {
+	// Get the intermediate size.
+	$image = image_get_intermediate_size( $attachment_id, $size );
+
+	// Get the post meta.
+	$img_meta = wp_get_attachment_metadata( $attachment_id );
+	if ( ! is_array( $img_meta ) ) {
+		return false;
+	}
+
+	// Extract the height and width from the intermediate or the full size.
+	$img_width  = ( $image ) ? $image['width']  : $img_meta['width'];
+	$img_height = ( $image ) ? $image['height'] : $img_meta['height'];
+
+	// Bail early if the width isn't greater than zero.
+	if ( ! $img_width > 0 ) {
+		return false;
+	}
+
+	// Use the URL from the intermediate size or build the url from the metadata.
+	if ( ! empty( $image['url'] ) ) {
+		$img_url = $image['url'];
+	} else {
+		$uploads_dir = wp_upload_dir();
+		$img_file = ( $image ) ? path_join( dirname( $img_meta['file'] ) , $image['file'] ) : $img_meta['file'];
+		$img_url = $uploads_dir['baseurl'] . '/' . $img_file;
+	}
+
+	$img_sizes = $img_meta['sizes'];
+
+	// Add full size to the img_sizes array.
+	$img_sizes['full'] = array(
+		'width'  => $img_meta['width'],
+		'height' => $img_meta['height'],
+		'file'   => wp_basename( $img_meta['file'] )
+	);
+
+	// Calculate the image aspect ratio.
+	$img_ratio = $img_height / $img_width;
+
+	/*
+	 * Images that have been edited in WordPress after being uploaded will
+	 * contain a unique hash. Look for that hash and use it later to filter
+	 * out images that are leftovers from previous versions.
+	 */
+	$img_edited = preg_match( '/-e[0-9]{13}/', $img_url, $img_edit_hash );
+
+	/*
+	 * Set up arrays to hold url candidates and matched image sources so
+	 * we can avoid duplicates without looping through the full sources array
+	 */
+	$candidates = $sources = array();
+
+	/*
+	 * Loop through available images and only use images that are resized
+	 * versions of the same rendition.
+	 */
+	foreach ( $img_sizes as $img ) {
+
+		// Filter out images that are leftovers from previous renditions.
+		if ( $img_edited && ! strpos( $img['file'], $img_edit_hash[0] ) ) {
+			continue;
+		}
+
+		$candidate_url = path_join( dirname( $img_url ), $img['file'] );
+
+		// Calculate the new image ratio.
+		if ( $img['width'] ) {
+			$img_ratio_compare = $img['height'] / $img['width'];
+		} else {
+			$img_ratio_compare = 0;
+		}
+
+		// If the new ratio differs by less than 0.01, use it.
+		if ( abs( $img_ratio - $img_ratio_compare ) < 0.01 && ! in_array( $candidate_url, $candidates ) ) {
+			// Add the URL to our list of candidates.
+			$candidates[] = $candidate_url;
+
+			// Add the url, descriptor, and value to the sources array to be returned.
+			$sources[] = array(
+				'url'        => $candidate_url,
+				'descriptor' => 'w',
+				'value'      => $img['width'],
+			);
+		}
+	}
+
+	/**
+	 * Filter the output of wp_get_attachment_image_srcset_array().
+	 *
+	 * @since 4.4.0
+	 *
+	 * @param array        $sources       An array of image urls and widths.
+	 * @param int          $attachment_id Attachment ID for image.
+	 * @param array|string $size          Size of image, either array or string.
+	 */
+	return apply_filters( 'wp_get_attachment_image_srcset_array', $sources, $attachment_id, $size );
+}
+
+/**
+ * Retrieves the value for an image attachment's 'srcset' attribute.
+ *
+ * @since 4.4.0
+ *
+ * @param int    $attachment_id Image attachment ID.
+ * @param string $size          Optional. Name of image size. Default 'medium'.
+ * @return string|bool A 'srcset' value string or false.
+ */
+function wp_get_attachment_image_srcset( $attachment_id, $size = 'medium' ) {
+	$srcset_array = wp_get_attachment_image_srcset_array( $attachment_id, $size );
+
+	// Only return a srcset value if there is more than one source.
+	if ( count( $srcset_array ) <= 1 ) {
+		return false;
+	}
+
+	$srcset = '';
+	foreach ( $srcset_array as $source ) {
+		$srcset .= $source['url'] . ' ' . $source['value'] . $source['descriptor'] . ', ';
+	}
+
+	/**
+	 * Filter the output of wp_get_attachment_image_srcset().
+	 *
+	 * @since 4.4.0
+	 *
+	 * @param string       $srcset        A source set formated for a `srcset` attribute.
+	 * @param int          $attachment_id Attachment ID for image.
+	 * @param array|string $size          Size of image, either array or string.
+	 */
+	return apply_filters( 'wp_get_attachment_image_srcset', rtrim( $srcset, ', ' ), $attachment_id, $size );
+}
+
+/**
+ * Retrieves a source size attribute for an image from an array of values.
+ *
+ * @since 4.4.0
+ *
+ * @param int    $attachment_id Image attachment ID.
+ * @param string $size          Optional. Name of image size. Default value: 'medium'.
+ * @param array  $args {
+ *     Optional. Arguments to retrieve attachments.
+ *
+ *     @type array|string $sizes An array or string containing of size information.
+ *     @type int          $width A single width value used in the default `sizes` string.
+ * }
+ * @return string|bool A valid source size value for use in a 'sizes' attribute or false.
+ */
+function wp_get_attachment_image_sizes( $attachment_id, $size = 'medium', $args = null ) {
+	$img_width = 0;
+	// Try to get the image width from $args.
+	if ( is_array( $args ) && ! empty( $args['width'] ) ) {
+		$img_width = (int) $args['width'];
+	} elseif ( $img = image_get_intermediate_size( $attachment_id, $size ) ) {
+		list( $img_width ) = image_constrain_size_for_editor( $img['width'], $img['height'], $size );
+	}
+
+	// Bail early if $image_width isn't set.
+	if ( ! $img_width ) {
+		return false;
+	}
+
+	// Set the image width in pixels.
+	$img_width = $img_width . 'px';
+
+	// Set up our default values.
+	$defaults = array(
+		'sizes' => array(
+			array(
+				'size_value' => '100vw',
+				'mq_value'   => $img_width,
+				'mq_name'    => 'max-width'
+			),
+			array(
+				'size_value' => $img_width
+			),
+		)
+	);
+
+	$args = wp_parse_args( $args, $defaults );
+
+	/**
+	 * Filter arguments used to create 'sizes' attribute.
+	 *
+	 * @since 4.4.0
+	 *
+	 * @param array   $args          An array of arguments used to create a 'sizes' attribute.
+	 * @param int     $attachment_id Post ID of the original image.
+	 * @param string  $size          Name of the image size being used.
+	 */
+	$args = apply_filters( 'wp_image_sizes_args', $args, $attachment_id, $size );
+
+	// If sizes is passed as a string, just use the string.
+	if ( is_string( $args['sizes'] ) ) {
+		$size_list = $args['sizes'];
+
+	// Otherwise, breakdown the array and build a sizes string.
+	} elseif ( is_array( $args['sizes'] ) ) {
+
+		$size_list = '';
+
+		foreach ( $args['sizes'] as $size ) {
+
+			// Use 100vw as the size value unless something else is specified.
+			$size_value = ( $size['size_value'] ) ? $size['size_value'] : '100vw';
+
+			// If a media length is specified, build the media query.
+			if ( ! empty( $size['mq_value'] ) ) {
+
+				$media_length = $size['mq_value'];
+
+				// Use max-width as the media condition unless min-width is specified.
+				$media_condition = ( ! empty( $size['mq_name'] ) ) ? $size['mq_name'] : 'max-width';
+
+				// If a media_length was set, create the media query.
+				$media_query = '(' . $media_condition . ": " . $media_length . ') ';
+
+			} else {
+				// If no media length was set, $media_query is blank.
+				$media_query = '';
+			}
+
+			// Add to the source size list string.
+			$size_list .= $media_query . $size_value . ', ';
+		}
+
+		// Remove the trailing comma and space from the end of the string.
+		$size_list = substr( $size_list, 0, -2 );
+	}
+
+	// Return the sizes value as $size_list or false.
+	return ( $size_list ) ? $size_list : false;
+}
+
+/**
+ * Filters 'img' elements in post content to add 'srcset' and 'sizes' attributes.
+ *
+ * @since 4.4.0
+ *
+ * @see wp_img_add_srcset_and_sizes()
+ *
+ * @param string $content The raw post content to be filtered.
+ * @return string Converted content with 'srcset' and 'sizes' attributes added to images.
+ */
+function wp_make_content_images_responsive( $content ) {
+	$images = get_media_embedded_in_content( $content, 'img' );
+
+	$attachment_ids = array();
+
+	foreach( $images as $image ) {
+		if ( preg_match( '/wp-image-([0-9]+)/i', $image, $class_id ) ) {
+			$attachment_id = (int) $class_id[1];
+			if ( $attachment_id ) {
+				$attachment_ids[] = $attachment_id;
+			}
+		}
+	}
+
+	if ( 0 < count( $attachment_ids ) ) {
+		/*
+		 * Warm object caches for use with wp_get_attachment_metadata.
+		 *
+		 * To avoid making a database call for each image, a single query
+		 * warms the object cache with the meta information for all images.
+		 */
+		_prime_post_caches( $attachment_ids, false, true );
+	}
+
+	foreach( $images as $image ) {
+		$content = str_replace( $image, wp_img_add_srcset_and_sizes( $image ), $content );
+	}
+
+	return $content;
+}
+
+/**
+ * Adds 'srcset' and 'sizes' attributes to an existing 'img' element.
+ *
+ * @since 4.4.0
+ *
+ * @see wp_get_attachment_image_srcset()
+ * @see wp_get_attachment_image_sizes()
+ *
+ * @param string $image An HTML 'img' element to be filtered.
+ * @return string Converted 'img' element with `srcset` and `sizes` attributes added.
+ */
+function wp_img_add_srcset_and_sizes( $image ) {
+	// Return early if a 'srcset' attribute already exists.
+	if ( false !== strpos( $image, ' srcset="' ) ) {
+		return $image;
+	}
+
+	// Parse id, size, width, and height from the `img` element.
+	$id     = preg_match( '/wp-image-([0-9]+)/i', $image, $match_id     ) ? (int) $match_id[1]     : false;
+	$size   = preg_match( '/size-([^\s|"]+)/i',   $image, $match_size   ) ? $match_size[1]         : false;
+	$width  = preg_match( '/ width="([0-9]+)"/',  $image, $match_width  ) ? (int) $match_width[1]  : false;
+	$height = preg_match( '/ height="([0-9]+)"/', $image, $match_height ) ? (int) $match_height[1] : false;
+
+	if ( $id && false === $size ) {
+		$size = array( $width, $height );
+	}
+
+	/*
+	 * If attempts to parse the size value failed, attempt to use the image
+	 * metadata to match the 'src' against the available sizes for an attachment.
+	 */
+	if ( ! $size && ! empty( $id ) && is_array( $meta = wp_get_attachment_metadata( $id ) ) ) {
+		// Parse the image src value from the img element.
+		$src = preg_match( '/src="([^"]+)"/', $image, $match_src ) ? $match_src[1] : false;
+
+		// Return early if the src value is empty.
+		if ( ! $src ) {
+			return $image;
+		}
+
+		/*
+		 * First, see if the file is the full size image. If not, loop through
+		 * the intermediate sizes until we find a file that matches.
+		 */
+		$image_filename = wp_basename( $src );
+
+		if ( $image_filename === basename( $meta['file'] ) ) {
+			$size = 'full';
+		} else {
+			foreach( $meta['sizes'] as $image_size => $image_size_data ) {
+				if ( $image_filename === $image_size_data['file'] ) {
+					$size = $image_size;
+					break;
+				}
+			}
+		}
+
+	}
+
+	// If ID and size, try for 'srcset' and 'sizes' and update the markup.
+	if ( $id && $size && $srcset = wp_get_attachment_image_srcset( $id, $size ) ) {
+
+		/*
+		 * Pass the 'height' and 'width' to 'wp_get_attachment_image_sizes()' to avoid
+		 * recalculating the image size.
+		 */
+		$args = array(
+			'height' => $height,
+			'width'  => $width,
+		);
+
+		$sizes = wp_get_attachment_image_sizes( $id, $size, $args );
+
+		// Format the srcset and sizes string and escape attributes.
+		$srcset_and_sizes = sprintf( ' srcset="%s" sizes="%s"', esc_attr( $srcset ), esc_attr( $sizes) );
+
+		// Add srcset and sizes attributes to the image markup.
+		$image = preg_replace( '/<img ([^>]+)[\s?][\/?]>/', '<img $1' . $srcset_and_sizes . ' />', $image );
+	}
+
+	return $image;
 }
 
 /**
@@ -870,6 +1317,8 @@ function img_caption_shortcode( $attr, $content = null ) {
 			$content = $matches[1];
 			$attr['caption'] = trim( $matches[2] );
 		}
+	} elseif ( strpos( $attr['caption'], '<' ) !== false ) {
+		$attr['caption'] = wp_kses( $attr['caption'], 'post' );
 	}
 
 	/**
@@ -907,12 +1356,9 @@ function img_caption_shortcode( $attr, $content = null ) {
 
 	$class = trim( 'wp-caption ' . $atts['align'] . ' ' . $atts['class'] );
 
-	if ( current_theme_supports( 'html5', 'caption' ) ) {
-		return '<figure ' . $atts['id'] . 'style="width: ' . (int) $atts['width'] . 'px;" class="' . esc_attr( $class ) . '">'
-		. do_shortcode( $content ) . '<figcaption class="wp-caption-text">' . $atts['caption'] . '</figcaption></figure>';
-	}
-
-	$caption_width = 10 + $atts['width'];
+	$html5 = current_theme_supports( 'html5', 'caption' );
+	// HTML5 captions never added the extra 10px to the image width
+	$width = $html5 ? $atts['width'] : ( 10 + $atts['width'] );
 
 	/**
 	 * Filter the width of an image's caption.
@@ -924,19 +1370,27 @@ function img_caption_shortcode( $attr, $content = null ) {
 	 *
 	 * @see img_caption_shortcode()
 	 *
-	 * @param int    $caption_width Width of the caption in pixels. To remove this inline style,
-	 *                              return zero.
-	 * @param array  $atts          Attributes of the caption shortcode.
-	 * @param string $content       The image element, possibly wrapped in a hyperlink.
+	 * @param int    $width    Width of the caption in pixels. To remove this inline style,
+	 *                         return zero.
+	 * @param array  $atts     Attributes of the caption shortcode.
+	 * @param string $content  The image element, possibly wrapped in a hyperlink.
 	 */
-	$caption_width = apply_filters( 'img_caption_shortcode_width', $caption_width, $atts, $content );
+	$caption_width = apply_filters( 'img_caption_shortcode_width', $width, $atts, $content );
 
 	$style = '';
 	if ( $caption_width )
 		$style = 'style="width: ' . (int) $caption_width . 'px" ';
 
-	return '<div ' . $atts['id'] . $style . 'class="' . esc_attr( $class ) . '">'
-	. do_shortcode( $content ) . '<p class="wp-caption-text">' . $atts['caption'] . '</p></div>';
+	$html = '';
+	if ( $html5 ) {
+		$html = '<figure ' . $atts['id'] . $style . 'class="' . esc_attr( $class ) . '">'
+		. do_shortcode( $content ) . '<figcaption class="wp-caption-text">' . $atts['caption'] . '</figcaption></figure>';
+	} else {
+		$html = '<div ' . $atts['id'] . $style . 'class="' . esc_attr( $class ) . '">'
+		. do_shortcode( $content ) . '<p class="wp-caption-text">' . $atts['caption'] . '</p></div>';
+	}
+
+	return $html;
 }
 
 add_shortcode('gallery', 'gallery_shortcode');
@@ -954,23 +1408,24 @@ add_shortcode('gallery', 'gallery_shortcode');
  * @param array $attr {
  *     Attributes of the gallery shortcode.
  *
- *     @type string $order      Order of the images in the gallery. Default 'ASC'. Accepts 'ASC', 'DESC'.
- *     @type string $orderby    The field to use when ordering the images. Default 'menu_order ID'.
- *                              Accepts any valid SQL ORDERBY statement.
- *     @type int    $id         Post ID.
- *     @type string $itemtag    HTML tag to use for each image in the gallery.
- *                              Default 'dl', or 'figure' when the theme registers HTML5 gallery support.
- *     @type string $icontag    HTML tag to use for each image's icon.
- *                              Default 'dt', or 'div' when the theme registers HTML5 gallery support.
- *     @type string $captiontag HTML tag to use for each image's caption.
- *                              Default 'dd', or 'figcaption' when the theme registers HTML5 gallery support.
- *     @type int    $columns    Number of columns of images to display. Default 3.
- *     @type string $size       Size of the images to display. Default 'thumbnail'.
- *     @type string $ids        A comma-separated list of IDs of attachments to display. Default empty.
- *     @type string $include    A comma-separated list of IDs of attachments to include. Default empty.
- *     @type string $exclude    A comma-separated list of IDs of attachments to exclude. Default empty.
- *     @type string $link       What to link each image to. Default empty (links to the attachment page).
- *                              Accepts 'file', 'none'.
+ *     @type string       $order      Order of the images in the gallery. Default 'ASC'. Accepts 'ASC', 'DESC'.
+ *     @type string       $orderby    The field to use when ordering the images. Default 'menu_order ID'.
+ *                                    Accepts any valid SQL ORDERBY statement.
+ *     @type int          $id         Post ID.
+ *     @type string       $itemtag    HTML tag to use for each image in the gallery.
+ *                                    Default 'dl', or 'figure' when the theme registers HTML5 gallery support.
+ *     @type string       $icontag    HTML tag to use for each image's icon.
+ *                                    Default 'dt', or 'div' when the theme registers HTML5 gallery support.
+ *     @type string       $captiontag HTML tag to use for each image's caption.
+ *                                    Default 'dd', or 'figcaption' when the theme registers HTML5 gallery support.
+ *     @type int          $columns    Number of columns of images to display. Default 3.
+ *     @type string|array $size       Size of the images to display. Accepts any valid image size, or an array of width
+ *                                    and height values in pixels (in that order). Default 'thumbnail'.
+ *     @type string       $ids        A comma-separated list of IDs of attachments to display. Default empty.
+ *     @type string       $include    A comma-separated list of IDs of attachments to include. Default empty.
+ *     @type string       $exclude    A comma-separated list of IDs of attachments to exclude. Default empty.
+ *     @type string       $link       What to link each image to. Default empty (links to the attachment page).
+ *                                    Accepts 'file', 'none'.
  * }
  * @return string HTML content to display gallery.
  */
@@ -1173,7 +1628,7 @@ function wp_underscore_playlist_templates() {
 	<img src="{{ data.thumb.src }}"/>
 	<# } #>
 	<div class="wp-playlist-caption">
-		<span class="wp-playlist-item-meta wp-playlist-item-title"><?php 
+		<span class="wp-playlist-item-meta wp-playlist-item-title"><?php
 			/* translators: playlist item title */
 			printf( _x( '&#8220;%s&#8221;', 'playlist item title' ), '{{ data.title }}' );
 		?></span>
@@ -1982,8 +2437,9 @@ add_shortcode( 'video', 'wp_video_shortcode' );
  *
  * @see adjacent_image_link()
  *
- * @param string|array $size Optional. Registered image size or flat array of height and width dimensions.
- *                           0 or 'none' will default to 'post_title' or `$text`. Default 'thumbnail'.
+ * @param string|array $size Optional. Image size. Accepts any valid image size, an array of width and
+ *                           height values in pixels (in that order), 0, or 'none'. 0 or 'none' will
+ *                           default to 'post_title' or `$text`. Default 'thumbnail'.
  * @param string       $text Optional. Link text. Default false.
  */
 function previous_image_link( $size = 'thumbnail', $text = false ) {
@@ -1997,11 +2453,12 @@ function previous_image_link( $size = 'thumbnail', $text = false ) {
  *
  * @see adjacent_image_link()
  *
- * @param string|array $size Optional. Registered image size or flat array of height and width dimensions.
- *                           0 or 'none' will default to 'post_title' or `$text`. Default 'thumbnail'.
+ * @param string|array $size Optional. Image size. Accepts any valid image size, an array of width and
+ *                           height values in pixels (in that order), 0, or 'none'. 0 or 'none' will
+ *                           default to 'post_title' or `$text`. Default 'thumbnail'.
  * @param string       $text Optional. Link text. Default false.
  */
-function next_image_link($size = 'thumbnail', $text = false) {
+function next_image_link( $size = 'thumbnail', $text = false ) {
 	adjacent_image_link(false, $size, $text);
 }
 
@@ -2013,8 +2470,8 @@ function next_image_link($size = 'thumbnail', $text = false) {
  * @since 2.5.0
  *
  * @param bool         $prev Optional. Whether to display the next (false) or previous (true) link. Default true.
- * @param string|array $size Optional. Registered image size or flat array of height and width dimensions.
- *                                     Default 'thumbnail'.
+ * @param string|array $size Optional. Image size. Accepts any valid image size, or an array of width and height
+ *                           values in pixels (in that order). Default 'thumbnail'.
  * @param bool         $text Optional. Link text. Default false.
  */
 function adjacent_image_link( $prev = true, $size = 'thumbnail', $text = false ) {
@@ -2074,7 +2531,8 @@ function get_attachment_taxonomies( $attachment ) {
 	if ( ! is_object($attachment) )
 		return array();
 
-	$filename = basename($attachment->guid);
+	$file = get_attached_file( $attachment->ID );
+	$filename = basename( $file );
 
 	$objects = array('attachment');
 
@@ -2147,80 +2605,6 @@ function wp_imagecreatetruecolor($width, $height) {
 }
 
 /**
- * Registers an embed handler.
- *
- * Should probably only be used for sites that do not support oEmbed.
- *
- * @since 2.9.0
- *
- * @global WP_Embed $wp_embed
- *
- * @param string   $id       An internal ID/name for the handler. Needs to be unique.
- * @param string   $regex    The regex that will be used to see if this handler should be used for a URL.
- * @param callback $callback The callback function that will be called if the regex is matched.
- * @param int      $priority Optional. Used to specify the order in which the registered handlers will
- *                           be tested. Default 10.
- */
-function wp_embed_register_handler( $id, $regex, $callback, $priority = 10 ) {
-	global $wp_embed;
-	$wp_embed->register_handler( $id, $regex, $callback, $priority );
-}
-
-/**
- * Unregisters a previously-registered embed handler.
- *
- * @since 2.9.0
- *
- * @global WP_Embed $wp_embed
- *
- * @param string $id       The handler ID that should be removed.
- * @param int    $priority Optional. The priority of the handler to be removed. Default 10.
- */
-function wp_embed_unregister_handler( $id, $priority = 10 ) {
-	global $wp_embed;
-	$wp_embed->unregister_handler( $id, $priority );
-}
-
-/**
- * Create default array of embed parameters.
- *
- * The width defaults to the content width as specified by the theme. If the
- * theme does not specify a content width, then 500px is used.
- *
- * The default height is 1.5 times the width, or 1000px, whichever is smaller.
- *
- * The 'embed_defaults' filter can be used to adjust either of these values.
- *
- * @since 2.9.0
- *
- * @global int $content_width
- *
- * @param string $url Optional. The URL that should be embedded. Default empty.
- *
- * @return array Default embed parameters.
- */
-function wp_embed_defaults( $url = '' ) {
-	if ( ! empty( $GLOBALS['content_width'] ) )
-		$width = (int) $GLOBALS['content_width'];
-
-	if ( empty( $width ) )
-		$width = 500;
-
-	$height = min( ceil( $width * 1.5 ), 1000 );
-
-	/**
-	 * Filter the default array of embed dimensions.
-	 *
-	 * @since 2.9.0
-	 *
-	 * @param int    $width  Width of the embed in pixels.
-	 * @param int    $height Height of the embed in pixels.
-	 * @param string $url    The URL that should be embedded.
-	 */
-	return apply_filters( 'embed_defaults', compact( 'width', 'height' ), $url );
-}
-
-/**
  * Based on a supplied width/height example, return the biggest possible dimensions based on the max width/height.
  *
  * @since 2.9.0
@@ -2240,252 +2624,6 @@ function wp_expand_dimensions( $example_width, $example_height, $max_width, $max
 	$max_height     = (int) $max_height;
 
 	return wp_constrain_dimensions( $example_width * 1000000, $example_height * 1000000, $max_width, $max_height );
-}
-
-/**
- * Attempts to fetch the embed HTML for a provided URL using oEmbed.
- *
- * @since 2.9.0
- *
- * @see WP_oEmbed
- *
- * @param string $url  The URL that should be embedded.
- * @param array  $args Optional. Additional arguments and parameters for retrieving embed HTML.
- *                     Default empty.
- * @return false|string False on failure or the embed HTML on success.
- */
-function wp_oembed_get( $url, $args = '' ) {
-	require_once( ABSPATH . WPINC . '/class-oembed.php' );
-	$oembed = _wp_oembed_get_object();
-	return $oembed->get_html( $url, $args );
-}
-
-/**
- * Adds a URL format and oEmbed provider URL pair.
- *
- * @since 2.9.0
- *
- * @see WP_oEmbed
- *
- * @param string  $format   The format of URL that this provider can handle. You can use asterisks
- *                          as wildcards.
- * @param string  $provider The URL to the oEmbed provider.
- * @param boolean $regex    Optional. Whether the `$format` parameter is in a RegEx format. Default false.
- */
-function wp_oembed_add_provider( $format, $provider, $regex = false ) {
-	require_once( ABSPATH . WPINC . '/class-oembed.php' );
-
-	if ( did_action( 'plugins_loaded' ) ) {
-		$oembed = _wp_oembed_get_object();
-		$oembed->providers[$format] = array( $provider, $regex );
-	} else {
-		WP_oEmbed::_add_provider_early( $format, $provider, $regex );
-	}
-}
-
-/**
- * Removes an oEmbed provider.
- *
- * @since 3.5.0
- *
- * @see WP_oEmbed
- *
- * @param string $format The URL format for the oEmbed provider to remove.
- * @return bool Was the provider removed successfully?
- */
-function wp_oembed_remove_provider( $format ) {
-	require_once( ABSPATH . WPINC . '/class-oembed.php' );
-
-	if ( did_action( 'plugins_loaded' ) ) {
-		$oembed = _wp_oembed_get_object();
-
-		if ( isset( $oembed->providers[ $format ] ) ) {
-			unset( $oembed->providers[ $format ] );
-			return true;
-		}
-	} else {
-		WP_oEmbed::_remove_provider_early( $format );
-	}
-
-	return false;
-}
-
-/**
- * Determines if default embed handlers should be loaded.
- *
- * Checks to make sure that the embeds library hasn't already been loaded. If
- * it hasn't, then it will load the embeds library.
- *
- * @since 2.9.0
- *
- * @see wp_embed_register_handler()
- */
-function wp_maybe_load_embeds() {
-	/**
-	 * Filter whether to load the default embed handlers.
-	 *
-	 * Returning a falsey value will prevent loading the default embed handlers.
-	 *
-	 * @since 2.9.0
-	 *
-	 * @param bool $maybe_load_embeds Whether to load the embeds library. Default true.
-	 */
-	if ( ! apply_filters( 'load_default_embeds', true ) ) {
-		return;
-	}
-
-	wp_embed_register_handler( 'youtube_embed_url', '#https?://(www.)?youtube\.com/(?:v|embed)/([^/]+)#i', 'wp_embed_handler_youtube' );
-
-	wp_embed_register_handler( 'googlevideo', '#http://video\.google\.([A-Za-z.]{2,5})/videoplay\?docid=([\d-]+)(.*?)#i', 'wp_embed_handler_googlevideo' );
-
-	/**
-	 * Filter the audio embed handler callback.
-	 *
-	 * @since 3.6.0
-	 *
-	 * @param callback $handler Audio embed handler callback function.
-	 */
-	wp_embed_register_handler( 'audio', '#^https?://.+?\.(' . join( '|', wp_get_audio_extensions() ) . ')$#i', apply_filters( 'wp_audio_embed_handler', 'wp_embed_handler_audio' ), 9999 );
-
-	/**
-	 * Filter the video embed handler callback.
-	 *
-	 * @since 3.6.0
-	 *
-	 * @param callback $handler Video embed handler callback function.
-	 */
-	wp_embed_register_handler( 'video', '#^https?://.+?\.(' . join( '|', wp_get_video_extensions() ) . ')$#i', apply_filters( 'wp_video_embed_handler', 'wp_embed_handler_video' ), 9999 );
-}
-
-/**
- * The Google Video embed handler callback.
- *
- * Google Video does not support oEmbed.
- *
- * @see WP_Embed::register_handler()
- * @see WP_Embed::shortcode()
- *
- * @param array  $matches The RegEx matches from the provided regex when calling wp_embed_register_handler().
- * @param array  $attr    Embed attributes.
- * @param string $url     The original URL that was matched by the regex.
- * @param array  $rawattr The original unmodified attributes.
- * @return string The embed HTML.
- */
-function wp_embed_handler_googlevideo( $matches, $attr, $url, $rawattr ) {
-	// If the user supplied a fixed width AND height, use it
-	if ( !empty($rawattr['width']) && !empty($rawattr['height']) ) {
-		$width  = (int) $rawattr['width'];
-		$height = (int) $rawattr['height'];
-	} else {
-		list( $width, $height ) = wp_expand_dimensions( 425, 344, $attr['width'], $attr['height'] );
-	}
-
-	/**
-	 * Filter the Google Video embed output.
-	 *
-	 * @since 2.9.0
-	 *
-	 * @param string $html    Google Video HTML embed markup.
-	 * @param array  $matches The RegEx matches from the provided regex.
-	 * @param array  $attr    An array of embed attributes.
-	 * @param string $url     The original URL that was matched by the regex.
-	 * @param array  $rawattr The original unmodified attributes.
-	 */
-	return apply_filters( 'embed_googlevideo', '<embed type="application/x-shockwave-flash" src="http://video.google.com/googleplayer.swf?docid=' . esc_attr($matches[2]) . '&amp;hl=en&amp;fs=true" style="width:' . esc_attr($width) . 'px;height:' . esc_attr($height) . 'px" allowFullScreen="true" allowScriptAccess="always" />', $matches, $attr, $url, $rawattr );
-}
-
-/**
- * YouTube iframe embed handler callback.
- *
- * Catches YouTube iframe embed URLs that are not parsable by oEmbed but can be translated into a URL that is.
- *
- * @since 4.0.0
- *
- * @global WP_Embed $wp_embed
- *
- * @param array  $matches The RegEx matches from the provided regex when calling
- *                        wp_embed_register_handler().
- * @param array  $attr    Embed attributes.
- * @param string $url     The original URL that was matched by the regex.
- * @param array  $rawattr The original unmodified attributes.
- * @return string The embed HTML.
- */
-function wp_embed_handler_youtube( $matches, $attr, $url, $rawattr ) {
-	global $wp_embed;
-	$embed = $wp_embed->autoembed( "https://youtube.com/watch?v={$matches[2]}" );
-
-	/**
-	 * Filter the YoutTube embed output.
-	 *
-	 * @since 4.0.0
-	 *
-	 * @see wp_embed_handler_youtube()
-	 *
-	 * @param string $embed   YouTube embed output.
-	 * @param array  $attr    An array of embed attributes.
-	 * @param string $url     The original URL that was matched by the regex.
-	 * @param array  $rawattr The original unmodified attributes.
-	 */
-	return apply_filters( 'wp_embed_handler_youtube', $embed, $attr, $url, $rawattr );
-}
-
-/**
- * Audio embed handler callback.
- *
- * @since 3.6.0
- *
- * @param array  $matches The RegEx matches from the provided regex when calling wp_embed_register_handler().
- * @param array  $attr Embed attributes.
- * @param string $url The original URL that was matched by the regex.
- * @param array  $rawattr The original unmodified attributes.
- * @return string The embed HTML.
- */
-function wp_embed_handler_audio( $matches, $attr, $url, $rawattr ) {
-	$audio = sprintf( '[audio src="%s" /]', esc_url( $url ) );
-
-	/**
-	 * Filter the audio embed output.
-	 *
-	 * @since 3.6.0
-	 *
-	 * @param string $audio   Audio embed output.
-	 * @param array  $attr    An array of embed attributes.
-	 * @param string $url     The original URL that was matched by the regex.
-	 * @param array  $rawattr The original unmodified attributes.
-	 */
-	return apply_filters( 'wp_embed_handler_audio', $audio, $attr, $url, $rawattr );
-}
-
-/**
- * Video embed handler callback.
- *
- * @since 3.6.0
- *
- * @param array  $matches The RegEx matches from the provided regex when calling wp_embed_register_handler().
- * @param array  $attr    Embed attributes.
- * @param string $url     The original URL that was matched by the regex.
- * @param array  $rawattr The original unmodified attributes.
- * @return string The embed HTML.
- */
-function wp_embed_handler_video( $matches, $attr, $url, $rawattr ) {
-	$dimensions = '';
-	if ( ! empty( $rawattr['width'] ) && ! empty( $rawattr['height'] ) ) {
-		$dimensions .= sprintf( 'width="%d" ', (int) $rawattr['width'] );
-		$dimensions .= sprintf( 'height="%d" ', (int) $rawattr['height'] );
-	}
-	$video = sprintf( '[video %s src="%s" /]', $dimensions, esc_url( $url ) );
-
-	/**
-	 * Filter the video embed output.
-	 *
-	 * @since 3.6.0
-	 *
-	 * @param string $video   Video embed output.
-	 * @param array  $attr    An array of embed attributes.
-	 * @param string $url     The original URL that was matched by the regex.
-	 * @param array  $rawattr The original unmodified attributes.
-	 */
-	return apply_filters( 'wp_embed_handler_video', $video, $attr, $url, $rawattr );
 }
 
 /**
@@ -2775,8 +2913,16 @@ function wp_prepare_attachment_for_js( $attachment ) {
 	}
 
 	$attached_file = get_attached_file( $attachment->ID );
-	if ( file_exists( $attached_file ) ) {
+
+	if ( isset( $meta['filesize'] ) ) {
+		$bytes = $meta['filesize'];
+	} elseif ( file_exists( $attached_file ) ) {
 		$bytes = filesize( $attached_file );
+	} else {
+		$bytes = '';
+	}
+
+	if ( $bytes ) {
 		$response['filesizeInBytes'] = $bytes;
 		$response['filesizeHumanReadable'] = size_format( $bytes );
 	}
@@ -3028,8 +3174,6 @@ function wp_enqueue_media( $args = array() ) {
 		}
 	}
 
-	$hier = $post && is_post_type_hierarchical( $post->post_type );
-
 	if ( $post ) {
 		$post_type_object = get_post_type_object( $post->post_type );
 	} else {
@@ -3068,10 +3212,10 @@ function wp_enqueue_media( $args = array() ) {
 		'allMediaItems'          => __( 'All media items' ),
 		'allDates'               => __( 'All dates' ),
 		'noItemsFound'           => __( 'No items found.' ),
-		'insertIntoPost'         => $hier ? __( 'Insert into page' ) : __( 'Insert into post' ),
+		'insertIntoPost'         => $post_type_object->labels->insert_into_item,
 		'unattached'             => __( 'Unattached' ),
 		'trash'                  => _x( 'Trash', 'noun' ),
-		'uploadedToThisPost'     => $hier ? __( 'Uploaded to this page' ) : __( 'Uploaded to this post' ),
+		'uploadedToThisPost'     => $post_type_object->labels->uploaded_to_this_item,
 		'warnDelete'             => __( "You are about to permanently delete this item.\n  'Cancel' to stop, 'OK' to delete." ),
 		'warnBulkDelete'         => __( "You are about to permanently delete these items.\n  'Cancel' to stop, 'OK' to delete." ),
 		'warnBulkTrash'          => __( "You are about to trash these items.\n  'Cancel' to stop, 'OK' to delete." ),
@@ -3270,11 +3414,12 @@ function get_media_embedded_in_content( $content, $types = null ) {
 	 * Filter the embedded media types that are allowed to be returned from the content blob.
 	 *
 	 * @since 4.2.0
+	 * @since 4.4.0 Added 'img' to the allowed types.
 	 *
 	 * @param array $allowed_media_types An array of allowed media types. Default media types are
-	 *                                   'audio', 'video', 'object', 'embed', and 'iframe'.
+	 *                                   'audio', 'video', 'object', 'embed', 'iframe', and 'img'.
 	 */
-	$allowed_media_types = apply_filters( 'media_embedded_in_content_allowed_types', array( 'audio', 'video', 'object', 'embed', 'iframe' ) );
+	$allowed_media_types = apply_filters( 'media_embedded_in_content_allowed_types', array( 'audio', 'video', 'object', 'embed', 'iframe', 'img' ) );
 
 	if ( ! empty( $types ) ) {
 		if ( ! is_array( $types ) ) {

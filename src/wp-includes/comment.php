@@ -1,6 +1,6 @@
 <?php
 /**
- * Core Comments API
+ * Core Comment API
  *
  * @package WordPress
  * @subpackage Comment
@@ -12,6 +12,9 @@ require_once( ABSPATH . WPINC . '/class-wp-comment.php' );
 
 /** WP_Comment_Query class */
 require_once( ABSPATH . WPINC . '/class-wp-comment-query.php' );
+
+/** Walker_Comment class */
+require_once( ABSPATH . WPINC . '/class-walker-comment.php' );
 
 /** Core comments functionality */
 require_once( ABSPATH . WPINC . '/comment-functions.php' );

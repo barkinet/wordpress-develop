@@ -295,7 +295,7 @@ blockquote:before,
 blockquote:after,
 q:before,
 q:after {
-	content: '';
+	content: "";
 	content: none;
 }
 
@@ -325,15 +325,9 @@ h6 {
 }
 
 h1 {
+	color: #23282d;
 	font-size: 2em;
 	margin: .67em 0;
-}
-
-.wrap > h1 {
-	color: #23282d;
-	font-size: 1.5em;
-	margin: .83em 0;
-	font-weight: 400;
 }
 
 h2,
@@ -343,6 +337,8 @@ h3 {
 	margin: 1em 0;
 }
 
+.update-php h2,
+.update-core-php h2,
 h4 {
 	font-size: 1em;
 	margin: 1.33em 0;
@@ -568,12 +564,14 @@ code {
 	margin: 10px 20px 0 2px;
 }
 
+.wrap > h2:first-child, /* Back-compat for old plugins */
 .wrap h1,
 .subtitle {
 	font-weight: normal;
 	margin: 0;
 }
 
+.wrap > h2:first-child, /* Back-compat for old plugins */
 .wrap h1 {
 	font-size: 23px;
 	font-weight: 400;
@@ -754,7 +752,7 @@ img.emoji {
 .notice-dismiss:before {
 	background: none;
 	color: #b4b9be;
-	content: '\f153';
+	content: "\f153";
 	display: block;
 	font: normal 16px/20px dashicons;
 	speak: none;
@@ -881,6 +879,10 @@ abbr.required,
 
 .misc-pub-section {
 	padding: 6px 10px 8px;
+}
+
+.misc-pub-filename {
+	word-wrap: break-word;
 }
 
 #minor-publishing-actions {
@@ -1124,9 +1126,10 @@ th.action-links {
 	-webkit-box-sizing: border-box;
 	-moz-box-sizing: border-box;
 	box-sizing: border-box;
+	position: relative;
 	float: left;
 	margin: 0 1% 0 0;
-	padding: 10px;
+	padding: 20px 10px 10px;
 	width: 24%;
 	background: #fff;
 	border: 1px solid #e5e5e5;
@@ -1134,24 +1137,27 @@ th.action-links {
 	box-shadow: 0 1px 1px rgba(0,0,0,0.04);
 }
 
-.filter-group h4 {
-	position: relative;
+.filter-group legend {
+	position: absolute;
+	top: 10px;
+	display: block;
 	margin: 0;
+	padding: 0;
+	font-size: 1em;
+	font-weight: 600;
 }
 
-.filter-drawer ol {
-	margin: 20px 0 0;
+.filter-drawer .filter-group-feature {
+	margin: 28px 0 0;
 	list-style-type: none;
 	font-size: 12px;
 }
 
-.filter-drawer li {
+.filter-drawer .filter-group-feature input,
+.filter-drawer .filter-group-feature label {
 	display: inline-block;
-	vertical-align: top;
-	margin: 5px 0;
-	padding-right: 25px;
-	width: 160px;
-	list-style-type: none;
+	margin: 7px 4px 7px 0;
+	line-height: 16px;
 }
 
 .filter-drawer .buttons {
@@ -1296,11 +1302,36 @@ div.error {
 }
 
 .notice p,
+.notice-title,
 div.updated p,
 div.error p,
 .form-table td .notice p {
 	margin: 0.5em 0;
 	padding: 2px;
+}
+
+.error a {
+	text-decoration: underline;
+}
+
+.updated a {
+	padding-bottom: 2px;
+	text-decoration: none;
+}
+
+.notice-alt {
+	-webkit-box-shadow: none;
+	box-shadow: none;
+}
+
+.notice-large {
+	padding: 10px 20px;
+}
+
+.notice-title {
+	display: inline-block;
+	color: #23282d;
+	font-size: 18px;
 }
 
 .wp-core-ui .notice.is-dismissible {
@@ -1338,20 +1369,36 @@ div.error p,
 
 .notice-success,
 div.updated {
-	border-color: #7ad03a;
+	border-left-color: #46b450;
+}
+
+.notice-success.notice-alt {
+	background-color: #ecf7ed;
 }
 
 .notice-warning {
-	border-color: #ffba00;
+	border-left-color: #ffb900;
+}
+
+.notice-warning.notice-alt {
+	background-color: #fff8e5;
 }
 
 .notice-error,
 div.error {
-	border-color: #dd3d36;
+	border-left-color: #dc3232;
+}
+
+.notice-error.notice-alt {
+	background-color: #fbeaea;
 }
 
 .notice-info {
-	border-color: #00a0d2;
+	border-left-color: #00a0d2;
+}
+
+.notice-info.notice-alt {
+	background-color: #e5f5fa;
 }
 
 .wrap .notice,
@@ -1492,7 +1539,7 @@ form.upgrade .hint {
 
 #screen-meta-links .show-settings:after {
 	right: 0;
-	content: '\f140';
+	content: "\f140";
 	font: normal 20px/1 dashicons;
 	speak: none;
 	display: inline-block;
@@ -1507,7 +1554,7 @@ form.upgrade .hint {
 }
 
 #screen-meta-links .screen-meta-active:after {
-	content: '\f142';
+	content: "\f142";
 }
 
 /* end screen options and help tabs */
@@ -1525,10 +1572,17 @@ form.upgrade .hint {
 	background-position: bottom left;
 }
 
-#screen-options-wrap h5,
+#screen-options-wrap h5, /* Back-compat for old plugins */
+#screen-options-wrap legend,
 #contextual-help-wrap h5 {
-	margin: 8px 0;
-	font-size: 13px;
+	margin: 0;
+	padding: 8px 0;
+ 	font-size: 13px;
+	font-weight: 600;
+}
+
+.ie8 #screen-options-wrap legend {
+	color: inherit;
 }
 
 .metabox-prefs label {
@@ -1537,25 +1591,28 @@ form.upgrade .hint {
 	line-height: 30px;
 }
 
-.metabox-prefs label input[type=checkbox] {
-	margin-top: -4px;
+#number-of-columns {
+	display: inline-block;
+	vertical-align: middle;
+	line-height: 30px;
+}
+
+.metabox-prefs input[type=checkbox] {
+	margin-top: 0;
 	margin-right: 6px;
 }
 
-.metabox-prefs label input {
-	margin: 0 5px 0 2px;
+.metabox-prefs label input,
+.metabox-prefs label input[type=checkbox] {
+	margin: -4px 5px 0 0;
 }
 
 .metabox-prefs .columns-prefs label input {
-	margin: 0 2px;
+	margin: -1px 2px 0 0;
 }
 
 .metabox-prefs label a {
 	display: none;
-}
-
-.metabox-prefs .screen-options {
-	padding-top: 10px;
 }
 
 .metabox-prefs .screen-options input,
@@ -1572,6 +1629,15 @@ form.upgrade .hint {
 .metabox-prefs .screen-options label {
 	line-height: 28px;
 	padding-right: 0;
+}
+
+.screen-options + .screen-options {
+    margin-top: 10px;
+}
+
+.metabox-prefs .submit {
+	margin-top: 1em;
+	padding: 0;
 }
 
 /*------------------------------------------------------------------------------
@@ -1786,13 +1852,15 @@ html.wp-toolbar {
 }
 
 .postbox .handlediv {
+	display: none;
 	float: right;
-	width: 33px;
+	width: 36px;
 	height: 36px;
+	padding: 0;
 }
 
 .js .postbox .handlediv {
-	cursor: pointer;
+	display: block;
 }
 
 .sortable-placeholder {
@@ -1853,7 +1921,7 @@ html.wp-toolbar {
 }
 
 .columns-prefs label {
-	padding: 0 5px;
+	padding: 0 10px 0 0;
 }
 
 /* @todo: what is this doing here */
@@ -1913,15 +1981,20 @@ html.wp-toolbar {
 	border-bottom: none;
 	background: #e4e4e4;
 	color: #555;
-	font-size: 12px;
-	line-height: 16px;
-	display: inline-block;
-	padding: 4px 14px 6px;
-	text-decoration: none;
-	margin: -4px 4px -1px 0;
 }
 
-.nav-tab:hover {
+.nav-tab,
+.nav-tab-small .nav-tab {
+	display: inline-block;
+	margin: -4px 4px -1px 0;
+	padding: 5px 14px;
+	font-size: 12px;
+	line-height: 16px;
+	text-decoration: none;
+}
+
+.nav-tab:hover,
+.nav-tab:focus {
 	background-color: #fff;
 	color: #464646;
 }
@@ -1931,24 +2004,28 @@ html.wp-toolbar {
 }
 
 .nav-tab-active,
-.nav-tab-active:hover {
+.nav-tab-active:hover,
+.nav-tab-active:focus {
 	border-bottom: 1px solid #f1f1f1;
 	background: #f1f1f1;
 	color: #000;
 }
 
-h1.nav-tab-wrapper,
+h1.nav-tab-wrapper, /* Back-compat for pre-4.4 */
 h2.nav-tab-wrapper,
 h3.nav-tab-wrapper {
 	border-bottom: 1px solid #ccc;
-	padding-bottom: 0;
-	padding-left: 10px;
+	margin: 0;
+	padding: 9px 15px 0 10px;
+	font-size: 23px;
+	font-weight: 400;
+	line-height: 29px;
 }
 
-h1 .nav-tab,
+h1 .nav-tab, /* Back-compat for pre-4.4 */
 h2 .nav-tab {
 	padding: 6px 10px;
-	font-weight: bold;
+	font-weight: 600;
 	font-size: 15px;
 	line-height: 24px;
 }
@@ -1981,11 +2058,20 @@ h2 .nav-tab {
 	margin-right: 190px;
 }
 
-.metabox-holder h3 {
+.metabox-holder h3.hndle, /* Back-compat for pre-4.4 */
+.metabox-holder .stuffbox > h3, /* Back-compat for pre-4.4 */
+.metabox-holder .postbox > h3, /* Back-compat for pre-4.4 */
+.metabox-holder h2 {
 	font-size: 14px;
 	padding: 8px 12px;
 	margin: 0;
 	line-height: 1.4;
+}
+
+/* Back-compat for nav-menus screen */
+.nav-menus-php .metabox-holder h3 {
+	padding: 10px 10px 11px 14px;
+	line-height: 21px;
 }
 
 #templateside ul li a {
@@ -2050,7 +2136,8 @@ body.iframe {
 	width: auto;
 }
 
-#post-body #post-body-content #namediv h3 {
+#post-body #post-body-content #namediv h3, /* Back-compat for pre-4.4 */
+#post-body #post-body-content #namediv h2 {
 	margin-top: 0;
 }
 
@@ -2062,7 +2149,8 @@ body.iframe {
 	margin: 2px 0 0 9px;
 }
 
-#namediv h3 label {
+#namediv h3 label, /* Back-compat for pre-4.4 */
+#namediv h2 label {
 	vertical-align: baseline;
 }
 
@@ -2163,11 +2251,11 @@ div.star-holder .star-rating {
 }
 
 .star-rating .star-full:before {
-	content:'\f155';
+	content: "\f155";
 }
 
 .star-rating .star-half:before {
-	content:'\f459';
+	content: "\f459";
 }
 
 .rtl .star-rating .star-half {
@@ -2177,7 +2265,7 @@ div.star-holder .star-rating {
 }
 
 .star-rating .star-empty:before {
-	content:'\f154';
+	content: "\f154";
 }
 
 div.action-links {
@@ -2718,24 +2806,26 @@ img {
 	color: #464646;
 }
 
-/* @todo: these seem misplaced */
-.js .meta-box-sortables .postbox:hover .handlediv {
-	margin-right: 0 !important;
-}
-
 /* Metabox collapse arrow indicators */
 .js .sidebar-name .sidebar-name-arrow:before,
-.js .meta-box-sortables .postbox .handlediv:before {
-	right: 12px;
+.js .meta-box-sortables .postbox .toggle-indicator:before {
+	content: "\f142";
+	display: inline-block;
 	font: normal 20px/1 dashicons;
 	speak: none;
-	display: inline-block;
-	padding: 8px 10px;
-	top: 0;
-	position: relative;
 	-webkit-font-smoothing: antialiased;
 	-moz-osx-font-smoothing: grayscale;
 	text-decoration: none !important;
+}
+
+.js .widgets-holder-wrap.closed .sidebar-name-arrow:before,
+.js .meta-box-sortables .postbox.closed .handlediv .toggle-indicator:before {
+	content: "\f140";
+}
+
+.js .sidebar-name .sidebar-name-arrow:before {
+	padding: 10px;
+	left: 0;
 }
 
 .js #widgets-left .sidebar-name .sidebar-name-arrow {
@@ -2747,24 +2837,30 @@ img {
 	display: block;
 }
 
-/* Show the arrow only on hover */
-.js .sidebar-name .sidebar-name-arrow:before,
-.js .meta-box-sortables .postbox .handlediv:before {
-	content: '\f142';
+.js .postbox .handlediv .toggle-indicator:before {
+	margin-top: 4px;
+	width: 20px;
+	-webkit-border-radius: 50%;
+	border-radius: 50%;
+	text-indent: -1px; /* account for the dashicon alignment */
 }
 
-.js .widgets-holder-wrap.closed .sidebar-name-arrow:before,
-.js .meta-box-sortables .postbox.closed .handlediv:before {
-	content: '\f140';
+.rtl.js .postbox .handlediv .toggle-indicator:before {
+	text-indent: 1px; /* account for the dashicon alignment */
 }
 
-.error a {
-	text-decoration: underline;
+.js .postbox .handlediv:focus {
+	-webkit-box-shadow: none;
+	box-shadow: none;
 }
 
-.updated a {
-	text-decoration: none;
-	padding-bottom: 2px;
+.js .postbox .handlediv:focus .toggle-indicator:before {
+	-webkit-box-shadow:
+    	0 0 0 1px #5b9dd9,
+		0 0 2px 1px rgba(30, 140, 190, .8);
+    box-shadow:
+    	0 0 0 1px #5b9dd9,
+		0 0 2px 1px rgba(30, 140, 190, .8);
 }
 
 /* @todo: appears to be Press This only and overridden */
@@ -2773,7 +2869,7 @@ img {
 }
 
 /* Theme/Plugin Editor */
-.alignleft h3 {
+.alignleft h2 {
 	margin: 0;
 }
 
@@ -2801,7 +2897,7 @@ img {
 	word-wrap: break-word;
 }
 
-#templateside h3,
+#templateside h2,
 #postcustomstuff p.submit {
 	margin: 0;
 }
@@ -2864,7 +2960,7 @@ img {
 .control-section .accordion-section-title:after,
 .accordion-section-title:after {
 	right: 0;
-	content: '\f140';
+	content: "\f140";
 	border: none;
 	background: none;
 	font: normal 20px/1 dashicons;
@@ -2889,6 +2985,7 @@ img {
 
 .widget-action:hover,
 .handlediv:hover,
+.handlediv:focus,
 .item-edit:hover,
 .sidebar-name:hover .sidebar-name-arrow,
 .accordion-section-title:hover:after {
@@ -2896,16 +2993,20 @@ img {
 }
 
 .widget-top a.widget-action:after {
-	padding: 12px 12px 11px;
+	padding: 1px 2px 1px 0px;
+	margin-top: 10px;
+	margin-right: 10px;
+	-webkit-border-radius: 50%;
+	border-radius: 50%;
 }
 
 .widget-top a.widget-action:focus:after {
-	-webkit-box-shadow: 0 0 0 1px #5b9dd9,0 0 2px 1px rgba(30,140,190,.8);
-	box-shadow: 0 0 0 1px #5b9dd9,0 0 2px 1px rgba(30,140,190,.8);
-}
-
-.nav-menus-php .item-edit:before {
-	line-height: 2.1;
+	-webkit-box-shadow:
+		0 0 0 1px #5b9dd9,
+		0 0 2px 1px rgba(30,140,190,.8);
+	box-shadow:
+		0 0 0 1px #5b9dd9,
+		0 0 2px 1px rgba(30,140,190,.8);
 }
 
 .control-section .accordion-section-title:after,
@@ -2919,7 +3020,7 @@ img {
 #customize-info.open .accordion-section-title:after,
 .nav-menus-php .menu-item-edit-active .item-edit:before,
 .widget.open .widget-top a.widget-action:after {
-	content: '\f142';
+	content: "\f142";
 }
 
 /*!
@@ -3357,7 +3458,10 @@ img {
 		font-size: 14px;
 	}
 
-	.metabox-holder h3 {
+	.metabox-holder h3.hndle, /* Back-compat for pre-4.4 */
+	.metabox-holder .stuffbox > h3, /* Back-compat for pre-4.4 */
+	.metabox-holder .postbox > h3, /* Back-compat for pre-4.4 */
+	.metabox-holder h2 {
 		padding: 12px;
 	}
 
@@ -3417,6 +3521,11 @@ img {
 
 	.edit-comment-author {
 		margin: 2px 0 0;
+	}
+
+	.filter-drawer .filter-group-feature input,
+	.filter-drawer .filter-group-feature label {
+		line-height: 25px;
 	}
 }
 

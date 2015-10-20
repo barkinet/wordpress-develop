@@ -347,7 +347,7 @@ class WP_Customize_Section {
 		<li id="accordion-section-{{ data.id }}" class="accordion-section control-section control-section-{{ data.type }}">
 			<h3 class="accordion-section-title" tabindex="0">
 				{{ data.title }}
-				<span class="screen-reader-text"><?php _e( 'Press return or enter to open' ); ?></span>
+				<span class="screen-reader-text"><?php _e( 'Press return or enter to open this section' ); ?></span>
 			</h3>
 			<ul class="accordion-section-content">
 				<li class="customize-section-description-container">
@@ -437,8 +437,8 @@ class WP_Customize_Themes_Section extends WP_Customize_Section {
 				<div id="customize-container"></div>
 				<?php if ( count( $this->controls ) > 4 ) : ?>
 					<p><label for="themes-filter">
-						<span class="screen-reader-text"><?php _e( 'Search installed themes...' ); ?></span>
-						<input type="text" id="themes-filter" placeholder="<?php esc_attr_e( 'Search installed themes...' ); ?>" />
+						<span class="screen-reader-text"><?php _e( 'Search installed themes&hellip;' ); ?></span>
+						<input type="text" id="themes-filter" placeholder="<?php esc_attr_e( 'Search installed themes&hellip;' ); ?>" />
 					</label></p>
 				<?php endif; ?>
 				<div class="theme-browser rendered">

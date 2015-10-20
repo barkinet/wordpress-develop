@@ -67,6 +67,11 @@ input[type="url"] {
 	direction: ltr;
 }
 
+/* Vertically align the number selector with the input. */
+input[type="number"] {
+	line-height: inherit;
+}
+
 input[type="checkbox"],
 input[type="radio"] {
 	border: 1px solid #b4b9be;
@@ -134,13 +139,13 @@ input[type="radio"]:checked:before {
 }
 
 input[type="checkbox"]:checked:before {
-	content: '\f147';
+	content: "\f147";
 	margin: -3px 0 0 -4px;
 	color: #1e8cbe;
 }
 
 input[type="radio"]:checked:before {
-	content: '\2022';
+	content: "\2022";
 	text-indent: -9999px;
 	-webkit-border-radius: 50px;
 	border-radius: 50px;
@@ -241,10 +246,23 @@ textarea[readonly] {
 }
 
 .form-table .form-required.form-invalid td:after {
-	content: '\f534';
+	content: "\f534";
 	font: normal 20px/1 dashicons;
 	color: #dc3232;
 	margin-left: -25px;
+	vertical-align: middle;
+}
+
+/* Adjust error indicator for password layout */
+.form-table .form-required.user-pass1-wrap.form-invalid td:after {
+	content: '';
+}
+
+.form-table .form-required.user-pass1-wrap.form-invalid .password-input-wrapper:after {
+	content: '\f534';
+	font: normal 20px/1 dashicons;
+	color: #dc3232;
+	margin: 0 6px 0 -29px;
 	vertical-align: middle;
 }
 
@@ -372,6 +390,14 @@ input[type="number"].small-text {
 	width: 65px;
 }
 
+input.tiny-text {
+	width: 35px;
+}
+
+input[type="number"].tiny-text {
+	width: 45px;
+}
+
 #doaction,
 #doaction2,
 #post-query-submit {
@@ -428,7 +454,7 @@ fieldset label,
 }
 
 #misc-publishing-actions label[for="post_status"]:before {
-	content: '\f173';
+	content: "\f173";
 	display: inline-block;
 	font: normal 20px/1 dashicons;
 	speak: none;
@@ -786,7 +812,7 @@ table.form-table td .updated p {
 }
 
 .pressthis-bookmarklet:after {
-	content: '';
+	content: "";
 	width: 70%;
 	height: 55%;
 	z-index: -1;
@@ -818,7 +844,7 @@ table.form-table td .updated p {
 .pressthis-bookmarklet span:before {
 	color: #777;
 	font: normal 20px/1 dashicons;
-	content:'\f157';
+	content: "\f157";
 	position: relative;
 	display: inline-block;
 	top: 4px;

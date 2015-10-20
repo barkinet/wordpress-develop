@@ -4,12 +4,6 @@
  */
 class Tests_Link extends WP_UnitTestCase {
 
-	function tearDown() {
-		global $wp_rewrite;
-		$wp_rewrite->init();
-		parent::tearDown();
-	}
-
 	function _get_pagenum_link_cb( $url ) {
 		return $url . '/WooHoo';
 	}
@@ -20,9 +14,7 @@ class Tests_Link extends WP_UnitTestCase {
 	function test_get_pagenum_link_case_insensitivity() {
 		$old_req_uri = $_SERVER['REQUEST_URI'];
 
-		global $wp_rewrite;
-		$wp_rewrite->set_permalink_structure('/%year%/%monthnum%/%day%/%postname%/');
-		$wp_rewrite->flush_rules();
+		$this->set_permalink_structure( '/%year%/%monthnum%/%day%/%postname%/' );
 
 		add_filter( 'home_url', array( $this, '_get_pagenum_link_cb' ) );
 		$_SERVER['REQUEST_URI'] = '/woohoo';
@@ -35,14 +27,8 @@ class Tests_Link extends WP_UnitTestCase {
 	}
 
 	function test_wp_get_shortlink() {
-		global $wp_rewrite;
-
-		$post_id = $this->factory->post->create();
-		$post_id2 = $this->factory->post->create();
-
-		$wp_rewrite->init();
-		$wp_rewrite->set_permalink_structure( '' );
-		$wp_rewrite->flush_rules();
+		$post_id = self::factory()->post->create();
+		$post_id2 = self::factory()->post->create();
 
 		// Basic case
 		$this->assertEquals( get_permalink( $post_id ), wp_get_shortlink( $post_id, 'post' ) );
@@ -71,8 +57,7 @@ class Tests_Link extends WP_UnitTestCase {
 		$this->assertEquals( '', wp_get_shortlink( 0 ) );
 		$this->assertEquals( '', wp_get_shortlink() );
 
-		$wp_rewrite->set_permalink_structure( '/%year%/%monthnum%/%day%/%postname%/' );
-		$wp_rewrite->flush_rules();
+		$this->set_permalink_structure( '/%year%/%monthnum%/%day%/%postname%/' );
 
 		// With a permalink structure set, get_permalink() will no longer match.
 		$this->assertNotEquals( get_permalink( $post_id ), wp_get_shortlink( $post_id, 'post' ) );
@@ -86,15 +71,13 @@ class Tests_Link extends WP_UnitTestCase {
 	}
 
 	function test_wp_get_shortlink_with_page() {
-		$post_id = $this->factory->post->create( array( 'post_type' => 'page' ) );
+		$post_id = self::factory()->post->create( array( 'post_type' => 'page' ) );
 
 		// Basic case
 		// Don't test against get_permalink() since it uses ?page_id= for pages.
 		$this->assertEquals( home_url( '?p=' . $post_id ), wp_get_shortlink( $post_id, 'post' ) );
 
-		global $wp_rewrite;
-		$wp_rewrite->set_permalink_structure( '/%year%/%monthnum%/%day%/%postname%/' );
-		$wp_rewrite->flush_rules();
+		$this->set_permalink_structure( '/%year%/%monthnum%/%day%/%postname%/' );
 
 		$this->assertEquals( home_url( '?p=' . $post_id ), wp_get_shortlink( $post_id, 'post' ) );
 	}
@@ -103,16 +86,13 @@ class Tests_Link extends WP_UnitTestCase {
 	 * @ticket 26871
 	 */
 	function test_wp_get_shortlink_with_home_page() {
-		$post_id = $this->factory->post->create( array( 'post_type' => 'page' ) );
+		$post_id = self::factory()->post->create( array( 'post_type' => 'page' ) );
 		update_option( 'show_on_front', 'page' );
 		update_option( 'page_on_front', $post_id );
 
 		$this->assertEquals( home_url( '/' ), wp_get_shortlink( $post_id, 'post' ) );
 
-		global $wp_rewrite;
-		$wp_rewrite->permalink_structure = '';
-		$wp_rewrite->set_permalink_structure( '/%year%/%monthnum%/%day%/%postname%/' );
-		$wp_rewrite->flush_rules();
+		$this->set_permalink_structure( '/%year%/%monthnum%/%day%/%postname%/' );
 
 		$this->assertEquals( home_url( '/' ), wp_get_shortlink( $post_id, 'post' ) );
 	}
@@ -122,22 +102,22 @@ class Tests_Link extends WP_UnitTestCase {
 	 */
 	function test_get_adjacent_post() {
 		// Need some sample posts to test adjacency
-		$post_one = $this->factory->post->create_and_get( array(
+		$post_one = self::factory()->post->create_and_get( array(
 			'post_title' => 'First',
 			'post_date' => '2012-01-01 12:00:00'
 		) );
 
-		$post_two = $this->factory->post->create_and_get( array(
+		$post_two = self::factory()->post->create_and_get( array(
 			'post_title' => 'Second',
 			'post_date' => '2012-02-01 12:00:00'
 		) );
 
-		$post_three = $this->factory->post->create_and_get( array(
+		$post_three = self::factory()->post->create_and_get( array(
 			'post_title' => 'Third',
 			'post_date' => '2012-03-01 12:00:00'
 		) );
 
-		$post_four = $this->factory->post->create_and_get( array(
+		$post_four = self::factory()->post->create_and_get( array(
 			'post_title' => 'Fourth',
 			'post_date' => '2012-04-01 12:00:00'
 		) );
@@ -197,33 +177,33 @@ class Tests_Link extends WP_UnitTestCase {
 		global $wpdb;
 		$wpdb->insert( $wpdb->term_taxonomy, array( 'taxonomy' => 'foo', 'term_id' => 12345, 'description' => '' ) );
 
-		$include = $this->factory->term->create( array(
+		$include = self::factory()->term->create( array(
 			'taxonomy' => 'category',
 			'name' => 'Include',
 		) );
-		$exclude = $this->factory->category->create();
+		$exclude = self::factory()->category->create();
 
-		$one = $this->factory->post->create_and_get( array(
+		$one = self::factory()->post->create_and_get( array(
 			'post_date' => '2012-01-01 12:00:00',
 			'post_category' => array( $include, $exclude ),
 		) );
 
-		$two = $this->factory->post->create_and_get( array(
+		$two = self::factory()->post->create_and_get( array(
 			'post_date' => '2012-01-02 12:00:00',
 			'post_category' => array(),
 		) );
 
-		$three = $this->factory->post->create_and_get( array(
+		$three = self::factory()->post->create_and_get( array(
 			'post_date' => '2012-01-03 12:00:00',
 			'post_category' => array( $include, $exclude ),
 		) );
 
-		$four = $this->factory->post->create_and_get( array(
+		$four = self::factory()->post->create_and_get( array(
 			'post_date' => '2012-01-04 12:00:00',
 			'post_category' => array( $include ),
 		) );
 
-		$five = $this->factory->post->create_and_get( array(
+		$five = self::factory()->post->create_and_get( array(
 			'post_date' => '2012-01-05 12:00:00',
 			'post_category' => array( $include, $exclude ),
 		) );
@@ -255,6 +235,73 @@ class Tests_Link extends WP_UnitTestCase {
 		$this->assertEquals( $four, get_adjacent_post( false, array( $exclude ), true ) );
 		$this->assertEquals( $four, get_adjacent_post( true, array( $exclude ), true ) );
 		$this->assertEmpty( get_adjacent_post( false, array(), false ) );
+	}
+
+	/**
+	 * @ticket 32833
+	 */
+	public function test_get_adjacent_post_excluded_terms() {
+		register_taxonomy( 'wptests_tax', 'post' );
+
+		$t = self::factory()->term->create( array(
+			'taxonomy' => 'wptests_tax',
+		) );
+
+		$p1 = self::factory()->post->create( array( 'post_date' => '2015-08-27 12:00:00' ) );
+		$p2 = self::factory()->post->create( array( 'post_date' => '2015-08-26 12:00:00' ) );
+		$p3 = self::factory()->post->create( array( 'post_date' => '2015-08-25 12:00:00' ) );
+
+		wp_set_post_terms( $p2, array( $t ), 'wptests_tax' );
+
+		// Fake current page.
+		$_post = isset( $GLOBALS['post'] ) ? $GLOBALS['post'] : null;
+		$GLOBALS['post'] = get_post( $p1 );
+
+		$found = get_adjacent_post( false, array( $t ), true, 'wptests_tax' );
+
+		if ( ! is_null( $_post ) ) {
+			$GLOBALS['post'] = $_post;
+		} else {
+			unset( $GLOBALS['post'] );
+		}
+
+		// Should skip $p2, which belongs to $t.
+		$this->assertEquals( $p3, $found->ID );
+	}
+
+	/**
+	 * @ticket 32833
+	 */
+	public function test_get_adjacent_post_excluded_terms_should_not_require_posts_to_have_terms_in_any_taxonomy() {
+		register_taxonomy( 'wptests_tax', 'post' );
+
+		$t = self::factory()->term->create( array(
+			'taxonomy' => 'wptests_tax',
+		) );
+
+		$p1 = self::factory()->post->create( array( 'post_date' => '2015-08-27 12:00:00' ) );
+		$p2 = self::factory()->post->create( array( 'post_date' => '2015-08-26 12:00:00' ) );
+		$p3 = self::factory()->post->create( array( 'post_date' => '2015-08-25 12:00:00' ) );
+
+		wp_set_post_terms( $p2, array( $t ), 'wptests_tax' );
+
+		// Make sure that $p3 doesn't have the 'Uncategorized' category.
+		wp_delete_object_term_relationships( $p3, 'category' );
+
+		// Fake current page.
+		$_post = isset( $GLOBALS['post'] ) ? $GLOBALS['post'] : null;
+		$GLOBALS['post'] = get_post( $p1 );
+
+		$found = get_adjacent_post( false, array( $t ), true, 'wptests_tax' );
+
+		if ( ! is_null( $_post ) ) {
+			$GLOBALS['post'] = $_post;
+		} else {
+			unset( $GLOBALS['post'] );
+		}
+
+		// Should skip $p2, which belongs to $t.
+		$this->assertEquals( $p3, $found->ID );
 	}
 
 	public function test_wp_make_link_relative_with_http_scheme() {
@@ -295,7 +342,7 @@ class Tests_Link extends WP_UnitTestCase {
 
 		flush_rewrite_rules();
 
-		$p = $this->factory->post->create( array(
+		$p = self::factory()->post->create( array(
 			'post_status' => 'publish',
 			'post_date'   => strftime( '%Y-%m-%d %H:%M:%S', strtotime( '+1 day' ) )
 		) );
@@ -315,7 +362,7 @@ class Tests_Link extends WP_UnitTestCase {
 
 		flush_rewrite_rules();
 
-		$p = $this->factory->post->create( array(
+		$p = self::factory()->post->create( array(
 			'post_status' => 'future',
 			'post_type'   => 'wptests_pt',
 			'post_date'   => strftime( '%Y-%m-%d %H:%M:%S', strtotime( '+1 day' ) )
@@ -327,5 +374,58 @@ class Tests_Link extends WP_UnitTestCase {
 		), trailingslashit( home_url() ) );
 
 		$this->assertEquals( $non_pretty_permalink, get_permalink( $p ) );
+	}
+
+	/**
+	 * @ticket 1914
+	 */
+	public function test_unattached_attachment_has_a_pretty_permalink() {
+		$this->set_permalink_structure( '/%year%/%monthnum%/%day%/%postname%/' );
+
+		$attachment_id = self::factory()->attachment->create_object( 'image.jpg', 0, array(
+			'post_mime_type' => 'image/jpeg',
+			'post_type' => 'attachment',
+			'post_title' => 'An Attachment!',
+			'post_status' => 'inherit',
+		) );
+
+		$attachment = get_post( $attachment_id );
+
+		$this->assertSame( home_url( user_trailingslashit( $attachment->post_name ) ), get_permalink( $attachment_id ) );
+	}
+
+	/**
+	 * @ticket 1914
+	 */
+	public function test_attachment_attached_to_non_existent_post_type_has_a_pretty_permalink() {
+		global $wp_post_types;
+
+		$this->set_permalink_structure( '/%year%/%monthnum%/%day%/%postname%/' );
+
+		register_post_type( 'not_a_post_type', array( 'public' => true ) );
+
+		flush_rewrite_rules();
+
+		$post_id = self::factory()->post->create( array( 'post_type' => 'not_a_post_type' ) );
+
+		$attachment_id = self::factory()->attachment->create_object( 'image.jpg', $post_id, array(
+			'post_mime_type' => 'image/jpeg',
+			'post_type' => 'attachment',
+			'post_title' => 'An Attachment!',
+			'post_status' => 'inherit',
+		) );
+
+		$attachment = get_post( $attachment_id );
+
+		$this->assertSame( get_permalink( $post_id ) . user_trailingslashit( $attachment->post_name ), get_permalink( $attachment_id ) );
+
+		foreach( $wp_post_types as $id => $pt ) {
+			if ( 'not_a_post_type' === $pt->name ) {
+				unset( $wp_post_types[ $id ] );
+				break;
+			}
+		}
+
+		$this->assertSame( home_url( user_trailingslashit( $attachment->post_name ) ), get_permalink( $attachment_id ) );
 	}
 }

@@ -474,7 +474,16 @@ class WP_Customize_Control {
 				<?php
 				break;
 			case 'dropdown-pages':
-				$dropdown = wp_dropdown_pages(
+				?>
+				<label>
+				<?php if ( ! empty( $this->label ) ) : ?>
+					<span class="customize-control-title"><?php echo esc_html( $this->label ); ?></span>
+				<?php endif;
+				if ( ! empty( $this->description ) ) : ?>
+					<span class="description customize-control-description"><?php echo $this->description; ?></span>
+				<?php endif; ?>
+
+				<?php $dropdown = wp_dropdown_pages(
 					array(
 						'name'              => '_customize-dropdown-pages-' . $this->id,
 						'echo'              => 0,
@@ -486,12 +495,10 @@ class WP_Customize_Control {
 
 				// Hackily add in the data link parameter.
 				$dropdown = str_replace( '<select', '<select ' . $this->get_link(), $dropdown );
-
-				printf(
-					'<label class="customize-control-select"><span class="customize-control-title">%s</span> %s</label>',
-					$this->label,
-					$dropdown
-				);
+				echo $dropdown;
+				?>
+				</label>
+				<?php
 				break;
 			default:
 				?>
@@ -1005,9 +1012,9 @@ class WP_Customize_Background_Image_Control extends WP_Customize_Image_Control {
  *
  * @since 4.3.0
  *
- * @see WP_Customize_Media_Control
+ * @see WP_Customize_Image_Control
  */
-class WP_Customize_Cropped_Image_Control extends WP_Customize_Media_Control {
+class WP_Customize_Cropped_Image_Control extends WP_Customize_Image_Control {
 
 	/**
 	 * Control type.
@@ -1299,16 +1306,18 @@ class WP_Customize_Header_Image_Control extends WP_Customize_Image_Control {
 				?>
 			</p>
 			<div class="current">
-				<span class="customize-control-title">
-					<?php _e( 'Current header' ); ?>
-				</span>
+				<label for="header_image-button">
+					<span class="customize-control-title">
+						<?php _e( 'Current header' ); ?>
+					</span>
+				</label>
 				<div class="container">
-				</div>
+				</div>				
 			</div>
 			<div class="actions">
 				<?php if ( current_user_can( 'upload_files' ) ): ?>
 				<button type="button"<?php echo $visibility; ?> class="button remove" aria-label="<?php esc_attr_e( 'Hide header image' ); ?>"><?php _e( 'Hide image' ); ?></button>
-				<button type="button" class="button new" aria-label="<?php esc_attr_e( 'Add new header image' ); ?>"><?php _e( 'Add new image' ); ?></button>
+				<button type="button" class="button new" id="header_image-button"  aria-label="<?php esc_attr_e( 'Add new header image' ); ?>"><?php _e( 'Add new image' ); ?></button>
 				<div style="clear:both"></div>
 				<?php endif; ?>
 			</div>
@@ -1487,20 +1496,21 @@ class WP_Widget_Form_Customize_Control extends WP_Customize_Control {
 	public $height;
 	public $is_wide = false;
 
+	/**
+	 * Gather control params for exporting to JavaScript.
+	 *
+	 * @global array $wp_registered_widgets
+	 */
 	public function to_json() {
+		global $wp_registered_widgets;
+
 		parent::to_json();
 		$exported_properties = array( 'widget_id', 'widget_id_base', 'sidebar_id', 'width', 'height', 'is_wide' );
 		foreach ( $exported_properties as $key ) {
 			$this->json[ $key ] = $this->$key;
 		}
-	}
 
-	/**
-	 *
-	 * @global array $wp_registered_widgets
-	 */
-	public function render_content() {
-		global $wp_registered_widgets;
+		// Get the widget_control and widget_content.
 		require_once ABSPATH . '/wp-admin/includes/widgets.php';
 
 		$widget = $wp_registered_widgets[ $this->widget_id ];
@@ -1514,8 +1524,16 @@ class WP_Widget_Form_Customize_Control extends WP_Customize_Control {
 		);
 
 		$args = wp_list_widget_controls_dynamic_sidebar( array( 0 => $args, 1 => $widget['params'][0] ) );
-		echo $this->manager->widgets->get_widget_control( $args );
+		$widget_control_parts = $this->manager->widgets->get_widget_control_parts( $args );
+
+		$this->json['widget_control'] = $widget_control_parts['control'];
+		$this->json['widget_content'] = $widget_control_parts['content'];
 	}
+
+	/**
+	 * Override render_content to be no-op since content is exported via to_json for deferred embedding.
+	 */
+	public function render_content() {}
 
 	/**
 	 * Whether the current widget is rendered on the page.

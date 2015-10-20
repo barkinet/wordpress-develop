@@ -26,8 +26,14 @@ if ( !function_exists('wp_set_current_user') ) :
 function wp_set_current_user($id, $name = '') {
 	global $current_user;
 
-	if ( isset( $current_user ) && ( $current_user instanceof WP_User ) && ( $id == $current_user->ID ) )
+	// If `$id` matches the user who's already current, there's nothing to do.
+	if ( isset( $current_user )
+		&& ( $current_user instanceof WP_User )
+		&& ( $id == $current_user->ID )
+		&& ( null !== $id )
+	) {
 		return $current_user;
+	}
 
 	$current_user = new WP_User( $id, $name );
 
@@ -145,8 +151,9 @@ if ( !function_exists('get_user_by') ) :
  * Retrieve user info by a given field
  *
  * @since 2.8.0
+ * @since 4.4.0 Added 'ID' as an alias of 'id' for the `$field` parameter.
  *
- * @param string     $field The field to retrieve the user with. id | slug | email | login
+ * @param string     $field The field to retrieve the user with. id | ID | slug | email | login.
  * @param int|string $value A value for $field. A user ID, slug, email address, or login name.
  * @return WP_User|false WP_User object on success, false on failure.
  */
@@ -169,7 +176,7 @@ if ( !function_exists('cache_users') ) :
  *
  * @since 3.0.0
  *
- * @global wpdb $wpdb
+ * @global wpdb $wpdb WordPress database abstraction object.
  *
  * @param array $user_ids User ID numbers list
  */
@@ -533,6 +540,19 @@ function wp_mail( $to, $subject, $message, $headers = '', $attachments = array()
 	try {
 		return $phpmailer->Send();
 	} catch ( phpmailerException $e ) {
+
+		$mail_error_data = compact( $to, $subject, $message, $headers, $attachments );
+
+		/**
+		 * Fires after a phpmailerException is caught.
+		 *
+		 * @since 4.4.0
+		 *
+		 * @param WP_Error $error A WP_Error object with the phpmailerException code, message, and an array
+		 *                        containing the mail recipient, subject, message, headers, and attachments.
+		 */
+ 		do_action( 'wp_mail_failed', new WP_Error( $e->getCode(), $e->getMessage(), $mail_error_data ) );
+
 		return false;
 	}
 }
@@ -1352,8 +1372,8 @@ if ( ! function_exists('wp_notify_postauthor') ) :
  *
  * @since 1.0.0
  *
- * @param int    $comment_id Comment ID
- * @param string $deprecated Not used
+ * @param int|WP_Comment  $comment_id Comment ID or WP_Comment object.
+ * @param string          $deprecated Not used
  * @return bool True on completion. False if no email addresses were specified.
  */
 function wp_notify_postauthor( $comment_id, $deprecated = null ) {
@@ -1362,7 +1382,7 @@ function wp_notify_postauthor( $comment_id, $deprecated = null ) {
 	}
 
 	$comment = get_comment( $comment_id );
-	if ( empty( $comment ) )
+	if ( empty( $comment ) || empty( $comment->comment_post_ID ) )
 		return false;
 
 	$post    = get_post( $comment->comment_post_ID );
@@ -1385,7 +1405,7 @@ function wp_notify_postauthor( $comment_id, $deprecated = null ) {
 	 * @param array $emails     An array of email addresses to receive a comment notification.
 	 * @param int   $comment_id The comment ID.
 	 */
-	$emails = apply_filters( 'comment_notification_recipients', $emails, $comment_id );
+	$emails = apply_filters( 'comment_notification_recipients', $emails, $comment->comment_ID );
 	$emails = array_filter( $emails );
 
 	// If there are no addresses to send the comment to, bail.
@@ -1408,7 +1428,7 @@ function wp_notify_postauthor( $comment_id, $deprecated = null ) {
 	 *                         Default false.
 	 * @param int  $comment_id The comment ID.
 	 */
-	$notify_author = apply_filters( 'comment_notification_notify_author', false, $comment_id );
+	$notify_author = apply_filters( 'comment_notification_notify_author', false, $comment->comment_ID );
 
 	// The comment was left by the author
 	if ( $author && ! $notify_author && $comment->user_id == $post->post_author ) {
@@ -1472,14 +1492,15 @@ function wp_notify_postauthor( $comment_id, $deprecated = null ) {
 			break;
 	}
 	$notify_message .= get_permalink($comment->comment_post_ID) . "#comments\r\n\r\n";
-	$notify_message .= sprintf( __('Permalink: %s'), get_comment_link( $comment_id ) ) . "\r\n";
+	$notify_message .= sprintf( __('Permalink: %s'), get_comment_link( $comment ) ) . "\r\n";
 
-	if ( user_can( $post->post_author, 'edit_comment', $comment_id ) ) {
-		if ( EMPTY_TRASH_DAYS )
-			$notify_message .= sprintf( __('Trash it: %s'), admin_url("comment.php?action=trash&c=$comment_id") ) . "\r\n";
-		else
-			$notify_message .= sprintf( __('Delete it: %s'), admin_url("comment.php?action=delete&c=$comment_id") ) . "\r\n";
-		$notify_message .= sprintf( __('Spam it: %s'), admin_url("comment.php?action=spam&c=$comment_id") ) . "\r\n";
+	if ( user_can( $post->post_author, 'edit_comment', $comment->comment_ID ) ) {
+		if ( EMPTY_TRASH_DAYS ) {
+			$notify_message .= sprintf( __('Trash it: %s'), admin_url("comment.php?action=trash&c={$comment->comment_ID}") ) . "\r\n";
+		} else {
+			$notify_message .= sprintf( __('Delete it: %s'), admin_url("comment.php?action=delete&c={$comment->comment_ID}") ) . "\r\n";
+		}
+		$notify_message .= sprintf( __('Spam it: %s'), admin_url("comment.php?action=spam&c={$comment->comment_ID}") ) . "\r\n";
 	}
 
 	$wp_email = 'wordpress@' . preg_replace('#^www\.#', '', strtolower($_SERVER['SERVER_NAME']));
@@ -1508,7 +1529,7 @@ function wp_notify_postauthor( $comment_id, $deprecated = null ) {
 	 * @param string $notify_message The comment notification email text.
 	 * @param int    $comment_id     Comment ID.
 	 */
-	$notify_message = apply_filters( 'comment_notification_text', $notify_message, $comment_id );
+	$notify_message = apply_filters( 'comment_notification_text', $notify_message, $comment->comment_ID );
 
 	/**
 	 * Filter the comment notification email subject.
@@ -1518,7 +1539,7 @@ function wp_notify_postauthor( $comment_id, $deprecated = null ) {
 	 * @param string $subject    The comment notification email subject.
 	 * @param int    $comment_id Comment ID.
 	 */
-	$subject = apply_filters( 'comment_notification_subject', $subject, $comment_id );
+	$subject = apply_filters( 'comment_notification_subject', $subject, $comment->comment_ID );
 
 	/**
 	 * Filter the comment notification email headers.
@@ -1528,7 +1549,7 @@ function wp_notify_postauthor( $comment_id, $deprecated = null ) {
 	 * @param string $message_headers Headers for the comment notification email.
 	 * @param int    $comment_id      Comment ID.
 	 */
-	$message_headers = apply_filters( 'comment_notification_headers', $message_headers, $comment_id );
+	$message_headers = apply_filters( 'comment_notification_headers', $message_headers, $comment->comment_ID );
 
 	foreach ( $emails as $email ) {
 		@wp_mail( $email, wp_specialchars_decode( $subject ), $notify_message, $message_headers );
@@ -1667,9 +1688,9 @@ if ( !function_exists('wp_password_change_notification') ) :
  *
  * @since 2.7.0
  *
- * @param object $user User Object
+ * @param WP_User $user User object.
  */
-function wp_password_change_notification(&$user) {
+function wp_password_change_notification( $user ) {
 	// send a copy of password change notification to the admin
 	// but check to see if it's the admin whose password we're changing, and skip this
 	if ( 0 !== strcasecmp( $user->user_email, get_option( 'admin_email' ) ) ) {
@@ -1690,14 +1711,23 @@ if ( !function_exists('wp_new_user_notification') ) :
  *
  * @since 2.0.0
  * @since 4.3.0 The `$plaintext_pass` parameter was changed to `$notify`.
+ * @since 4.3.1 The `$plaintext_pass` parameter was deprecated. `$notify` added as a third parameter.
  *
- * @param int    $user_id User ID.
- * @param string $notify  Optional. Type of notification that should happen. Accepts 'admin' or an empty
- *                        string (admin only), or 'both' (admin and user). The empty string value was kept
- *                        for backward-compatibility purposes with the renamed parameter. Default empty.
+ * @global wpdb         $wpdb      WordPress database object for queries.
+ * @global PasswordHash $wp_hasher Portable PHP password hashing framework instance.
+ *
+ * @param int    $user_id    User ID.
+ * @param null   $deprecated Not used (argument deprecated).
+ * @param string $notify     Optional. Type of notification that should happen. Accepts 'admin' or an empty
+ *                           string (admin only), or 'both' (admin and user). The empty string value was kept
+ *                           for backward-compatibility purposes with the renamed parameter. Default empty.
  */
-function wp_new_user_notification( $user_id, $notify = '' ) {
-	global $wpdb;
+function wp_new_user_notification( $user_id, $deprecated = null, $notify = '' ) {
+	if ( $deprecated !== null ) {
+		_deprecated_argument( __FUNCTION__, '4.3.1' );
+	}
+
+	global $wpdb, $wp_hasher;
 	$user = get_userdata( $user_id );
 
 	// The blogname option is escaped with esc_html on the way into the database in sanitize_option
@@ -1821,7 +1851,7 @@ function wp_verify_nonce( $nonce, $action = -1 ) {
 	 * @param string|int $action The nonce action.
 	 * @param WP_User    $user   The current user object.
 	 * @param string     $token  The user's session token.
-	 */ 
+	 */
 	do_action( 'wp_verify_nonce_failed', $nonce, $action, $user, $token );
 
 	// Invalid nonce
@@ -2108,9 +2138,11 @@ if ( !function_exists('wp_rand') ) :
  * Generates a random number
  *
  * @since 2.6.2
+ * @since 4.4.0 Uses PHP7 random_int() or the random_compat library if available.
  *
  * @global string $rnd_value
  * @staticvar string $seed
+ * @staticvar bool $external_rand_source_available
  *
  * @param int $min Lower limit for the generated number
  * @param int $max Upper limit for the generated number
@@ -2118,6 +2150,34 @@ if ( !function_exists('wp_rand') ) :
  */
 function wp_rand( $min = 0, $max = 0 ) {
 	global $rnd_value;
+
+	// Some misconfigured 32bit environments (Entropy PHP, for example) truncate integers larger than PHP_INT_MAX to PHP_INT_MAX rather than overflowing them to floats.
+	$max_random_number = 3000000000 === 2147483647 ? (float) "4294967295" : 4294967295; // 4294967295 = 0xffffffff
+
+	// We only handle Ints, floats are truncated to their integer value.
+	$min = (int) $min;
+	$max = (int) $max;
+
+	// Use PHP's CSPRNG, or a compatible method
+	static $use_random_int_functionality = true;
+	if ( $use_random_int_functionality ) {
+		try {
+			$_max = ( 0 != $max ) ? $max : $max_random_number;
+			// wp_rand() can accept arguements in either order, PHP cannot.
+			$_max = max( $min, $_max );
+			$_min = min( $min, $_max );
+			$val = random_int( $_min, $_max );
+			if ( false !== $val ) {
+				return absint( $val );
+			} else {
+				$use_random_int_functionality = false;
+			}
+		} catch ( Throwable $t ) { 
+			$use_random_int_functionality = false;
+		} catch ( Exception $e ) {
+			$use_random_int_functionality = false;
+		}
+	}
 
 	// Reset $rnd_value after 14 uses
 	// 32(md5) + 40(sha1) + 40(sha1) / 8 = 14 random numbers from $rnd_value
@@ -2142,9 +2202,6 @@ function wp_rand( $min = 0, $max = 0 ) {
 	$rnd_value = substr($rnd_value, 8);
 
 	$value = abs(hexdec($value));
-
-	// Some misconfigured 32bit environments (Entropy PHP, for example) truncate integers larger than PHP_INT_MAX to PHP_INT_MAX rather than overflowing them to floats.
-	$max_random_number = 3000000000 === 2147483647 ? (float) "4294967295" : 4294967295; // 4294967295 = 0xffffffff
 
 	// Reduce the value to be within the min - max range
 	if ( $max != 0 )
@@ -2195,7 +2252,7 @@ if ( !function_exists( 'get_avatar' ) ) :
  * @param string $default    Optional. URL for the default image or a default type. Accepts '404'
  *                           (return a 404 instead of a default image), 'retro' (8bit), 'monsterid'
  *                           (monster), 'wavatar' (cartoon face), 'indenticon' (the "quilt"),
- *                           'mystery', 'mm', or 'mysterman' (The Oyster Man), 'blank' (transparent GIF),
+ *                           'mystery', 'mm', or 'mysteryman' (The Oyster Man), 'blank' (transparent GIF),
  *                           or 'gravatar_default' (the Gravatar logo). Default is the value of the
  *                           'avatar_default' option, with a fallback of 'mystery'.
  * @param string $alt        Optional. Alternative text to use in &lt;img&gt; tag. Default empty.
@@ -2248,6 +2305,10 @@ function get_avatar( $id_or_email, $size = 96, $default = '', $alt = '', $args =
 	}
 	if ( empty( $args['width'] ) ) {
 		$args['width'] = $args['size'];
+	}
+
+	if ( is_object( $id_or_email ) && isset( $id_or_email->comment_ID ) ) {
+		$id_or_email = get_comment( $id_or_email );
 	}
 
 	/**
@@ -2359,7 +2420,7 @@ function wp_text_diff( $left_string, $right_string, $args = null ) {
 	$defaults = array( 'title' => '', 'title_left' => '', 'title_right' => '' );
 	$args = wp_parse_args( $args, $defaults );
 
-	if ( !class_exists( 'WP_Text_Diff_Renderer_Table' ) )
+	if ( ! class_exists( 'WP_Text_Diff_Renderer_Table', false ) )
 		require( ABSPATH . WPINC . '/wp-diff.php' );
 
 	$left_string  = normalize_whitespace($left_string);

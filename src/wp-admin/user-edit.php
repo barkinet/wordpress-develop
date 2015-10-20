@@ -60,22 +60,6 @@ $wp_http_referer = remove_query_arg(array('update', 'delete_count'), $wp_http_re
 $user_can_edit = current_user_can( 'edit_posts' ) || current_user_can( 'edit_pages' );
 
 /**
- * Optional SSL preference that can be turned on by hooking to the 'personal_options' action.
- *
- * @since 2.7.0
- *
- * @param object $user User data object
- */
-function use_ssl_preference($user) {
-?>
-	<tr class="user-use-ssl-wrap">
-		<th scope="row"><?php _e('Use https')?></th>
-		<td><label for="use_ssl"><input name="use_ssl" type="checkbox" id="use_ssl" value="1" <?php checked('1', $user->use_ssl); ?> /> <?php _e('Always use https when visiting the admin'); ?></label></td>
-	</tr>
-<?php
-}
-
-/**
  * Filter whether to allow administrators on Multisite to edit every user.
  *
  * Enabling the user editing form via this filter also hinges on the user holding
@@ -454,9 +438,17 @@ if ( is_multisite() && is_network_admin() && ! IS_PROFILE_PAGE && current_user_c
 </tr>
 
 <?php
-/** This filter is documented in wp-admin/user-new.php */
-$show_password_fields = apply_filters( 'show_password_fields', true, $profileuser );
-if ( $show_password_fields ) :
+/**
+ * Filter the display of the password fields.
+ *
+ * @since 1.5.1
+ * @since 2.8.0 Added the `$profileuser` parameter.
+ * @since 4.4.0 Now evaluated only in user-edit.php.
+ *
+ * @param bool    $show        Whether to show the password fields. Default true.
+ * @param WP_User $profileuser User object for the current user to edit.
+ */
+if ( $show_password_fields = apply_filters( 'show_password_fields', true, $profileuser ) ) :
 ?>
 </table>
 

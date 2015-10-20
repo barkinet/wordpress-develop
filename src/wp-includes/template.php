@@ -380,6 +380,7 @@ function get_search_template() {
  * e.g. 'single_template'.
  *
  * @since 1.5.0
+ * @since 4.4.0 `single-{post_type}-{post_name}.php` was added to the top of the template hierarchy.
  *
  * @see get_query_template()
  *
@@ -390,8 +391,11 @@ function get_single_template() {
 
 	$templates = array();
 
-	if ( ! empty( $object->post_type ) )
+	if ( ! empty( $object->post_type ) ) {
+		$templates[] = "single-{$object->post_type}-{$object->post_name}.php";
 		$templates[] = "single-{$object->post_type}.php";
+	}
+
 	$templates[] = "single.php";
 
 	return get_query_template( 'single', $templates );
@@ -534,7 +538,7 @@ function locate_template($template_names, $load = false, $require_once = true ) 
  * @global string     $wp_version
  * @global WP         $wp
  * @global int        $id
- * @global object     $comment
+ * @global WP_Comment $comment
  * @global int        $user_ID
  *
  * @param string $_template_file Path to template file.

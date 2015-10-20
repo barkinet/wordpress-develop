@@ -1,6 +1,6 @@
 <?php
 /**
- * HTTP API: WP_Http_Curl object class
+ * HTTP API: WP_Http_Curl class
  *
  * @package WordPress
  * @subpackage HTTP
@@ -114,10 +114,10 @@ class WP_Http_Curl {
 		$is_local = isset($r['local']) && $r['local'];
 		$ssl_verify = isset($r['sslverify']) && $r['sslverify'];
 		if ( $is_local ) {
-			/** This filter is documented in wp-includes/class-http.php */
+			/** This filter is documented in wp-includes/class-wp-http-streams.php */
 			$ssl_verify = apply_filters( 'https_local_ssl_verify', $ssl_verify );
 		} elseif ( ! $is_local ) {
-			/** This filter is documented in wp-includes/class-http.php */
+			/** This filter is documented in wp-includes/class-wp-http-streams.php */
 			$ssl_verify = apply_filters( 'https_ssl_verify', $ssl_verify );
 		}
 
@@ -133,7 +133,11 @@ class WP_Http_Curl {
 		curl_setopt( $handle, CURLOPT_RETURNTRANSFER, true );
 		curl_setopt( $handle, CURLOPT_SSL_VERIFYHOST, ( $ssl_verify === true ) ? 2 : false );
 		curl_setopt( $handle, CURLOPT_SSL_VERIFYPEER, $ssl_verify );
-		curl_setopt( $handle, CURLOPT_CAINFO, $r['sslcertificates'] );
+
+		if ( $ssl_verify ) {
+			curl_setopt( $handle, CURLOPT_CAINFO, $r['sslcertificates'] );
+		}
+
 		curl_setopt( $handle, CURLOPT_USERAGENT, $r['user-agent'] );
 
 		/*

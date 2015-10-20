@@ -172,7 +172,7 @@ $('.contextual-help-tabs').delegate('a', 'click', function(e) {
 });
 
 $(document).ready( function() {
-	var checks, first, last, checked, sliced, mobileEvent, transitionTimeout, focusedRowActions, $firstHeading,
+	var checks, first, last, checked, sliced, mobileEvent, transitionTimeout, focusedRowActions,
 		lastClicked = false,
 		pageInput = $('input.current-page'),
 		currentPage = pageInput.val(),
@@ -369,16 +369,7 @@ $(document).ready( function() {
 		});
 	}
 
-	// Move .notice, .updated and .error alert boxes. Don't move boxes designed to be inline.
-	$firstHeading = $( '.wrap > h1:first' );
-
-	// Back compatibility: if there is no H1, apply to first H2.
-	if ( ! $firstHeading.length ) {
-		$firstHeading = $( '.wrap h2:first' );
-	}
-
-	$firstHeading.nextAll( 'div.updated, div.error, div.notice' ).addClass( 'below-h2' );
-	$( 'div.updated, div.error, div.notice' ).not( '.below-h2, .inline' ).insertAfter( $firstHeading );
+	$( 'div.updated, div.error, div.notice' ).not( '.inline' ).insertAfter( $( '.wrap' ).children( ':header' ).first() );
 
 	// Make notices dismissible
 	$( '.notice.is-dismissible' ).each( function() {
@@ -409,7 +400,7 @@ $(document).ready( function() {
 		if ( 'undefined' == e.shiftKey ) { return true; }
 		if ( e.shiftKey ) {
 			if ( !lastClicked ) { return true; }
-			checks = $( lastClicked ).closest( 'form' ).find( ':checkbox' );
+			checks = $( lastClicked ).closest( 'form' ).find( ':checkbox' ).filter( ':visible:enabled' );
 			first = checks.index( lastClicked );
 			last = checks.index( this );
 			checked = $(this).prop('checked');
@@ -426,7 +417,7 @@ $(document).ready( function() {
 		lastClicked = this;
 
 		// toggle "check all" checkboxes
-		var unchecked = $(this).closest('tbody').find(':checkbox').filter(':visible').not(':checked');
+		var unchecked = $(this).closest('tbody').find(':checkbox').filter(':visible:enabled').not(':checked');
 		$(this).closest('table').children('thead, tfoot').find(':checkbox').prop('checked', function() {
 			return ( 0 === unchecked.length );
 		});
@@ -443,7 +434,7 @@ $(document).ready( function() {
 		$table.children( 'tbody' ).filter(':visible')
 			.children().children('.check-column').find(':checkbox')
 			.prop('checked', function() {
-				if ( $(this).is(':hidden') ) {
+				if ( $(this).is(':hidden,:disabled') ) {
 					return false;
 				}
 

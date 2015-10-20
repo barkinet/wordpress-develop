@@ -17,6 +17,10 @@ $tax = get_taxonomy( $taxnow );
 if ( ! $tax )
 	wp_die( __( 'Invalid taxonomy' ) );
 
+if ( ! in_array( $tax->name, get_taxonomies( array( 'show_ui' => true ) ) ) ) {
+   wp_die( __( 'You are not allowed to manage these items.' ) );
+}
+
 if ( ! current_user_can( $tax->cap->manage_terms ) ) {
 	wp_die(
 		'<h1>' . __( 'Cheatin&#8217; uh?' ) . '</h1>' .
@@ -50,7 +54,13 @@ if ( 'post' != $post_type ) {
 
 add_screen_option( 'per_page', array( 'default' => 20, 'option' => 'edit_' . $tax->name . '_per_page' ) );
 
+get_current_screen()->set_screen_reader_content( array(
+	'heading_pagination' => $tax->labels->pagination,
+	'heading_list'       => $tax->labels->list,
+) );
+
 $location = false;
+$referer = wp_get_referer();
 
 switch ( $wp_list_table->current_action() ) {
 
@@ -71,9 +81,8 @@ case 'add-tag':
 	if ( 'post' != $post_type )
 		$location .= '&post_type=' . $post_type;
 
-	if ( $referer = wp_get_original_referer() ) {
-		if ( false !== strpos( $referer, 'edit-tags.php' ) )
-			$location = $referer;
+	if ( $referer && false !== strpos( $referer, 'edit-tags.php' ) ) {
+		$location = $referer;
 	}
 
 	if ( $ret && !is_wp_error( $ret ) )
@@ -87,9 +96,9 @@ case 'delete':
 	$location = 'edit-tags.php?taxonomy=' . $taxonomy;
 	if ( 'post' != $post_type )
 		$location .= '&post_type=' . $post_type;
-	if ( $referer = wp_get_referer() ) {
-		if ( false !== strpos( $referer, 'edit-tags.php' ) )
-			$location = $referer;
+
+	if ( $referer && false !== strpos( $referer, 'edit-tags.php' ) ) {
+		$location = $referer;
 	}
 
 	if ( ! isset( $_REQUEST['tag_ID'] ) ) {
@@ -132,9 +141,8 @@ case 'bulk-delete':
 	$location = 'edit-tags.php?taxonomy=' . $taxonomy;
 	if ( 'post' != $post_type )
 		$location .= '&post_type=' . $post_type;
-	if ( $referer = wp_get_referer() ) {
-		if ( false !== strpos( $referer, 'edit-tags.php' ) )
-			$location = $referer;
+	if ( $referer && false !== strpos( $referer, 'edit-tags.php' ) ) {
+		$location = $referer;
 	}
 
 	$location = add_query_arg( 'message', 6, $location );
@@ -177,9 +185,8 @@ case 'editedtag':
 	if ( 'post' != $post_type )
 		$location .= '&post_type=' . $post_type;
 
-	if ( $referer = wp_get_original_referer() ) {
-		if ( false !== strpos( $referer, 'edit-tags.php' ) )
-			$location = $referer;
+	if ( $referer && false !== strpos( $referer, 'edit-tags.php' ) ) {
+		$location = $referer;
 	}
 
 	if ( $ret && !is_wp_error( $ret ) )
@@ -285,51 +292,8 @@ if ( ! current_user_can( $tax->cap->edit_terms ) ) {
 	);
 }
 
-$messages = array();
-$messages['_item'] = array(
-	0 => '', // Unused. Messages start at index 1.
-	1 => __( 'Item added.' ),
-	2 => __( 'Item deleted.' ),
-	3 => __( 'Item updated.' ),
-	4 => __( 'Item not added.' ),
-	5 => __( 'Item not updated.' ),
-	6 => __( 'Items deleted.' )
-);
-$messages['category'] = array(
-	0 => '', // Unused. Messages start at index 1.
-	1 => __( 'Category added.' ),
-	2 => __( 'Category deleted.' ),
-	3 => __( 'Category updated.' ),
-	4 => __( 'Category not added.' ),
-	5 => __( 'Category not updated.' ),
-	6 => __( 'Categories deleted.' )
-);
-$messages['post_tag'] = array(
-	0 => '', // Unused. Messages start at index 1.
-	1 => __( 'Tag added.' ),
-	2 => __( 'Tag deleted.' ),
-	3 => __( 'Tag updated.' ),
-	4 => __( 'Tag not added.' ),
-	5 => __( 'Tag not updated.' ),
-	6 => __( 'Tags deleted.' )
-);
-
-/**
- * Filter the messages displayed when a tag is updated.
- *
- * @since 3.7.0
- *
- * @param array $messages The messages to be displayed.
- */
-$messages = apply_filters( 'term_updated_messages', $messages );
-
-$message = false;
-if ( isset( $_REQUEST['message'] ) && ( $msg = (int) $_REQUEST['message'] ) ) {
-	if ( isset( $messages[ $taxonomy ][ $msg ] ) )
-		$message = $messages[ $taxonomy ][ $msg ];
-	elseif ( ! isset( $messages[ $taxonomy ] ) && isset( $messages['_item'][ $msg ] ) )
-		$message = $messages['_item'][ $msg ];
-}
+/** Also used by the Edit Tag  form */
+require_once( ABSPATH . 'wp-admin/includes/edit-tag-messages.php' );
 
 $class = ( isset( $_REQUEST['error'] ) ) ? 'error' : 'updated';
 
@@ -379,8 +343,13 @@ endif; ?>
 <div class="form-wrap">
 <p>
 	<?php
-	/** This filter is documented in wp-includes/category-template.php */
-	printf( __( '<strong>Note:</strong><br />Deleting a category does not delete the posts in that category. Instead, posts that were only assigned to the deleted category are set to the category <strong>%s</strong>.' ), apply_filters( 'the_category', get_cat_name( get_option( 'default_category') ) ) );
+	echo '<strong>' . __( 'Note:' ) . '</strong><br />';
+	printf(
+		/* translators: %s: default category */
+		__( 'Deleting a category does not delete the posts in that category. Instead, posts that were only assigned to the deleted category are set to the category %s.' ),
+		/** This filter is documented in wp-includes/category-template.php */
+		'<strong>' . apply_filters( 'the_category', get_cat_name( get_option( 'default_category') ) ) . '</strong>'
+	);
 	?>
 </p>
 <?php if ( current_user_can( 'import' ) ) : ?>

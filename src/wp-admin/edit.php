@@ -12,6 +12,10 @@ require_once( dirname( __FILE__ ) . '/admin.php' );
 if ( ! $typenow )
 	wp_die( __( 'Invalid post type' ) );
 
+if ( ! in_array( $typenow, get_post_types( array( 'show_ui' => true ) ) ) ) {
+	wp_die( __( 'You are not allowed to edit posts in this post type.' ) );
+}
+
 if ( 'attachment' === $typenow ) {
 	if ( wp_redirect( admin_url( 'upload.php' ) ) ) {
 		exit;
@@ -241,7 +245,14 @@ if ( 'post' == $post_type ) {
 	'<p>' . __('<a href="https://codex.wordpress.org/Pages_Screen" target="_blank">Documentation on Managing Pages</a>') . '</p>' .
 	'<p>' . __('<a href="https://wordpress.org/support/" target="_blank">Support Forums</a>') . '</p>'
 	);
+
 }
+
+get_current_screen()->set_screen_reader_content( array(
+	'heading_views'      => $post_type_object->labels->views,
+	'heading_pagination' => $post_type_object->labels->pagination,
+	'heading_list'       => $post_type_object->labels->list,
+) );
 
 add_screen_option( 'per_page', array( 'default' => 20, 'option' => 'edit_' . $post_type . '_per_page' ) );
 

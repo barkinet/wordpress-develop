@@ -20,8 +20,9 @@ class Tests_Shortcode extends WP_UnitTestCase {
 
 	function tearDown() {
 		global $shortcode_tags;
-		foreach ( $this->shortcodes as $shortcode )
+		foreach ( $this->shortcodes as $shortcode ) {
 			unset( $shortcode_tags[ $shortcode ] );
+		}
 		parent::tearDown();
 	}
 
@@ -539,4 +540,111 @@ EOF;
 		$this->assertTrue( has_shortcode( $content_nested, 'gallery' ) );
 		remove_shortcode( 'foo' );
 	}
+
+	/**
+	 * Make sure invalid shortcode names are not allowed.
+	 *
+	 * @dataProvider data_registration_bad
+	 * @expectedIncorrectUsage add_shortcode
+	 */
+	function test_registration_bad( $input, $expected ) {
+		return $this->sub_registration( $input, $expected );
+	}
+
+	/**
+	 * Make sure valid shortcode names are allowed.
+	 *
+	 * @dataProvider data_registration_good
+	 */
+	function test_registration_good( $input, $expected ) {
+		return $this->sub_registration( $input, $expected );
+	}
+
+	function sub_registration( $input, $expected ) {
+		add_shortcode( $input, '' );
+		$actual = shortcode_exists( $input );
+		$test = $this->assertEquals( $expected, $actual );
+		if ( $actual ) remove_shortcode( $input );
+		return $test;
+	}
+
+	function data_registration_bad() {
+		return array(
+			array(
+				'<html>',
+				false,
+			),
+			array(
+				'[shortcode]',
+				false,
+			),
+			array(
+				'bad/',
+				false,
+			),
+			array(
+				'/bad',
+				false,
+			),
+			array(
+				'bad space',
+				false,
+			),
+			array(
+				'&amp;',
+				false,
+			),
+			array(
+				'',
+				false,
+			),
+		);
+	}
+
+	function data_registration_good() {
+		return array(
+			array(
+				'good!',
+				true,
+			),
+			array(
+				'plain',
+				true,
+			),
+			array(
+				'unreserved!#$%()*+,-.;?@^_{|}~chars',
+				true,
+			),
+		);
+	}
+
+	/**
+	 * Automated performance testing of the main regex.
+	 *
+	 * @dataProvider data_whole_posts
+	 */
+	function test_pcre_performance( $input ) {
+		$regex = '/' . get_shortcode_regex() . '/';
+		$result = benchmark_pcre_backtracking( $regex, $input, 'match_all' );
+		return $this->assertLessThan( 200, $result );
+	}
+
+	function data_whole_posts() {
+		require_once( DIR_TESTDATA . '/formatting/whole-posts.php' );
+		return data_whole_posts();
+	}
+
+	function test_php_and_js_shortcode_attribute_regexes_match() {
+
+		$file = file_get_contents( ABSPATH . WPINC . '/js/shortcode.js' );
+		$matched = preg_match( '|\s+pattern = (\/.+\/)g;|', $file, $matches );
+		$php = get_shortcode_atts_regex();
+
+		$this->assertSame( 1, $matched );
+
+		$js = str_replace( "\'", "'", $matches[1] );
+		$this->assertSame( $php, $js );
+
+	}
+
 }

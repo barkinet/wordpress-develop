@@ -252,8 +252,25 @@ function list_plugin_updates() {
 
 	<tbody class="plugins">
 <?php
-	foreach ( (array) $plugins as $plugin_file => $plugin_data) {
-		$info = plugins_api('plugin_information', array('slug' => $plugin_data->update->slug ));
+	foreach ( (array) $plugins as $plugin_file => $plugin_data ) {
+		$info = plugins_api( 'plugin_information', array(
+			'slug' => $plugin_data->update->slug,
+			'fields' => array(
+				'short_description' => false,
+				'sections' => false,
+				'requires' => false,
+				'rating' => false,
+				'ratings' => false,
+				'downloaded' => false,
+				'downloadlink' => false,
+				'last_updated' => false,
+				'added' => false,
+				'tags' => false,
+				'homepage' => false,
+				'donate_link' => false,
+			),
+		) );
+
 		if ( is_wp_error( $info ) ) {
 			$info = false;
 		}
@@ -269,7 +286,9 @@ function list_plugin_updates() {
 		}
 		// Get plugin compat for updated version of WordPress.
 		if ( $core_update_version ) {
-			if ( isset($info->compatibility[$core_update_version][$plugin_data->update->new_version]) ) {
+			if ( isset( $info->tested ) && version_compare( $info->tested, $core_update_version, '>=' ) ) {
+				$compat .= '<br />' . sprintf( __( 'Compatibility with WordPress %1$s: 100%% (according to its author)' ), $core_update_version );
+			} elseif ( isset( $info->compatibility[ $core_update_version ][ $plugin_data->update->new_version ] ) ) {
 				$update_compat = $info->compatibility[$core_update_version][$plugin_data->update->new_version];
 				$compat .= '<br />' . sprintf(__('Compatibility with WordPress %1$s: %2$d%% (%3$d "works" votes out of %4$d total)'), $core_update_version, $update_compat[0], $update_compat[2], $update_compat[1]);
 			} else {

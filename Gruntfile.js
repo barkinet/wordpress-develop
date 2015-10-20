@@ -232,7 +232,8 @@ module.exports = function(grunt) {
 					'wp-includes/css/*.css',
 
 					// Exceptions
-					'!wp-includes/css/dashicons.css'
+					'!wp-includes/css/dashicons.css',
+					'!wp-includes/css/wp-embed-template.css'
 				]
 			},
 			colors: {
@@ -272,7 +273,7 @@ module.exports = function(grunt) {
 					'twenty*/**/*.js',
 					'!twenty{eleven,twelve,thirteen}/**',
 					// Third party scripts
-					'!twenty{fourteen,fifteen}/js/html5.js'
+					'!twenty{fourteen,fifteen,sixteen}/js/html5.js'
 				]
 			},
 			media: {
@@ -433,10 +434,10 @@ module.exports = function(grunt) {
 				dest: BUILD_DIR,
 				ext: '.min.js',
 				src: [
-					'wp-includes/js/media/audio-video.js',
-					'wp-includes/js/media/grid.js',
-					'wp-includes/js/media/models.js',
-					'wp-includes/js/media/views.js'
+					'wp-includes/js/media-audiovideo.js',
+					'wp-includes/js/media-grid.js',
+					'wp-includes/js/media-models.js',
+					'wp-includes/js/media-views.js'
 				]
 			},
 			jqueryui: {
@@ -528,12 +529,17 @@ module.exports = function(grunt) {
 			emoji: {
 				src: BUILD_DIR + 'wp-includes/formatting.php',
 				dest: '.'
+			},
+			embed: {
+				src: BUILD_DIR + 'wp-includes/embed-functions.php',
+				dest: '.'
 			}
 		},
 		_watch: {
 			all: {
 				files: [
 					SOURCE_DIR + '**',
+					'!' + SOURCE_DIR + 'wp-includes/js/media/**',
 					// Ignore version control directories.
 					'!' + SOURCE_DIR + '**/.{svn,git}/**'
 				],
@@ -543,13 +549,6 @@ module.exports = function(grunt) {
 					spawn: false,
 					interval: 2000
 				}
-			},
-			browserify: {
-				files: [
-					SOURCE_DIR + 'wp-includes/js/media/*.js',
-					'!' + SOURCE_DIR + 'wp-includes/js/media/*.manifest.js'
-				],
-				tasks: ['uglify:media']
 			},
 			config: {
 				files: 'Gruntfile.js'
@@ -643,6 +642,7 @@ module.exports = function(grunt) {
 		'clean:tinymce',
 		'concat:emoji',
 		'includes:emoji',
+		'includes:embed',
 		'jsvalidate:build'
 	] );
 
@@ -670,22 +670,27 @@ module.exports = function(grunt) {
 	// Default task.
 	grunt.registerTask('default', ['build']);
 
-	// Add a listener to the watch task.
-	//
-	// On `watch:all`, automatically updates the `copy:dynamic` and `clean:dynamic`
-	// configurations so that only the changed files are updated.
-	// On `watch:rtl`, automatically updates the `rtlcss:dynamic` configuration.
+	/*
+	 * Automatically updates the `:dynamic` configurations
+	 * so that only the changed files are updated.
+	 */
 	grunt.event.on('watch', function( action, filepath, target ) {
-		if ( target !== 'all' && target !== 'rtl' ) {
+		var src;
+
+		if ( [ 'all', 'rtl', 'browserify' ].indexOf( target ) === -1 ) {
 			return;
 		}
 
-		var relativePath = path.relative( SOURCE_DIR, filepath ),
-			cleanSrc = ( action === 'deleted' ) ? [relativePath] : [],
-			copySrc = ( action === 'deleted' ) ? [] : [relativePath];
+		src = [ path.relative( SOURCE_DIR, filepath ) ];
 
-		grunt.config(['clean', 'dynamic', 'src'], cleanSrc);
-		grunt.config(['copy', 'dynamic', 'src'], copySrc);
-		grunt.config(['rtlcss', 'dynamic', 'src'], copySrc);
+		if ( action === 'deleted' ) {
+			grunt.config( [ 'clean', 'dynamic', 'src' ], src );
+		} else {
+			grunt.config( [ 'copy', 'dynamic', 'src' ], src );
+
+			if ( target === 'rtl' ) {
+				grunt.config( [ 'rtlcss', 'dynamic', 'src' ], src );
+			}
+		}
 	});
 };
