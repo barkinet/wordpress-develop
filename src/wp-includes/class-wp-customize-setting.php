@@ -639,10 +639,32 @@ class WP_Customize_Setting {
 		 */
 		$value = apply_filters( "customize_sanitize_js_{$this->id}", $this->value(), $this );
 
-		if ( is_string( $value ) )
-			return html_entity_decode( $value, ENT_QUOTES, 'UTF-8');
+		if ( is_string( $value ) ) {
+			$value = html_entity_decode( $value, ENT_QUOTES, 'UTF-8' );
+		}
 
 		return $value;
+	}
+
+	/**
+	 * Get the data to export to the client via JSON.
+	 *
+	 * @since 4.4.0
+	 *
+	 * @return array {
+	 *     Array of parameters passed to the JavaScript.
+	 *
+	 *     @type mixed  $value      Setting value.
+	 *     @type string $transport  Setting transport.
+	 *     @type bool   $dirty      Setting dirty state.
+	 * }
+	 */
+	public function json() {
+		return array(
+			'value'     => $this->js_value(),
+			'transport' => $this->transport,
+			'dirty'     => $this->dirty,
+		);
 	}
 
 	/**

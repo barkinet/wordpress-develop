@@ -740,7 +740,7 @@ final class WP_Customize_Manager {
 		if ( 2 == $this->nonce_tick ) {
 			$settings['nonce'] = array(
 				'save' => wp_create_nonce( 'save-customize_' . $this->get_stylesheet() ),
-				'preview' => wp_create_nonce( 'preview-customize_' . $this->get_stylesheet() )
+				'preview' => wp_create_nonce( 'preview-customize_' . $this->get_stylesheet() ),
 			);
 		}
 
@@ -768,25 +768,25 @@ final class WP_Customize_Manager {
 		?>
 		<script type="text/javascript">
 			var _wpCustomizeSettings = <?php echo wp_json_encode( $settings ); ?>;
-			_wpCustomizeSettings.values = {};
-			(function( v ) {
+			_wpCustomizeSettings.values = {}; // Eliminated in favor of settings().
+			_wpCustomizeSettings.settings = {};
+			(function( s ) {
 				<?php
 				/*
 				 * Serialize settings separately from the initial _wpCustomizeSettings
 				 * serialization in order to avoid a peak memory usage spike.
-				 * @todo We may not even need to export the values at all since the pane syncs them anyway.
 				 */
 				foreach ( $this->settings as $id => $setting ) {
 					if ( $setting->check_capabilities() ) {
 						printf(
-							"v[%s] = %s;\n",
+							"s[%s] = %s;\n",
 							wp_json_encode( $id ),
-							wp_json_encode( $setting->js_value() )
+							wp_json_encode( $setting->json() )
 						);
 					}
 				}
 				?>
-			})( _wpCustomizeSettings.values );
+			})( _wpCustomizeSettings.settings );
 		</script>
 		<?php
 	}
@@ -1636,11 +1636,7 @@ final class WP_Customize_Manager {
 					printf(
 						"s[%s] = %s;\n",
 						wp_json_encode( $setting->id ),
-						wp_json_encode( array(
-							'value'     => $setting->js_value(),
-							'transport' => $setting->transport,
-							'dirty'     => $setting->dirty,
-						) )
+						wp_json_encode( $setting->json() )
 					);
 				}
 			}

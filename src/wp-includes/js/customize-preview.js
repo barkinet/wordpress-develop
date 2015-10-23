@@ -76,25 +76,35 @@
 			channel: api.settings.channel
 		});
 
-		api.preview.bind( 'settings', function( values ) {
-			$.each( values, function( id, value ) {
-				if ( api.has( id ) )
-					api( id ).set( value );
-				else
-					api.create( id, value );
+		api.preview.bind( 'settingsData', function( settings ) {
+			var values = {};
+			$.each( settings, function( id, settingData ) {
+				var args, value, setting;
+				value = settingData.value;
+				setting = api( id );
+
+				if ( setting ) {
+					setting.set( value );
+					// @todo Also update other properties?
+					// @todo If the property exists on the setting, and it is an api.Value, should we set instead of extend?
+				} else {
+					args = _.clone( settingData );
+					delete args.value;
+					setting = api.create( id, value, args ); // @todo This should be an wp.customize.Setting
+					setting.id = id;
+				}
+
+				values[ id ] = value;
 			});
+
+			// The following are for back compat.
+			api.preview.trigger( 'settings', values );
+			$.each( values, function( id, value ) {
+				api.preview.trigger( 'setting', [ id, value ] );
+			} );
 		});
 
-		api.preview.trigger( 'settings', api.settings.values );
-
-		api.preview.bind( 'setting', function( args ) {
-			var value;
-
-			args = args.slice();
-
-			if ( value = api( args.shift() ) )
-				value.set.apply( value, args );
-		});
+		api.preview.trigger( 'settingsData', api.settings.settings );
 
 		api.preview.bind( 'sync', function( events ) {
 			$.each( events, function( event, args ) {

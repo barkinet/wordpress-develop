@@ -27,6 +27,7 @@
 			this.id = id;
 			this.transport = this.transport || 'refresh';
 			this._dirty = options.dirty || false;
+			this.selector = options.selector || null;
 
 			// Whenever the setting's value changes, refresh the preview.
 			this.bind( this.preview );
@@ -36,11 +37,19 @@
 		 * Refresh the preview, respective of the setting's refresh policy.
 		 */
 		preview: function() {
-			switch ( this.transport ) {
+			var settingsData = {}, setting = this;
+			switch ( setting.transport ) {
 				case 'refresh':
-					return this.previewer.refresh();
+					return setting.previewer.refresh();
 				case 'postMessage':
-					return this.previewer.send( 'setting', [ this.id, this() ] );
+					settingsData[ setting.id ] = {
+						value: setting.get(),
+						transport: setting.transport,
+						selector: setting.selector,
+						dirty: setting._dirty
+					};
+					return setting.previewer.send( 'settingsData', settingsData );
+					// @todo There should be a setting.toPreviewExports that does the above?
 			}
 		}
 	});
@@ -3082,6 +3091,8 @@
 			});
 
 			this.loading.done( function() {
+				var settings = {};
+
 				// 'this' is the loading frame
 				this.bind( 'synced', function() {
 					if ( self.preview )
@@ -3096,9 +3107,19 @@
 					self.send( 'active' );
 				});
 
+				api.each( function ( setting, id ) {
+					settings[ id ] = {
+						value: setting.get(),
+						transport: setting.transport,
+						selector: setting.selector,
+						dirty: setting._dirty
+					};
+					// @todo There should be a setting.toPreviewExports that does the above?
+				} );
+
 				this.send( 'sync', {
-					scroll:   self.scroll,
-					settings: api.get()
+					scroll: self.scroll,
+					settingsData: settings
 				});
 			});
 
