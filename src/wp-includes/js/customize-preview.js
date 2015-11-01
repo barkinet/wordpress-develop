@@ -69,7 +69,7 @@
 		if ( ! api.settings )
 			return;
 
-		var bg;
+		var bg, pendingSelectiveRefresh;
 
 		api.preview = new api.Preview({
 			url: window.location.href,
@@ -178,6 +178,21 @@
 				this.bind( update );
 			});
 		});
+
+		/* Selective Refresh */
+		pendingSelectiveRefreshes = {};
+
+		api.selectiveRefresh = function( settingIds ) {
+
+		};
+
+		api.bind( 'change', function( setting ) {
+			if ( ! setting.selector ) {
+				return;
+			}
+
+			console.info( setting.id, setting() );
+		} );
 
 		api.trigger( 'preview-ready' );
 	});

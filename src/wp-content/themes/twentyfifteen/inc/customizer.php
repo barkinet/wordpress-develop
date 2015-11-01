@@ -17,8 +17,18 @@
 function twentyfifteen_customize_register( $wp_customize ) {
 	$color_scheme = twentyfifteen_get_color_scheme();
 
-	$wp_customize->get_setting( 'blogname' )->transport        = 'postMessage';
-	$wp_customize->get_setting( 'blogdescription' )->transport = 'postMessage';
+	$wp_customize->get_setting( 'blogname' )->selector        = '.site-title > a:first';
+	$wp_customize->get_setting( 'blogdescription' )->selector = '.site-description:first';
+
+	// @todo What about indicating the JS handler to do this? Or o we just
+	add_action( 'customize_selective_refresh_content', function ( $content, WP_Customize_Setting $setting ) {
+		if ( 'blogname' === $setting->id ) {
+			$content = get_bloginfo( 'name', 'display' );
+		} else if ( 'blogname' === $setting->id ) {
+			$content = get_bloginfo( 'description', 'display' );
+		}
+		return $content;
+	} );
 
 	// Add color scheme setting and control.
 	$wp_customize->add_setting( 'color_scheme', array(

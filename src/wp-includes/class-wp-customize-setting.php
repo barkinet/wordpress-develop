@@ -77,6 +77,15 @@ class WP_Customize_Setting {
 	public $dirty = false;
 
 	/**
+	 * Selector for selective refresh.
+	 *
+	 * @since 4.4.0
+	 * @access public
+	 * @var string
+	 */
+	public $selector;
+
+	/**
 	 * @var array
 	 */
 	protected $id_data = array();
