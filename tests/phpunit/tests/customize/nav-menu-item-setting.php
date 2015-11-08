@@ -750,4 +750,53 @@ class Test_WP_Customize_Nav_Menu_Item_Setting extends WP_UnitTestCase {
 		$this->assertTrue( $value_object->_invalid );
 	}
 
+	/**
+	 * Test WP_Customize_Nav_Menu_Item_Setting::value_as_wp_post_nav_menu_item().
+	 *
+	 * @see WP_Customize_Nav_Menu_Item_Setting::value_as_wp_post_nav_menu_item()
+	 */
+	function test_value_as_wp_post_nav_menu_item() {
+		$post_id = self::factory()->post->create();
+
+		$setting = new WP_Customize_Nav_Menu_Item_Setting(
+			$this->wp_customize,
+			'nav_menu_item[123]'
+		);
+		$post_value = array(
+			'object_id'        => $post_id,
+			'object'           => 'post',
+			'menu_item_parent' => 0,
+			'position'         => 2,
+			'type'             => 'post_type',
+			'title'            => 'Hello World',
+			'url'              => '',
+			'target'           => '',
+			'attr_title'       => '">attempted <b>baddie</b>',
+			'description'      => 'Attempted <b>markup</b>',
+			'classes'          => '',
+			'xfn'              => '',
+			'status'           => 'publish',
+			'original_title'   => '',
+			'nav_menu_term_id' => 0,
+			'_invalid'         => false,
+		);
+		$this->wp_customize->set_post_value( $setting->id, $post_value );
+
+		$setting->preview();
+		$nav_menu_item = $setting->value_as_wp_post_nav_menu_item();
+
+		$this->assertObjectNotHasAttribute( 'nav_menu_term_id', $nav_menu_item );
+		$this->assertObjectNotHasAttribute( 'status', $nav_menu_item );
+		$this->assertEquals( 'publish', $nav_menu_item->post_status );
+		$this->assertEquals( 'nav_menu_item', $nav_menu_item->post_type );
+		$this->assertObjectNotHasAttribute( 'position', $nav_menu_item );
+		$this->assertEquals( $post_value['position'], $nav_menu_item->menu_order );
+		$this->assertEquals( $post_value['title'], $nav_menu_item->post_title );
+		$this->assertEquals( 123, $nav_menu_item->ID );
+		$this->assertEquals( 123, $nav_menu_item->db_id );
+		$this->assertEquals( wp_get_current_user()->ID, $nav_menu_item->post_author );
+		$this->assertObjectHasAttribute( 'type_label', $nav_menu_item );
+		$this->assertEquals( '&#8220;>attempted baddie', $nav_menu_item->attr_title );
+		$this->assertEquals( 'Attempted markup', $nav_menu_item->description );
+	}
 }
