@@ -572,6 +572,12 @@ class WP_Customize_Nav_Menu_Item_Setting extends WP_Customize_Setting {
 			}
 		}
 
+		/** This filter is documented in wp-includes/nav-menu.php */
+		$post->attr_title = apply_filters( 'nav_menu_attr_title', $post->attr_title );
+
+		/** This filter is documented in wp-includes/nav-menu.php */
+		$post->description = apply_filters( 'nav_menu_description', wp_trim_words( $post->description, 200 ) );
+
 		return $post;
 	}
 
