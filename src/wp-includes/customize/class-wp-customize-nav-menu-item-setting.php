@@ -619,7 +619,7 @@ class WP_Customize_Nav_Menu_Item_Setting extends WP_Customize_Setting {
 		);
 		$menu_item_value = array_merge( $default, $menu_item_value );
 		$menu_item_value = wp_array_slice_assoc( $menu_item_value, array_keys( $default ) );
-		$menu_item_value['position'] = max( 0, intval( $menu_item_value['position'] ) );
+		$menu_item_value['position'] = intval( $menu_item_value['position'] );
 
 		foreach ( array( 'object_id', 'menu_item_parent', 'nav_menu_term_id' ) as $key ) {
 			// Note we need to allow negative-integer IDs for previewed objects not inserted yet.
@@ -638,13 +638,16 @@ class WP_Customize_Nav_Menu_Item_Setting extends WP_Customize_Setting {
 			$menu_item_value[ $key ] = implode( ' ', array_map( 'sanitize_html_class', $value ) );
 		}
 
-		foreach ( array( 'description', 'original_title' ) as $key ) {
-			$menu_item_value[ $key ] = sanitize_text_field( $menu_item_value[ $key ] );
-		}
+		$menu_item_value['original_title'] = sanitize_text_field( $menu_item_value['original_title'] );
+
+		// Apply the same filters as when calling wp_insert_post().
+		$menu_item_value['title'] = apply_filters( 'title_save_pre', $menu_item_value['title'] );
+		$menu_item_value['attr_title'] = apply_filters( 'excerpt_save_pre', $menu_item_value['attr_title'] );
+		$menu_item_value['description'] = apply_filters( 'content_save_pre', $menu_item_value['description'] );
 
 		$menu_item_value['url'] = esc_url_raw( $menu_item_value['url'] );
-		if ( ! get_post_status_object( $menu_item_value['status'] ) ) {
-			$menu_item_value['status'] = 'publish';
+		if ( 'publish' !== $menu_item_value['status'] ) {
+			$menu_item_value['status'] = 'draft';
 		}
 
 		$menu_item_value['_invalid'] = (bool) $menu_item_value['_invalid'];
