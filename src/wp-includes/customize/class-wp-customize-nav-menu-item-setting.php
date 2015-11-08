@@ -638,8 +638,7 @@ class WP_Customize_Nav_Menu_Item_Setting extends WP_Customize_Setting {
 			$menu_item_value[ $key ] = implode( ' ', array_map( 'sanitize_html_class', $value ) );
 		}
 
-		foreach ( array( 'title', 'attr_title', 'description', 'original_title' ) as $key ) {
-			// @todo Should esc_attr() the attr_title as well?
+		foreach ( array( 'description', 'original_title' ) as $key ) {
 			$menu_item_value[ $key ] = sanitize_text_field( $menu_item_value[ $key ] );
 		}
 
