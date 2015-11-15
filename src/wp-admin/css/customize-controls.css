@@ -538,13 +538,14 @@ p.customize-section-description {
 	line-height: 28px;
 }
 
+.customize-control-radio label,
 .customize-control-checkbox label,
 .customize-control-nav_menu_auto_add label {
 	line-height: 20px;
 	display: block;
 	margin-left: 24px;
-	padding-top: 4px;
-	padding-bottom: 4px;
+	padding-top: 6px;
+	padding-bottom: 6px;
 }
 
 .customize-control-checkbox input,
@@ -566,9 +567,6 @@ p.customize-section-description {
 	margin-top: 7px;
 }
 
-.customize-control-radio label {
-	line-height: 32px;
-}
 
 .customize-control-radio input {
 	margin-right: 5px;
@@ -1330,6 +1328,23 @@ body.cheatin p {
 
 	.wp-customizer .theme-browser .theme.active .theme-name span {
 		display: inline;
+	}
+
+	.customize-control-radio label,
+	.customize-control-checkbox label,
+	.customize-control-nav_menu_auto_add label {
+		margin-left: 32px;
+	}
+
+	.customize-control-radio input,
+	.customize-control-checkbox input,
+	.customize-control-nav_menu_auto_add input {
+		margin-left: -32px;
+	}
+
+	.customize-control input[type="radio"] + label,
+	.customize-control input[type="checkbox"] + label {
+		line-height: 32px;
 	}
 }
 
