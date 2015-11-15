@@ -115,6 +115,7 @@
 		pages: {},
 		sectionContent: '',
 		loading: false,
+		excludeTerms: [],
 
 		initialize: function() {
 			var self = this;
@@ -218,6 +219,7 @@
 			}
 			
 			this.searchTerm = event.target.value;
+			this.excludeTerms = [];
 			this.pages.search = 1;
 			this.doSearch( 1 );
 		},
@@ -251,13 +253,16 @@
 				'customize-menus-nonce': api.Menus.data.nonce,
 				'wp_customize': 'on',
 				'search': self.searchTerm,
-				'page': page
+				'page': page,
+				'exclude': _.filter( self.excludeTerms, function( value, index, list ) {
+					return list.indexOf( value ) === index;
+				} )
 			};
 
 			self.currentRequest = wp.ajax.post( 'search-available-menu-items-customizer', params );
 
 			self.currentRequest.done(function( data ) {
-				var items;
+				var items, lastItem, lastItemPosition;
 				if ( 1 === page ) {
 					// Clear previous results as it's a new search.
 					$content.empty();
@@ -270,6 +275,9 @@
 				self.collection.add( items.models );
 				items.each( function( menuItem ) {
 					$content.append( itemTemplate( menuItem.attributes ) );
+					if ( 'taxonomy' === menuItem.attributes.type ) {
+						self.excludeTerms.push( menuItem.attributes.object_id );
+					}
 				} );
 				if ( 20 > items.length ) {
 					self.pages.search = -1; // Up to 20 posts and 20 terms in results, if <20, no more results for either.
@@ -280,6 +288,14 @@
 					wp.a11y.speak( api.Menus.data.l10n.itemsFoundMore.replace( '%d', items.length ) );
 				} else if ( items && page === 1 ) {
 					wp.a11y.speak( api.Menus.data.l10n.itemsFound.replace( '%d', items.length ) );
+				}
+
+				lastItem = $content.find( 'li' ).last();
+				lastItemPosition = lastItem.position().top + lastItem.outerHeight( true );
+
+				// The window is larger than the results. Initiate a scroll event to query page 2.
+				if ( -1 !== self.pages.search && 1 === page && $content.prop( 'scrollHeight' ) > lastItemPosition ) {
+					$content.scroll();
 				}
 			});
 

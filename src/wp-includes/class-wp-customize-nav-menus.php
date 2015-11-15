@@ -219,13 +219,14 @@ final class WP_Customize_Nav_Menus {
 			wp_send_json_error( 'nav_menus_missing_search_parameter' );
 		}
 
+		$e = ! empty( $_POST['exclude'] ) ? array_map( 'absint', $_POST['exclude'] ) : array();
 		$p = isset( $_POST['page'] ) ? absint( $_POST['page'] ) : 0;
 		if ( $p < 1 ) {
 			$p = 1;
 		}
 
 		$s = sanitize_text_field( wp_unslash( $_POST['search'] ) );
-		$items = $this->search_available_items_query( array( 'pagenum' => $p, 's' => $s ) );
+		$items = $this->search_available_items_query( array( 'exclude' => $e, 'pagenum' => $p, 's' => $s ) );
 
 		if ( empty( $items ) ) {
 			wp_send_json_error( array( 'message' => __( 'No results found.' ) ) );
@@ -242,7 +243,7 @@ final class WP_Customize_Nav_Menus {
 	 * @since 4.3.0
 	 * @access public
 	 *
-	 * @param array $args Optional. Accepts 'pagenum' and 's' (search) arguments.
+	 * @param array $args Optional. Accepts 'exclude' (term IDs), 'pagenum', and 's' (search) arguments.
 	 * @return array Menu items.
 	 */
 	public function search_available_items_query( $args = array() ) {
@@ -263,6 +264,10 @@ final class WP_Customize_Nav_Menus {
 
 		if ( isset( $args['s'] ) ) {
 			$query['s'] = $args['s'];
+		}
+
+		if ( ! isset( $args['exclude'] ) ) {
+			$args['exclude'] = array();
 		}
 
 		// Query posts.
@@ -293,7 +298,7 @@ final class WP_Customize_Nav_Menus {
 		$terms = get_terms( $taxonomies, array(
 			'name__like' => $args['s'],
 			'number'     => 20,
-			'offset'     => 20 * ($args['pagenum'] - 1),
+			'exclude'    => $args['exclude'],
 		) );
 
 		// Check if any taxonomies were found.
