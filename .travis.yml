@@ -3,7 +3,7 @@ language: php
 matrix:
   include:
   - php: 5.5
-    env: WP_TRAVISCI=travis:js
+    env: WP_TRAVISCI=travis:js-linting
   - php: 5.2
     env: WP_TRAVISCI=travis:phpunit
   - php: 5.3
@@ -37,6 +37,12 @@ before_install:
       sed -i "s/yourusernamehere/travis/" wp-tests-config.php
       sed -i "s/yourpasswordhere//" wp-tests-config.php
       svn checkout https://plugins.svn.wordpress.org/wordpress-importer/trunk tests/phpunit/data/plugins/wordpress-importer
+  fi
+- |
+  if [[ "$WP_TRAVISCI" == "travis:js-linting" ]]; then
+      mkdir -p /tmp/phpcs && curl -L https://github.com/squizlabs/PHP_CodeSniffer/archive/master.tar.gz | tar xz --strip-components=1 -C /tmp/phpcs
+      mkdir -p /tmp/wpcs && curl -L https://github.com/WordPress-Coding-Standards/WordPress-Coding-Standards/archive/master.tar.gz | tar xz --strip-components=1 -C /tmp/wpcs
+      /tmp/phpcs/scripts/phpcs --config-set installed_paths /tmp/wpcs
   fi
 - |
   if [[ "$WP_TRAVIS_OBJECT_CACHE" == "true" ]]; then
