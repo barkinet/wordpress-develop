@@ -408,6 +408,20 @@ module.exports = function(grunt) {
 				args: ['-c', 'phpunit.xml.dist', '--group', 'external-http']
 			}
 		},
+		phpcs: {
+			'default': {
+				cmd: 'php',
+				args: [ 'tools/phpcs.php' ]
+			},
+			'core': {
+				cmd: 'php',
+				args: [ 'tools/phpcs.php', '--scope', 'core' ]
+			},
+			//'core': {
+			//	cmd: 'php',
+			//	args: [ 'tools/phpcs.php', '--scope', 'core' ]
+			//}
+		},
 		uglify: {
 			options: {
 				ASCIIOnly: true
@@ -658,6 +672,14 @@ module.exports = function(grunt) {
 
 	// Testing tasks.
 	grunt.registerMultiTask('phpunit', 'Runs PHPUnit tests, including the ajax, external-http, and multisite tests.', function() {
+		grunt.util.spawn({
+			cmd: this.data.cmd,
+			args: this.data.args,
+			opts: {stdio: 'inherit'}
+		}, this.async());
+	});
+
+	grunt.registerMultiTask('phpcs', 'Runs PHP_CodeSniffer tests.', function() {
 		grunt.util.spawn({
 			cmd: this.data.cmd,
 			args: this.data.args,

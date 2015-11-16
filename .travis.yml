@@ -27,6 +27,12 @@ matrix:
   - php: hhvm
   - php: nightly
 before_install:
+- |
+
+- |
+  if [[ "$TRAVIS_PULL_REQUEST" == 'true' ]]; then
+    travis cancel $TRAVIS_JOB_NUMBER
+  fi
 - WP_CORE_DIR=/tmp/wordpress/
 - git clone https://github.com/WordPress/twentysixteen.git src/wp-content/themes/twentysixteen
 - |
@@ -40,9 +46,9 @@ before_install:
   fi
 - |
   if [[ "$WP_TRAVISCI" == "travis:js-linting" ]]; then
-      mkdir -p /tmp/phpcs && curl -L https://github.com/squizlabs/PHP_CodeSniffer/archive/master.tar.gz | tar xz --strip-components=1 -C /tmp/phpcs
-      mkdir -p /tmp/wpcs && curl -L https://github.com/WordPress-Coding-Standards/WordPress-Coding-Standards/archive/master.tar.gz | tar xz --strip-components=1 -C /tmp/wpcs
-      /tmp/phpcs/scripts/phpcs --config-set installed_paths /tmp/wpcs
+    mkdir -p /tmp/phpcs && curl -L https://github.com/squizlabs/PHP_CodeSniffer/archive/master.tar.gz | tar xz --strip-components=1 -C /tmp/phpcs
+    mkdir -p /tmp/wpcs && curl -L https://github.com/WordPress-Coding-Standards/WordPress-Coding-Standards/archive/master.tar.gz | tar xz --strip-components=1 -C /tmp/wpcs
+    /tmp/phpcs/scripts/phpcs --config-set installed_paths /tmp/wpcs
   fi
 - |
   if [[ "$WP_TRAVIS_OBJECT_CACHE" == "true" ]]; then
