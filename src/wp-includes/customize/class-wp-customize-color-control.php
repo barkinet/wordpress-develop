@@ -79,14 +79,10 @@ class WP_Customize_Color_Control extends WP_Customize_Control {
 	public function content_template() {
 		?>
 		<#
-		var inputId = '';
-		var descriptionId = '';
+		var inputId = '_customize-input-' + data.settings['default'];
+		var descriptionId = '_customize-description-' + data.settings['default'];
 		var describedBy = '';
 		var defaultValue = '';
-		if ( data.id ) {
-			inputId = '_customize-input-' + data.id;
-			descriptionId = '_customize-description-' + data.id;
-		}
 		if ( data.defaultValue ) {
 			if ( '#' !== data.defaultValue.substring( 0, 1 ) ) {
 				defaultValue = '#' + data.defaultValue;
