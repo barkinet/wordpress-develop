@@ -249,6 +249,7 @@ class WP_Customize_Control {
 			$this->json['settings'][ $key ] = $setting->id;
 		}
 
+		$this->json['id'] = $this->id;
 		$this->json['type'] = $this->type;
 		$this->json['priority'] = $this->priority;
 		$this->json['active'] = $this->active();

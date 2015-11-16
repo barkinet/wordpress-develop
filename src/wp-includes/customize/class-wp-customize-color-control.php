@@ -78,7 +78,15 @@ class WP_Customize_Color_Control extends WP_Customize_Control {
 	 */
 	public function content_template() {
 		?>
-		<# var defaultValue = '';
+		<#
+		var inputId = '';
+		var descriptionId = '';
+		var describedBy = '';
+		var defaultValue = '';
+		if ( data.id ) {
+			inputId = '_customize-input-' + data.id;
+			descriptionId = '_customize-description-' + data.id;
+		}
 		if ( data.defaultValue ) {
 			if ( '#' !== data.defaultValue.substring( 0, 1 ) ) {
 				defaultValue = '#' + data.defaultValue;
@@ -87,17 +95,18 @@ class WP_Customize_Color_Control extends WP_Customize_Control {
 			}
 			defaultValue = ' data-default-color=' + defaultValue; // Quotes added automatically.
 		} #>
-		<label>
-			<# if ( data.label ) { #>
+		<# if ( data.label ) { #>
+			<label for="{{ inputId }}">
 				<span class="customize-control-title">{{{ data.label }}}</span>
-			<# } #>
-			<# if ( data.description ) { #>
-				<span class="description customize-control-description">{{{ data.description }}}</span>
-			<# } #>
-			<div class="customize-control-content">
-				<input class="color-picker-hex" type="text" maxlength="7" placeholder="<?php esc_attr_e( 'Hex Value' ); ?>" {{ defaultValue }} />
-			</div>
-		</label>
+			</label>
+		<# } #>
+		<# if ( data.description ) { #>
+			<span id="{{ descriptionId }}" class="description customize-control-description">{{{ data.description }}}</span>
+			<# describedBy = 'aria-describedby=' + descriptionId; #>
+		<# } #>
+		<div class="customize-control-content">
+			<input class="color-picker-hex" id="{{ inputId }}" type="text" maxlength="7" placeholder="<?php esc_attr_e( 'Hex Value' ); ?>" {{ defaultValue }} {{ describedBy }} />
+		</div>
 		<?php
 	}
 }
