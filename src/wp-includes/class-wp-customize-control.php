@@ -404,17 +404,20 @@ class WP_Customize_Control {
 	 * @since 3.4.0
 	 */
 	protected function render_content() {
+		$input_id = '_customize-input-' . $this->id;
+		$description_id = '_customize-description-' . $this->id;
+		$describedby = ( ! empty( $this->description ) ) ? 'aria-describedby="' . esc_attr( $description_id ). '"' : '';
+
 		switch( $this->type ) {
 			case 'checkbox':
 				?>
-				<label>
-					<input type="checkbox" value="<?php echo esc_attr( $this->value() ); ?>" <?php $this->link(); checked( $this->value() ); ?> />
+				<label for="<?php echo esc_attr( $input_id ); ?>">
+					<input id="<?php echo esc_attr( $input_id ); ?>" type="checkbox" value="<?php echo esc_attr( $this->value() ); ?>" <?php $this->link(); checked( $this->value() ); ?> <?php echo $describedby; ?> />
 					<?php echo esc_html( $this->label ); ?>
-					<?php if ( ! empty( $this->description ) ) : ?>
-						<span class="description customize-control-description"><?php echo $this->description; ?></span>
-					<?php endif; ?>
 				</label>
-				<?php
+				<?php if ( ! empty( $this->description ) ) : ?>
+					<span id="<?php echo esc_attr( $description_id ); ?>" class="description customize-control-description"><?php echo $this->description; ?></span>
+				<?php endif;
 				break;
 			case 'radio':
 				if ( empty( $this->choices ) )
@@ -439,48 +442,54 @@ class WP_Customize_Control {
 				endforeach;
 				break;
 			case 'select':
-				if ( empty( $this->choices ) )
+				if ( empty( $this->choices ) ) {
 					return;
-
+				}
 				?>
-				<label>
-					<?php if ( ! empty( $this->label ) ) : ?>
-						<span class="customize-control-title"><?php echo esc_html( $this->label ); ?></span>
-					<?php endif;
-					if ( ! empty( $this->description ) ) : ?>
-						<span class="description customize-control-description"><?php echo $this->description; ?></span>
-					<?php endif; ?>
 
-					<select <?php $this->link(); ?>>
-						<?php
-						foreach ( $this->choices as $value => $label )
-							echo '<option value="' . esc_attr( $value ) . '"' . selected( $this->value(), $value, false ) . '>' . $label . '</option>';
-						?>
-					</select>
-				</label>
+				<?php if ( ! empty( $this->label ) ) : ?>
+					<label for="<?php echo esc_attr( $input_id ); ?>">
+						<span class="customize-control-title"><?php echo esc_html( $this->label ); ?></span>
+					</label>
+				<?php endif;
+				if ( ! empty( $this->description ) ) : ?>
+					<span id="<?php echo esc_attr( $description_id ); ?>" class="description customize-control-description"><?php echo $this->description; ?></span>
+				<?php endif; ?>
+
+				<select id="<?php echo esc_attr( $input_id ); ?>" <?php $this->link(); ?> <?php echo $describedby; ?>>
+					<?php
+					foreach ( $this->choices as $value => $label )
+						echo '<option value="' . esc_attr( $value ) . '"' . selected( $this->value(), $value, false ) . '>' . $label . '</option>';
+					?>
+				</select>
+				
 				<?php
 				break;
 			case 'textarea':
 				?>
-				<label>
-					<?php if ( ! empty( $this->label ) ) : ?>
+
+				<?php if ( ! empty( $this->label ) ) : ?>
+					<label for="<?php echo esc_attr( $input_id ); ?>">
 						<span class="customize-control-title"><?php echo esc_html( $this->label ); ?></span>
-					<?php endif;
-					if ( ! empty( $this->description ) ) : ?>
-						<span class="description customize-control-description"><?php echo $this->description; ?></span>
-					<?php endif; ?>
-					<textarea rows="5" <?php $this->link(); ?>><?php echo esc_textarea( $this->value() ); ?></textarea>
-				</label>
+					</label>
+				<?php endif;
+				if ( ! empty( $this->description ) ) : ?>
+					<span id="<?php echo esc_attr( $description_id ); ?>" class="description customize-control-description"><?php echo $this->description; ?></span>
+				<?php endif; ?>
+				<textarea id="<?php echo esc_attr( $input_id ); ?>" rows="5" <?php $this->link(); ?> <?php echo $describedby; ?>><?php echo esc_textarea( $this->value() ); ?></textarea>
+
 				<?php
 				break;
 			case 'dropdown-pages':
 				?>
-				<label>
+
 				<?php if ( ! empty( $this->label ) ) : ?>
-					<span class="customize-control-title"><?php echo esc_html( $this->label ); ?></span>
+					<label for="<?php echo esc_attr( $input_id ); ?>">
+						<span class="customize-control-title"><?php echo esc_html( $this->label ); ?></span>
+					</label>
 				<?php endif;
 				if ( ! empty( $this->description ) ) : ?>
-					<span class="description customize-control-description"><?php echo $this->description; ?></span>
+					<span id="<?php echo esc_attr( $description_id ); ?>" class="description customize-control-description"><?php echo $this->description; ?></span>
 				<?php endif; ?>
 
 				<?php $dropdown = wp_dropdown_pages(
@@ -495,22 +504,23 @@ class WP_Customize_Control {
 
 				// Hackily add in the data link parameter.
 				$dropdown = str_replace( '<select', '<select ' . $this->get_link(), $dropdown );
+				// Hackily add in the ID and aria-describedby parameters.
+				$dropdown = str_replace( '<select', '<select id="' . esc_attr( $input_id ) . '" ' . $describedby, $dropdown );
 				echo $dropdown;
-				?>
-				</label>
-				<?php
+
 				break;
 			default:
 				?>
-				<label>
-					<?php if ( ! empty( $this->label ) ) : ?>
+
+				<?php if ( ! empty( $this->label ) ) : ?>
+					<label for="<?php echo esc_attr( $input_id ); ?>">
 						<span class="customize-control-title"><?php echo esc_html( $this->label ); ?></span>
-					<?php endif;
-					if ( ! empty( $this->description ) ) : ?>
-						<span class="description customize-control-description"><?php echo $this->description; ?></span>
-					<?php endif; ?>
-					<input type="<?php echo esc_attr( $this->type ); ?>" <?php $this->input_attrs(); ?> value="<?php echo esc_attr( $this->value() ); ?>" <?php $this->link(); ?> />
-				</label>
+					</label>
+				<?php endif;
+				if ( ! empty( $this->description ) ) : ?>
+					<span id="<?php echo esc_attr( $description_id ); ?>" class="description customize-control-description"><?php echo $this->description; ?></span>
+				<?php endif; ?>
+				<input id="<?php echo esc_attr( $input_id ); ?>" type="<?php echo esc_attr( $this->type ); ?>" <?php $this->input_attrs(); ?> value="<?php echo esc_attr( $this->value() ); ?>" <?php $this->link(); ?> <?php echo $describedby; ?> />
 				<?php
 				break;
 		}
