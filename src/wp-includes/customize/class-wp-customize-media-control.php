@@ -142,14 +142,16 @@ class WP_Customize_Media_Control extends WP_Customize_Control {
 	 */
 	public function content_template() {
 		?>
-		<label for="{{ data.settings['default'] }}-button">
-			<# if ( data.label ) { #>
+		<# var describedBy = ''; #>
+		<# if ( data.label ) { #>
+			<label for="{{ data.settings['default'] }}-button">
 				<span class="customize-control-title">{{ data.label }}</span>
-			<# } #>
-			<# if ( data.description ) { #>
-				<span class="description customize-control-description">{{{ data.description }}}</span>
-			<# } #>
-		</label>
+			</label>
+		<# } #>
+		<# if ( data.description ) { #>
+			<span id="{{ data.settings['default'] }}-description" class="description customize-control-description">{{{ data.description }}}</span>
+			<# describedBy = 'aria-describedby=' + data.settings['default'] + '-description'; #>
+		<# } #>
 
 		<# if ( data.attachment && data.attachment.id ) { #>
 			<div class="current">
@@ -194,7 +196,7 @@ class WP_Customize_Media_Control extends WP_Customize_Control {
 			<div class="actions">
 				<# if ( data.canUpload ) { #>
 				<button type="button" class="button remove-button"><?php echo $this->button_labels['remove']; ?></button>
-				<button type="button" class="button upload-button" id="{{ data.settings['default'] }}-button"><?php echo $this->button_labels['change']; ?></button>
+				<button type="button" class="button upload-button" id="{{ data.settings['default'] }}-button" {{ describedBy }}><?php echo $this->button_labels['change']; ?></button>
 				<div style="clear:both"></div>
 				<# } #>
 			</div>
@@ -215,7 +217,7 @@ class WP_Customize_Media_Control extends WP_Customize_Control {
 					<button type="button" class="button default-button"><?php echo $this->button_labels['default']; ?></button>
 				<# } #>
 				<# if ( data.canUpload ) { #>
-				<button type="button" class="button upload-button" id="{{ data.settings['default'] }}-button"><?php echo $this->button_labels['select']; ?></button>
+				<button type="button" class="button upload-button" id="{{ data.settings['default'] }}-button" {{ describedBy }}><?php echo $this->button_labels['select']; ?></button>
 				<# } #>
 				<div style="clear:both"></div>
 			</div>
