@@ -59,24 +59,29 @@ class WP_Customize_Nav_Menu_Location_Control extends WP_Customize_Control {
 		if ( empty( $this->choices ) ) {
 			return;
 		}
+		$input_id = '_customize-input-nav_menu_locations-' . $this->location_id;
+		$description_id = '_customize-description-nav_menu_locations-' . $this->location_id;
+		$describedby = ( ! empty( $this->description ) ) ? 'aria-describedby="' . esc_attr( $description_id ). '"' : '';
 		?>
-		<label>
-			<?php if ( ! empty( $this->label ) ) : ?>
+
+		<?php if ( ! empty( $this->label ) ) : ?>
+		<label for="<?php echo esc_attr( $input_id ); ?>">
 			<span class="customize-control-title"><?php echo esc_html( $this->label ); ?></span>
-			<?php endif; ?>
-
-			<?php if ( ! empty( $this->description ) ) : ?>
-			<span class="description customize-control-description"><?php echo $this->description; ?></span>
-			<?php endif; ?>
-
-			<select <?php $this->link(); ?>>
-				<?php
-				foreach ( $this->choices as $value => $label ) :
-					echo '<option value="' . esc_attr( $value ) . '"' . selected( $this->value(), $value, false ) . '>' . $label . '</option>';
-				endforeach;
-				?>
-			</select>
 		</label>
+		<?php endif; ?>
+
+		<?php if ( ! empty( $this->description ) ) : ?>
+		<span id="<?php echo esc_attr( $description_id ); ?>" class="description customize-control-description"><?php echo $this->description; ?></span>
+		<?php endif; ?>
+
+		<select  id="<?php echo esc_attr( $input_id ); ?>" <?php $this->link(); ?> <?php echo $describedby; ?>>
+			<?php
+			foreach ( $this->choices as $value => $label ) :
+				echo '<option value="' . esc_attr( $value ) . '"' . selected( $this->value(), $value, false ) . '>' . $label . '</option>';
+			endforeach;
+			?>
+		</select>
+		
 		<?php
 	}
 }
