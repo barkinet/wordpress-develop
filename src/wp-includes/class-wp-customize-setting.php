@@ -288,7 +288,11 @@ class WP_Customize_Setting {
 			$needs_preview = ( $undefined === $value ); // Because the default needs to be supplied.
 		}
 
+		// If the setting does not need previewing now, defer to when it has a value to preview.
 		if ( ! $needs_preview ) {
+			if ( ! has_action( "customize_post_value_set_{$this->id}", array( $this, 'preview' ) ) ) {
+				add_action( "customize_post_value_set_{$this->id}", array( $this, 'preview' ) );
+			}
 			return false;
 		}
 
