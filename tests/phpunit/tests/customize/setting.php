@@ -160,19 +160,19 @@ class Tests_WP_Customize_Setting extends WP_UnitTestCase {
 		$_POST['customized'] = wp_slash( wp_json_encode( $this->post_data_overrides ) );
 
 		foreach ( $this->standard_type_configs as $type => $type_options ) {
-			// Multidimensional: See what effect the preview filter has on a non-existent setting (default value should be seen)
+			// Multidimensional: See what effect the preview filter has on a non-existent setting (default value should be seen).
 			$base_name = "unset_{$type}_multi";
 			$name = $base_name . '[foo]';
 			$default = "default_value_{$name}";
 			$setting = new WP_Customize_Setting( $this->manager, $name, compact( 'type', 'default' ) );
 			$this->assertEquals( $this->undefined, call_user_func( $type_options['getter'], $base_name, $this->undefined ) );
 			$this->assertEquals( $default, $setting->value() );
-			$this->assertTrue( $setting->preview() );
+			$this->assertTrue( $setting->preview(), $setting->id );
 			$base_value = call_user_func( $type_options['getter'], $base_name, $this->undefined );
 			$this->assertArrayHasKey( 'foo', $base_value );
 			$this->assertEquals( $default, $base_value['foo'] );
 
-			// Multidimensional: See what effect the preview has on an extant setting (default value should not be seen)
+			// Multidimensional: See what effect the preview has on an extant setting (default value should not be seen).
 			$base_name = "set_{$type}_multi";
 			$name = $base_name . '[foo]';
 			$default = "default_value_{$name}";
@@ -184,13 +184,13 @@ class Tests_WP_Customize_Setting extends WP_UnitTestCase {
 			$this->assertEquals( $initial_value, $base_value['foo'] );
 			$this->assertEquals( $initial_value, $setting->value() );
 			$setting->preview();
-			$this->assertEquals( 0, did_action( "customize_preview_{$setting->id}" ) ); // only applicable for custom types (not options or theme_mods)
-			$this->assertEquals( 0, did_action( "customize_preview_{$setting->type}" ) ); // only applicable for custom types (not options or theme_mods)
+			$this->assertEquals( 0, did_action( "customize_preview_{$setting->id}" ) ); // Only applicable for custom types (not options or theme_mods).
+			$this->assertEquals( 0, did_action( "customize_preview_{$setting->type}" ) ); // Only applicable for custom types (not options or theme_mods).
 			$base_value = call_user_func( $type_options['getter'], $base_name, array() );
 			$this->assertEquals( $initial_value, $base_value['foo'] );
 			$this->assertEquals( $initial_value, $setting->value() );
 
-			// Multidimensional: Test unset setting being overridden by a post value
+			// Multidimensional: Test unset setting being overridden by a post value.
 			$base_name = "unset_{$type}_multi_overridden";
 			$name = $base_name . '[foo]';
 			$default = "default_value_{$name}";
@@ -198,13 +198,13 @@ class Tests_WP_Customize_Setting extends WP_UnitTestCase {
 			$this->assertEquals( $this->undefined, call_user_func( $type_options['getter'], $base_name, $this->undefined ) );
 			$this->assertEquals( $default, $setting->value() );
 			$setting->preview();
-			$this->assertEquals( 0, did_action( "customize_preview_{$setting->id}" ) ); // only applicable for custom types (not options or theme_mods)
-			$this->assertEquals( 0, did_action( "customize_preview_{$setting->type}" ) ); // only applicable for custom types (not options or theme_mods)
+			$this->assertEquals( 0, did_action( "customize_preview_{$setting->id}" ) ); // Only applicable for custom types (not options or theme_mods).
+			$this->assertEquals( 0, did_action( "customize_preview_{$setting->type}" ) ); // Only applicable for custom types (not options or theme_mods).
 			$base_value = call_user_func( $type_options['getter'], $base_name, $this->undefined );
 			$this->assertArrayHasKey( 'foo', $base_value );
 			$this->assertEquals( $this->post_data_overrides[ $name ], $base_value['foo'] );
 
-			// Multidimemsional: Test set setting being overridden by a post value
+			// Multidimensional: Test set setting being overridden by a post value.
 			$base_name = "set_{$type}_multi_overridden";
 			$name = $base_name . '[foo]';
 			$default = "default_value_{$name}";
@@ -221,8 +221,8 @@ class Tests_WP_Customize_Setting extends WP_UnitTestCase {
 			$this->assertEquals( $base_initial_value['bar'], $getter['bar'] );
 			$this->assertEquals( $initial_value, $setting->value() );
 			$setting->preview();
-			$this->assertEquals( 0, did_action( "customize_preview_{$setting->id}" ) ); // only applicable for custom types (not options or theme_mods)
-			$this->assertEquals( 0, did_action( "customize_preview_{$setting->type}" ) ); // only applicable for custom types (not options or theme_mods)
+			$this->assertEquals( 0, did_action( "customize_preview_{$setting->id}" ) ); // Only applicable for custom types (not options or theme_mods).
+			$this->assertEquals( 0, did_action( "customize_preview_{$setting->type}" ) ); // Only applicable for custom types (not options or theme_mods).
 			$base_value = call_user_func( $type_options['getter'], $base_name, $this->undefined );
 			$this->assertArrayHasKey( 'foo', $base_value );
 			$this->assertEquals( $this->post_data_overrides[ $name ], $base_value['foo'] );
