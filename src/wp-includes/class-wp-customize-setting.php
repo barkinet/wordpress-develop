@@ -82,6 +82,15 @@ class WP_Customize_Setting {
 	protected $id_data = array();
 
 	/**
+	 * Whether or not preview() was called.
+	 *
+	 * @since 4.4.0
+	 * @access protected
+	 * @var bool
+	 */
+	protected $is_previewed = false;
+
+	/**
 	 * Cache of multidimensional values to improve performance.
 	 *
 	 * @since 4.4.0
@@ -245,6 +254,12 @@ class WP_Customize_Setting {
 		if ( ! isset( $this->_previewed_blog_id ) ) {
 			$this->_previewed_blog_id = get_current_blog_id();
 		}
+
+		// Prevent re-previewing an already-previewed setting.
+		if ( $this->is_previewed ) {
+			return true;
+		}
+
 		$id_base = $this->id_data['base'];
 		$is_multidimensional = ! empty( $this->id_data['keys'] );
 		$multidimensional_filter = array( $this, '_multidimensional_preview_filter' );
@@ -327,6 +342,9 @@ class WP_Customize_Setting {
 				 */
 				do_action( "customize_preview_{$this->type}", $this );
 		}
+
+		$this->is_previewed = true;
+
 		return true;
 	}
 
