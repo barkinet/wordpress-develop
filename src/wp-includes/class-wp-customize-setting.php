@@ -192,6 +192,9 @@ class WP_Customize_Setting {
 			self::$aggregated_multidimensionals[ $this->type ] = array();
 		}
 		if ( ! isset( self::$aggregated_multidimensionals[ $this->type ][ $id_base ] ) ) {
+			// Only add one action per multidimensional value.
+			add_action( 'customize_post_value_set', array( $this, '_clear_aggregated_multidimensional_perview_applied_flag' ) );
+
 			self::$aggregated_multidimensionals[ $this->type ][ $id_base ] = array(
 				'previewed_instances'       => array(), // Calling preview() will add the $setting to the array.
 				'preview_applied_instances' => array(), // Flags for which settings have had their values applied.
@@ -350,6 +353,25 @@ class WP_Customize_Setting {
 		$this->is_previewed = true;
 
 		return true;
+	}
+
+	/**
+	 * Clear out the previewed-applied flag for a multidimensional-aggregated value whenever its post value is updated.
+	 *
+	 * This ensures that the new value will get sanitized and used the next time
+	 * that <code>WP_Customize_Setting::_multidimensional_preview_filter()</code>
+	 * is called for this setting.
+	 *
+	 * @access private
+	 * @see WP_Customize_Manager::set_post_value()
+	 * @see WP_Customize_Setting::_multidimensional_preview_filter()
+	 *
+	 * @param string $setting_id Setting ID.
+	 */
+	final public function _clear_aggregated_multidimensional_perview_applied_flag( $setting_id ) {
+		if ( 0 === strpos( $setting_id, $this->id_data['base'] . '[' ) ) {
+			unset( self::$aggregated_multidimensionals[ $this->type ][ $this->id_data['base'] ]['preview_applied_instances'][ $setting_id ] );
+		}
 	}
 
 	/**
