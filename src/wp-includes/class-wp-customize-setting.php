@@ -362,6 +362,7 @@ class WP_Customize_Setting {
 	 * that <code>WP_Customize_Setting::_multidimensional_preview_filter()</code>
 	 * is called for this setting.
 	 *
+	 * @since 4.4.0
 	 * @access private
 	 * @see WP_Customize_Manager::set_post_value()
 	 * @see WP_Customize_Setting::_multidimensional_preview_filter()

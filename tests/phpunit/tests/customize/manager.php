@@ -32,8 +32,7 @@ class Tests_WP_Customize_Manager extends WP_UnitTestCase {
 	function setUp() {
 		parent::setUp();
 		require_once( ABSPATH . WPINC . '/class-wp-customize-manager.php' );
-		$GLOBALS['wp_customize'] = new WP_Customize_Manager();
-		$this->manager = $GLOBALS['wp_customize'];
+		$this->manager = $this->instantiate();
 		$this->undefined = new stdClass();
 	}
 
@@ -66,7 +65,7 @@ class Tests_WP_Customize_Manager extends WP_UnitTestCase {
 			define( 'DOING_AJAX', true );
 		}
 
-		$manager = $this->instantiate();
+		$manager = $this->manager;
 		$this->assertTrue( $manager->doing_ajax() );
 
 		$_REQUEST['action'] = 'customize_save';
@@ -82,7 +81,7 @@ class Tests_WP_Customize_Manager extends WP_UnitTestCase {
 			$this->markTestSkipped( 'Cannot test when DOING_AJAX' );
 		}
 
-		$manager = $this->instantiate();
+		$manager = $this->manager;
 		$this->assertFalse( $manager->doing_ajax() );
 	}
 
@@ -92,7 +91,7 @@ class Tests_WP_Customize_Manager extends WP_UnitTestCase {
 	 * @ticket 30988
 	 */
 	function test_unsanitized_post_values() {
-		$manager = $this->instantiate();
+		$manager = $this->manager;
 
 		$customized = array(
 			'foo' => 'bar',
@@ -114,7 +113,7 @@ class Tests_WP_Customize_Manager extends WP_UnitTestCase {
 		);
 		$_POST['customized'] = wp_slash( wp_json_encode( $posted_settings ) );
 
-		$manager = $this->instantiate();
+		$manager = $this->manager;
 
 		$manager->add_setting( 'foo', array( 'default' => 'foo_default' ) );
 		$foo_setting = $manager->get_setting( 'foo' );
@@ -132,7 +131,7 @@ class Tests_WP_Customize_Manager extends WP_UnitTestCase {
 	 * @ticket 30936
 	 */
 	function test_add_dynamic_settings() {
-		$manager = $this->instantiate();
+		$manager = $this->manager;
 		$setting_ids = array( 'foo', 'bar' );
 		$manager->add_setting( 'foo', array( 'default' => 'foo_default' ) );
 		$this->assertEmpty( $manager->get_setting( 'bar' ), 'Expected there to not be a bar setting up front.' );
@@ -162,7 +161,7 @@ class Tests_WP_Customize_Manager extends WP_UnitTestCase {
 
 		add_action( 'customize_register', array( $this, 'action_customize_register_for_dynamic_settings' ) );
 
-		$manager = $this->instantiate();
+		$manager = $this->manager;
 		$manager->add_setting( 'foo', array( 'default' => 'foo_default' ) );
 
 		$this->assertEmpty( $manager->get_setting( 'bar' ), 'Expected dynamic setting "bar" to not be registered.' );
