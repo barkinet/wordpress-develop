@@ -932,6 +932,8 @@ function _wp_get_image_size_from_meta( $size_name, $image_meta ) {
  *
  * @since 4.4.0
  *
+ * @see wp_calculate_image_srcset()
+ *
  * @param int          $attachment_id Image attachment ID.
  * @param array|string $size          Optional. Image size. Accepts any valid image size, or an array of
  *                                    width and height values in pixels (in that order). Default 'medium'.
@@ -1078,12 +1080,12 @@ function wp_calculate_image_srcset( $size_array, $image_src, $image_meta, $attac
 	 * @param array  $sources {
 	 *     One or more arrays of source data to include in the 'srcset'.
 	 *
-	 *     @type type array $width {
-	 *          @type type string $url        The URL of an image source.
-	 *          @type type string $descriptor The descriptor type used in the image candidate string,
-	 *                                        either 'w' or 'x'.
-	 *          @type type int    $value      The source width, if paired with a 'w' descriptor or a
-	 *                                        pixel density value if paired with an 'x' descriptor.
+	 *     @type array $width {
+	 *         @type string $url        The URL of an image source.
+	 *         @type string $descriptor The descriptor type used in the image candidate string,
+	 *                                  either 'w' or 'x'.
+	 *         @type int    $value      The source width if paired with a 'w' descriptor, or a
+	 *                                  pixel density value if paired with an 'x' descriptor.
 	 *     }
 	 * }
 	 * @param array  $size_array    Array of width and height values in pixels (in that order).
@@ -1111,6 +1113,8 @@ function wp_calculate_image_srcset( $size_array, $image_src, $image_meta, $attac
  * Retrieves the value for an image attachment's 'sizes' attribute.
  *
  * @since 4.4.0
+ *
+ * @see wp_calculate_image_sizes()
  *
  * @param int          $attachment_id Image attachment ID.
  * @param array|string $size          Optional. Image size. Accepts any valid image size, or an array of width
@@ -1196,7 +1200,7 @@ function wp_calculate_image_sizes( $size, $image_src = null, $image_meta = null,
  *
  * @since 4.4.0
  *
- * @see 'wp_image_add_srcset_and_sizes()'
+ * @see wp_image_add_srcset_and_sizes()
  *
  * @param string $content The raw post content to be filtered.
  * @return string Converted content with 'srcset' and 'sizes' attributes added to images.
@@ -1243,8 +1247,8 @@ function wp_make_content_images_responsive( $content ) {
  *
  * @since 4.4.0
  *
- * @see 'wp_get_attachment_image_srcset()'
- * @see 'wp_get_attachment_image_sizes()'
+ * @see wp_calculate_image_srcset()
+ * @see wp_calculate_image_sizes()
  *
  * @param string $image         An HTML 'img' element to be filtered.
  * @param array  $image_meta    The image meta data as returned by 'wp_get_attachment_metadata()'.
