@@ -126,6 +126,65 @@ class Tests_WP_Customize_Manager extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Test WP_Customize_Manager::set_post_value().
+	 *
+	 * @see WP_Customize_Manager::set_post_value()
+	 */
+	function test_set_post_value() {
+		$this->manager->add_setting( 'foo', array(
+			'sanitize_callback' => array( $this, 'sanitize_foo_for_test_set_post_value' ),
+		) );
+		$setting = $this->manager->get_setting( 'foo' );
+
+		$this->assertEmpty( $this->captured_customize_post_value_set_actions );
+		add_action( 'customize_post_value_set', array( $this, 'capture_customize_post_value_set_actions' ), 10, 3 );
+		add_action( 'customize_post_value_set_foo', array( $this, 'capture_customize_post_value_set_actions' ), 10, 2 );
+		$this->manager->set_post_value( $setting->id, '123abc' );
+		$this->assertCount( 2, $this->captured_customize_post_value_set_actions );
+		$this->assertEquals( 'customize_post_value_set', $this->captured_customize_post_value_set_actions[0]['action'] );
+		$this->assertEquals( 'customize_post_value_set_foo', $this->captured_customize_post_value_set_actions[1]['action'] );
+		$this->assertEquals( array( $setting->id, '123abc', $this->manager ), $this->captured_customize_post_value_set_actions[0]['args'] );
+		$this->assertEquals( array( '123abc', $this->manager ), $this->captured_customize_post_value_set_actions[1]['args'] );
+
+		$unsanitized = $this->manager->unsanitized_post_values();
+		$this->assertArrayHasKey( $setting->id, $unsanitized );
+
+		$this->assertEquals( '123abc', $unsanitized[ $setting->id ] );
+		$this->assertEquals( 123, $setting->post_value() );
+	}
+
+	/**
+	 * Sanitize a value for Tests_WP_Customize_Manager::test_set_post_value().
+	 *
+	 * @see Tests_WP_Customize_Manager::test_set_post_value()
+	 *
+	 * @param mixed $value Value.
+	 * @return int Value.
+	 */
+	function sanitize_foo_for_test_set_post_value( $value ) {
+		return intval( $value );
+	}
+
+	/**
+	 * Store data coming from customize_post_value_set action calls.
+	 *
+	 * @see Tests_WP_Customize_Manager::capture_customize_post_value_set_actions()
+	 * @var array
+	 */
+	protected $captured_customize_post_value_set_actions = array();
+
+	/**
+	 * Capture the actions fired when calling WP_Customize_Manager::set_post_value().
+	 *
+	 * @see Tests_WP_Customize_Manager::test_set_post_value()
+	 */
+	function capture_customize_post_value_set_actions() {
+		$action = current_action();
+		$args = func_get_args();
+		$this->captured_customize_post_value_set_actions[] = compact( 'action', 'args' );
+	}
+
+	/**
 	 * Test the WP_Customize_Manager::add_dynamic_settings() method.
 	 *
 	 * @ticket 30936
