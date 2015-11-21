@@ -664,10 +664,6 @@ class WP_Customize_Setting {
 			 */
 			$value = apply_filters( "customize_value_{$id_base}", $value );
 		} else if ( $this->is_multidimensional_aggregated ) {
-			$undefined = new stdClass();
-			if ( $this->is_previewed && $undefined !== $this->post_value( $undefined ) ) {
-				$this->apply_multidimensional_preview_value();
-			}
 			$root_value = self::$aggregated_multidimensionals[ $this->type ][ $id_base ]['root_value'];
 			$value = $this->multidimensional_get( $root_value, $this->id_data['keys'], $this->default );
 		} else {
