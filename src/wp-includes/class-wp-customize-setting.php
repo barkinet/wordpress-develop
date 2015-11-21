@@ -416,11 +416,11 @@ class WP_Customize_Setting {
 	 * @return mixed New or old value.
 	 */
 	final public function _multidimensional_preview_filter( $original ) {
-		$id_base = $this->id_data['base'];
-
 		if ( ! $this->is_current_blog_previewed() ) {
 			return $original;
 		}
+
+		$id_base = $this->id_data['base'];
 
 		// If no settings have been previewed yet (which should not be the case, since $this is), just pass through the original value.
 		if ( empty( self::$aggregated_multidimensionals[ $this->type ][ $id_base ]['previewed_instances'] ) ) {
@@ -428,36 +428,22 @@ class WP_Customize_Setting {
 		}
 
 		foreach ( self::$aggregated_multidimensionals[ $this->type ][ $id_base ]['previewed_instances'] as $previewed_setting ) {
-			$previewed_setting->apply_multidimensional_preview_value();
+			// Skip applying previewed value for any settings that have already been applied.
+			if ( ! empty( self::$aggregated_multidimensionals[ $this->type ][ $id_base ]['preview_applied_instances'][ $previewed_setting->id ] ) ) {
+				continue;
+			}
+
+			// Do the replacements of the posted/default sub value into the root value.
+			$value = $previewed_setting->post_value( $previewed_setting->default );
+			$root = self::$aggregated_multidimensionals[ $previewed_setting->type ][ $id_base ]['root_value'];
+			$root = $previewed_setting->multidimensional_replace( $root, $previewed_setting->id_data['keys'], $value );
+			self::$aggregated_multidimensionals[ $previewed_setting->type ][ $id_base ]['root_value'] = $root;
+
+			// Mark this setting having been applied so that it will be skipped when the filter is called again.
+			self::$aggregated_multidimensionals[ $previewed_setting->type ][ $id_base ]['preview_applied_instances'][ $previewed_setting->id ] = true;
 		}
 
 		return self::$aggregated_multidimensionals[ $this->type ][ $id_base ]['root_value'];
-	}
-
-	/**
-	 * Ensure that a multidimensional setting's post value is applied to preview.
-	 *
-	 * @since 4.4.0
-	 * @access private
-	 *
-	 * @see WP_Customize_Setting::_multidimensional_preview_filter()
-	 */
-	final protected function apply_multidimensional_preview_value() {
-		$id_base = $this->id_data['base'];
-
-		// Skip applying previewed value for any settings that have already been applied.
-		if ( ! empty( self::$aggregated_multidimensionals[ $this->type ][ $id_base ]['preview_applied_instances'][ $this->id ] ) ) {
-			return;
-		}
-
-		// Do the replacements of the posted/default sub value into the root value.
-		$value = $this->post_value( $this->default );
-		$root = self::$aggregated_multidimensionals[ $this->type ][ $id_base ]['root_value'];
-		$root = $this->multidimensional_replace( $root, $this->id_data['keys'], $value );
-		self::$aggregated_multidimensionals[ $this->type ][ $id_base ]['root_value'] = $root;
-
-		// Mark this setting having been applied so that it will be skipped when the filter is called again.
-		self::$aggregated_multidimensionals[ $this->type ][ $id_base ]['preview_applied_instances'][ $this->id ] = true;
 	}
 
 	/**
