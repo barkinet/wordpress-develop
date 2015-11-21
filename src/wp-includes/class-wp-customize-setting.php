@@ -200,7 +200,8 @@ class WP_Customize_Setting {
 		}
 
 		if ( ! empty( $this->id_data['keys'] ) ) {
-			add_action( "customize_post_value_set_{$this->id}", array( $this, '_clear_aggregated_multidimensional_preview_applied_flag' ) );
+			// Note the preview-applied flag is cleared at priority 9 to ensure it is cleared before a deferred-preview runs.
+			add_action( "customize_post_value_set_{$this->id}", array( $this, '_clear_aggregated_multidimensional_preview_applied_flag' ), 9 );
 			$this->is_multidimensional_aggregated = true;
 		}
 	}
