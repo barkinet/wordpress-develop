@@ -141,10 +141,10 @@ class Tests_WP_Customize_Manager extends WP_UnitTestCase {
 		add_action( 'customize_post_value_set_foo', array( $this, 'capture_customize_post_value_set_actions' ), 10, 2 );
 		$this->manager->set_post_value( $setting->id, '123abc' );
 		$this->assertCount( 2, $this->captured_customize_post_value_set_actions );
-		$this->assertEquals( 'customize_post_value_set', $this->captured_customize_post_value_set_actions[0]['action'] );
-		$this->assertEquals( 'customize_post_value_set_foo', $this->captured_customize_post_value_set_actions[1]['action'] );
-		$this->assertEquals( array( $setting->id, '123abc', $this->manager ), $this->captured_customize_post_value_set_actions[0]['args'] );
-		$this->assertEquals( array( '123abc', $this->manager ), $this->captured_customize_post_value_set_actions[1]['args'] );
+		$this->assertEquals( 'customize_post_value_set_foo', $this->captured_customize_post_value_set_actions[0]['action'] );
+		$this->assertEquals( 'customize_post_value_set', $this->captured_customize_post_value_set_actions[1]['action'] );
+		$this->assertEquals( array( '123abc', $this->manager ), $this->captured_customize_post_value_set_actions[0]['args'] );
+		$this->assertEquals( array( $setting->id, '123abc', $this->manager ), $this->captured_customize_post_value_set_actions[1]['args'] );
 
 		$unsanitized = $this->manager->unsanitized_post_values();
 		$this->assertArrayHasKey( $setting->id, $unsanitized );

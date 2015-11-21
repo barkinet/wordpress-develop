@@ -661,7 +661,21 @@ final class WP_Customize_Manager {
 		$this->_post_values[ $setting_id ] = $value;
 
 		/**
-		 * Announce when a setting's unsanitized post value has been set.
+		 * Announce when a specific setting's unsanitized post value has been set.
+		 *
+		 * Fires when the {@see WP_Customize_Manager::set_post_value()} method is called.
+		 *
+		 * The dynamic portion of the hook name, `$setting_id`, refers to the setting ID.
+		 *
+		 * @since 4.4.0
+		 *
+		 * @param mixed                $value Unsanitized setting post value.
+		 * @param WP_Customize_Manager $this  WP_Customize_Manager instance.
+		 */
+		do_action( "customize_post_value_set_{$setting_id}", $value, $this );
+
+		/**
+		 * Announce when any setting's unsanitized post value has been set.
 		 *
 		 * Fires when the {@see WP_Customize_Manager::set_post_value()} method is called.
 		 *
@@ -675,20 +689,6 @@ final class WP_Customize_Manager {
 		 * @param WP_Customize_Manager $this       WP_Customize_Manager instance.
 		 */
 		do_action( 'customize_post_value_set', $setting_id, $value, $this );
-
-		/**
-		 * Announce when a specific setting's unsanitized post value has been set.
-		 *
-		 * Fires when the {@see WP_Customize_Manager::set_post_value()} method is called.
-		 *
-		 * The dynamic portion of the hook name, `$setting_id`, refers to the setting ID.
-		 *
-		 * @since 4.4.0
-		 *
-		 * @param mixed                $value Unsanitized setting post value.
-		 * @param WP_Customize_Manager $this  WP_Customize_Manager instance.
-		 */
-		do_action( "customize_post_value_set_{$setting_id}", $value, $this );
 	}
 
 	/**
