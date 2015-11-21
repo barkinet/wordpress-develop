@@ -120,12 +120,22 @@ class Tests_WP_Customize_Setting extends WP_UnitTestCase {
 			$this->assertEquals( $initial_value, call_user_func( $type_options['getter'], $name ) );
 			$this->assertEquals( $initial_value, $setting->value() );
 
+			// Non-multidimensional: Try updating a value that had a no-op preview.
 			$overridden_value = "overridden_value_$name";
 			call_user_func( $type_options['setter'], $name, $overridden_value );
 			$message = 'Initial value should be overridden because initial preview() was no-op due to setting having existing value and/or post value was absent.';
 			$this->assertEquals( $overridden_value, call_user_func( $type_options['getter'], $name ), $message );
 			$this->assertEquals( $overridden_value, $setting->value(), $message );
 			$this->assertNotEquals( $initial_value, $setting->value(), $message );
+
+			// Non-multidimensional: Ensure that setting a post value *after* preview() is called results in the post value being seen (deferred preview).
+			$post_value = "post_value_for_{$setting->id}_set_after_preview_called";
+			$this->assertEquals( 0, did_action( "customize_post_value_set_{$setting->id}" ) );
+			$this->manager->set_post_value( $setting->id, $post_value );
+			$this->assertEquals( 1, did_action( "customize_post_value_set_{$setting->id}" ) );
+			$this->assertNotEquals( $overridden_value, $setting->value() );
+			$this->assertEquals( $post_value, call_user_func( $type_options['getter'], $name ) );
+			$this->assertEquals( $post_value, $setting->value() );
 
 			// Non-multidimensional: Test unset setting being overridden by a post value.
 			$name = "unset_{$type}_overridden";
