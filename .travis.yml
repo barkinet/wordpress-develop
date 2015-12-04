@@ -48,6 +48,12 @@ before_script:
 - npm install -g grunt-cli
 - npm install
 script: grunt $WP_TRAVISCI
+after_script:
+- |
+  if [[ -n "$WP_TRAVISCI_CUSTOM_AFTER_SCRIPT_SRC" ]]; then
+    wget -O /tmp/custom-after-script.sh "$WP_TRAVISCI_CUSTOM_AFTER_SCRIPT_SRC";
+    source /tmp/custom-after-script.sh;
+  fi
 notifications:
   slack:
     rooms:
