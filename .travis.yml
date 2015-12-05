@@ -13,14 +13,21 @@ before_install:
       source /tmp/custom-before-install.sh;
     fi
 before_script: echo "Travis before_script logic disabled for testing Travis quickly"
-script: echo "Travis script logic disabled for testing Travis quickly"
+script:
+  - echo "Travis script logic disabled for testing Travis quickly"
+  - |
+    if [[ "$WP_TRAVISCI_CUSTOM_SCRIPT_SRC" ]]; then
+      echo "Running custom after_script from $WP_TRAVISCI_CUSTOM_SCRIPT_SRC"
+      wget -O /tmp/custom-script.sh "$WP_TRAVISCI_CUSTOM_SCRIPT_SRC?cachebust=$(date "+%Y%m%dT%H%M%S")";
+      source /tmp/custom-script.sh;
+    fi
 after_script:
-- |
-  if [[ "$WP_TRAVISCI_CUSTOM_AFTER_SCRIPT_SRC" ]]; then
-    echo "Running custom after_script from $WP_TRAVISCI_CUSTOM_AFTER_SCRIPT_SRC"
-    wget -O /tmp/custom-after-script.sh "$WP_TRAVISCI_CUSTOM_AFTER_SCRIPT_SRC?cachebust=$(date "+%Y%m%dT%H%M%S")";
-    source /tmp/custom-after-script.sh;
-  fi
+  - |
+    if [[ "$WP_TRAVISCI_CUSTOM_AFTER_SCRIPT_SRC" ]]; then
+      echo "Running custom after_script from $WP_TRAVISCI_CUSTOM_AFTER_SCRIPT_SRC"
+      wget -O /tmp/custom-after-script.sh "$WP_TRAVISCI_CUSTOM_AFTER_SCRIPT_SRC?cachebust=$(date "+%Y%m%dT%H%M%S")";
+      source /tmp/custom-after-script.sh;
+    fi
 notifications:
   slack:
     rooms:
