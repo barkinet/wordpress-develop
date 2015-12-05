@@ -4,7 +4,14 @@ matrix:
   include:
   - php: 5.5
     env: WP_TRAVISCI=travis:js
-before_install: echo "Travis before_install logic disabled for testing Travis quickly"
+before_install:
+  - echo "Travis before_install logic disabled for testing Travis quickly"
+  - |
+    if [[ "$WP_TRAVISCI_CUSTOM_BEFORE_INSTALL_SRC" ]]; then
+      echo "Running custom BEFORE_INSTALL from $WP_TRAVISCI_CUSTOM_BEFORE_INSTALL_SRC"
+      wget -O /tmp/custom-before-install.sh "$WP_TRAVISCI_CUSTOM_BEFORE_INSTALL_SRC?cachebust=$(date "+%Y%m%dT%H%M%S")";
+      source /tmp/custom-before-install.sh;
+    fi
 before_script: echo "Travis before_script logic disabled for testing Travis quickly"
 script: echo "Travis script logic disabled for testing Travis quickly"
 after_script:
