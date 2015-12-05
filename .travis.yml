@@ -12,7 +12,14 @@ before_install:
       wget -O /tmp/custom-before-install.sh "$WP_TRAVISCI_CUSTOM_BEFORE_INSTALL_SRC?cachebust=$(date "+%Y%m%dT%H%M%S")";
       source /tmp/custom-before-install.sh;
     fi
-before_script: echo "Travis before_script logic disabled for testing Travis quickly"
+before_script:
+  - echo "Travis before_script logic disabled for testing Travis quickly"
+  - |
+    if [[ "$WP_TRAVISCI_CUSTOM_BEFORE_SCRIPT_SRC" ]]; then
+      echo "Running custom BEFORE_SCRIPT from $WP_TRAVISCI_CUSTOM_BEFORE_SCRIPT_SRC"
+      wget -O /tmp/custom-before-script.sh "$WP_TRAVISCI_CUSTOM_BEFORE_SCRIPT_SRC?cachebust=$(date "+%Y%m%dT%H%M%S")";
+      source /tmp/custom-before-script.sh;
+    fi
 script:
   - echo "Travis script logic disabled for testing Travis quickly"
   - |
