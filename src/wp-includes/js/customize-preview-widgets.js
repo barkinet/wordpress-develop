@@ -19,6 +19,8 @@
 		l10n: {},
 
 		init: function () {
+			this.preview = api.preview;
+
 			var self = this;
 			this.buildWidgetSelectors();
 			this.highlightControls();
@@ -104,17 +106,6 @@
 		}
 	};
 
-	/**
-	 * Capture the instance of the Preview since it is private
-	 */
-	OldPreview = api.Preview;
-	api.Preview = OldPreview.extend( {
-		initialize: function( params, options ) {
-			api.WidgetCustomizerPreview.preview = this;
-			OldPreview.prototype.initialize.call( this, params, options );
-		}
-	} );
-
 	$(function () {
 		var settings = window._wpWidgetCustomizerPreviewSettings;
 		if ( ! settings ) {
@@ -123,7 +114,7 @@
 
 		$.extend( api.WidgetCustomizerPreview, settings );
 
-		api.WidgetCustomizerPreview.init();
+		api.bind( 'preview-ready', api.WidgetCustomizerPreview.init );
 	});
 
 })( window.wp, jQuery );
