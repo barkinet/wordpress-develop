@@ -2,8 +2,7 @@
 
 	if ( ! wp || ! wp.customize ) { return; }
 
-	var api = wp.customize,
-		OldPreview;
+	var api = wp.customize;
 
 	/**
 	 * wp.customize.WidgetCustomizerPreview
@@ -19,9 +18,9 @@
 		l10n: {},
 
 		init: function () {
-			this.preview = api.preview;
-
 			var self = this;
+
+			this.preview = api.preview;
 			this.buildWidgetSelectors();
 			this.highlightControls();
 
@@ -114,7 +113,7 @@
 
 		$.extend( api.WidgetCustomizerPreview, settings );
 
-		api.bind( 'preview-ready', api.WidgetCustomizerPreview.init );
+		api.WidgetCustomizerPreview.init();
 	});
 
 })( window.wp, jQuery );
