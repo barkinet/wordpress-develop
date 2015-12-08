@@ -957,6 +957,33 @@ final class WP_Customize_Manager {
 			wp_send_json_error( 'invalid_nonce' );
 		}
 
+		// Validate settings.
+		$invalid_settings = array();
+		foreach ( $this->unsanitized_post_values() as $setting_id => $unsanitized_value ) {
+			$setting = $this->get_setting( $setting_id );
+			if ( ! $setting ) {
+				continue;
+			}
+			$valid = $setting->validate( $unsanitized_value );
+			if ( false === $valid ) {
+				$valid = new WP_Error( 'invalid_value', __( 'Invalid value.' ) );
+			}
+			if ( is_wp_error( $valid ) ) {
+				$invalid_settings[ $setting_id ] = $valid;
+			}
+		}
+		$invalid_count = count( $invalid_settings );
+		if ( $invalid_count > 0 ) {
+			$response = array(
+				'invalid_settings' => $invalid_settings,
+				'message' => sprintf( _n( 'There is %d invalid setting.', 'There are %d invalid settings.', $invalid_count ), $invalid_count ),
+			);
+
+			/** This filter is documented in wp-includes/class-wp-customize-manager.php */
+			$response = apply_filters( 'customize_save_response', $response, $this );
+			wp_send_json_error( $response );
+		}
+
 		// Do we have to switch themes?
 		if ( ! $this->is_theme_active() ) {
 			// Temporarily stop previewing the theme to allow switch_themes()
