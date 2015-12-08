@@ -143,7 +143,7 @@ class WP_Customize_Setting {
 		}
 
 		if ( $this->sanitize_callback ) {
-			add_filter( "customize_sanitize_{$this->id}", $this->sanitize_callback, 10, 2 );
+			add_filter( "customize_sanitize_{$this->id}", $this->sanitize_callback, 10, 3 );
 		}
 		if ( $this->sanitize_js_callback ) {
 			add_filter( "customize_sanitize_js_{$this->id}", $this->sanitize_js_callback, 10, 2 );
@@ -491,22 +491,25 @@ class WP_Customize_Setting {
 	 * Sanitize an input.
 	 *
 	 * @since 3.4.0
+	 * @since 4.5.0 Added $strict parameter.
 	 *
-	 * @param string|array $value The value to sanitize.
-	 * @return string|array|null Null if an input isn't valid, otherwise the sanitized value.
+	 * @param string|array $value    The value to sanitize.
+	 * @param bool         $strict   Whether validation is being performed.
+	 * @return string|array|null|WP_Error Null or WP_Error (when $strict) if an input isn't valid, otherwise the sanitized value.
 	 */
-	public function sanitize( $value ) {
-		$value = wp_unslash( $value );
+	public function sanitize( $value, $strict = false ) {
+		$value = wp_unslash( $value ); // @todo Remove this because it is erroneously stripping slashes. $_POST['customized'] is already unslashed when parsed as JSON. Try entering \o/ in the blogname for example.
 
 		/**
 		 * Filter a Customize setting value in un-slashed form.
 		 *
 		 * @since 3.4.0
+		 * @since 4.5.0 Added $strict param which is true when validation is being done.
 		 *
 		 * @param mixed                $value Value of the setting.
 		 * @param WP_Customize_Setting $this  WP_Customize_Setting instance.
 		 */
-		return apply_filters( "customize_sanitize_{$this->id}", $value, $this );
+		return apply_filters( "customize_sanitize_{$this->id}", $value, $this, $strict );
 	}
 
 	/**
@@ -515,31 +518,18 @@ class WP_Customize_Setting {
 	 * @since 4.5.0
 	 * @see WP_REST_Request::has_valid_params()
 	 *
-	 * @param string|array $value The value to validate.
+	 * @param string|array $unsanitized_value The value to validate.
 	 * @return bool|WP_Error Whether an input isn't valid, or an WP_Error explaining why it isn't valid.
 	 */
-	public function validate( $value ) {
+	public function validate( $unsanitized_value ) {
 		$valid = true;
 
-		/**
-		 * Filter a Customize setting value.
-		 *
-		 * @todo The version in WP_Customize_Setting::sanitize() does wp_unslash() for an unknown reason.
-		 *
-		 * This filter is documented in wp-includes/class-wp-customize-setting.php
-		 *
-		 * @since 3.4.0
-		 * @since 4.5.0 Added $strict param.
-		 *
-		 * @param mixed                $value   Value of the setting.
-		 * @param WP_Customize_Setting $this    WP_Customize_Setting instance.
-		 * @param bool                 $strict  Whether strict sanitization (validation) is being applied.
-		 */
-		$value = apply_filters( "customize_sanitize_{$this->id}", $value, $this, true );
-		if ( null === $value ) {
+		$strict = true;
+		$sanitized_value = $this->sanitize( $unsanitized_value, $strict );
+		if ( null === $sanitized_value ) {
 			$valid = false;
-		} else if ( is_wp_error( $value ) ) {
-			$valid = $value;
+		} else if ( is_wp_error( $sanitized_value ) ) {
+			$valid = $sanitized_value;
 		}
 
 		/**
@@ -548,11 +538,12 @@ class WP_Customize_Setting {
 		 * @since 4.5.0
 		 *
 		 * @param
-		 * @param bool|WP_Error        $valid Validity of the value based on sanitization.
-		 * @param mixed                $value Value of the setting.
-		 * @param WP_Customize_Setting $this  WP_Customize_Setting instance.
+		 * @param bool|WP_Error        $valid              Validity of the value based on sanitization.
+		 * @param mixed                $sanitized_value    Sanitized value of the setting.
+		 * @param mixed                $unsanitized_value  Unsanitized value of the setting.
+		 * @param WP_Customize_Setting $this               WP_Customize_Setting instance.
 		 */
-		$valid = apply_filters( "customize_validate_{$this->id}", $valid, $value, $this );
+		$valid = apply_filters( "customize_validate_{$this->id}", $valid, $sanitized_value, $unsanitized_value, $this );
 
 		return $valid;
 	}
