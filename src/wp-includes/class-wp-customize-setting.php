@@ -510,6 +510,54 @@ class WP_Customize_Setting {
 	}
 
 	/**
+	 * Validate an input.
+	 *
+	 * @since 4.5.0
+	 * @see WP_REST_Request::has_valid_params()
+	 *
+	 * @param string|array $value The value to validate.
+	 * @return bool|WP_Error Whether an input isn't valid, or an WP_Error explaining why it isn't valid.
+	 */
+	public function validate( $value ) {
+		$valid = true;
+
+		/**
+		 * Filter a Customize setting value.
+		 *
+		 * @todo The version in WP_Customize_Setting::sanitize() does wp_unslash() for an unknown reason.
+		 *
+		 * This filter is documented in wp-includes/class-wp-customize-setting.php
+		 *
+		 * @since 3.4.0
+		 * @since 4.5.0 Added $strict param.
+		 *
+		 * @param mixed                $value   Value of the setting.
+		 * @param WP_Customize_Setting $this    WP_Customize_Setting instance.
+		 * @param bool                 $strict  Whether strict sanitization (validation) is being applied.
+		 */
+		$value = apply_filters( "customize_sanitize_{$this->id}", $value, $this, true );
+		if ( null === $value ) {
+			$valid = false;
+		} else if ( is_wp_error( $value ) ) {
+			$valid = $value;
+		}
+
+		/**
+		 * Filter the validation state of a Customize setting value.
+		 *
+		 * @since 4.5.0
+		 *
+		 * @param
+		 * @param bool|WP_Error        $valid Validity of the value based on sanitization.
+		 * @param mixed                $value Value of the setting.
+		 * @param WP_Customize_Setting $this  WP_Customize_Setting instance.
+		 */
+		$valid = apply_filters( "customize_validate_{$this->id}", $valid, $value, $this );
+
+		return $valid;
+	}
+
+	/**
 	 * Get the root value for a setting, especially for multidimensional ones.
 	 *
 	 * @since 4.4.0
