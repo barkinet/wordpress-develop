@@ -59,6 +59,7 @@ class WP_Customize_Setting {
 	 *
 	 * @var callback
 	 */
+	public $validate_callback    = '';
 	public $sanitize_callback    = '';
 	public $sanitize_js_callback = '';
 
@@ -142,6 +143,9 @@ class WP_Customize_Setting {
 			$this->id .= '[' . implode( '][', $this->id_data['keys'] ) . ']';
 		}
 
+		if ( $this->validate_callback ) {
+			add_filter( "customize_validate_{$this->id}", $this->validate_callback, 10, 3 );
+		}
 		if ( $this->sanitize_callback ) {
 			add_filter( "customize_sanitize_{$this->id}", $this->sanitize_callback, 10, 3 );
 		}
