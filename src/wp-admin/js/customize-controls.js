@@ -3194,6 +3194,7 @@
 		}
 	});
 
+	api.settingConstructor = {};
 	api.controlConstructor = {
 		color:         api.ColorControl,
 		media:         api.MediaControl,
@@ -3377,11 +3378,15 @@
 
 		// Create Settings
 		$.each( api.settings.settings, function( id, data ) {
-			api.create( id, id, data.value, {
+			var constructor = api.settingConstructor[ data.type ] || api.Setting,
+				setting;
+
+			setting = new constructor( id, data.value, {
 				transport: data.transport,
 				previewer: api.previewer,
 				dirty: !! data.dirty
 			} );
+			api.add( id, setting );
 		});
 
 		// Create Panels
