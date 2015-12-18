@@ -215,7 +215,7 @@ class Walker {
 		$top_level_elements = array();
 		$children_elements  = array();
 		foreach ( $elements as $e) {
-			if ( 0 == $e->$parent_field )
+			if ( empty( $e->$parent_field ) )
 				$top_level_elements[] = $e;
 			else
 				$children_elements[ $e->$parent_field ][] = $e;
@@ -382,9 +382,13 @@ class Walker {
 	}
 
 	/**
+	 * Calculates the total number of root elements.
 	 *
-	 * @param array $elements
-	 * @return int
+	 * @since 2.7.0
+	 * @access public
+	 * 
+	 * @param array $elements Elements to list.
+	 * @return int Number of root elements.
 	 */
 	public function get_number_of_root_elements( $elements ){
 		$num = 0;

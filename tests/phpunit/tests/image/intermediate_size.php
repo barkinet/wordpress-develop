@@ -10,38 +10,11 @@ class Tests_Image_Intermediate_Size extends WP_UnitTestCase {
 		parent::tearDown();
 	}
 
-	/**
-	 * Upload files and create attachements for testing
-	 */
-	private function _make_attachment( $file, $parent_post_id = 0 ) {
+	public function _make_attachment( $file, $parent_post_id = 0 ) {
 		$contents = file_get_contents( $file );
 		$upload = wp_upload_bits( basename( $file ), null, $contents );
 
-		$type = '';
-		if ( ! empty( $upload['type'] ) ) {
-			$type = $upload['type'];
-		} else {
-			$mime = wp_check_filetype( $upload['file'] );
-			if ( $mime ) {
-				$type = $mime['type'];
-			}
-		}
-
-		$attachment = array(
-			'post_title' => basename( $upload['file'] ),
-			'post_content' => '',
-			'post_type' => 'attachment',
-			'post_parent' => $parent_post_id,
-			'post_mime_type' => $type,
-			'guid' => $upload['url'],
-		);
-
-		// Save the data
-		$id = wp_insert_attachment( $attachment, $upload[ 'file' ], $parent_post_id );
-		wp_update_attachment_metadata( $id, wp_generate_attachment_metadata( $id, $upload['file'] ) );
-
-		$this->ids[] = $id;
-		return $id;
+		return parent::_make_attachment( $upload, $parent_post_id );
 	}
 
 	function test_make_intermediate_size_no_size() {
@@ -98,7 +71,7 @@ class Tests_Image_Intermediate_Size extends WP_UnitTestCase {
 
 		// test for the expected string because the array will by definition
 		// return with the correct height and width attributes
-		$this->assertNotFalse( strpos( $image['file'], '330x220' ) );
+		$this->assertTrue( strpos( $image['file'], '330x220' ) > 0 );
 
 		// cleanup
 		remove_image_size( 'test-size' );
@@ -122,7 +95,7 @@ class Tests_Image_Intermediate_Size extends WP_UnitTestCase {
 
 		// test for the expected string because the array will by definition
 		// return with the correct height and width attributes
-		$this->assertNotFalse( strpos( $image['file'], '330x220' ) );
+		$this->assertTrue( strpos( $image['file'], '330x220' ) > 0 );
 
 		// cleanup
 		remove_image_size( 'test-size' );
@@ -149,7 +122,7 @@ class Tests_Image_Intermediate_Size extends WP_UnitTestCase {
 
 		// you have to test for the string because the image will by definition
 		// return with the correct height and width attributes
-		$this->assertNotFalse( strpos( $image['file'], '450x300' ) );
+		$this->assertTrue( strpos( $image['file'], '450x300' ) > 0 );
 
 		// cleanup
 		remove_image_size( 'test-size' );
@@ -206,7 +179,7 @@ class Tests_Image_Intermediate_Size extends WP_UnitTestCase {
 
 		// test for the expected string because the array will by definition
 		// return with the correct height and width attributes
-		$this->assertNotFalse( strpos( $image['file'], $image_w . 'x' . $image_h ) );
+		$this->assertTrue( strpos( $image['file'], $image_w . 'x' . $image_h ) > 0 );
 
 		// cleanup
 		remove_image_size( 'test-size' );
@@ -214,33 +187,61 @@ class Tests_Image_Intermediate_Size extends WP_UnitTestCase {
 	}
 
 	/**
-	* @ticket 17626
-	*/
+	 * @ticket 17626
+	 * @ticket 34087
+	 */
 	function test_get_intermediate_sizes_by_array_zero_width() {
-		// Generate random height
-		$random_h = rand( 200, 300 );
+		// 202 is the smallest height that will trigger a miss for 'false-height'.
+		$height = 202;
 
 		// Only one dimention match shouldn't return false positive (see: 17626)
-		add_image_size( 'test-size', 0, $random_h, false );
-		add_image_size( 'false-height', 300, $random_h, true );
+		add_image_size( 'test-size', 0, $height, false );
+		add_image_size( 'false-height', 300, $height, true );
 
 		$file = DIR_TESTDATA . '/images/waffles.jpg';
 		$id = $this->_make_attachment( $file, 0 );
 
 		$original = wp_get_attachment_metadata( $id );
-		$image_h = $random_h;
+		$image_h = $height;
 		$image_w = round( ( $image_h / $original['height'] ) * $original['width'] );
 
 		// look for a size by array that exists
 		// note: staying larger than 300px to miss default medium crop
-		$image = image_get_intermediate_size( $id, array( 0, $random_h ) );
+		$image = image_get_intermediate_size( $id, array( 0, $height ) );
 
 		// test for the expected string because the array will by definition
 		// return with the correct height and width attributes
-		$this->assertNotFalse( strpos( $image['file'], $image_w . 'x' . $image_h ) );
+		$this->assertTrue( strpos( $image['file'], $image_w . 'x' . $image_h ) > 0 );
 
 		// cleanup
 		remove_image_size( 'test-size' );
 		remove_image_size( 'false-height' );
+	}
+
+	/**
+	 * @ticket 17626
+	 * @ticket 34087
+	 */
+	public function test_get_intermediate_sizes_should_match_size_with_off_by_one_aspect_ratio() {
+		// Original is 600x400. 300x201 is close enough to match.
+		$width  = 300;
+		$height = 201;
+		add_image_size( 'off-by-one', $width, $height, true );
+
+		$file = DIR_TESTDATA . '/images/waffles.jpg';
+		$id = $this->_make_attachment( $file, 0 );
+
+		$original = wp_get_attachment_metadata( $id );
+		$image_h = $height;
+		$image_w = round( ( $image_h / $original['height'] ) * $original['width'] );
+
+		// look for a size by array that exists
+		// note: staying larger than 300px to miss default medium crop
+		$image = image_get_intermediate_size( $id, array( 0, $height ) );
+
+		$this->assertTrue( strpos( $image['file'], $width . 'x' . $height ) > 0 );
+
+		// cleanup
+		remove_image_size( 'off-by-one' );
 	}
 }

@@ -1,9 +1,17 @@
 <?php
 /**
- * HTTP request method uses PHP Streams to retrieve the url.
+ * HTTP API: WP_Http_Streams class
+ *
+ * @package WordPress
+ * @subpackage HTTP
+ * @since 4.4.0
+ */
+
+/**
+ * Core class used to integrate PHP Streams as an HTTP transport.
  *
  * @since 2.7.0
- * @since 3.7.0 Combined with the fsockopen transport and switched to stream_socket_client().
+ * @since 3.7.0 Combined with the fsockopen transport and switched to `stream_socket_client()`.
  */
 class WP_Http_Streams {
 	/**
@@ -286,7 +294,7 @@ class WP_Http_Streams {
 		);
 
 		// Handle redirects.
-		if ( false !== ( $redirect_response = WP_HTTP::handle_redirects( $url, $r, $response ) ) )
+		if ( false !== ( $redirect_response = WP_Http::handle_redirects( $url, $r, $response ) ) )
 			return $redirect_response;
 
 		// If the body was chunk encoded, then decode it.
@@ -305,7 +313,7 @@ class WP_Http_Streams {
 	}
 
 	/**
-	 * Verifies the received SSL certificate against it's Common Names and subjectAltName fields
+	 * Verifies the received SSL certificate against its Common Names and subjectAltName fields.
 	 *
 	 * PHP's SSL verifications only verify that it's a valid Certificate, it doesn't verify if
 	 * the certificate is valid for the hostname which was requested.
@@ -335,7 +343,7 @@ class WP_Http_Streams {
 		 * If the request is being made to an IP address, we'll validate against IP fields
 		 * in the cert (if they exist)
 		 */
-		$host_type = ( WP_HTTP::is_ip_address( $host ) ? 'ip' : 'dns' );
+		$host_type = ( WP_Http::is_ip_address( $host ) ? 'ip' : 'dns' );
 
 		$certificate_hostnames = array();
 		if ( ! empty( $cert['extensions']['subjectAltName'] ) ) {
@@ -369,13 +377,14 @@ class WP_Http_Streams {
 	}
 
 	/**
-	 * Whether this class can be used for retrieving a URL.
+	 * Determines whether this class can be used for retrieving a URL.
 	 *
 	 * @static
 	 * @access public
 	 * @since 2.7.0
 	 * @since 3.7.0 Combined with the fsockopen transport and switched to stream_socket_client().
 	 *
+	 * @param array $args Optional. Array of request arguments. Default empty array.
 	 * @return bool False means this class can not be used, true means it can.
 	 */
 	public static function test( $args = array() ) {
@@ -407,7 +416,7 @@ class WP_Http_Streams {
  * Deprecated HTTP Transport method which used fsockopen.
  *
  * This class is not used, and is included for backwards compatibility only.
- * All code should make use of WP_HTTP directly through it's API.
+ * All code should make use of WP_Http directly through its API.
  *
  * @see WP_HTTP::request
  *

@@ -107,7 +107,8 @@ final class WP_Customize_Nav_Menus {
 		$items = array();
 
 		if ( 'post_type' === $type ) {
-			if ( ! get_post_type_object( $object ) ) {
+			$post_type = get_post_type_object( $object );
+			if ( ! $post_type ) {
 				return new WP_Error( 'nav_menus_invalid_post_type' );
 			}
 
@@ -120,6 +121,16 @@ final class WP_Customize_Nav_Menus {
 					'type_label' => __( 'Custom Link' ),
 					'object'     => '',
 					'url'        => home_url(),
+				);
+			} elseif ( 'post' !== $object && 0 === $page && $post_type->has_archive ) {
+				// Add a post type archive link.
+				$items[] = array(
+					'id'         => $object . '-archive',
+					'title'      => $post_type->labels->archives,
+					'type'       => 'post_type_archive',
+					'type_label' => __( 'Post Type Archive' ),
+					'object'     => $object,
+					'url'        => get_post_type_archive_link( $object ),
 				);
 			}
 
@@ -325,8 +336,8 @@ final class WP_Customize_Nav_Menus {
 				'untitled'          => _x( '(no label)', 'missing menu item navigation label' ),
 				'unnamed'           => _x( '(unnamed)', 'Missing menu name.' ),
 				'custom_label'      => __( 'Custom Link' ),
-				/* translators: %s: Current menu location */
-				'menuLocation'      => __( '(Currently set to: %s)' ),
+				/* translators: %s: menu location slug */
+				'menuLocation'      => _x( '(Currently set to: %s)', 'menu' ),
 				'menuNameLabel'     => __( 'Menu Name' ),
 				'itemAdded'         => __( 'Menu item added' ),
 				'itemDeleted'       => __( 'Menu item deleted' ),
@@ -342,8 +353,6 @@ final class WP_Customize_Nav_Menus {
 				'invalidTitleTpl'   => __( '%s (Invalid)' ),
 				/* translators: %s: title of menu item in draft status */
 				'pendingTitleTpl'   => __( '%s (Pending)' ),
-				'taxonomyTermLabel' => __( 'Taxonomy' ),
-				'postTypeLabel'     => __( 'Post Type' ),
 				'itemsFound'        => __( 'Number of items found: %d' ),
 				'itemsFoundMore'    => __( 'Additional items found: %d' ),
 				'itemsLoadingMore'  => __( 'Loading more results... please wait.' ),
@@ -615,7 +624,7 @@ final class WP_Customize_Nav_Menus {
 		if ( $post_types ) {
 			foreach ( $post_types as $slug => $post_type ) {
 				$item_types[] = array(
-					'title'  => $post_type->labels->singular_name,
+					'title'  => $post_type->labels->name,
 					'type'   => 'post_type',
 					'object' => $post_type->name,
 				);
@@ -629,7 +638,7 @@ final class WP_Customize_Nav_Menus {
 					continue;
 				}
 				$item_types[] = array(
-					'title'  => $taxonomy->labels->singular_name,
+					'title'  => $taxonomy->labels->name,
 					'type'   => 'taxonomy',
 					'object' => $taxonomy->name,
 				);
@@ -666,7 +675,7 @@ final class WP_Customize_Nav_Menus {
 						<span class="item-title" aria-hidden="true">
 							<span class="menu-item-title<# if ( ! data.title ) { #> no-title<# } #>">{{ data.title || wp.customize.Menus.data.l10n.untitled }}</span>
 						</span>
-						<button type="button" class="not-a-button item-add">
+						<button type="button" class="button-link item-add">
 							<span class="screen-reader-text"><?php
 								/* translators: 1: Title of a menu item, 2: Type of a menu item */
 								printf( __( 'Add to menu: %1$s (%2$s)' ), '{{ data.title || wp.customize.Menus.data.l10n.untitled }}', '{{ data.type_label }}' );
@@ -729,7 +738,7 @@ final class WP_Customize_Nav_Menus {
 			<div id="new-custom-menu-item" class="accordion-section">
 				<h4 class="accordion-section-title" role="presentation">
 					<?php _e( 'Custom Links' ); ?>
-					<button type="button" class="not-a-button" aria-expanded="false">
+					<button type="button" class="button-link" aria-expanded="false">
 						<span class="screen-reader-text"><?php _e( 'Toggle section: Custom Links' ); ?></span>
 						<span class="toggle-indicator" aria-hidden="true"></span>
 					</button>
@@ -766,7 +775,7 @@ final class WP_Customize_Nav_Menus {
 						<?php echo esc_html( $available_item_type['title'] ); ?>
 						<span class="spinner"></span>
 						<span class="no-items"><?php _e( 'No items' ); ?></span>
-						<button type="button" class="not-a-button" aria-expanded="false">
+						<button type="button" class="button-link" aria-expanded="false">
 							<span class="screen-reader-text"><?php
 							/* translators: %s: Title of a section with menu items */
 							printf( __( 'Toggle section: %s' ), esc_html( $available_item_type['title'] ) ); ?></span>
@@ -934,7 +943,7 @@ final class WP_Customize_Nav_Menus {
 			'renderQueryVar'        => self::RENDER_QUERY_VAR,
 			'renderNonceValue'      => wp_create_nonce( self::RENDER_AJAX_ACTION ),
 			'renderNoncePostKey'    => self::RENDER_NONCE_POST_KEY,
-			'requestUri'            => '/',
+			'requestUri'            => empty( $_SERVER['REQUEST_URI'] ) ? home_url( '/' ) : esc_url_raw( wp_unslash( $_SERVER['REQUEST_URI'] ) ),
 			'theme'                 => array(
 				'stylesheet' => $this->manager->get_stylesheet(),
 				'active'     => $this->manager->is_theme_active(),
@@ -942,10 +951,6 @@ final class WP_Customize_Nav_Menus {
 			'previewCustomizeNonce' => wp_create_nonce( 'preview-customize_' . $this->manager->get_stylesheet() ),
 			'navMenuInstanceArgs'   => $this->preview_nav_menu_instance_args,
 		);
-
-		if ( ! empty( $_SERVER['REQUEST_URI'] ) ) {
-			$exports['requestUri'] = esc_url_raw( home_url( wp_unslash( $_SERVER['REQUEST_URI'] ) ) );
-		}
 
 		printf( '<script>var _wpCustomizePreviewNavMenusExports = %s;</script>', wp_json_encode( $exports ) );
 	}

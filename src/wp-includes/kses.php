@@ -97,6 +97,9 @@ if ( ! CUSTOM_TAGS ) {
 			'src' => true,
 		),
 		'b' => array(),
+		'bdo' => array(
+			'dir' => true,
+		),
 		'big' => array(),
 		'blockquote' => array(
 			'cite' => true,
@@ -395,6 +398,7 @@ if ( ! CUSTOM_TAGS ) {
 		'ol' => array(
 			'start' => true,
 			'type' => true,
+			'reversed' => true,
 		),
 		'var' => array(),
 		'video' => array(

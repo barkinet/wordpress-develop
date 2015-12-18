@@ -1,6 +1,14 @@
 <?php
 /**
- * WordPress HTTP Class for managing HTTP Transports and making HTTP requests.
+ * HTTP API: WP_Http class
+ *
+ * @package WordPress
+ * @subpackage HTTP
+ * @since 2.7.0
+ */
+
+/**
+ * Core class used for managing HTTP transports and making HTTP requests.
  *
  * This class is used to consistently make outgoing HTTP requests easy for developers
  * while still being compatible with the many PHP configurations under which
@@ -8,8 +16,6 @@
  *
  * Debugging includes several actions, which pass different variables for debugging the HTTP API.
  *
- * @package WordPress
- * @subpackage HTTP
  * @since 2.7.0
  */
 class WP_Http {
@@ -153,18 +159,25 @@ class WP_Http {
 			$r['_redirection'] = $r['redirection'];
 
 		/**
-		 * Filter whether to preempt an HTTP request's return.
+		 * Filter whether to preempt an HTTP request's return value.
 		 *
-		 * Returning a truthy value to the filter will short-circuit
-		 * the HTTP request and return early with that value.
+		 * Returning a non-false value from the filter will short-circuit the HTTP request and return
+		 * early with that value. A filter should return either:
+		 *
+		 *  - An array containing 'headers', 'body', 'response', 'cookies', and 'filename' elements
+		 *  - A WP_Error instance
+		 *  - boolean false (to avoid short-circuiting the response)
+		 *
+		 * Returning any other value may result in unexpected behaviour.
 		 *
 		 * @since 2.9.0
 		 *
-		 * @param bool   $preempt Whether to preempt an HTTP request return. Default false.
-		 * @param array  $r       HTTP request arguments.
-		 * @param string $url     The request URL.
+		 * @param false|array|WP_Error $preempt Whether to preempt an HTTP request's return value. Default false.
+		 * @param array               $r        HTTP request arguments.
+		 * @param string              $url      The request URL.
 		 */
 		$pre = apply_filters( 'pre_http_request', false, $r, $url );
+
 		if ( false !== $pre )
 			return $pre;
 
@@ -293,21 +306,25 @@ class WP_Http {
 	 * @return string|false Class name for the first transport that claims to support the request. False if no transport claims to support the request.
 	 */
 	public function _get_first_available_transport( $args, $url = null ) {
+		$transports = array( 'curl', 'streams' );
 		/**
 		 * Filter which HTTP transports are available and in what order.
 		 *
 		 * @since 3.7.0
 		 *
-		 * @param array  $value Array of HTTP transports to check. Default array contains
-		 *                      'curl', and 'streams', in that order.
-		 * @param array  $args  HTTP request arguments.
-		 * @param string $url   The URL to request.
+		 * @param array  $transports Array of HTTP transports to check. Default array contains
+		 *                           'curl', and 'streams', in that order.
+		 * @param array  $args       HTTP request arguments.
+		 * @param string $url        The URL to request.
 		 */
-		$request_order = apply_filters( 'http_api_transports', array( 'curl', 'streams' ), $args, $url );
+		$request_order = apply_filters( 'http_api_transports', $transports, $args, $url );
 
 		// Loop over each transport on each HTTP request looking for one which will serve this request's needs.
 		foreach ( $request_order as $transport ) {
-			$class = 'WP_HTTP_' . $transport;
+			if ( in_array( $transport, $transports ) ) {
+				$transport = ucfirst( $transport );
+			}
+			$class = 'WP_Http_' . $transport;
 
 			// Check to see if this transport is a possibility, calls the transport statically.
 			if ( !call_user_func( array( $class, 'test' ), $args, $url ) )
@@ -542,7 +559,7 @@ class WP_Http {
 			// Upgrade any name => value cookie pairs to WP_HTTP_Cookie instances.
 			foreach ( $r['cookies'] as $name => $value ) {
 				if ( ! is_object( $value ) )
-					$r['cookies'][ $name ] = new WP_HTTP_Cookie( array( 'name' => $name, 'value' => $value ) );
+					$r['cookies'][ $name ] = new WP_Http_Cookie( array( 'name' => $name, 'value' => $value ) );
 			}
 
 			$cookies_header = '';
@@ -669,47 +686,19 @@ class WP_Http {
 	}
 
 	/**
-	 * A wrapper for PHP's parse_url() function that handles edgecases in < PHP 5.4.7
+	 * Used as a wrapper for PHP's parse_url() function that handles edgecases in < PHP 5.4.7.
 	 *
-	 * PHP 5.4.7 expanded parse_url()'s ability to handle non-absolute url's, including
-	 * schemeless and relative url's with :// in the path, this works around those
-	 * limitations providing a standard output on PHP 5.2~5.4+.
-	 *
-	 * Error suppression is used as prior to PHP 5.3.3, an E_WARNING would be generated
-	 * when URL parsing failed.
-	 *
-	 * @since 4.1.0
-	 *
-	 * @static
 	 * @access protected
+	 * @deprecated 4.4.0 Use wp_parse_url()
+	 * @see wp_parse_url()
 	 *
 	 * @param string $url The URL to parse.
 	 * @return bool|array False on failure; Array of URL components on success;
 	 *                    See parse_url()'s return values.
 	 */
 	protected static function parse_url( $url ) {
-		$parts = @parse_url( $url );
-		if ( ! $parts ) {
-			// < PHP 5.4.7 compat, trouble with relative paths including a scheme break in the path
-			if ( '/' == $url[0] && false !== strpos( $url, '://' ) ) {
-				// Since we know it's a relative path, prefix with a scheme/host placeholder and try again
-				if ( ! $parts = @parse_url( 'placeholder://placeholder' . $url ) ) {
-					return $parts;
-				}
-				// Remove the placeholder values
-				unset( $parts['scheme'], $parts['host'] );
-			} else {
-				return $parts;
-			}
-		}
-
-		// < PHP 5.4.7 compat, doesn't detect schemeless URL's host field
-		if ( '//' == substr( $url, 0, 2 ) && ! isset( $parts['host'] ) ) {
-			list( $parts['host'], $slashless_path ) = explode( '/', substr( $parts['path'], 2 ), 2 );
-			$parts['path'] = "/{$slashless_path}";
-		}
-
-		return $parts;
+		_deprecated_function( __METHOD__, '4.4.0', 'wp_parse_url()' );
+		return wp_parse_url( $url );
 	}
 
 	/**
@@ -730,11 +719,11 @@ class WP_Http {
 		if ( empty( $url ) )
 			return $maybe_relative_path;
 
-		if ( ! $url_parts = WP_HTTP::parse_url( $url ) ) {
+		if ( ! $url_parts = wp_parse_url( $url ) ) {
 			return $maybe_relative_path;
 		}
 
-		if ( ! $relative_url_parts = WP_HTTP::parse_url( $maybe_relative_path ) ) {
+		if ( ! $relative_url_parts = wp_parse_url( $maybe_relative_path ) ) {
 			return $maybe_relative_path;
 		}
 
@@ -818,7 +807,7 @@ class WP_Http {
 		if ( is_array( $redirect_location ) )
 			$redirect_location = array_pop( $redirect_location );
 
-		$redirect_location = WP_HTTP::make_absolute_url( $redirect_location, $url );
+		$redirect_location = WP_Http::make_absolute_url( $redirect_location, $url );
 
 		// POST requests should not POST to a redirected location.
 		if ( 'POST' == $args['method'] ) {

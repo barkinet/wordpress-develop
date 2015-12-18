@@ -14,24 +14,6 @@ if ( ! current_user_can( 'manage_options' ) )
 $title = __('Discussion Settings');
 $parent_file = 'options-general.php';
 
-/**
- * Output JavaScript to toggle display of additional settings if avatars are disabled.
- *
- * @since 4.2.0
- */
-function options_discussion_add_js() {
-?>
-	<script>
-	(function($){
-		var parent = $( '#show_avatars' ),
-			children = $( '.avatar-settings' );
-		parent.change(function(){
-			children.toggleClass( 'hide-if-js', ! this.checked );
-		});
-	})(jQuery);
-	</script>
-<?php
-}
 add_action( 'admin_print_footer_scripts', 'options_discussion_add_js' );
 
 get_current_screen()->add_help_tab( array(
@@ -117,9 +99,8 @@ printf( __('Enable threaded (nested) comments %s levels deep'), $thread_comments
 ?></label>
 <br />
 <label for="page_comments">
-<input name="page_comments" type="checkbox" id="page_comments" value="1" <?php checked('1', get_option('page_comments')); ?> />
+<input name="page_comments" type="checkbox" id="page_comments" value="1" <?php checked( '1', get_option( 'page_comments' ) ); ?> />
 <?php
-
 $default_comments_page = '</label><label for="default_comments_page"><select name="default_comments_page" id="default_comments_page"><option value="newest"';
 if ( 'newest' == get_option('default_comments_page') ) $default_comments_page .= ' selected="selected"';
 $default_comments_page .= '>' . __('last') . '</option><option value="oldest"';
@@ -179,7 +160,7 @@ printf( __('Comments should be displayed with the %s comments at the top of each
 <tr>
 <th scope="row"><?php _e('Comment Blacklist'); ?></th>
 <td><fieldset><legend class="screen-reader-text"><span><?php _e('Comment Blacklist'); ?></span></legend>
-<p><label for="blacklist_keys"><?php _e('When a comment contains any of these words in its content, name, URL, email, or IP, it will be marked as spam. One word or IP per line. It will match inside words, so &#8220;press&#8221; will match &#8220;WordPress&#8221;.'); ?></label></p>
+<p><label for="blacklist_keys"><?php _e('When a comment contains any of these words in its content, name, URL, email, or IP, it will be put in the trash. One word or IP per line. It will match inside words, so &#8220;press&#8221; will match &#8220;WordPress&#8221;.'); ?></label></p>
 <p>
 <textarea name="blacklist_keys" rows="10" cols="50" id="blacklist_keys" class="large-text code"><?php echo esc_textarea( get_option( 'blacklist_keys' ) ); ?></textarea>
 </p>
@@ -188,7 +169,7 @@ printf( __('Comments should be displayed with the %s comments at the top of each
 <?php do_settings_fields('discussion', 'default'); ?>
 </table>
 
-<h3 class="title"><?php _e('Avatars'); ?></h3>
+<h2 class="title"><?php _e('Avatars'); ?></h2>
 
 <p><?php _e('An avatar is an image that follows you from weblog to weblog appearing beside your name when you comment on avatar enabled sites. Here you can enable the display of avatars for people who comment on your site.'); ?></p>
 

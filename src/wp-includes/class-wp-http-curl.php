@@ -1,11 +1,19 @@
 <?php
 /**
+ * HTTP API: WP_Http_Curl class
+ *
+ * @package WordPress
+ * @subpackage HTTP
+ * @since 4.4.0
+ */
+
+/**
+ * Core class used to integrate Curl as an HTTP transport.
+ *
  * HTTP request method uses Curl extension to retrieve the url.
  *
  * Requires the Curl extension to be installed.
  *
- * @package WordPress
- * @subpackage HTTP
  * @since 2.7.0
  */
 class WP_Http_Curl {
@@ -106,10 +114,10 @@ class WP_Http_Curl {
 		$is_local = isset($r['local']) && $r['local'];
 		$ssl_verify = isset($r['sslverify']) && $r['sslverify'];
 		if ( $is_local ) {
-			/** This filter is documented in wp-includes/class-http.php */
+			/** This filter is documented in wp-includes/class-wp-http-streams.php */
 			$ssl_verify = apply_filters( 'https_local_ssl_verify', $ssl_verify );
 		} elseif ( ! $is_local ) {
-			/** This filter is documented in wp-includes/class-http.php */
+			/** This filter is documented in wp-includes/class-wp-http-streams.php */
 			$ssl_verify = apply_filters( 'https_ssl_verify', $ssl_verify );
 		}
 
@@ -125,7 +133,11 @@ class WP_Http_Curl {
 		curl_setopt( $handle, CURLOPT_RETURNTRANSFER, true );
 		curl_setopt( $handle, CURLOPT_SSL_VERIFYHOST, ( $ssl_verify === true ) ? 2 : false );
 		curl_setopt( $handle, CURLOPT_SSL_VERIFYPEER, $ssl_verify );
-		curl_setopt( $handle, CURLOPT_CAINFO, $r['sslcertificates'] );
+
+		if ( $ssl_verify ) {
+			curl_setopt( $handle, CURLOPT_CAINFO, $r['sslcertificates'] );
+		}
+
 		curl_setopt( $handle, CURLOPT_USERAGENT, $r['user-agent'] );
 
 		/*
@@ -286,13 +298,17 @@ class WP_Http_Curl {
 	}
 
 	/**
-	 * Grab the headers of the cURL request
+	 * Grabs the headers of the cURL request.
 	 *
-	 * Each header is sent individually to this callback, so we append to the $header property for temporary storage
+	 * Each header is sent individually to this callback, so we append to the `$header` property
+	 * for temporary storage
 	 *
 	 * @since 3.2.0
 	 * @access private
-	 * @return int
+	 *
+	 * @param resource $handle  cURL handle.
+	 * @param string   $headers cURL request headers.
+	 * @return int Length of the request headers.
 	 */
 	private function stream_headers( $handle, $headers ) {
 		$this->headers .= $headers;
@@ -300,14 +316,18 @@ class WP_Http_Curl {
 	}
 
 	/**
-	 * Grab the body of the cURL request
+	 * Grabs the body of the cURL request.
 	 *
-	 * The contents of the document are passed in chunks, so we append to the $body property for temporary storage.
-	 * Returning a length shorter than the length of $data passed in will cause cURL to abort the request with CURLE_WRITE_ERROR
+	 * The contents of the document are passed in chunks, so we append to the `$body`
+	 * property for temporary storage. Returning a length shorter than the length of
+	 * `$data` passed in will cause cURL to abort the request with `CURLE_WRITE_ERROR`.
 	 *
 	 * @since 3.6.0
 	 * @access private
-	 * @return int
+	 *
+	 * @param resource $handle  cURL handle.
+	 * @param string   $headers cURL request headers.
+	 * @return int Total bytes of data written.
 	 */
 	private function stream_body( $handle, $data ) {
 		$data_length = strlen( $data );
@@ -331,11 +351,12 @@ class WP_Http_Curl {
 	}
 
 	/**
-	 * Whether this class can be used for retrieving an URL.
+	 * Determines whether this class can be used for retrieving an URL.
 	 *
 	 * @static
 	 * @since 2.7.0
 	 *
+	 * @param array $args Optional. Array of request arguments. Default empty array.
 	 * @return bool False means this class can not be used, true means it can.
 	 */
 	public static function test( $args = array() ) {

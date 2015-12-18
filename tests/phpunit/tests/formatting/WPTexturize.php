@@ -374,8 +374,8 @@ class Tests_Formatting_WPTexturize extends WP_UnitTestCase {
 				"word [&#8216;word word",
 			),
 			array(
-				"word <'word word", // Invalid HTML input triggers the apos in a word pattern.
-				"word <&#8217;word word",
+				"word <'word word", // Invalid HTML
+				"word <'word word",
 			),
 			array(
 				"word &lt;'word word", // Valid HTML input makes curly quotes.
@@ -403,7 +403,7 @@ class Tests_Formatting_WPTexturize extends WP_UnitTestCase {
 			),
 			array(
 				"word<'word word",
-				"word<&#8217;word word",
+				"word<'word word",
 			),
 			array(
 				"word&lt;'word word",
@@ -431,7 +431,7 @@ class Tests_Formatting_WPTexturize extends WP_UnitTestCase {
 			),
 			array(
 				"word <' word word",
-				"word <&#8217; word word",
+				"word <' word word",
 			),
 			array(
 				"word &lt;' word word",
@@ -459,7 +459,7 @@ class Tests_Formatting_WPTexturize extends WP_UnitTestCase {
 			),
 			array(
 				"word<' word word",
-				"word<&#8217; word word",
+				"word<' word word",
 			),
 			array(
 				"word&lt;' word word",
@@ -610,8 +610,8 @@ class Tests_Formatting_WPTexturize extends WP_UnitTestCase {
 				'word [&#8220;word word',
 			),
 			array(
-				'word <"word word', // Invalid HTML input triggers the closing quote pattern.
-				'word <&#8221;word word',
+				'word <"word word', // Invalid HTML
+				'word <"word word',
 			),
 			array(
 				'word &lt;"word word',
@@ -643,7 +643,7 @@ class Tests_Formatting_WPTexturize extends WP_UnitTestCase {
 			),
 			array(
 				'word<"word word',
-				'word<&#8221;word word',
+				'word<"word word',
 			),
 			array(
 				'word&lt;"word word',
@@ -1267,12 +1267,12 @@ class Tests_Formatting_WPTexturize extends WP_UnitTestCase {
 				'[caption &#8211; is it wise to <a title="allow user content ] here? hmm"> maybe </a> ]',
 			),
 			array(
-				'[ photos by <a href="http://example.com/?a[]=1&a[]=2"> this guy </a> ]',
-				'[ photos by <a href="http://example.com/?a[]=1&#038;a[]=2"> this guy </a> ]',
+				'[ photos by <a href="http://example.com/?a[]=1&a[]=2"> this guy & that guy </a> ]',
+				'[ photos by <a href="http://example.com/?a[]=1&a[]=2"> this guy &#038; that guy </a> ]',
 			),
 			array(
-				'[photos by <a href="http://example.com/?a[]=1&a[]=2"> this guy </a>]',
-				'[photos by <a href="http://example.com/?a[]=1&#038;a[]=2"> this guy </a>]',
+				'[photos by <a href="http://example.com/?a[]=1&a[]=2"> this guy & that guy </a>]',
+				'[photos by <a href="http://example.com/?a[]=1&a[]=2"> this guy &#038; that guy </a>]',
 			),
 			array(
 				'[gallery ...]',
@@ -1312,7 +1312,7 @@ class Tests_Formatting_WPTexturize extends WP_UnitTestCase {
 			),
 			array(
 				'<br [gallery ...] ... /',
-				'<br [gallery ...] &#8230; /',
+				'<br [gallery ...] ... /',
 			),
 			array(
 				'<br ... />',
@@ -1352,7 +1352,7 @@ class Tests_Formatting_WPTexturize extends WP_UnitTestCase {
 			),
 			array(
 				'<br [[gallery ...]] ... /',
-				'<br [[gallery ...]] &#8230; /',
+				'<br [[gallery ...]] ... /',
 			),
 			array(
 				'[[gallery ...]]...[[gallery ...]]',
@@ -2047,5 +2047,30 @@ That likely contributed to the action movie!apos!s dismal box-office debut this 
 String with a number followed by a single quote !q1!Expendables 3!q1! vestibulum in arcu mi.',
 			),
 		);
+	}
+
+	/**
+	 * Automated performance testing of the main regex.
+	 *
+	 * @dataProvider data_whole_posts
+	 */
+	function test_pcre_performance( $input ) {
+		global $shortcode_tags;
+
+		// With Shortcodes Disabled
+		$regex = _get_wptexturize_split_regex( );
+		$result = benchmark_pcre_backtracking( $regex, $input, 'split' );
+		$this->assertLessThan( 200, $result );
+
+		// With Shortcodes Enabled
+		$shortcode_regex = _get_wptexturize_shortcode_regex( array_keys( $shortcode_tags ) );
+		$regex = _get_wptexturize_split_regex( $shortcode_regex );
+		$result = benchmark_pcre_backtracking( $regex, $input, 'split' );
+		return $this->assertLessThan( 200, $result );
+	}
+
+	function data_whole_posts() {
+		require_once( DIR_TESTDATA . '/formatting/whole-posts.php' );
+		return data_whole_posts();
 	}
 }

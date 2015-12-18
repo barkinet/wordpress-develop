@@ -111,6 +111,10 @@
 			api.preview.send( 'documentTitle', document.title );
 		});
 
+		/*
+		 * Send a message to the parent customize frame with a list of which
+		 * containers and controls are active.
+		 */
 		api.preview.send( 'ready', {
 			activePanels: api.settings.activePanels,
 			activeSections: api.settings.activeSections,
@@ -120,11 +124,9 @@
 		// Display a loading indicator when preview is reloading, and remove on failure.
 		api.preview.bind( 'loading-initiated', function () {
 			$( 'body' ).addClass( 'wp-customizer-unloading' );
-			$( 'html' ).prop( 'title', api.settings.l10n.loading );
 		});
 		api.preview.bind( 'loading-failed', function () {
 			$( 'body' ).removeClass( 'wp-customizer-unloading' );
-			$( 'html' ).prop( 'title', '' );
 		});
 
 		/* Custom Backgrounds */
