@@ -19,7 +19,8 @@
 				active: false,
 				stylesheet: ''
 			},
-			navMenuInstanceArgs: {}
+			navMenuInstanceArgs: {},
+			l10n: {}
 		};
 
 	api.MenusCustomizerPreview = {
@@ -63,6 +64,8 @@
 					}
 				}
 			} );
+
+			self.highlightControls();
 		},
 
 		/**
@@ -272,6 +275,50 @@
 				}, this ),
 				refreshDebounceDelay
 			);
+		},
+
+		highlightControls : function() {
+			var menuSelectors = [],
+				selector,
+				menuId,
+				matches,
+				instance,
+				instanceNumber;
+
+			_.each( settings.navMenuInstanceArgs, function( instance, instanceNumber ) {
+				menuSelectors.push( '.partial-refreshable-nav-menu-' + String( instanceNumber ) );
+			} );
+
+			selector = menuSelectors.join( ',' );
+
+			$( selector ).attr( 'title', settings.l10n.menuTooltip );
+
+			// Open expand the widget control when shift+clicking the widget element
+			$(document).on( 'click', selector, function ( e ) {
+				if ( ! e.shiftKey ) {
+					return;
+				}
+				e.preventDefault();
+
+				matches = $( this ).attr( 'class' ).match( /partial-refreshable-nav-menu-(\d+)/ );
+				instanceNumber = parseInt( matches[1], 10 );
+
+				if ( ! settings.navMenuInstanceArgs[ instanceNumber ] ) {
+					throw new Error( 'unknown_instance_number' );
+				}
+
+				instance = settings.navMenuInstanceArgs[ instanceNumber ];
+
+				if ( _.isNumber( instance.menu ) ) {
+					menuId = instance.menu;
+				} else if ( instance.theme_location && api.has( 'nav_menu_locations[' + instance.theme_location + ']' ) ) {
+					menuId = api( 'nav_menu_locations[' + instance.theme_location + ']' ).get();
+				}
+
+				if ( menuId ) {
+					api.preview.send( 'focus-menu-control', menuId );
+				}
+			});
 		}
 	};
 

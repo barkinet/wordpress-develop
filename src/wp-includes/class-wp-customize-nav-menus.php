@@ -950,6 +950,9 @@ final class WP_Customize_Nav_Menus {
 			),
 			'previewCustomizeNonce' => wp_create_nonce( 'preview-customize_' . $this->manager->get_stylesheet() ),
 			'navMenuInstanceArgs'   => $this->preview_nav_menu_instance_args,
+			'l10n'               => array(
+				'menuTooltip' => __( 'Shift-click to edit this menu.' ),
+			),
 		);
 
 		printf( '<script>var _wpCustomizePreviewNavMenusExports = %s;</script>', wp_json_encode( $exports ) );
