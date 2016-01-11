@@ -3602,6 +3602,19 @@
 			event.preventDefault();
 		});
 
+		// Preview size toggles.
+		$( '#customize-footer-actions .devices button' ).on( 'click keydown', function( event ) {
+			if ( api.utils.isKeydownButNotEnterEvent( event ) ) {
+				return;
+			}
+
+			$( '#customize-footer-actions .devices button' ).removeClass( 'active' );
+			overlay.removeClass( 'preview-full preview-desktop preview-tablet preview-mobile' )
+			       .toggleClass( event.currentTarget.className );
+			$( event.currentTarget ).addClass( 'active' );
+			event.preventDefault();
+		});
+		
 		// Bind site title display to the corresponding field.
 		if ( title.length ) {
 			$( '#customize-control-blogname input' ).on( 'input', function() {
