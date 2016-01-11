@@ -1701,6 +1701,7 @@ final class WP_Customize_Manager {
 			'autofocus' => array(),
 			'documentTitleTmpl' => $this->get_document_title_template(),
 		);
+		$this->add_setting( 'previewedDevice', array( 'default' => 'desktop' ) );
 
 		// Prepare Customize Section objects to pass to JavaScript.
 		foreach ( $this->sections() as $id => $section ) {

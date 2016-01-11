@@ -3603,18 +3603,18 @@
 		});
 
 		// Preview size toggles.
-		$( '#customize-footer-actions .devices button' ).on( 'click keydown', function( event ) {
-			if ( api.utils.isKeydownButNotEnterEvent( event ) ) {
-				return;
-			}
-
-			$( '#customize-footer-actions .devices button' ).removeClass( 'active' );
+		$( '#customize-footer-actions .devices button' ).on( 'click', function( event ) {
+			var overlay = $( '.wp-full-overlay' ),
+			    device = $( event.currentTarget ).data( 'device' );
+			$( '#customize-footer-actions .devices button' ).removeClass( 'active' )
+			                                                .attr( 'aria-pressed', false );
 			overlay.removeClass( 'preview-full preview-desktop preview-tablet preview-mobile' )
-			       .toggleClass( event.currentTarget.className );
-			$( event.currentTarget ).addClass( 'active' );
-			event.preventDefault();
+			       .toggleClass( 'preview-' + device );
+			$( event.currentTarget ).addClass( 'active' )
+			                        .attr( 'aria-pressed', true );
+			api.previewedDevice = device;
 		});
-		
+
 		// Bind site title display to the corresponding field.
 		if ( title.length ) {
 			$( '#customize-control-blogname input' ).on( 'input', function() {
