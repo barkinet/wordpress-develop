@@ -1,0 +1,9 @@
+git clone https://github.com/barkinet/wordpress-develop.git
+Cloning into 'wordpress-develop'...
+remote: Counting objects: 239239, done.
+remote: Compressing objects: 100% (143/143), done.
+remote: Total 239239 (delta 79), reused 0 (delta 0), pack-reused 239096
+Receiving objects: 100% (239239/239239), 89.82 MiB | 488.00 KiB/s, done.
+Resolving deltas: 100% (191537/191537), done.
+Checking connectivity... done.
+Checking out files: 100% (1980/1980), done.
